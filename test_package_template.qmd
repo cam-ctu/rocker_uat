@@ -1,0 +1,34 @@
+---
+title: "{{pkg}}"
+listing:
+  contents:
+    - "{{pkg}}/*.Rout"
+    - "{{pkg}}/**/*.Rout"
+    - "{{pkg}}/**/*.Rout.fail"
+  type: table
+  fields: 
+    - filename
+---
+
+
+```{r }
+source("test_pkg.R")
+source("edit_log.R")
+# to ensure that the lsiting doesn't fail.
+
+
+dl <- download.packages("{{pkg}}", destdir="packages",type="source",
+                        method="wget")# wget was what solved this.. was getting binary versions
+
+
+unlink("packages/{{pkg}}")
+untar(dl[,2], exdir = "packages", restore_times=FALSE)
+writeLines("empty placeholder file","packages/{{pkg}}/empty_output.Rout")
+out <- test_pkg("{{pkg}}", outDir="packages/{{pkg}}", test_path="tests",
+                   types=c("examples","tests")
+                   )
+
+edit_log("{{pkg}}", out)
+```
+
+# Output Files
