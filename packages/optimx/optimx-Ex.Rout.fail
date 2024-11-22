@@ -1,0 +1,3552 @@
+
+R version 4.4.0 (2024-04-24) -- "Puppy Cup"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "optimx"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('optimx')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("Rcgmin")
+> ### * Rcgmin
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rcgmin
+> ### Title: An R implementation of a nonlinear conjugate gradient algorithm
+> ###   with the Dai / Yuan update and restart. Based on Nash (1979)
+> ###   Algorithm 22 for its main structure.
+> ### Aliases: Rcgmin ncg ncgqs
+> ### Keywords: nonlinear optimize
+> 
+> ### ** Examples
+> 
+> #####################
+> require(numDeriv)
+Loading required package: numDeriv
+> ## Rosenbrock Banana function
+> fr <- function(x) {
++     x1 <- x[1]
++     x2 <- x[2]
++     100 * (x2 - x1 * x1)^2 + (1 - x1)^2
++ }
+> 
+> grr <- function(x) { ## Gradient of 'fr'
++     x1 <- x[1]
++     x2 <- x[2]
++     c(-400 * x1 * (x2 - x1 * x1) - 2 * (1 - x1),
++        200 *      (x2 - x1 * x1))
++ }
+> 
+> grn<-function(x){
++     gg<-grad(fr, x)
++ }  
+> 
+> 
+> ansrosenbrock0 <- Rcgmin(fn=fr,gr=grn, par=c(1,2))
+> print(ansrosenbrock0) # use print to allow copy to separate file that 
+$par
+[1] 0.9999999 0.9999999
+
+$value
+[1] 2.769504e-15
+
+$counts
+[1] 68 30
+
+$convergence
+[1] 0
+
+$message
+[1] "Rcgmin seems to have converged"
+
+> #    can be called using source()
+> #####################
+> # Simple bounds and masks test
+> bt.f<-function(x){
++  sum(x*x)
++ }
+> 
+> bt.g<-function(x){
++   gg<-2.0*x
++ }
+> 
+> n<-10
+> xx<-rep(0,n)
+> lower<-rep(0,n)
+> upper<-lower # to get arrays set
+> bdmsk<-rep(1,n)
+> bdmsk[(trunc(n/2)+1)]<-0
+> for (i in 1:n) { 
++    lower[i]<-1.0*(i-1)*(n-1)/n
++    upper[i]<-1.0*i*(n+1)/n
++ }
+> xx<-0.5*(lower+upper)
+> ansbt<-Rcgmin(xx, bt.f, bt.g, lower, upper, bdmsk, control=list(trace=1))
+admissible =  TRUE 
+maskadded =  FALSE 
+parchanged =  FALSE 
+Rcgmin -- J C Nash 2009 - bounds constraint version of new CG
+an R implementation of Alg 22 with Yuan/Dai modification
+Initial function value= 337.525 
+Initial fn= 337.525 
+1   0   1   337.525   last decrease= NA 
+3   1   2   251.455   last decrease= 86.06996 
+Yuan/Dai cycle reset
+3   2   1   251.455   last decrease= NA 
+5   3   2   249.2466   last decrease= 2.208412 
+Yuan/Dai cycle reset
+5   4   1   249.2466   last decrease= NA 
+7   5   2   247.4157   last decrease= 1.830923 
+Yuan/Dai cycle reset
+7   6   1   247.4157   last decrease= NA 
+9   7   2   245.9974   last decrease= 1.41828 
+Yuan/Dai cycle reset
+9   8   1   245.9974   last decrease= NA 
+11   9   2   243.7158   last decrease= 2.281617 
+Yuan/Dai cycle reset
+11   10   1   243.7158   last decrease= NA 
+13   11   2   242.6786   last decrease= 1.037168 
+Yuan/Dai cycle reset
+13   12   1   242.6786   last decrease= NA 
+15   13   2   241.9403   last decrease= 0.7383196 
+Yuan/Dai cycle reset
+15   14   1   241.9403   last decrease= NA 
+17   15   2   241.5045   last decrease= 0.4358326 
+Yuan/Dai cycle reset
+17   16   1   241.5045   last decrease= NA 
+19   17   2   241.4025   last decrease= 0.1019875 
+Very small gradient -- gradsqr = 0 
+Rcgmin seems to have converged 
+> 
+> print(ansbt)
+$par
+ [1] 0.00 0.90 1.80 2.70 3.60 5.55 5.40 6.30 7.20 8.10
+
+$value
+[1] 241.4025
+
+$counts
+[1] 19 18
+
+$convergence
+[1] 0
+
+$message
+[1] "Rcgmin seems to have converged"
+
+$bdmsk
+ [1]  1 -3 -3 -3 -3  0 -3 -3 -3 -3
+
+> 
+> #####################
+> genrose.f<- function(x, gs=NULL){ # objective function
++ ## One generalization of the Rosenbrock banana valley function (n parameters)
++ 	n <- length(x)
++         if(is.null(gs)) { gs=100.0 }
++ 	fval<-1.0 + sum (gs*(x[1:(n-1)]^2 - x[2:n])^2 + (x[2:n] - 1)^2)
++         return(fval)
++ }
+> genrose.g <- function(x, gs=NULL){
++ # vectorized gradient for genrose.f
++ # Ravi Varadhan 2009-04-03
++ 	n <- length(x)
++         if(is.null(gs)) { gs=100.0 }
++ 	gg <- as.vector(rep(0, n))
++ 	tn <- 2:n
++ 	tn1 <- tn - 1
++ 	z1 <- x[tn] - x[tn1]^2
++ 	z2 <- 1 - x[tn]
++ 	gg[tn] <- 2 * (gs * z1 - z2)
++ 	gg[tn1] <- gg[tn1] - 4 * gs * x[tn1] * z1
++ 	gg
++ }
+> 
+> # analytic gradient test
+> xx<-rep(pi,10)
+> lower<-NULL
+> upper<-NULL
+> bdmsk<-NULL
+> genrosea<-Rcgmin(xx,genrose.f, genrose.g, gs=10)
+> genrosen<-optimr(xx, genrose.f, "grfwd", method="Rcgmin", gs=10)
+> genrosenn<-try(Rcgmin(xx,genrose.f, gs=10)) # use local numerical gradient
+Error in Rcgmin(xx, genrose.f, gs = 10) : 
+  Rcgmin must have gradient function provided. Call via optimr() to use approximations.
+> cat("genrosea uses analytic gradient\n")
+genrosea uses analytic gradient
+> print(genrosea)
+$par
+ [1] 1 1 1 1 1 1 1 1 1 1
+
+$value
+[1] 1
+
+$counts
+[1] 87 39
+
+$convergence
+[1] 0
+
+$message
+[1] "Rcgmin seems to have converged"
+
+> cat("genrosen uses default gradient approximation\n")
+genrosen uses default gradient approximation
+> print(genrosen)
+$par
+ [1]  2.62797051  2.19349189  1.75901327  1.32453465  0.89005603  0.45557741
+ [7]  0.02109879 -0.41337983 -0.84785845 -0.76871493
+attr(,"status")
+ [1] " " " " " " " " " " " " " " " " " " " "
+
+$value
+[1] 402.669
+attr(,"fname")
+[1] "(no_name)"
+attr(,"method")
+[1] "Rcgmin"
+attr(,"ptype")
+[1] "U"
+
+$counts
+[1] 4984  218
+
+$convergence
+[1] 1
+
+$message
+[1] NA
+
+$scounts
+[1] 4984  218    0
+
+> 
+> cat("timings B vs U\n")
+timings B vs U
+> lo<-rep(-100,10)
+> up<-rep(100,10)
+> bdmsk<-rep(1,10)
+> tb<-system.time(ab<-Rcgminb(xx,genrose.f, genrose.g, lower=lo, upper=up, bdmsk=bdmsk))[1]
+> tu<-system.time(au<-Rcgminu(xx,genrose.f, genrose.g))[1]
+> cat("times U=",tu,"   B=",tb,"\n")
+times U= 0.001    B= 0.002 
+> cat("solution Rcgminu\n")
+solution Rcgminu
+> print(au)
+$par
+ [1] 1 1 1 1 1 1 1 1 1 1
+
+$value
+[1] 1
+
+$counts
+[1] 146  69
+
+$convergence
+[1] 0
+
+$message
+[1] "Rcgmin seems to have converged"
+
+> cat("solution Rcgminb\n")
+solution Rcgminb
+> print(ab)
+$par
+ [1] 1.0000000 1.0000000 1.0000000 1.0000000 1.0000000 1.0000000 1.0000000
+ [8] 1.0000000 1.0000000 0.9999999
+
+$value
+[1] 1
+
+$counts
+[1] 120  58
+
+$convergence
+[1] 0
+
+$message
+[1] "Rcgmin seems to have converged"
+
+$bdmsk
+ [1] 1 1 1 1 1 1 1 1 1 1
+
+> cat("diff fu-fb=",au$value-ab$value,"\n")
+diff fu-fb= -1.110223e-14 
+> cat("max abs parameter diff = ", max(abs(au$par-ab$par)),"\n")
+max abs parameter diff =  8.590758e-08 
+> 
+> maxfn<-function(x) {
++       	n<-length(x)
++ 	ss<-seq(1,n)
++ 	f<-10-(crossprod(x-ss))^2
++ 	f<-as.numeric(f)
++ 	return(f)
++ }
+> 
+> gmaxfn<-function(x) {
++      gg<-grad(maxfn, x) 
++ }
+> 
+> 
+> negmaxfn<-function(x) {
++ 	f<-(-1)*maxfn(x)
++ 	return(f)
++ }
+> 
+> 
+> 
+> cat("test that maximize=TRUE works correctly\n")
+test that maximize=TRUE works correctly
+> 
+> n<-6
+> xx<-rep(1,n)
+> ansmax<-Rcgmin(xx,maxfn, gmaxfn, control=list(maximize=TRUE,trace=1))
+Warning in Rcgminu(par, fn, gr, control = control, ...) :
+  Rcgmin no longer supports maximize 111121 -- see documentation
+> print(ansmax)
+[[1]]
+[1] 1 1 1 1 1 1
+
+[[2]]
+[1] NA
+
+[[3]]
+[1] 0 0
+
+[[4]]
+[1] 9999
+
+[[5]]
+[1] "Rcgmin no longer supports maximize 111121"
+
+> 
+> cat("using the negmax function should give same parameters\n")
+using the negmax function should give same parameters
+> ansnegmaxn<-optimr(xx,negmaxfn, "grfwd", method="Rcgmin", control=list(trace=1))
+parchanged =  FALSE 
+Parameter scaling:[1] 1 1 1 1 1 1
+Using numerical approximation ' grfwd ' to gradient in optimr()
+Rcgminu -- J C Nash 2009 - unconstrained version CG min
+an R implementation of Alg 22 with Yuan/Dai modification
+Initial function value= 3015 
+Initial fn= 3015 
+1   0   1   3015   last decrease= NA 
+****7   1   2   575.8788   last decrease= 2439.121 
+Yuan/Dai cycle reset
+7   2   1   575.8788   last decrease= NA 
+9   3   2   249.1872   last decrease= 326.6915 
+Yuan/Dai cycle reset
+9   4   1   249.1872   last decrease= NA 
+11   5   2   105.5833   last decrease= 143.604 
+Yuan/Dai cycle reset
+11   6   1   105.5833   last decrease= NA 
+13   7   2   41.4298   last decrease= 64.15346 
+Yuan/Dai cycle reset
+13   8   1   41.4298   last decrease= NA 
+15   9   2   12.80485   last decrease= 28.62495 
+Yuan/Dai cycle reset
+15   10   1   12.80485   last decrease= NA 
+17   11   2   0.09583742   last decrease= 12.70902 
+Yuan/Dai cycle reset
+17   12   1   0.09583742   last decrease= NA 
+19   13   2   -5.523328   last decrease= 5.619166 
+Yuan/Dai cycle reset
+19   14   1   -5.523328   last decrease= NA 
+21   15   2   -8.003723   last decrease= 2.480395 
+Yuan/Dai cycle reset
+21   16   1   -8.003723   last decrease= NA 
+23   17   2   -9.100436   last decrease= 1.096713 
+Yuan/Dai cycle reset
+23   18   1   -9.100436   last decrease= NA 
+25   19   2   -9.588032   last decrease= 0.4875959 
+Yuan/Dai cycle reset
+25   20   1   -9.588032   last decrease= NA 
+27   21   2   -9.806985   last decrease= 0.218953 
+Yuan/Dai cycle reset
+27   22   1   -9.806985   last decrease= NA 
+29   23   2   -9.906804   last decrease= 0.09981959 
+Yuan/Dai cycle reset
+29   24   1   -9.906804   last decrease= NA 
+31   25   2   -9.953289   last decrease= 0.0464853 
+Yuan/Dai cycle reset
+31   26   1   -9.953289   last decrease= NA 
+33   27   2   -9.975568   last decrease= 0.02227816 
+Yuan/Dai cycle reset
+33   28   1   -9.975568   last decrease= NA 
+35   29   2   -9.98666   last decrease= 0.01109247 
+Yuan/Dai cycle reset
+35   30   1   -9.98666   last decrease= NA 
+37   31   2   -9.99247   last decrease= 0.005809545 
+Yuan/Dai cycle reset
+37   32   1   -9.99247   last decrease= NA 
+39   33   2   -9.995711   last decrease= 0.003241172 
+Yuan/Dai cycle reset
+39   34   1   -9.995711   last decrease= NA 
+41   35   2   -9.997632   last decrease= 0.001920936 
+Yuan/Dai cycle reset
+41   36   1   -9.997632   last decrease= NA 
+43   37   2   -9.998788   last decrease= 0.001156204 
+Yuan/Dai cycle reset
+43   38   1   -9.998788   last decrease= NA 
+45   39   2   -9.999438   last decrease= 0.0006500324 
+Yuan/Dai cycle reset
+45   40   1   -9.999438   last decrease= NA 
+47   41   2   -9.999706   last decrease= 0.0002679946 
+Yuan/Dai cycle reset
+47   42   1   -9.999706   last decrease= NA 
+49   43   2   -9.999822   last decrease= 0.0001162454 
+Yuan/Dai cycle reset
+49   44   1   -9.999822   last decrease= NA 
+51   45   2   -9.999881   last decrease= 5.863389e-05 
+Yuan/Dai cycle reset
+51   46   1   -9.999881   last decrease= NA 
+53   47   2   -9.999914   last decrease= 3.337968e-05 
+Yuan/Dai cycle reset
+53   48   1   -9.999914   last decrease= NA 
+55   49   2   -9.999935   last decrease= 2.077975e-05 
+Yuan/Dai cycle reset
+55   50   1   -9.999935   last decrease= NA 
+57   51   2   -9.999949   last decrease= 1.38289e-05 
+Yuan/Dai cycle reset
+57   52   1   -9.999949   last decrease= NA 
+59   53   2   -9.999959   last decrease= 9.686143e-06 
+Yuan/Dai cycle reset
+59   54   1   -9.999959   last decrease= NA 
+61   55   2   -9.999966   last decrease= 7.062946e-06 
+Yuan/Dai cycle reset
+61   56   1   -9.999966   last decrease= NA 
+63   57   2   -9.999971   last decrease= 5.319607e-06 
+Yuan/Dai cycle reset
+63   58   1   -9.999971   last decrease= NA 
+65   59   2   -9.999975   last decrease= 4.114419e-06 
+Yuan/Dai cycle reset
+65   60   1   -9.999975   last decrease= NA 
+67   61   2   -9.999978   last decrease= 3.253585e-06 
+Yuan/Dai cycle reset
+67   62   1   -9.999978   last decrease= NA 
+69   63   2   -9.999981   last decrease= 2.621565e-06 
+Yuan/Dai cycle reset
+69   64   1   -9.999981   last decrease= NA 
+71   65   2   -9.999983   last decrease= 2.146532e-06 
+Yuan/Dai cycle reset
+71   66   1   -9.999983   last decrease= NA 
+73   67   2   -9.999985   last decrease= 1.782204e-06 
+Yuan/Dai cycle reset
+73   68   1   -9.999985   last decrease= NA 
+75   69   2   -9.999986   last decrease= 1.497819e-06 
+Yuan/Dai cycle reset
+75   70   1   -9.999986   last decrease= NA 
+77   71   2   -9.999988   last decrease= 1.272379e-06 
+Yuan/Dai cycle reset
+77   72   1   -9.999988   last decrease= NA 
+79   73   2   -9.999989   last decrease= 1.091204e-06 
+Yuan/Dai cycle reset
+79   74   1   -9.999989   last decrease= NA 
+81   75   2   -9.99999   last decrease= 9.438183e-07 
+Yuan/Dai cycle reset
+81   76   1   -9.99999   last decrease= NA 
+83   77   2   -9.99999   last decrease= 8.226011e-07 
+Yuan/Dai cycle reset
+83   78   1   -9.99999   last decrease= NA 
+85   79   2   -9.999991   last decrease= 7.219208e-07 
+Yuan/Dai cycle reset
+85   80   1   -9.999991   last decrease= NA 
+87   81   2   -9.999992   last decrease= 6.375474e-07 
+Yuan/Dai cycle reset
+87   82   1   -9.999992   last decrease= NA 
+89   83   2   -9.999992   last decrease= 5.662623e-07 
+Yuan/Dai cycle reset
+89   84   1   -9.999992   last decrease= NA 
+91   85   2   -9.999993   last decrease= 5.055876e-07 
+Yuan/Dai cycle reset
+91   86   1   -9.999993   last decrease= NA 
+93   87   2   -9.999993   last decrease= 4.535899e-07 
+Yuan/Dai cycle reset
+93   88   1   -9.999993   last decrease= NA 
+95   89   2   -9.999994   last decrease= 4.087477e-07 
+Yuan/Dai cycle reset
+95   90   1   -9.999994   last decrease= NA 
+97   91   2   -9.999994   last decrease= 3.698525e-07 
+Yuan/Dai cycle reset
+97   92   1   -9.999994   last decrease= NA 
+99   93   2   -9.999994   last decrease= 3.359346e-07 
+Yuan/Dai cycle reset
+99   94   1   -9.999994   last decrease= NA 
+101   95   2   -9.999995   last decrease= 3.06207e-07 
+Yuan/Dai cycle reset
+101   96   1   -9.999995   last decrease= NA 
+103   97   2   -9.999995   last decrease= 2.800322e-07 
+Yuan/Dai cycle reset
+103   98   1   -9.999995   last decrease= NA 
+105   99   2   -9.999995   last decrease= 2.568855e-07 
+Yuan/Dai cycle reset
+105   100   1   -9.999995   last decrease= NA 
+107   101   2   -9.999996   last decrease= 2.363331e-07 
+Yuan/Dai cycle reset
+107   102   1   -9.999996   last decrease= NA 
+109   103   2   -9.999996   last decrease= 2.180144e-07 
+Yuan/Dai cycle reset
+109   104   1   -9.999996   last decrease= NA 
+111   105   2   -9.999996   last decrease= 2.016284e-07 
+Yuan/Dai cycle reset
+111   106   1   -9.999996   last decrease= NA 
+113   107   2   -9.999996   last decrease= 1.869221e-07 
+Yuan/Dai cycle reset
+113   108   1   -9.999996   last decrease= NA 
+115   109   2   -9.999996   last decrease= 1.736805e-07 
+Yuan/Dai cycle reset
+115   110   1   -9.999996   last decrease= NA 
+117   111   2   -9.999997   last decrease= 1.617226e-07 
+Yuan/Dai cycle reset
+117   112   1   -9.999997   last decrease= NA 
+119   113   2   -9.999997   last decrease= 1.508931e-07 
+Yuan/Dai cycle reset
+119   114   1   -9.999997   last decrease= NA 
+121   115   2   -9.999997   last decrease= 1.41059e-07 
+Yuan/Dai cycle reset
+121   116   1   -9.999997   last decrease= NA 
+123   117   2   -9.999997   last decrease= 1.32106e-07 
+Yuan/Dai cycle reset
+123   118   1   -9.999997   last decrease= NA 
+125   119   2   -9.999997   last decrease= 1.23936e-07 
+Yuan/Dai cycle reset
+125   120   1   -9.999997   last decrease= NA 
+127   121   2   -9.999997   last decrease= 1.164625e-07 
+Yuan/Dai cycle reset
+127   122   1   -9.999997   last decrease= NA 
+129   123   2   -9.999997   last decrease= 1.096113e-07 
+Yuan/Dai cycle reset
+129   124   1   -9.999997   last decrease= NA 
+131   125   2   -9.999997   last decrease= 1.033176e-07 
+Yuan/Dai cycle reset
+131   126   1   -9.999997   last decrease= NA 
+133   127   2   -9.999997   last decrease= 9.752441e-08 
+Yuan/Dai cycle reset
+133   128   1   -9.999997   last decrease= NA 
+135   129   2   -9.999998   last decrease= 9.21816e-08 
+Yuan/Dai cycle reset
+135   130   1   -9.999998   last decrease= NA 
+137   131   2   -9.999998   last decrease= 8.724521e-08 
+Yuan/Dai cycle reset
+137   132   1   -9.999998   last decrease= NA 
+139   133   2   -9.999998   last decrease= 8.267668e-08 
+Yuan/Dai cycle reset
+139   134   1   -9.999998   last decrease= NA 
+141   135   2   -9.999998   last decrease= 7.844093e-08 
+Yuan/Dai cycle reset
+141   136   1   -9.999998   last decrease= NA 
+143   137   2   -9.999998   last decrease= 7.450808e-08 
+Yuan/Dai cycle reset
+143   138   1   -9.999998   last decrease= NA 
+145   139   2   -9.999998   last decrease= 7.085018e-08 
+Yuan/Dai cycle reset
+145   140   1   -9.999998   last decrease= NA 
+147   141   2   -9.999998   last decrease= 6.74432e-08 
+Yuan/Dai cycle reset
+147   142   1   -9.999998   last decrease= NA 
+149   143   2   -9.999998   last decrease= 6.426558e-08 
+Yuan/Dai cycle reset
+149   144   1   -9.999998   last decrease= NA 
+151   145   2   -9.999998   last decrease= 6.129734e-08 
+Yuan/Dai cycle reset
+151   146   1   -9.999998   last decrease= NA 
+153   147   2   -9.999998   last decrease= 5.852166e-08 
+Yuan/Dai cycle reset
+153   148   1   -9.999998   last decrease= NA 
+155   149   2   -9.999998   last decrease= 5.592185e-08 
+Yuan/Dai cycle reset
+155   150   1   -9.999998   last decrease= NA 
+157   151   2   -9.999998   last decrease= 5.34849e-08 
+Yuan/Dai cycle reset
+157   152   1   -9.999998   last decrease= NA 
+159   153   2   -9.999998   last decrease= 5.119692e-08 
+Yuan/Dai cycle reset
+159   154   1   -9.999998   last decrease= NA 
+161   155   2   -9.999998   last decrease= 4.904698e-08 
+Yuan/Dai cycle reset
+161   156   1   -9.999998   last decrease= NA 
+163   157   2   -9.999998   last decrease= 4.702388e-08 
+Yuan/Dai cycle reset
+163   158   1   -9.999998   last decrease= NA 
+165   159   2   -9.999999   last decrease= 4.511879e-08 
+Yuan/Dai cycle reset
+165   160   1   -9.999999   last decrease= NA 
+167   161   2   -9.999999   last decrease= 4.332264e-08 
+Yuan/Dai cycle reset
+167   162   1   -9.999999   last decrease= NA 
+169   163   2   -9.999999   last decrease= 4.162751e-08 
+Yuan/Dai cycle reset
+169   164   1   -9.999999   last decrease= NA 
+171   165   2   -9.999999   last decrease= 4.002594e-08 
+Yuan/Dai cycle reset
+171   166   1   -9.999999   last decrease= NA 
+173   167   2   -9.999999   last decrease= 3.85118e-08 
+Yuan/Dai cycle reset
+173   168   1   -9.999999   last decrease= NA 
+175   169   2   -9.999999   last decrease= 3.707872e-08 
+Yuan/Dai cycle reset
+175   170   1   -9.999999   last decrease= NA 
+177   171   2   -9.999999   last decrease= 3.572087e-08 
+Yuan/Dai cycle reset
+177   172   1   -9.999999   last decrease= NA 
+179   173   2   -9.999999   last decrease= 3.443393e-08 
+Yuan/Dai cycle reset
+179   174   1   -9.999999   last decrease= NA 
+181   175   2   -9.999999   last decrease= 3.321272e-08 
+Yuan/Dai cycle reset
+181   176   1   -9.999999   last decrease= NA 
+183   177   2   -9.999999   last decrease= 3.20531e-08 
+Yuan/Dai cycle reset
+183   178   1   -9.999999   last decrease= NA 
+185   179   2   -9.999999   last decrease= 3.095097e-08 
+Yuan/Dai cycle reset
+185   180   1   -9.999999   last decrease= NA 
+187   181   2   -9.999999   last decrease= 2.990275e-08 
+Yuan/Dai cycle reset
+187   182   1   -9.999999   last decrease= NA 
+189   183   2   -9.999999   last decrease= 2.890486e-08 
+Yuan/Dai cycle reset
+189   184   1   -9.999999   last decrease= NA 
+191   185   2   -9.999999   last decrease= 2.79542e-08 
+Yuan/Dai cycle reset
+191   186   1   -9.999999   last decrease= NA 
+193   187   2   -9.999999   last decrease= 2.704848e-08 
+Yuan/Dai cycle reset
+193   188   1   -9.999999   last decrease= NA 
+195   189   2   -9.999999   last decrease= 2.618424e-08 
+Yuan/Dai cycle reset
+195   190   1   -9.999999   last decrease= NA 
+197   191   2   -9.999999   last decrease= 2.535922e-08 
+Yuan/Dai cycle reset
+197   192   1   -9.999999   last decrease= NA 
+199   193   2   -9.999999   last decrease= 2.45715e-08 
+Yuan/Dai cycle reset
+199   194   1   -9.999999   last decrease= NA 
+201   195   2   -9.999999   last decrease= 2.381859e-08 
+Yuan/Dai cycle reset
+201   196   1   -9.999999   last decrease= NA 
+203   197   2   -9.999999   last decrease= 2.30987e-08 
+Yuan/Dai cycle reset
+203   198   1   -9.999999   last decrease= NA 
+205   199   2   -9.999999   last decrease= 2.240968e-08 
+Yuan/Dai cycle reset
+205   200   1   -9.999999   last decrease= NA 
+207   201   2   -9.999999   last decrease= 2.175008e-08 
+Yuan/Dai cycle reset
+207   202   1   -9.999999   last decrease= NA 
+209   203   2   -9.999999   last decrease= 2.111784e-08 
+Yuan/Dai cycle reset
+209   204   1   -9.999999   last decrease= NA 
+211   205   2   -9.999999   last decrease= 2.051228e-08 
+Yuan/Dai cycle reset
+211   206   1   -9.999999   last decrease= NA 
+213   207   2   -9.999999   last decrease= 1.993126e-08 
+Yuan/Dai cycle reset
+213   208   1   -9.999999   last decrease= NA 
+215   209   2   -9.999999   last decrease= 1.937351e-08 
+Yuan/Dai cycle reset
+215   210   1   -9.999999   last decrease= NA 
+217   211   2   -9.999999   last decrease= 1.883812e-08 
+Yuan/Dai cycle reset
+217   212   1   -9.999999   last decrease= NA 
+219   213   2   -9.999999   last decrease= 1.832399e-08 
+Yuan/Dai cycle reset
+219   214   1   -9.999999   last decrease= NA 
+221   215   2   -9.999999   last decrease= 1.782956e-08 
+Yuan/Dai cycle reset
+221   216   1   -9.999999   last decrease= NA 
+223   217   2   -9.999999   last decrease= 1.735416e-08 
+Yuan/Dai cycle reset
+223   218   1   -9.999999   last decrease= NA 
+225   219   2   -9.999999   last decrease= 1.689691e-08 
+Yuan/Dai cycle reset
+225   220   1   -9.999999   last decrease= NA 
+227   221   2   -9.999999   last decrease= 1.645668e-08 
+Yuan/Dai cycle reset
+227   222   1   -9.999999   last decrease= NA 
+229   223   2   -9.999999   last decrease= 1.603265e-08 
+Yuan/Dai cycle reset
+229   224   1   -9.999999   last decrease= NA 
+231   225   2   -9.999999   last decrease= 1.562448e-08 
+Yuan/Dai cycle reset
+231   226   1   -9.999999   last decrease= NA 
+233   227   2   -9.999999   last decrease= 1.52305e-08 
+Yuan/Dai cycle reset
+233   228   1   -9.999999   last decrease= NA 
+235   229   2   -9.999999   last decrease= 1.485098e-08 
+Yuan/Dai cycle reset
+235   230   1   -9.999999   last decrease= NA 
+237   231   2   -9.999999   last decrease= 1.448426e-08 
+Yuan/Dai cycle reset
+237   232   1   -9.999999   last decrease= NA 
+239   233   2   -9.999999   last decrease= 1.413085e-08 
+Yuan/Dai cycle reset
+239   234   1   -9.999999   last decrease= NA 
+241   235   2   -9.999999   last decrease= 1.378933e-08 
+Yuan/Dai cycle reset
+241   236   1   -9.999999   last decrease= NA 
+243   237   2   -9.999999   last decrease= 1.345977e-08 
+Yuan/Dai cycle reset
+243   238   1   -9.999999   last decrease= NA 
+245   239   2   -9.999999   last decrease= 1.314071e-08 
+Yuan/Dai cycle reset
+245   240   1   -9.999999   last decrease= NA 
+247   241   2   -10   last decrease= 1.283255e-08 
+Yuan/Dai cycle reset
+247   242   1   -10   last decrease= NA 
+249   243   2   -10   last decrease= 1.253425e-08 
+Yuan/Dai cycle reset
+249   244   1   -10   last decrease= NA 
+251   245   2   -10   last decrease= 1.224591e-08 
+Yuan/Dai cycle reset
+251   246   1   -10   last decrease= NA 
+253   247   2   -10   last decrease= 1.196626e-08 
+Yuan/Dai cycle reset
+253   248   1   -10   last decrease= NA 
+255   249   2   -10   last decrease= 1.169584e-08 
+Yuan/Dai cycle reset
+255   250   1   -10   last decrease= NA 
+257   251   2   -10   last decrease= 1.143383e-08 
+Yuan/Dai cycle reset
+257   252   1   -10   last decrease= NA 
+259   253   2   -10   last decrease= 1.117968e-08 
+Yuan/Dai cycle reset
+259   254   1   -10   last decrease= NA 
+261   255   2   -10   last decrease= 1.093317e-08 
+Yuan/Dai cycle reset
+261   256   1   -10   last decrease= NA 
+263   257   2   -10   last decrease= 1.069424e-08 
+Yuan/Dai cycle reset
+263   258   1   -10   last decrease= NA 
+265   259   2   -10   last decrease= 1.04622e-08 
+Yuan/Dai cycle reset
+265   260   1   -10   last decrease= NA 
+267   261   2   -10   last decrease= 1.023679e-08 
+Yuan/Dai cycle reset
+267   262   1   -10   last decrease= NA 
+269   263   2   -10   last decrease= 1.001814e-08 
+Yuan/Dai cycle reset
+269   264   1   -10   last decrease= NA 
+271   265   2   -10   last decrease= 9.805026e-09 
+Yuan/Dai cycle reset
+271   266   1   -10   last decrease= NA 
+273   267   2   -10   last decrease= 9.598242e-09 
+Yuan/Dai cycle reset
+273   268   1   -10   last decrease= NA 
+275   269   2   -10   last decrease= 9.39745e-09 
+Yuan/Dai cycle reset
+275   270   1   -10   last decrease= NA 
+277   271   2   -10   last decrease= 9.201333e-09 
+Yuan/Dai cycle reset
+277   272   1   -10   last decrease= NA 
+279   273   2   -10   last decrease= 9.011249e-09 
+Yuan/Dai cycle reset
+279   274   1   -10   last decrease= NA 
+281   275   2   -10   last decrease= 8.825657e-09 
+Yuan/Dai cycle reset
+281   276   1   -10   last decrease= NA 
+283   277   2   -10   last decrease= 8.64452e-09 
+Yuan/Dai cycle reset
+283   278   1   -10   last decrease= NA 
+285   279   2   -10   last decrease= 8.467849e-09 
+Yuan/Dai cycle reset
+285   280   1   -10   last decrease= NA 
+287   281   2   -10   last decrease= 8.295919e-09 
+Yuan/Dai cycle reset
+287   282   1   -10   last decrease= NA 
+289   283   2   -10   last decrease= 8.127708e-09 
+Yuan/Dai cycle reset
+289   284   1   -10   last decrease= NA 
+291   285   2   -10   last decrease= 7.963887e-09 
+Yuan/Dai cycle reset
+291   286   1   -10   last decrease= NA 
+293   287   2   -10   last decrease= 7.803619e-09 
+Yuan/Dai cycle reset
+293   288   1   -10   last decrease= NA 
+295   289   2   -10   last decrease= 7.646538e-09 
+Yuan/Dai cycle reset
+295   290   1   -10   last decrease= NA 
+297   291   2   -10   last decrease= 7.49289e-09 
+Yuan/Dai cycle reset
+297   292   1   -10   last decrease= NA 
+299   293   2   -10   last decrease= 7.342987e-09 
+Yuan/Dai cycle reset
+299   294   1   -10   last decrease= NA 
+301   295   2   -10   last decrease= 7.195915e-09 
+Yuan/Dai cycle reset
+301   296   1   -10   last decrease= NA 
+303   297   2   -10   last decrease= 7.051288e-09 
+Yuan/Dai cycle reset
+303   298   1   -10   last decrease= NA 
+305   299   2   -10   last decrease= 6.909403e-09 
+Yuan/Dai cycle reset
+305   300   1   -10   last decrease= NA 
+307   301   2   -10   last decrease= 6.770287e-09 
+Yuan/Dai cycle reset
+307   302   1   -10   last decrease= NA 
+309   303   2   -10   last decrease= 6.6329e-09 
+Yuan/Dai cycle reset
+309   304   1   -10   last decrease= NA 
+311   305   2   -10   last decrease= 6.498256e-09 
+Yuan/Dai cycle reset
+311   306   1   -10   last decrease= NA 
+313   307   2   -10   last decrease= 6.365367e-09 
+Yuan/Dai cycle reset
+313   308   1   -10   last decrease= NA 
+315   309   2   -10   last decrease= 6.234327e-09 
+Yuan/Dai cycle reset
+315   310   1   -10   last decrease= NA 
+317   311   2   -10   last decrease= 6.105685e-09 
+Yuan/Dai cycle reset
+317   312   1   -10   last decrease= NA 
+319   313   2   -10   last decrease= 5.976677e-09 
+Yuan/Dai cycle reset
+319   314   1   -10   last decrease= NA 
+321   315   2   -10   last decrease= 5.850785e-09 
+Yuan/Dai cycle reset
+321   316   1   -10   last decrease= NA 
+323   317   2   -10   last decrease= 5.724262e-09 
+Yuan/Dai cycle reset
+323   318   1   -10   last decrease= NA 
+325   319   2   -10   last decrease= 5.600038e-09 
+Yuan/Dai cycle reset
+325   320   1   -10   last decrease= NA 
+327   321   2   -10   last decrease= 5.476011e-09 
+Yuan/Dai cycle reset
+327   322   1   -10   last decrease= NA 
+329   323   2   -10   last decrease= 5.351909e-09 
+Yuan/Dai cycle reset
+329   324   1   -10   last decrease= NA 
+331   325   2   -10   last decrease= 5.22947e-09 
+Yuan/Dai cycle reset
+331   326   1   -10   last decrease= NA 
+333   327   2   -10   last decrease= 5.106044e-09 
+Yuan/Dai cycle reset
+333   328   1   -10   last decrease= NA 
+335   329   2   -10   last decrease= 4.9839e-09 
+Yuan/Dai cycle reset
+335   330   1   -10   last decrease= NA 
+337   331   2   -10   last decrease= 4.86027e-09 
+Yuan/Dai cycle reset
+337   332   1   -10   last decrease= NA 
+339   333   2   -10   last decrease= 4.736485e-09 
+Yuan/Dai cycle reset
+339   334   1   -10   last decrease= NA 
+341   335   2   -10   last decrease= 4.613611e-09 
+Yuan/Dai cycle reset
+341   336   1   -10   last decrease= NA 
+343   337   2   -10   last decrease= 4.488763e-09 
+Yuan/Dai cycle reset
+343   338   1   -10   last decrease= NA 
+345   339   2   -10   last decrease= 4.364106e-09 
+Yuan/Dai cycle reset
+345   340   1   -10   last decrease= NA 
+347   341   2   -10   last decrease= 4.237451e-09 
+Yuan/Dai cycle reset
+347   342   1   -10   last decrease= NA 
+349   343   2   -10   last decrease= 4.109506e-09 
+Yuan/Dai cycle reset
+349   344   1   -10   last decrease= NA 
+351   345   2   -10   last decrease= 3.980992e-09 
+Yuan/Dai cycle reset
+351   346   1   -10   last decrease= NA 
+353   347   2   -10   last decrease= 3.853131e-09 
+Yuan/Dai cycle reset
+353   348   1   -10   last decrease= NA 
+355   349   2   -10   last decrease= 3.721647e-09 
+Yuan/Dai cycle reset
+355   350   1   -10   last decrease= NA 
+357   351   2   -10   last decrease= 3.592024e-09 
+Yuan/Dai cycle reset
+357   352   1   -10   last decrease= NA 
+359   353   2   -10   last decrease= 3.461459e-09 
+Yuan/Dai cycle reset
+359   354   1   -10   last decrease= NA 
+361   355   2   -10   last decrease= 3.329765e-09 
+Yuan/Dai cycle reset
+361   356   1   -10   last decrease= NA 
+363   357   2   -10   last decrease= 3.196503e-09 
+Yuan/Dai cycle reset
+363   358   1   -10   last decrease= NA 
+365   359   2   -10   last decrease= 3.065924e-09 
+Yuan/Dai cycle reset
+365   360   1   -10   last decrease= NA 
+367   361   2   -10   last decrease= 2.934403e-09 
+Yuan/Dai cycle reset
+367   362   1   -10   last decrease= NA 
+369   363   2   -10   last decrease= 2.80429e-09 
+Yuan/Dai cycle reset
+369   364   1   -10   last decrease= NA 
+371   365   2   -10   last decrease= 2.676346e-09 
+Yuan/Dai cycle reset
+371   366   1   -10   last decrease= NA 
+373   367   2   -10   last decrease= 2.548518e-09 
+Yuan/Dai cycle reset
+373   368   1   -10   last decrease= NA 
+375   369   2   -10   last decrease= 2.425253e-09 
+Yuan/Dai cycle reset
+375   370   1   -10   last decrease= NA 
+377   371   2   -10   last decrease= 2.303288e-09 
+Yuan/Dai cycle reset
+377   372   1   -10   last decrease= NA 
+379   373   2   -10   last decrease= 2.185145e-09 
+Yuan/Dai cycle reset
+379   374   1   -10   last decrease= NA 
+381   375   2   -10   last decrease= 2.070712e-09 
+Yuan/Dai cycle reset
+381   376   1   -10   last decrease= NA 
+383   377   2   -10   last decrease= 1.961304e-09 
+Yuan/Dai cycle reset
+383   378   1   -10   last decrease= NA 
+385   379   2   -10   last decrease= 1.855851e-09 
+Yuan/Dai cycle reset
+385   380   1   -10   last decrease= NA 
+387   381   2   -10   last decrease= 1.754399e-09 
+Yuan/Dai cycle reset
+387   382   1   -10   last decrease= NA 
+389   383   2   -10   last decrease= 1.656813e-09 
+Yuan/Dai cycle reset
+389   384   1   -10   last decrease= NA 
+391   385   2   -10   last decrease= 1.56551e-09 
+Yuan/Dai cycle reset
+391   386   1   -10   last decrease= NA 
+393   387   2   -10   last decrease= 1.478902e-09 
+Yuan/Dai cycle reset
+393   388   1   -10   last decrease= NA 
+395   389   2   -10   last decrease= 1.396515e-09 
+Yuan/Dai cycle reset
+395   390   1   -10   last decrease= NA 
+397   391   2   -10   last decrease= 1.319227e-09 
+Yuan/Dai cycle reset
+397   392   1   -10   last decrease= NA 
+399   393   2   -10   last decrease= 1.245493e-09 
+Yuan/Dai cycle reset
+399   394   1   -10   last decrease= NA 
+401   395   2   -10   last decrease= 1.176021e-09 
+Yuan/Dai cycle reset
+401   396   1   -10   last decrease= NA 
+403   397   2   -10   last decrease= 1.111241e-09 
+Yuan/Dai cycle reset
+403   398   1   -10   last decrease= NA 
+405   399   2   -10   last decrease= 1.051793e-09 
+Yuan/Dai cycle reset
+405   400   1   -10   last decrease= NA 
+407   401   2   -10   last decrease= 9.948149e-10 
+Yuan/Dai cycle reset
+407   402   1   -10   last decrease= NA 
+409   403   2   -10   last decrease= 9.420376e-10 
+Yuan/Dai cycle reset
+409   404   1   -10   last decrease= NA 
+411   405   2   -10   last decrease= 8.908216e-10 
+Yuan/Dai cycle reset
+411   406   1   -10   last decrease= NA 
+413   407   2   -10   last decrease= 8.452101e-10 
+Yuan/Dai cycle reset
+413   408   1   -10   last decrease= NA 
+415   409   2   -10   last decrease= 8.00723e-10 
+Yuan/Dai cycle reset
+415   410   1   -10   last decrease= NA 
+417   411   2   -10   last decrease= 7.60215e-10 
+Yuan/Dai cycle reset
+417   412   1   -10   last decrease= NA 
+419   413   2   -10   last decrease= 7.221566e-10 
+Yuan/Dai cycle reset
+419   414   1   -10   last decrease= NA 
+421   415   2   -10   last decrease= 6.868142e-10 
+Yuan/Dai cycle reset
+421   416   1   -10   last decrease= NA 
+423   417   2   -10   last decrease= 6.52669e-10 
+Yuan/Dai cycle reset
+423   418   1   -10   last decrease= NA 
+425   419   2   -10   last decrease= 6.218066e-10 
+Yuan/Dai cycle reset
+425   420   1   -10   last decrease= NA 
+427   421   2   -10   last decrease= 5.925553e-10 
+Yuan/Dai cycle reset
+427   422   1   -10   last decrease= NA 
+429   423   2   -10   last decrease= 5.64965e-10 
+Yuan/Dai cycle reset
+429   424   1   -10   last decrease= NA 
+431   425   2   -10   last decrease= 5.392131e-10 
+Yuan/Dai cycle reset
+431   426   1   -10   last decrease= NA 
+433   427   2   -10   last decrease= 5.152803e-10 
+Yuan/Dai cycle reset
+433   428   1   -10   last decrease= NA 
+435   429   2   -10   last decrease= 4.921503e-10 
+Yuan/Dai cycle reset
+435   430   1   -10   last decrease= NA 
+437   431   2   -10   last decrease= 4.704859e-10 
+Yuan/Dai cycle reset
+437   432   1   -10   last decrease= NA 
+439   433   2   -10   last decrease= 4.508163e-10 
+Yuan/Dai cycle reset
+439   434   1   -10   last decrease= NA 
+441   435   2   -10   last decrease= 4.313758e-10 
+Yuan/Dai cycle reset
+441   436   1   -10   last decrease= NA 
+443   437   2   -10   last decrease= 4.141771e-10 
+Yuan/Dai cycle reset
+443   438   1   -10   last decrease= NA 
+445   439   2   -10   last decrease= 3.971881e-10 
+Yuan/Dai cycle reset
+445   440   1   -10   last decrease= NA 
+447   441   2   -10   last decrease= 3.811547e-10 
+Yuan/Dai cycle reset
+447   442   1   -10   last decrease= NA 
+449   443   2   -10   last decrease= 3.659668e-10 
+Yuan/Dai cycle reset
+449   444   1   -10   last decrease= NA 
+451   445   2   -10   last decrease= 3.517506e-10 
+Yuan/Dai cycle reset
+451   446   1   -10   last decrease= NA 
+453   447   2   -10   last decrease= 3.382734e-10 
+Yuan/Dai cycle reset
+453   448   1   -10   last decrease= NA 
+455   449   2   -10   last decrease= 3.253877e-10 
+Yuan/Dai cycle reset
+455   450   1   -10   last decrease= NA 
+457   451   2   -10   last decrease= 3.138556e-10 
+Yuan/Dai cycle reset
+457   452   1   -10   last decrease= NA 
+459   453   2   -10   last decrease= 3.022489e-10 
+Yuan/Dai cycle reset
+459   454   1   -10   last decrease= NA 
+461   455   2   -10   last decrease= 2.913136e-10 
+Yuan/Dai cycle reset
+461   456   1   -10   last decrease= NA 
+463   457   2   -10   last decrease= 2.811653e-10 
+Yuan/Dai cycle reset
+463   458   1   -10   last decrease= NA 
+465   459   2   -10   last decrease= 2.711076e-10 
+Yuan/Dai cycle reset
+465   460   1   -10   last decrease= NA 
+467   461   2   -10   last decrease= 2.619576e-10 
+Yuan/Dai cycle reset
+467   462   1   -10   last decrease= NA 
+469   463   2   -10   last decrease= 2.529923e-10 
+Yuan/Dai cycle reset
+469   464   1   -10   last decrease= NA 
+471   465   2   -10   last decrease= 2.445617e-10 
+Yuan/Dai cycle reset
+471   466   1   -10   last decrease= NA 
+473   467   2   -10   last decrease= 2.36934e-10 
+Yuan/Dai cycle reset
+473   468   1   -10   last decrease= NA 
+475   469   2   -10   last decrease= 2.291625e-10 
+Yuan/Dai cycle reset
+475   470   1   -10   last decrease= NA 
+477   471   2   -10   last decrease= 2.221796e-10 
+Yuan/Dai cycle reset
+477   472   1   -10   last decrease= NA 
+479   473   2   -10   last decrease= 2.147846e-10 
+Yuan/Dai cycle reset
+479   474   1   -10   last decrease= NA 
+481   475   2   -10   last decrease= 2.083169e-10 
+Yuan/Dai cycle reset
+481   476   1   -10   last decrease= NA 
+483   477   2   -10   last decrease= 2.021121e-10 
+Yuan/Dai cycle reset
+483   478   1   -10   last decrease= NA 
+485   479   2   -10   last decrease= 1.957936e-10 
+Yuan/Dai cycle reset
+485   480   1   -10   last decrease= NA 
+487   481   2   -10   last decrease= 1.901146e-10 
+Yuan/Dai cycle reset
+487   482   1   -10   last decrease= NA 
+489   483   2   -10   last decrease= 1.846452e-10 
+Yuan/Dai cycle reset
+489   484   1   -10   last decrease= NA 
+491   485   2   -10   last decrease= 1.793481e-10 
+Yuan/Dai cycle reset
+491   486   1   -10   last decrease= NA 
+493   487   2   -10   last decrease= 1.740528e-10 
+Yuan/Dai cycle reset
+493   488   1   -10   last decrease= NA 
+495   489   2   -10   last decrease= 1.694236e-10 
+Yuan/Dai cycle reset
+495   490   1   -10   last decrease= NA 
+497   491   2   -10   last decrease= 1.645457e-10 
+Yuan/Dai cycle reset
+497   492   1   -10   last decrease= NA 
+499   493   2   -10   last decrease= 1.599485e-10 
+Yuan/Dai cycle reset
+499   494   1   -10   last decrease= NA 
+501   495   2   -10   last decrease= 1.560085e-10 
+Yuan/Dai cycle reset
+501   496   1   -10   last decrease= NA 
+503   497   2   -10   last decrease= 1.516725e-10 
+Yuan/Dai cycle reset
+503   498   1   -10   last decrease= NA 
+505   499   2   -10   last decrease= 1.476437e-10 
+Yuan/Dai cycle reset
+505   500   1   -10   last decrease= NA 
+507   501   2   -10   last decrease= 1.43757e-10 
+Yuan/Dai cycle reset
+507   502   1   -10   last decrease= NA 
+509   503   2   -10   last decrease= 1.398934e-10 
+Yuan/Dai cycle reset
+509   504   1   -10   last decrease= NA 
+511   505   2   -10   last decrease= 1.364135e-10 
+Yuan/Dai cycle reset
+511   506   1   -10   last decrease= NA 
+513   507   2   -10   last decrease= 1.330491e-10 
+Yuan/Dai cycle reset
+513   508   1   -10   last decrease= NA 
+515   509   2   -10   last decrease= 1.295568e-10 
+Yuan/Dai cycle reset
+515   510   1   -10   last decrease= NA 
+517   511   2   -10   last decrease= 1.265654e-10 
+Yuan/Dai cycle reset
+517   512   1   -10   last decrease= NA 
+519   513   2   -10   last decrease= 1.235314e-10 
+Yuan/Dai cycle reset
+519   514   1   -10   last decrease= NA 
+521   515   2   -10   last decrease= 1.205294e-10 
+Yuan/Dai cycle reset
+521   516   1   -10   last decrease= NA 
+523   517   2   -10   last decrease= 1.178595e-10 
+Yuan/Dai cycle reset
+523   518   1   -10   last decrease= NA 
+525   519   2   -10   last decrease= 1.149623e-10 
+Yuan/Dai cycle reset
+525   520   1   -10   last decrease= NA 
+527   521   2   -10   last decrease= 1.124523e-10 
+Yuan/Dai cycle reset
+527   522   1   -10   last decrease= NA 
+529   523   2   -10   last decrease= 1.097273e-10 
+Yuan/Dai cycle reset
+529   524   1   -10   last decrease= NA 
+531   525   2   -10   last decrease= 1.071783e-10 
+Yuan/Dai cycle reset
+531   526   1   -10   last decrease= NA 
+533   527   2   -10   last decrease= 1.048672e-10 
+Yuan/Dai cycle reset
+533   528   1   -10   last decrease= NA 
+535   529   2   -10   last decrease= 1.025402e-10 
+Yuan/Dai cycle reset
+535   530   1   -10   last decrease= NA 
+537   531   2   -10   last decrease= 1.00334e-10 
+Yuan/Dai cycle reset
+537   532   1   -10   last decrease= NA 
+539   533   2   -10   last decrease= 9.787726e-11 
+Yuan/Dai cycle reset
+539   534   1   -10   last decrease= NA 
+541   535   2   -10   last decrease= 9.59961e-11 
+Yuan/Dai cycle reset
+541   536   1   -10   last decrease= NA 
+543   537   2   -10   last decrease= 9.385026e-11 
+Yuan/Dai cycle reset
+543   538   1   -10   last decrease= NA 
+545   539   2   -10   last decrease= 9.19318e-11 
+Yuan/Dai cycle reset
+545   540   1   -10   last decrease= NA 
+547   541   2   -10   last decrease= 8.999379e-11 
+Yuan/Dai cycle reset
+547   542   1   -10   last decrease= NA 
+549   543   2   -10   last decrease= 8.809664e-11 
+Yuan/Dai cycle reset
+549   544   1   -10   last decrease= NA 
+551   545   2   -10   last decrease= 8.632384e-11 
+Yuan/Dai cycle reset
+551   546   1   -10   last decrease= NA 
+553   547   2   -10   last decrease= 8.451195e-11 
+Yuan/Dai cycle reset
+553   548   1   -10   last decrease= NA 
+555   549   2   -10   last decrease= 8.294876e-11 
+Yuan/Dai cycle reset
+555   550   1   -10   last decrease= NA 
+557   551   2   -10   last decrease= 8.13678e-11 
+Yuan/Dai cycle reset
+557   552   1   -10   last decrease= NA 
+559   553   2   -10   last decrease= 7.962342e-11 
+Yuan/Dai cycle reset
+559   554   1   -10   last decrease= NA 
+561   555   2   -10   last decrease= 7.794654e-11 
+Yuan/Dai cycle reset
+561   556   1   -10   last decrease= NA 
+563   557   2   -10   last decrease= 7.66196e-11 
+Yuan/Dai cycle reset
+563   558   1   -10   last decrease= NA 
+565   559   2   -10   last decrease= 7.511325e-11 
+Yuan/Dai cycle reset
+565   560   1   -10   last decrease= NA 
+567   561   2   -10   last decrease= 7.352874e-11 
+Yuan/Dai cycle reset
+567   562   1   -10   last decrease= NA 
+569   563   2   -10   last decrease= 7.222489e-11 
+Yuan/Dai cycle reset
+569   564   1   -10   last decrease= NA 
+571   565   2   -10   last decrease= 7.099032e-11 
+Yuan/Dai cycle reset
+571   566   1   -10   last decrease= NA 
+573   567   2   -10   last decrease= 6.960299e-11 
+Yuan/Dai cycle reset
+573   568   1   -10   last decrease= NA 
+575   569   2   -10   last decrease= 6.833289e-11 
+Yuan/Dai cycle reset
+575   570   1   -10   last decrease= NA 
+577   571   2   -10   last decrease= 6.698997e-11 
+Yuan/Dai cycle reset
+577   572   1   -10   last decrease= NA 
+579   573   2   -10   last decrease= 6.580514e-11 
+Yuan/Dai cycle reset
+579   574   1   -10   last decrease= NA 
+581   575   2   -10   last decrease= 6.459899e-11 
+Yuan/Dai cycle reset
+581   576   1   -10   last decrease= NA 
+583   577   2   -10   last decrease= 6.352785e-11 
+Yuan/Dai cycle reset
+583   578   1   -10   last decrease= NA 
+585   579   2   -10   last decrease= 6.249579e-11 
+Yuan/Dai cycle reset
+585   580   1   -10   last decrease= NA 
+587   581   2   -10   last decrease= 6.125589e-11 
+Yuan/Dai cycle reset
+587   582   1   -10   last decrease= NA 
+589   583   2   -10   last decrease= 6.03837e-11 
+Yuan/Dai cycle reset
+589   584   1   -10   last decrease= NA 
+591   585   2   -10   last decrease= 5.918288e-11 
+Yuan/Dai cycle reset
+591   586   1   -10   last decrease= NA 
+593   587   2   -10   last decrease= 5.82574e-11 
+Yuan/Dai cycle reset
+593   588   1   -10   last decrease= NA 
+595   589   2   -10   last decrease= 5.721823e-11 
+Yuan/Dai cycle reset
+595   590   1   -10   last decrease= NA 
+597   591   2   -10   last decrease= 5.635847e-11 
+Yuan/Dai cycle reset
+597   592   1   -10   last decrease= NA 
+599   593   2   -10   last decrease= 5.543299e-11 
+Yuan/Dai cycle reset
+599   594   1   -10   last decrease= NA 
+601   595   2   -10   last decrease= 5.453593e-11 
+Yuan/Dai cycle reset
+601   596   1   -10   last decrease= NA 
+603   597   2   -10   last decrease= 5.355894e-11 
+Yuan/Dai cycle reset
+603   598   1   -10   last decrease= NA 
+605   599   2   -10   last decrease= 5.268319e-11 
+Yuan/Dai cycle reset
+605   600   1   -10   last decrease= NA 
+607   601   2   -10   last decrease= 5.173639e-11 
+Yuan/Dai cycle reset
+607   602   1   -10   last decrease= NA 
+609   603   2   -10   last decrease= 5.102052e-11 
+Yuan/Dai cycle reset
+609   604   1   -10   last decrease= NA 
+611   605   2   -10   last decrease= 5.016432e-11 
+Yuan/Dai cycle reset
+611   606   1   -10   last decrease= NA 
+613   607   2   -10   last decrease= 4.934186e-11 
+Yuan/Dai cycle reset
+613   608   1   -10   last decrease= NA 
+615   609   2   -10   last decrease= 4.871481e-11 
+Yuan/Dai cycle reset
+615   610   1   -10   last decrease= NA 
+617   611   2   -10   last decrease= 4.791723e-11 
+Yuan/Dai cycle reset
+617   612   1   -10   last decrease= NA 
+619   613   2   -10   last decrease= 4.712675e-11 
+Yuan/Dai cycle reset
+619   614   1   -10   last decrease= NA 
+621   615   2   -10   last decrease= 4.640377e-11 
+Yuan/Dai cycle reset
+621   616   1   -10   last decrease= NA 
+623   617   2   -10   last decrease= 4.571277e-11 
+Yuan/Dai cycle reset
+623   618   1   -10   last decrease= NA 
+625   619   2   -10   last decrease= 4.505019e-11 
+Yuan/Dai cycle reset
+625   620   1   -10   last decrease= NA 
+627   621   2   -10   last decrease= 4.443734e-11 
+Yuan/Dai cycle reset
+627   622   1   -10   last decrease= NA 
+629   623   2   -10   last decrease= 4.363621e-11 
+Yuan/Dai cycle reset
+629   624   1   -10   last decrease= NA 
+631   625   2   -10   last decrease= 4.30127e-11 
+Yuan/Dai cycle reset
+631   626   1   -10   last decrease= NA 
+633   627   2   -10   last decrease= 4.24567e-11 
+Yuan/Dai cycle reset
+633   628   1   -10   last decrease= NA 
+635   629   2   -10   last decrease= 4.178524e-11 
+Yuan/Dai cycle reset
+635   630   1   -10   last decrease= NA 
+637   631   2   -10   last decrease= 4.119194e-11 
+Yuan/Dai cycle reset
+637   632   1   -10   last decrease= NA 
+639   633   2   -10   last decrease= 4.063594e-11 
+Yuan/Dai cycle reset
+639   634   1   -10   last decrease= NA 
+641   635   2   -10   last decrease= 4.015099e-11 
+Yuan/Dai cycle reset
+641   636   1   -10   last decrease= NA 
+643   637   2   -10   last decrease= 3.941381e-11 
+Yuan/Dai cycle reset
+643   638   1   -10   last decrease= NA 
+645   639   2   -10   last decrease= 3.884182e-11 
+Yuan/Dai cycle reset
+645   640   1   -10   last decrease= NA 
+647   641   2   -10   last decrease= 3.827516e-11 
+Yuan/Dai cycle reset
+647   642   1   -10   last decrease= NA 
+649   643   2   -10   last decrease= 3.775824e-11 
+Yuan/Dai cycle reset
+649   644   1   -10   last decrease= NA 
+651   645   2   -10   last decrease= 3.717915e-11 
+Yuan/Dai cycle reset
+651   646   1   -10   last decrease= NA 
+653   647   2   -10   last decrease= 3.674927e-11 
+Yuan/Dai cycle reset
+653   648   1   -10   last decrease= NA 
+655   649   2   -10   last decrease= 3.625544e-11 
+Yuan/Dai cycle reset
+655   650   1   -10   last decrease= NA 
+657   651   2   -10   last decrease= 3.576872e-11 
+Yuan/Dai cycle reset
+657   652   1   -10   last decrease= NA 
+659   653   2   -10   last decrease= 3.532108e-11 
+Yuan/Dai cycle reset
+659   654   1   -10   last decrease= NA 
+661   655   2   -10   last decrease= 3.480771e-11 
+Yuan/Dai cycle reset
+661   656   1   -10   last decrease= NA 
+663   657   2   -10   last decrease= 3.437428e-11 
+Yuan/Dai cycle reset
+663   658   1   -10   last decrease= NA 
+665   659   2   -10   last decrease= 3.401368e-11 
+Yuan/Dai cycle reset
+665   660   1   -10   last decrease= NA 
+667   661   2   -10   last decrease= 3.349854e-11 
+Yuan/Dai cycle reset
+667   662   1   -10   last decrease= NA 
+669   663   2   -10   last decrease= 3.307754e-11 
+Yuan/Dai cycle reset
+669   664   1   -10   last decrease= NA 
+671   665   2   -10   last decrease= 3.251799e-11 
+Yuan/Dai cycle reset
+671   666   1   -10   last decrease= NA 
+673   667   2   -10   last decrease= 3.212186e-11 
+Yuan/Dai cycle reset
+673   668   1   -10   last decrease= NA 
+675   669   2   -10   last decrease= 3.18181e-11 
+Yuan/Dai cycle reset
+675   670   1   -10   last decrease= NA 
+677   671   2   -10   last decrease= 3.134737e-11 
+Yuan/Dai cycle reset
+677   672   1   -10   last decrease= NA 
+679   673   2   -10   last decrease= 3.101519e-11 
+Yuan/Dai cycle reset
+679   674   1   -10   last decrease= NA 
+681   675   2   -10   last decrease= 3.057821e-11 
+Yuan/Dai cycle reset
+681   676   1   -10   last decrease= NA 
+683   677   2   -10   last decrease= 3.02034e-11 
+Yuan/Dai cycle reset
+683   678   1   -10   last decrease= NA 
+685   679   2   -10   last decrease= 2.973621e-11 
+Yuan/Dai cycle reset
+685   680   1   -10   last decrease= NA 
+687   681   2   -10   last decrease= 2.947331e-11 
+Yuan/Dai cycle reset
+687   682   1   -10   last decrease= NA 
+689   683   2   -10   last decrease= 2.912692e-11 
+Yuan/Dai cycle reset
+689   684   1   -10   last decrease= NA 
+691   685   2   -10   last decrease= 2.868994e-11 
+Yuan/Dai cycle reset
+691   686   1   -10   last decrease= NA 
+693   687   2   -10   last decrease= 2.837552e-11 
+Yuan/Dai cycle reset
+693   688   1   -10   last decrease= NA 
+695   689   2   -10   last decrease= 2.808775e-11 
+Yuan/Dai cycle reset
+695   690   1   -10   last decrease= NA 
+697   691   2   -10   last decrease= 2.77609e-11 
+Yuan/Dai cycle reset
+697   692   1   -10   last decrease= NA 
+699   693   2   -10   last decrease= 2.737899e-11 
+Yuan/Dai cycle reset
+699   694   1   -10   last decrease= NA 
+701   695   2   -10   last decrease= 2.708234e-11 
+Yuan/Dai cycle reset
+701   696   1   -10   last decrease= NA 
+703   697   2   -10   last decrease= 2.667555e-11 
+Yuan/Dai cycle reset
+703   698   1   -10   last decrease= NA 
+705   699   2   -10   last decrease= 2.643041e-11 
+Yuan/Dai cycle reset
+705   700   1   -10   last decrease= NA 
+707   701   2   -10   last decrease= 2.618172e-11 
+Yuan/Dai cycle reset
+707   702   1   -10   last decrease= NA 
+709   703   2   -10   last decrease= 2.58904e-11 
+Yuan/Dai cycle reset
+709   704   1   -10   last decrease= NA 
+711   705   2   -10   last decrease= 2.55227e-11 
+Yuan/Dai cycle reset
+711   706   1   -10   last decrease= NA 
+713   707   2   -10   last decrease= 2.530243e-11 
+Yuan/Dai cycle reset
+713   708   1   -10   last decrease= NA 
+715   709   2   -10   last decrease= 2.49365e-11 
+Yuan/Dai cycle reset
+715   710   1   -10   last decrease= NA 
+717   711   2   -10   last decrease= 2.457057e-11 
+Yuan/Dai cycle reset
+717   712   1   -10   last decrease= NA 
+719   713   2   -10   last decrease= 2.435563e-11 
+Yuan/Dai cycle reset
+719   714   1   -10   last decrease= NA 
+721   715   2   -10   last decrease= 2.405542e-11 
+Yuan/Dai cycle reset
+721   716   1   -10   last decrease= NA 
+723   717   2   -10   last decrease= 2.384226e-11 
+Yuan/Dai cycle reset
+723   718   1   -10   last decrease= NA 
+725   719   2   -10   last decrease= 2.352785e-11 
+Yuan/Dai cycle reset
+725   720   1   -10   last decrease= NA 
+727   721   2   -10   last decrease= 2.323297e-11 
+Yuan/Dai cycle reset
+727   722   1   -10   last decrease= NA 
+729   723   2   -10   last decrease= 2.301626e-11 
+Yuan/Dai cycle reset
+729   724   1   -10   last decrease= NA 
+731   725   2   -10   last decrease= 2.280309e-11 
+Yuan/Dai cycle reset
+731   726   1   -10   last decrease= NA 
+733   727   2   -10   last decrease= 2.24567e-11 
+Yuan/Dai cycle reset
+733   728   1   -10   last decrease= NA 
+735   729   2   -10   last decrease= 2.230038e-11 
+Yuan/Dai cycle reset
+735   730   1   -10   last decrease= NA 
+737   731   2   -10   last decrease= 2.198242e-11 
+Yuan/Dai cycle reset
+737   732   1   -10   last decrease= NA 
+739   733   2   -10   last decrease= 2.177813e-11 
+Yuan/Dai cycle reset
+739   734   1   -10   last decrease= NA 
+741   735   2   -10   last decrease= 2.147793e-11 
+Yuan/Dai cycle reset
+741   736   1   -10   last decrease= NA 
+743   737   2   -10   last decrease= 2.140332e-11 
+Yuan/Dai cycle reset
+743   738   1   -10   last decrease= NA 
+745   739   2   -10   last decrease= 2.10818e-11 
+Yuan/Dai cycle reset
+745   740   1   -10   last decrease= NA 
+747   741   2   -10   last decrease= 2.097345e-11 
+Yuan/Dai cycle reset
+747   742   1   -10   last decrease= NA 
+749   743   2   -10   last decrease= 2.060929e-11 
+Yuan/Dai cycle reset
+749   744   1   -10   last decrease= NA 
+751   745   2   -10   last decrease= 2.046541e-11 
+Yuan/Dai cycle reset
+751   746   1   -10   last decrease= NA 
+753   747   2   -10   last decrease= 2.0286e-11 
+Yuan/Dai cycle reset
+753   748   1   -10   last decrease= NA 
+755   749   2   -10   last decrease= 2.001066e-11 
+Yuan/Dai cycle reset
+755   750   1   -10   last decrease= NA 
+757   751   2   -10   last decrease= 1.984546e-11 
+Yuan/Dai cycle reset
+757   752   1   -10   last decrease= NA 
+759   753   2   -10   last decrease= 1.963762e-11 
+Yuan/Dai cycle reset
+759   754   1   -10   last decrease= NA 
+761   755   2   -10   last decrease= 1.938005e-11 
+Yuan/Dai cycle reset
+761   756   1   -10   last decrease= NA 
+763   757   2   -10   last decrease= 1.923439e-11 
+Yuan/Dai cycle reset
+763   758   1   -10   last decrease= NA 
+765   759   2   -10   last decrease= 1.902301e-11 
+Yuan/Dai cycle reset
+765   760   1   -10   last decrease= NA 
+767   761   2   -10   last decrease= 1.878675e-11 
+Yuan/Dai cycle reset
+767   762   1   -10   last decrease= NA 
+769   763   2   -10   last decrease= 1.860556e-11 
+Yuan/Dai cycle reset
+769   764   1   -10   last decrease= NA 
+771   765   2   -10   last decrease= 1.845812e-11 
+Yuan/Dai cycle reset
+771   766   1   -10   last decrease= NA 
+773   767   2   -10   last decrease= 1.829648e-11 
+Yuan/Dai cycle reset
+773   768   1   -10   last decrease= NA 
+775   769   2   -10   last decrease= 1.802292e-11 
+Yuan/Dai cycle reset
+775   770   1   -10   last decrease= NA 
+777   771   2   -10   last decrease= 1.795009e-11 
+Yuan/Dai cycle reset
+777   772   1   -10   last decrease= NA 
+779   773   2   -10   last decrease= 1.766587e-11 
+Yuan/Dai cycle reset
+779   774   1   -10   last decrease= NA 
+781   775   2   -10   last decrease= 1.748113e-11 
+Yuan/Dai cycle reset
+781   776   1   -10   last decrease= NA 
+783   777   2   -10   last decrease= 1.744738e-11 
+Yuan/Dai cycle reset
+783   778   1   -10   last decrease= NA 
+785   779   2   -10   last decrease= 1.718092e-11 
+Yuan/Dai cycle reset
+785   780   1   -10   last decrease= NA 
+787   781   2   -10   last decrease= 1.700684e-11 
+Yuan/Dai cycle reset
+787   782   1   -10   last decrease= NA 
+789   783   2   -10   last decrease= 1.699973e-11 
+Yuan/Dai cycle reset
+789   784   1   -10   last decrease= NA 
+791   785   2   -10   last decrease= 1.674572e-11 
+Yuan/Dai cycle reset
+791   786   1   -10   last decrease= NA 
+793   787   2   -10   last decrease= 1.655742e-11 
+Yuan/Dai cycle reset
+793   788   1   -10   last decrease= NA 
+795   789   2   -10   last decrease= 1.639577e-11 
+Yuan/Dai cycle reset
+795   790   1   -10   last decrease= NA 
+797   791   2   -10   last decrease= 1.62963e-11 
+Yuan/Dai cycle reset
+797   792   1   -10   last decrease= NA 
+799   793   2   -10   last decrease= 1.615241e-11 
+Yuan/Dai cycle reset
+799   794   1   -10   last decrease= NA 
+801   795   2   -10   last decrease= 1.601208e-11 
+Yuan/Dai cycle reset
+801   796   1   -10   last decrease= NA 
+803   797   2   -10   last decrease= 1.580425e-11 
+Yuan/Dai cycle reset
+803   798   1   -10   last decrease= NA 
+805   799   2   -10   last decrease= 1.570655e-11 
+Yuan/Dai cycle reset
+805   800   1   -10   last decrease= NA 
+807   801   2   -10   last decrease= 1.545786e-11 
+Yuan/Dai cycle reset
+807   802   1   -10   last decrease= NA 
+809   803   2   -10   last decrease= 1.536016e-11 
+Yuan/Dai cycle reset
+809   804   1   -10   last decrease= NA 
+811   805   2   -10   last decrease= 1.522338e-11 
+Yuan/Dai cycle reset
+811   806   1   -10   last decrease= NA 
+813   807   2   -10   last decrease= 1.518963e-11 
+Yuan/Dai cycle reset
+813   808   1   -10   last decrease= NA 
+815   809   2   -10   last decrease= 1.497469e-11 
+Yuan/Dai cycle reset
+815   810   1   -10   last decrease= NA 
+817   811   2   -10   last decrease= 1.480771e-11 
+Yuan/Dai cycle reset
+817   812   1   -10   last decrease= NA 
+819   813   2   -10   last decrease= 1.474909e-11 
+Yuan/Dai cycle reset
+819   814   1   -10   last decrease= NA 
+821   815   2   -10   last decrease= 1.450395e-11 
+Yuan/Dai cycle reset
+821   816   1   -10   last decrease= NA 
+823   817   2   -10   last decrease= 1.449862e-11 
+Yuan/Dai cycle reset
+823   818   1   -10   last decrease= NA 
+825   819   2   -10   last decrease= 1.428369e-11 
+Yuan/Dai cycle reset
+825   820   1   -10   last decrease= NA 
+827   821   2   -10   last decrease= 1.420908e-11 
+Yuan/Dai cycle reset
+827   822   1   -10   last decrease= NA 
+829   823   2   -10   last decrease= 1.408296e-11 
+Yuan/Dai cycle reset
+829   824   1   -10   last decrease= NA 
+831   825   2   -10   last decrease= 1.394085e-11 
+Yuan/Dai cycle reset
+831   826   1   -10   last decrease= NA 
+833   827   2   -10   last decrease= 1.386624e-11 
+Yuan/Dai cycle reset
+833   828   1   -10   last decrease= NA 
+835   829   2   -10   last decrease= 1.372058e-11 
+Yuan/Dai cycle reset
+835   830   1   -10   last decrease= NA 
+837   831   2   -10   last decrease= 1.360156e-11 
+Yuan/Dai cycle reset
+837   832   1   -10   last decrease= NA 
+839   833   2   -10   last decrease= 1.345057e-11 
+Yuan/Dai cycle reset
+839   834   1   -10   last decrease= NA 
+841   835   2   -10   last decrease= 1.333689e-11 
+Yuan/Dai cycle reset
+841   836   1   -10   last decrease= NA 
+843   837   2   -10   last decrease= 1.321077e-11 
+Yuan/Dai cycle reset
+843   838   1   -10   last decrease= NA 
+845   839   2   -10   last decrease= 1.316813e-11 
+Yuan/Dai cycle reset
+845   840   1   -10   last decrease= NA 
+847   841   2   -10   last decrease= 1.301181e-11 
+Yuan/Dai cycle reset
+847   842   1   -10   last decrease= NA 
+849   843   2   -10   last decrease= 1.291411e-11 
+Yuan/Dai cycle reset
+849   844   1   -10   last decrease= NA 
+851   845   2   -10   last decrease= 1.281464e-11 
+Yuan/Dai cycle reset
+851   846   1   -10   last decrease= NA 
+853   847   2   -10   last decrease= 1.267253e-11 
+Yuan/Dai cycle reset
+853   848   1   -10   last decrease= NA 
+855   849   2   -10   last decrease= 1.256772e-11 
+Yuan/Dai cycle reset
+855   850   1   -10   last decrease= NA 
+857   851   2   -10   last decrease= 1.24345e-11 
+Yuan/Dai cycle reset
+857   852   1   -10   last decrease= NA 
+859   853   2   -10   last decrease= 1.240608e-11 
+Yuan/Dai cycle reset
+859   854   1   -10   last decrease= NA 
+861   855   2   -10   last decrease= 1.22693e-11 
+Yuan/Dai cycle reset
+861   856   1   -10   last decrease= NA 
+863   857   2   -10   last decrease= 1.215206e-11 
+Yuan/Dai cycle reset
+863   858   1   -10   last decrease= NA 
+865   859   2   -10   last decrease= 1.207034e-11 
+Yuan/Dai cycle reset
+865   860   1   -10   last decrease= NA 
+867   861   2   -10   last decrease= 1.199929e-11 
+Yuan/Dai cycle reset
+867   862   1   -10   last decrease= NA 
+869   863   2   -10   last decrease= 1.188383e-11 
+Yuan/Dai cycle reset
+869   864   1   -10   last decrease= NA 
+871   865   2   -10   last decrease= 1.179323e-11 
+Yuan/Dai cycle reset
+871   866   1   -10   last decrease= NA 
+873   867   2   -10   last decrease= 1.164047e-11 
+Yuan/Dai cycle reset
+873   868   1   -10   last decrease= NA 
+875   869   2   -10   last decrease= 1.162981e-11 
+Yuan/Dai cycle reset
+875   870   1   -10   last decrease= NA 
+877   871   2   -10   last decrease= 1.147171e-11 
+Yuan/Dai cycle reset
+877   872   1   -10   last decrease= NA 
+879   873   2   -10   last decrease= 1.137224e-11 
+Yuan/Dai cycle reset
+879   874   1   -10   last decrease= NA 
+881   875   2   -10   last decrease= 1.131006e-11 
+Yuan/Dai cycle reset
+881   876   1   -10   last decrease= NA 
+883   877   2   -10   last decrease= 1.123901e-11 
+Yuan/Dai cycle reset
+883   878   1   -10   last decrease= NA 
+885   879   2   -10   last decrease= 1.114309e-11 
+Yuan/Dai cycle reset
+885   880   1   -10   last decrease= NA 
+887   881   2   -10   last decrease= 1.102407e-11 
+Yuan/Dai cycle reset
+887   882   1   -10   last decrease= NA 
+889   883   2   -10   last decrease= 1.097433e-11 
+Yuan/Dai cycle reset
+889   884   1   -10   last decrease= NA 
+891   885   2   -10   last decrease= 1.09015e-11 
+Yuan/Dai cycle reset
+891   886   1   -10   last decrease= NA 
+893   887   2   -10   last decrease= 1.082689e-11 
+Yuan/Dai cycle reset
+893   888   1   -10   last decrease= NA 
+895   889   2   -10   last decrease= 1.065281e-11 
+Yuan/Dai cycle reset
+895   890   1   -10   last decrease= NA 
+897   891   2   -10   last decrease= 1.062261e-11 
+Yuan/Dai cycle reset
+897   892   1   -10   last decrease= NA 
+899   893   2   -10   last decrease= 1.054268e-11 
+Yuan/Dai cycle reset
+899   894   1   -10   last decrease= NA 
+901   895   2   -10   last decrease= 1.045741e-11 
+Yuan/Dai cycle reset
+901   896   1   -10   last decrease= NA 
+903   897   2   -10   last decrease= 1.03455e-11 
+Yuan/Dai cycle reset
+903   898   1   -10   last decrease= NA 
+905   899   2   -10   last decrease= 1.027978e-11 
+Yuan/Dai cycle reset
+905   900   1   -10   last decrease= NA 
+907   901   2   -10   last decrease= 1.016964e-11 
+Yuan/Dai cycle reset
+907   902   1   -10   last decrease= NA 
+909   903   2   -10   last decrease= 1.011102e-11 
+Yuan/Dai cycle reset
+909   904   1   -10   last decrease= NA 
+911   905   2   -10   last decrease= 1.006129e-11 
+Yuan/Dai cycle reset
+911   906   1   -10   last decrease= NA 
+913   907   2   -10   last decrease= 9.938717e-12 
+Yuan/Dai cycle reset
+913   908   1   -10   last decrease= NA 
+915   909   2   -10   last decrease= 9.903189e-12 
+Yuan/Dai cycle reset
+915   910   1   -10   last decrease= NA 
+917   911   2   -10   last decrease= 9.759304e-12 
+Yuan/Dai cycle reset
+917   912   1   -10   last decrease= NA 
+919   913   2   -10   last decrease= 9.720225e-12 
+Yuan/Dai cycle reset
+919   914   1   -10   last decrease= NA 
+921   915   2   -10   last decrease= 9.658052e-12 
+Yuan/Dai cycle reset
+921   916   1   -10   last decrease= NA 
+923   917   2   -10   last decrease= 9.650947e-12 
+Yuan/Dai cycle reset
+923   918   1   -10   last decrease= NA 
+925   919   2   -10   last decrease= 9.505285e-12 
+Yuan/Dai cycle reset
+925   920   1   -10   last decrease= NA 
+927   921   2   -10   last decrease= 9.521273e-12 
+Yuan/Dai cycle reset
+927   922   1   -10   last decrease= NA 
+929   923   2   -10   last decrease= 9.36673e-12 
+Yuan/Dai cycle reset
+929   924   1   -10   last decrease= NA 
+931   925   2   -10   last decrease= 9.297452e-12 
+Yuan/Dai cycle reset
+931   926   1   -10   last decrease= NA 
+933   927   2   -10   last decrease= 9.219292e-12 
+Yuan/Dai cycle reset
+933   928   1   -10   last decrease= NA 
+935   929   2   -10   last decrease= 9.251266e-12 
+Yuan/Dai cycle reset
+935   930   1   -10   last decrease= NA 
+937   931   2   -10   last decrease= 9.150014e-12 
+Yuan/Dai cycle reset
+937   932   1   -10   last decrease= NA 
+939   933   2   -10   last decrease= 9.050538e-12 
+Yuan/Dai cycle reset
+939   934   1   -10   last decrease= NA 
+941   935   2   -10   last decrease= 8.972378e-12 
+Yuan/Dai cycle reset
+941   936   1   -10   last decrease= NA 
+943   937   2   -10   last decrease= 8.954615e-12 
+Yuan/Dai cycle reset
+943   938   1   -10   last decrease= NA 
+945   939   2   -10   last decrease= 8.892442e-12 
+Yuan/Dai cycle reset
+945   940   1   -10   last decrease= NA 
+947   941   2   -10   last decrease= 8.803624e-12 
+Yuan/Dai cycle reset
+947   942   1   -10   last decrease= NA 
+949   943   2   -10   last decrease= 8.764545e-12 
+Yuan/Dai cycle reset
+949   944   1   -10   last decrease= NA 
+951   945   2   -10   last decrease= 8.611778e-12 
+Yuan/Dai cycle reset
+951   946   1   -10   last decrease= NA 
+953   947   2   -10   last decrease= 8.672174e-12 
+Yuan/Dai cycle reset
+953   948   1   -10   last decrease= NA 
+955   949   2   -10   last decrease= 8.517631e-12 
+Yuan/Dai cycle reset
+955   950   1   -10   last decrease= NA 
+957   951   2   -10   last decrease= 8.446577e-12 
+Yuan/Dai cycle reset
+957   952   1   -10   last decrease= NA 
+959   953   2   -10   last decrease= 8.375522e-12 
+Yuan/Dai cycle reset
+959   954   1   -10   last decrease= NA 
+961   955   2   -10   last decrease= 8.343548e-12 
+Yuan/Dai cycle reset
+961   956   1   -10   last decrease= NA 
+963   957   2   -10   last decrease= 8.31335e-12 
+Yuan/Dai cycle reset
+963   958   1   -10   last decrease= NA 
+965   959   2   -10   last decrease= 8.238743e-12 
+Yuan/Dai cycle reset
+965   960   1   -10   last decrease= NA 
+967   961   2   -10   last decrease= 8.180123e-12 
+Yuan/Dai cycle reset
+967   962   1   -10   last decrease= NA 
+969   963   2   -10   last decrease= 8.128609e-12 
+Yuan/Dai cycle reset
+969   964   1   -10   last decrease= NA 
+971   965   2   -10   last decrease= 8.089529e-12 
+Yuan/Dai cycle reset
+971   966   1   -10   last decrease= NA 
+973   967   2   -10   last decrease= 7.9865e-12 
+Yuan/Dai cycle reset
+973   968   1   -10   last decrease= NA 
+975   969   2   -10   last decrease= 8.034462e-12 
+Yuan/Dai cycle reset
+975   970   1   -10   last decrease= NA 
+977   971   2   -10   last decrease= 7.974066e-12 
+Yuan/Dai cycle reset
+977   972   1   -10   last decrease= NA 
+979   973   2   -10   last decrease= 7.867484e-12 
+Yuan/Dai cycle reset
+979   974   1   -10   last decrease= NA 
+981   975   2   -10   last decrease= 7.867484e-12 
+Yuan/Dai cycle reset
+981   976   1   -10   last decrease= NA 
+983   977   2   -10   last decrease= 7.696954e-12 
+Yuan/Dai cycle reset
+983   978   1   -10   last decrease= NA 
+985   979   2   -10   last decrease= 7.654322e-12 
+Yuan/Dai cycle reset
+985   980   1   -10   last decrease= NA 
+987   981   2   -10   last decrease= 7.648993e-12 
+Yuan/Dai cycle reset
+987   982   1   -10   last decrease= NA 
+989   983   2   -10   last decrease= 7.581491e-12 
+Yuan/Dai cycle reset
+989   984   1   -10   last decrease= NA 
+991   985   2   -10   last decrease= 7.558398e-12 
+Yuan/Dai cycle reset
+991   986   1   -10   last decrease= NA 
+993   987   2   -10   last decrease= 7.505108e-12 
+Yuan/Dai cycle reset
+993   988   1   -10   last decrease= NA 
+995   989   2   -10   last decrease= 7.441159e-12 
+Yuan/Dai cycle reset
+995   990   1   -10   last decrease= NA 
+997   991   2   -10   last decrease= 7.409184e-12 
+Yuan/Dai cycle reset
+997   992   1   -10   last decrease= NA 
+999   993   2   -10   last decrease= 7.297274e-12 
+Yuan/Dai cycle reset
+999   994   1   -10   last decrease= NA 
+1001   995   2   -10   last decrease= 7.307932e-12 
+Yuan/Dai cycle reset
+1001   996   1   -10   last decrease= NA 
+1003   997   2   -10   last decrease= 7.256418e-12 
+Yuan/Dai cycle reset
+1003   998   1   -10   last decrease= NA 
+1005   999   2   -10   last decrease= 7.219114e-12 
+Yuan/Dai cycle reset
+1005   1000   1   -10   last decrease= NA 
+1007   1001   2   -10   last decrease= 7.164047e-12 
+Yuan/Dai cycle reset
+1007   1002   1   -10   last decrease= NA 
+1009   1003   2   -10   last decrease= 7.117862e-12 
+Yuan/Dai cycle reset
+1009   1004   1   -10   last decrease= NA 
+1011   1005   2   -10   last decrease= 7.078782e-12 
+Yuan/Dai cycle reset
+1011   1006   1   -10   last decrease= NA 
+1013   1007   2   -10   last decrease= 7.004175e-12 
+Yuan/Dai cycle reset
+1013   1008   1   -10   last decrease= NA 
+1015   1009   2   -10   last decrease= 7.023715e-12 
+Yuan/Dai cycle reset
+1015   1010   1   -10   last decrease= NA 
+1017   1011   2   -10   last decrease= 6.927792e-12 
+Yuan/Dai cycle reset
+1017   1012   1   -10   last decrease= NA 
+1019   1013   2   -10   last decrease= 6.831868e-12 
+Yuan/Dai cycle reset
+1019   1014   1   -10   last decrease= NA 
+1021   1015   2   -10   last decrease= 6.831868e-12 
+Yuan/Dai cycle reset
+1021   1016   1   -10   last decrease= NA 
+1023   1017   2   -10   last decrease= 6.853185e-12 
+Yuan/Dai cycle reset
+1023   1018   1   -10   last decrease= NA 
+1025   1019   2   -10   last decrease= 6.769696e-12 
+Yuan/Dai cycle reset
+1025   1020   1   -10   last decrease= NA 
+1027   1021   2   -10   last decrease= 6.705747e-12 
+Yuan/Dai cycle reset
+1027   1022   1   -10   last decrease= NA 
+1029   1023   2   -10   last decrease= 6.687984e-12 
+Yuan/Dai cycle reset
+1029   1024   1   -10   last decrease= NA 
+1031   1025   2   -10   last decrease= 6.632916e-12 
+Yuan/Dai cycle reset
+1031   1026   1   -10   last decrease= NA 
+1033   1027   2   -10   last decrease= 6.627587e-12 
+Yuan/Dai cycle reset
+1033   1028   1   -10   last decrease= NA 
+1035   1029   2   -10   last decrease= 6.560086e-12 
+Yuan/Dai cycle reset
+1035   1030   1   -10   last decrease= NA 
+1037   1031   2   -10   last decrease= 6.53344e-12 
+Yuan/Dai cycle reset
+1037   1032   1   -10   last decrease= NA 
+1039   1033   2   -10   last decrease= 6.496137e-12 
+Yuan/Dai cycle reset
+1039   1034   1   -10   last decrease= NA 
+1041   1035   2   -10   last decrease= 6.453504e-12 
+Yuan/Dai cycle reset
+1041   1036   1   -10   last decrease= NA 
+1043   1037   2   -10   last decrease= 6.396661e-12 
+Yuan/Dai cycle reset
+1043   1038   1   -10   last decrease= NA 
+1045   1039   2   -10   last decrease= 6.371792e-12 
+Yuan/Dai cycle reset
+1045   1040   1   -10   last decrease= NA 
+1047   1041   2   -10   last decrease= 6.311396e-12 
+Yuan/Dai cycle reset
+1047   1042   1   -10   last decrease= NA 
+1049   1043   2   -10   last decrease= 6.204814e-12 
+Yuan/Dai cycle reset
+1049   1044   1   -10   last decrease= NA 
+1051   1045   2   -10   last decrease= 6.27054e-12 
+Yuan/Dai cycle reset
+1051   1046   1   -10   last decrease= NA 
+1053   1047   2   -10   last decrease= 6.190604e-12 
+Yuan/Dai cycle reset
+1053   1048   1   -10   last decrease= NA 
+1055   1049   2   -10   last decrease= 6.11422e-12 
+Yuan/Dai cycle reset
+1055   1050   1   -10   last decrease= NA 
+1057   1051   2   -10   last decrease= 6.108891e-12 
+Yuan/Dai cycle reset
+1057   1052   1   -10   last decrease= NA 
+1059   1053   2   -10   last decrease= 6.128431e-12 
+Yuan/Dai cycle reset
+1059   1054   1   -10   last decrease= NA 
+1061   1055   2   -10   last decrease= 6.030731e-12 
+Yuan/Dai cycle reset
+1061   1056   1   -10   last decrease= NA 
+1063   1057   2   -10   last decrease= 5.965006e-12 
+Very small gradient -- gradsqr = 8.79252426092173e-13 
+Rcgmin seems to have converged 
+> print(ansnegmaxn)
+$par
+[1] 0.9999995 1.9980123 3.0045303 3.9989854 4.9963984 5.9986631
+attr(,"status")
+[1] " " " " " " " " " " " "
+
+$value
+[1] -10
+attr(,"fname")
+[1] "(no_name)"
+attr(,"method")
+[1] "Rcgmin"
+attr(,"ptype")
+[1] "U"
+
+$counts
+[1] 1063 1058
+
+$convergence
+[1] 0
+
+$message
+[1] NA
+
+$scounts
+[1] 1063 1058    0
+
+> 
+> 
+> #####################  From Rvmmin.Rd
+> cat("test bounds and masks\n")
+test bounds and masks
+> nn<-4
+> startx<-rep(pi,nn)
+> lo<-rep(2,nn)
+> up<-rep(10,nn)
+> grbds1<-Rcgmin(startx,genrose.f, gr=genrose.g,lower=lo,upper=up) 
+> print(grbds1)
+$par
+[1]  2.000000  2.000000  3.181997 10.000000
+
+$value
+[1] 556.2391
+
+$counts
+[1] 34 24
+
+$convergence
+[1] 0
+
+$message
+[1] "Rcgmin seems to have converged"
+
+$bdmsk
+[1] -3 -3  1 -1
+
+> 
+> cat("test lower bound only\n")
+test lower bound only
+> nn<-4
+> startx<-rep(pi,nn)
+> lo<-rep(2,nn)
+> grbds2<-Rcgmin(startx,genrose.f, gr=genrose.g,lower=lo) 
+> print(grbds2)
+$par
+[1]  2.000000  2.000000  3.318724 10.914782
+
+$value
+[1] 553.0761
+
+$counts
+[1] 1125  156
+
+$convergence
+[1] 1
+
+$message
+[1] "Too many function evaluations (> 1118) "
+
+$bdmsk
+[1] -3 -3  1  1
+
+> 
+> cat("test lower bound single value only\n")
+test lower bound single value only
+> nn<-4
+> startx<-rep(pi,nn)
+> lo<-2
+> up<-rep(10,nn)
+> grbds3<-Rcgmin(startx,genrose.f, gr=genrose.g,lower=lo) 
+> print(grbds3)
+$par
+[1]  2.000000  2.000000  3.318724 10.914782
+
+$value
+[1] 553.0761
+
+$counts
+[1] 1125  156
+
+$convergence
+[1] 1
+
+$message
+[1] "Too many function evaluations (> 1118) "
+
+$bdmsk
+[1] -3 -3  1  1
+
+> 
+> cat("test upper bound only\n")
+test upper bound only
+> nn<-4
+> startx<-rep(pi,nn)
+> lo<-rep(2,nn)
+> up<-rep(10,nn)
+> grbds4<-Rcgmin(startx,genrose.f, gr=genrose.g,upper=up) 
+> print(grbds4)
+$par
+[1] 1 1 1 1
+
+$value
+[1] 1
+
+$counts
+[1] 92 43
+
+$convergence
+[1] 0
+
+$message
+[1] "Rcgmin seems to have converged"
+
+$bdmsk
+[1] 1 1 1 1
+
+> 
+> cat("test upper bound single value only\n")
+test upper bound single value only
+> nn<-4
+> startx<-rep(pi,nn)
+> grbds5<-Rcgmin(startx,genrose.f, gr=genrose.g,upper=10) 
+> print(grbds5)
+$par
+[1] 1 1 1 1
+
+$value
+[1] 1
+
+$counts
+[1] 92 43
+
+$convergence
+[1] 0
+
+$message
+[1] "Rcgmin seems to have converged"
+
+$bdmsk
+[1] 1 1 1 1
+
+> 
+> 
+> 
+> cat("test masks only\n")
+test masks only
+> nn<-6
+> bd<-c(1,1,0,0,1,1)
+> startx<-rep(pi,nn)
+> grbds6<-Rcgmin(startx,genrose.f, gr=genrose.g,bdmsk=bd) 
+> print(grbds6)
+$par
+[1]  1.331105  1.771839  3.141593  3.141593  5.890350 34.362593
+
+$value
+[1] 7268.939
+
+$counts
+[1] 1325  173
+
+$convergence
+[1] 1
+
+$message
+[1] "Too many function evaluations (> 1323) "
+
+$bdmsk
+[1] 1 1 0 0 1 1
+
+> 
+> cat("test upper bound on first two elements only\n")
+test upper bound on first two elements only
+> nn<-4
+> startx<-rep(pi,nn)
+> upper<-c(10,8, Inf, Inf)
+> grbds7<-Rcgmin(startx,genrose.f, gr=genrose.g,upper=upper) 
+> print(grbds7)
+$par
+[1] 1 1 1 1
+
+$value
+[1] 1
+
+$counts
+[1] 91 43
+
+$convergence
+[1] 0
+
+$message
+[1] "Rcgmin seems to have converged"
+
+$bdmsk
+[1] 1 1 1 1
+
+> 
+> 
+> cat("test lower bound on first two elements only\n")
+test lower bound on first two elements only
+> nn<-4
+> startx<-rep(0,nn)
+> lower<-c(0,1.1, -Inf, -Inf)
+> grbds8<-Rcgmin(startx,genrose.f,genrose.g,lower=lower, control=list(maxit=2000)) 
+Warning in Rcgmin(startx, genrose.f, genrose.g, lower = lower, control = list(maxit = 2000)) :
+  Parameter out of bounds has been moved to nearest bound
+> print(grbds8)
+$par
+[1] 0.000000 1.100000 1.197717 1.430224
+attr(,"status")
+[1] "L" "L" " " " "
+
+$value
+[1] 122.2511
+
+$counts
+[1] 57 23
+
+$convergence
+[1] 0
+
+$message
+[1] "Rcgmin seems to have converged"
+
+$bdmsk
+[1]  1 -3  1  1
+
+> 
+> cat("test n=1 problem using simple squares of parameter\n")
+test n=1 problem using simple squares of parameter
+> 
+> sqtst<-function(xx) {
++    res<-sum((xx-2)*(xx-2))
++ }
+> 
+> gsqtst<-function(xx) {
++     gg<-2*(xx-2)
++ }
+> 
+> ######### One dimension test
+> nn<-1
+> startx<-rep(0,nn)
+> onepar<-Rcgmin(startx,sqtst,  gr=gsqtst,control=list(trace=1)) 
+Rcgminu -- J C Nash 2009 - unconstrained version CG min
+an R implementation of Alg 22 with Yuan/Dai modification
+Initial function value= 4 
+Initial fn= 4 
+1   0   1   4   last decrease= NA 
+*4   1   2   1.774937e-30   last decrease= 4 
+Very small gradient -- gradsqr = 7.09974814698911e-30 
+Rcgmin seems to have converged 
+> print(onepar)
+$par
+[1] 2
+
+$value
+[1] 1.774937e-30
+
+$counts
+[1] 4 2
+
+$convergence
+[1] 0
+
+$message
+[1] "Rcgmin seems to have converged"
+
+> 
+> cat("Suppress warnings\n")
+Suppress warnings
+> oneparnw<-Rcgmin(startx,sqtst,  gr=gsqtst,control=list(dowarn=FALSE,trace=1)) 
+Rcgminu -- J C Nash 2009 - unconstrained version CG min
+an R implementation of Alg 22 with Yuan/Dai modification
+Initial function value= 4 
+Initial fn= 4 
+1   0   1   4   last decrease= NA 
+*4   1   2   1.774937e-30   last decrease= 4 
+Very small gradient -- gradsqr = 7.09974814698911e-30 
+Rcgmin seems to have converged 
+> print(oneparnw)
+$par
+[1] 2
+
+$value
+[1] 1.774937e-30
+
+$counts
+[1] 4 2
+
+$convergence
+[1] 0
+
+$message
+[1] "Rcgmin seems to have converged"
+
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:numDeriv’
+
+> nameEx("Rvmmin")
+> ### * Rvmmin
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rvmmin
+> ### Title: Variable metric nonlinear function minimization, driver.
+> ### Aliases: Rvmmin nvm
+> ### Keywords: nonlinear optimize
+> 
+> ### ** Examples
+> 
+> #####################
+> ## All examples for the Rvmmin package are in this .Rd file
+> ##
+> 
+> ## Rosenbrock Banana function
+> fr <- function(x) {
++   x1 <- x[1]
++   x2 <- x[2]
++   100 * (x2 - x1 * x1)^2 + (1 - x1)^2
++ }
+> 
+> ansrosenbrock <- Rvmmin(fn=fr,gr="grfwd", par=c(1,2))
+Warning in Rvmminu(par, fn, gr, control = control, ...) :
+  Too many function evaluations
+> print(ansrosenbrock) 
+$par
+[1] 1.362655 1.857489
+
+$value
+[1] 0.1315621
+
+$counts
+function gradient 
+    3021      357 
+
+$convergence
+[1] 1
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> cat("\n")
+
+> cat("No gr specified as a test\n")
+No gr specified as a test
+> ansrosenbrock0 <- Rvmmin(fn=fr, par=c(1,2))
+Warning in Rvmminu(par, fn, gr, control = control, ...) :
+  Too many function evaluations
+> print(ansrosenbrock0) 
+$par
+[1] 1.362655 1.857489
+
+$value
+[1] 0.1315621
+
+$counts
+function gradient 
+    3021      357 
+
+$convergence
+[1] 1
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> # use print to allow copy to separate file that can be called using source()
+> 
+> #####################
+> # Simple bounds and masks test
+> #
+> # The function is a sum of squares, but we impose the 
+> # constraints so that there are lower and upper bounds
+> # away from zero, and parameter 6 is fixed at the initial
+> # value
+> 
+> bt.f<-function(x){
++   sum(x*x)
++ }
+> 
+> bt.g<-function(x){
++   gg<-2.0*x
++ }
+> 
+> n<-10
+> xx<-rep(0,n)
+> lower<-rep(0,n)
+> upper<-lower # to get arrays set
+> bdmsk<-rep(1,n)
+> bdmsk[(trunc(n/2)+1)]<-0
+> for (i in 1:n) { 
++   lower[i]<-1.0*(i-1)*(n-1)/n
++   upper[i]<-1.0*i*(n+1)/n
++ }
+> xx<-0.5*(lower+upper)
+> cat("Initial parameters:")
+Initial parameters:> print(xx)
+ [1] 0.55 1.55 2.55 3.55 4.55 5.55 6.55 7.55 8.55 9.55
+> cat("Lower bounds:")
+Lower bounds:> print(lower)
+ [1] 0.0 0.9 1.8 2.7 3.6 4.5 5.4 6.3 7.2 8.1
+> cat("upper bounds:")
+upper bounds:> print(upper)
+ [1]  1.1  2.2  3.3  4.4  5.5  6.6  7.7  8.8  9.9 11.0
+> cat("Masked (fixed) parameters:")
+Masked (fixed) parameters:> print(which(bdmsk == 0))
+[1] 6
+> 
+> ansbt<-Rvmmin(xx, bt.f, bt.g, lower, upper, bdmsk, control=list(trace=1))
+admissible =  TRUE 
+maskadded =  FALSE 
+parchanged =  FALSE 
+Rvmminb -- J C Nash 2009-2015 - an R implementation of Alg 21
+Problem of size n= 10   Dot arguments:
+list()
+Initial fn= 337.525 
+ig= 1   gnorm= 36.74371     1   1   337.525 
+ig= 2   gnorm= 24.90322     2   2   251.455 
+ig= 3   gnorm= 25.81776     3   3   249.2817 
+No acceptable point
+Reset to gradient search
+  3   3   249.2817 
+ig= 4   gnorm= 20.09379     4   4   249.1926 
+ig= 5   gnorm= 22.36815     5   5   247.4161 
+ig= 6   gnorm= 23.16942     6   6   246.008 
+ig= 7   gnorm= 19.65361     7   7   244.8186 
+No acceptable point
+Reset to gradient search
+  7   7   244.8186 
+ig= 8   gnorm= 15.07981     8   8   244.7926 
+ig= 9   gnorm= 16.41624     9   9   244.7858 
+ig= 10   gnorm= 18.16627     10   10   243.7159 
+ig= 11   gnorm= 14.9308     11   11   243.6747 
+No acceptable point
+Reset to gradient search
+  11   11   243.6747 
+ig= 12   gnorm= 10.30963     12   12   243.6746 
+ig= 13   gnorm= 13.07989     13   13   243.6734 
+ig= 14   gnorm= 10.30889     14   14   243.6708 
+No acceptable point
+Reset to gradient search
+  14   14   243.6708 
+ig= 15   gnorm= 7.377883     15   15   243.6708 
+ig= 16   gnorm= 8.552459     16   16   242.6786 
+ig= 17   gnorm= 9.298963     17   17   241.9602 
+No acceptable point
+Reset to gradient search
+  17   17   241.9602 
+ig= 18   gnorm= 5.884787     18   18   241.9602 
+ig= 19   gnorm= 2.318757     19   19   241.9367 
+ig= 20   gnorm= 9.022718     20   20   241.5049 
+ig= 21   gnorm= 5.726068     21   21   241.4995 
+No acceptable point
+Reset to gradient search
+  21   21   241.4995 
+ig= 22   gnorm= 1.904567     22   22   241.4993 
+ig= 23   gnorm= 5.435626     23   23   241.499 
+No acceptable point
+Reset to gradient search
+  23   23   241.499 
+ig= 24   gnorm= 0.6213116     24   24   241.499 
+ig= 25   gnorm= 5.4     25   25   241.4025 
+No acceptable point
+Reset to gradient search
+  25   25   241.4025 
+ig= 26   gnorm= 0   Seem to be done Rvmminb
+> 
+> print(ansbt)
+$par
+ [1] 0.00 0.90 1.80 2.70 3.60 5.55 5.40 6.30 7.20 8.10
+
+$value
+[1] 241.4025
+
+$counts
+function gradient 
+      26       26 
+
+$convergence
+[1] 2
+
+$message
+[1] "Rvmminb appears to have converged"
+
+$bdmsk
+ [1]  1 -3 -3 -3 -3  0 -3 -3 -3 -3
+
+> 
+> #####################
+> # A version of a generalized Rosenbrock problem
+> genrose.f<- function(x, gs=NULL){ # objective function
++   ## One generalization of the Rosenbrock banana valley function (n parameters)
++   n <- length(x)
++   if(is.null(gs)) { gs=100.0 }
++   fval<-1.0 + sum (gs*(x[1:(n-1)]^2 - x[2:n])^2 + (x[2:n] - 1)^2)
++   return(fval)
++ }
+> genrose.g <- function(x, gs=NULL){
++   # vectorized gradient for genrose.f
++   # Ravi Varadhan 2009-04-03
++   n <- length(x)
++   if(is.null(gs)) { gs=100.0 }
++   gg <- as.vector(rep(0, n))
++   tn <- 2:n
++   tn1 <- tn - 1
++   z1 <- x[tn] - x[tn1]^2
++   z2 <- 1 - x[tn]
++   gg[tn] <- 2 * (gs * z1 - z2)
++   gg[tn1] <- gg[tn1] - 4 * gs * x[tn1] * z1
++   gg
++ }
+> 
+> # analytic gradient test
+> xx<-rep(pi,10)
+> lower<-NULL
+> upper<-NULL
+> bdmsk<-NULL
+> genrosea<-Rvmmin(xx,genrose.f, genrose.g, gs=10)
+> genrosenf<-Rvmmin(xx,genrose.f, gr="grfwd", gs=10) # use local numerical gradient
+> genrosenullgr<-Rvmmin(xx,genrose.f, gs=10) # no gradient specified
+> cat("genrosea uses analytic gradient\n")
+genrosea uses analytic gradient
+> print(genrosea)
+$par
+ [1] 1 1 1 1 1 1 1 1 1 1
+
+$value
+[1] 1
+
+$counts
+function gradient 
+      84       44 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> cat("genrosenf uses grfwd standard numerical gradient\n")
+genrosenf uses grfwd standard numerical gradient
+> print(genrosenf)
+$par
+ [1]  1.5034609  0.9326376  0.7129819  0.7396104  0.7226176  0.2656481
+ [7] -0.4847358 -1.0408625  1.2294929 -0.5016032
+
+$value
+[1] 89.9311
+
+$counts
+function gradient 
+      83       10 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> cat("genrosenullgr has no gradient specified\n")
+genrosenullgr has no gradient specified
+> print(genrosenullgr)
+$par
+ [1]  1.5034609  0.9326376  0.7129819  0.7396104  0.7226176  0.2656481
+ [7] -0.4847358 -1.0408625  1.2294929 -0.5016032
+
+$value
+[1] 89.9311
+
+$counts
+function gradient 
+      83       10 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> cat("Other numerical gradients can be used.\n")
+Other numerical gradients can be used.
+> 
+> cat("timings B vs U\n")
+timings B vs U
+> lo<-rep(-100,10)
+> up<-rep(100,10)
+> bdmsk<-rep(1,10)
+> tb<-system.time(ab<-Rvmminb(xx,genrose.f, genrose.g, lower=lo, upper=up, bdmsk=bdmsk))[1]
+> tu<-system.time(au<-Rvmminu(xx,genrose.f, genrose.g))[1]
+> cat("times U=",tu,"   B=",tb,"\n")
+times U= 0.003    B= 0.005 
+> cat("solution Rvmminu\n")
+solution Rvmminu
+> print(au)
+$par
+ [1] 1 1 1 1 1 1 1 1 1 1
+
+$value
+[1] 1
+
+$counts
+function gradient 
+     105       52 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> cat("solution Rvmminb\n")
+solution Rvmminb
+> print(ab)
+$par
+ [1] -1  1  1  1  1  1  1  1  1  1
+
+$value
+[1] 1
+
+$counts
+function gradient 
+     124       75 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminb appears to have converged"
+
+$bdmsk
+ [1] 1 1 1 1 1 1 1 1 1 1
+
+> cat("diff fu-fb=",au$value-ab$value,"\n")
+diff fu-fb= 0 
+> cat("max abs parameter diff = ", max(abs(au$par-ab$par)),"\n")
+max abs parameter diff =  2 
+> 
+> # Test that Rvmmin will maximize as well as minimize
+> 
+> maxfn<-function(x) {
++   n<-length(x)
++   ss<-seq(1,n)
++   f<-10-(crossprod(x-ss))^2
++   f<-as.numeric(f)
++   return(f)
++ }
+> 
+> 
+> negmaxfn<-function(x) {
++   f<-(-1)*maxfn(x)
++   return(f)
++ }
+> 
+> cat("test that maximize=TRUE works correctly\n")
+test that maximize=TRUE works correctly
+> 
+> n<-6
+> xx<-rep(1,n)
+> ansmax<-Rvmmin(xx,maxfn, gr="grfwd", control=list(maximize=TRUE,trace=1))
+WARNING: using gradient approximation ' grfwd '
+Rvmminu -- J C Nash 2009-2015 - an R implementation of Alg 21
+Problem of size n= 6   Dot arguments:
+list()
+WARNING: using gradient approximation ' grfwd '
+Initial fn= 3015 
+ig= 1   gnorm= 4237.497     1   1   3015 
+****ig= 2   gnorm= 29.47732     6   2   -4.199671 
+**ig= 3   gnorm= 6.949523     9   3   -9.282082 
+ig= 4   gnorm= 3.823195     10   4   -9.639773 
+ig= 5   gnorm= 2.84412     11   5   -9.783488 
+ig= 6   gnorm= 2.533045     12   6   -9.807745 
+ig= 7   gnorm= 1.702119     13   7   -9.861731 
+ig= 8   gnorm= 0.7724312     14   8   -9.935238 
+ig= 9   gnorm= 0.6069267     15   9   -9.953617 
+ig= 10   gnorm= 0.5740192     16   10   -9.961046 
+**ig= 11   gnorm= 0.5761695     19   11   -9.961068 
+*ig= 12   gnorm= 0.6004695     21   12   -9.961197 
+**ig= 13   gnorm= 0.605203     24   13   -9.961206 
+*ig= 14   gnorm= 0.630342     26   14   -9.961241 
+**ig= 15   gnorm= 0.6345335     29   15   -9.961249 
+*ig= 16   gnorm= 0.6556463     31   16   -9.961321 
+**ig= 17   gnorm= 0.6591465     34   17   -9.961342 
+*ig= 18   gnorm= 0.6770957     36   18   -9.961487 
+*ig= 19   gnorm= 0.6937933     38   19   -9.961531 
+**ig= 20   gnorm= 0.696726     41   20   -9.961556 
+*ig= 21   gnorm= 0.7124502     43   21   -9.961754 
+*ig= 22   gnorm= 0.728097     45   22   -9.961832 
+**ig= 23   gnorm= 0.7308641     48   23   -9.961871 
+*ig= 24   gnorm= 0.7457275     50   24   -9.96213 
+**ig= 25   gnorm= 0.7481653     53   25   -9.962197 
+*ig= 26   gnorm= 0.7609697     55   26   -9.962519 
+**ig= 27   gnorm= 0.7629109     58   27   -9.962581 
+*ig= 28   gnorm= 0.7730525     60   28   -9.962717 
+**ig= 29   gnorm= 0.774407     63   29   -9.962718 
+**ig= 30   gnorm= 0.7729314     66   30   -9.962885 
+*ig= 31   gnorm= 0.7655757     68   31   -9.96318 
+***ig= 32   gnorm= 0.7650307     72   32   -9.963189 
+**ig= 33   gnorm= 0.7570751     75   33   -9.963529 
+*ig= 34   gnorm= 0.7184216     77   34   -9.964646 
+**ig= 35   gnorm= 0.710068     80   35   -9.964836 
+*ig= 36   gnorm= 0.6596451     82   36   -9.965812 
+*ig= 37   gnorm= 0.6188592     84   37   -9.965891 
+**ig= 38   gnorm= 0.6078014     87   38   -9.966095 
+*ig= 39   gnorm= 0.5403145     89   39   -9.968097 
+*ig= 40   gnorm= 0.4807099     91   40   -9.970209 
+ig= 41   gnorm= 0.3460669     92   41   -9.971838 
+ig= 42   gnorm= 0.2964447     93   42   -9.976604 
+ig= 43   gnorm= 0.1823633     94   43   -9.989499 
+ig= 44   gnorm= 0.08684457     95   44   -9.996758 
+ig= 45   gnorm= 0.04053552     96   45   -9.998995 
+ig= 46   gnorm= 0.01921339     97   46   -9.999679 
+ig= 47   gnorm= 0.009571303     98   47   -9.99989 
+ig= 48   gnorm= 0.005275557     99   48   -9.999954 
+ig= 49   gnorm= 0.003605378     100   49   -9.999972 
+*ig= 50   gnorm= 0.003466094     102   50   -9.999972 
+********************No acceptable point
+Reset to gradient search
+  122   50   -9.999972 
+ig= 51   gnorm= 0.003072128     123   51   -9.999976 
+ig= 52   gnorm= 0.00110831     124   52   -9.999992 
+ig= 53   gnorm= 0.0006477779     125   53   -9.999995 
+ig= 54   gnorm= 0.0004573236     126   54   -9.999996 
+******************No acceptable point
+Reset to gradient search
+  144   54   -9.999996 
+ig= 55   gnorm= 0.0004464278     145   55   -9.999996 
+ig= 56   gnorm= 0.0001951979     146   56   -9.999999 
+ig= 57   gnorm= 0.0001730173     147   57   -9.999999 
+*ig= 58   gnorm= 0.0001759026     149   58   -9.999999 
+*ig= 59   gnorm= 0.0001841282     151   59   -9.999999 
+******************No acceptable point
+Reset to gradient search
+  169   59   -9.999999 
+ig= 60   gnorm= 0.0001813124     170   60   -9.999999 
+ig= 61   gnorm= 6.081637e-05     171   61   -10 
+ig= 62   gnorm= 3.478837e-05     172   62   -10 
+ig= 63   gnorm= 2.094389e-05     173   63   -10 
+**ig= 64   gnorm= 2.070019e-05     176   64   -10 
+******************No acceptable point
+Reset to gradient search
+  194   64   -10 
+ig= 65   gnorm= 2.063697e-05     195   65   -10 
+ig= 66   gnorm= 8.493382e-06     196   66   -10 
+ig= 67   gnorm= 7.566688e-06     197   67   -10 
+*ig= 68   gnorm= 7.709213e-06     199   68   -10 
+**ig= 69   gnorm= 7.748668e-06     202   69   -10 
+**ig= 70   gnorm= 7.791002e-06     205   70   -10 
+***ig= 71   gnorm= 7.799509e-06     209   71   -10 
+***ig= 72   gnorm= 7.80797e-06     213   72   -10 
+***ig= 73   gnorm= 7.816956e-06     217   73   -10 
+**ig= 74   gnorm= 7.861255e-06     220   74   -10 
+******************No acceptable point
+Reset to gradient search
+  238   74   -10 
+ig= 75   gnorm= 7.848485e-06     239   75   -10 
+ig= 76   gnorm= 2.54235e-06     240   76   -10 
+ig= 77   gnorm= 1.393434e-06     241   77   -10 
+ig= 78   gnorm= 7.531159e-07     242   78   -10 
+ig= 79   gnorm= 5.433891e-07     243   79   -10 
+*ig= 80   gnorm= 5.324474e-07     245   80   -10 
+**ig= 81   gnorm= 5.321231e-07     248   81   -10 
+******************No acceptable point
+Reset to gradient search
+  266   81   -10 
+ig= 82   gnorm= 5.320371e-07     267   82   -10 
+ig= 83   gnorm= 6.737661e-08     268   83   -10 
+ig= 84   gnorm= 5.835496e-08     269   84   -10 
+*****************No acceptable point
+Reset to gradient search
+  286   84   -10 
+ig= 85   gnorm= 5.833383e-08     287   85   -10 
+ig= 86   gnorm= 4.80302e-08     288   86   -10 
+ig= 87   gnorm= 2.259877e-08     289   87   -10 
+ig= 88   gnorm= 1.957519e-08     290   88   -10 
+ig= 89   gnorm= 2.219704e-08     291   89   -10 
+****************No acceptable point
+Reset to gradient search
+  307   89   -10 
+*********No acceptable point
+Converged 
+Seem to be done Rvmminu
+> print(ansmax)
+$par
+[1] 0.9999995 1.9999919 2.9999479 4.0004036 4.9997790 5.9982618
+
+$value
+[1] 10
+
+$counts
+function gradient 
+     316       89 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> 
+> cat("using the negmax function should give same parameters\n")
+using the negmax function should give same parameters
+> ansnegmax<-Rvmmin(xx,negmaxfn, gr="grfwd", control=list(trace=1))
+WARNING: using gradient approximation ' grfwd '
+Rvmminu -- J C Nash 2009-2015 - an R implementation of Alg 21
+Problem of size n= 6   Dot arguments:
+list()
+WARNING: using gradient approximation ' grfwd '
+Initial fn= 3015 
+ig= 1   gnorm= 4237.497     1   1   3015 
+****ig= 2   gnorm= 29.47732     6   2   -4.199671 
+**ig= 3   gnorm= 6.949523     9   3   -9.282082 
+ig= 4   gnorm= 3.823195     10   4   -9.639773 
+ig= 5   gnorm= 2.84412     11   5   -9.783488 
+ig= 6   gnorm= 2.533045     12   6   -9.807745 
+ig= 7   gnorm= 1.702119     13   7   -9.861731 
+ig= 8   gnorm= 0.7724312     14   8   -9.935238 
+ig= 9   gnorm= 0.6069267     15   9   -9.953617 
+ig= 10   gnorm= 0.5740192     16   10   -9.961046 
+**ig= 11   gnorm= 0.5761695     19   11   -9.961068 
+*ig= 12   gnorm= 0.6004695     21   12   -9.961197 
+**ig= 13   gnorm= 0.605203     24   13   -9.961206 
+*ig= 14   gnorm= 0.630342     26   14   -9.961241 
+**ig= 15   gnorm= 0.6345335     29   15   -9.961249 
+*ig= 16   gnorm= 0.6556463     31   16   -9.961321 
+**ig= 17   gnorm= 0.6591465     34   17   -9.961342 
+*ig= 18   gnorm= 0.6770957     36   18   -9.961487 
+*ig= 19   gnorm= 0.6937933     38   19   -9.961531 
+**ig= 20   gnorm= 0.696726     41   20   -9.961556 
+*ig= 21   gnorm= 0.7124502     43   21   -9.961754 
+*ig= 22   gnorm= 0.728097     45   22   -9.961832 
+**ig= 23   gnorm= 0.7308641     48   23   -9.961871 
+*ig= 24   gnorm= 0.7457275     50   24   -9.96213 
+**ig= 25   gnorm= 0.7481653     53   25   -9.962197 
+*ig= 26   gnorm= 0.7609697     55   26   -9.962519 
+**ig= 27   gnorm= 0.7629109     58   27   -9.962581 
+*ig= 28   gnorm= 0.7730525     60   28   -9.962717 
+**ig= 29   gnorm= 0.774407     63   29   -9.962718 
+**ig= 30   gnorm= 0.7729314     66   30   -9.962885 
+*ig= 31   gnorm= 0.7655757     68   31   -9.96318 
+***ig= 32   gnorm= 0.7650307     72   32   -9.963189 
+**ig= 33   gnorm= 0.7570751     75   33   -9.963529 
+*ig= 34   gnorm= 0.7184216     77   34   -9.964646 
+**ig= 35   gnorm= 0.710068     80   35   -9.964836 
+*ig= 36   gnorm= 0.6596451     82   36   -9.965812 
+*ig= 37   gnorm= 0.6188592     84   37   -9.965891 
+**ig= 38   gnorm= 0.6078014     87   38   -9.966095 
+*ig= 39   gnorm= 0.5403145     89   39   -9.968097 
+*ig= 40   gnorm= 0.4807099     91   40   -9.970209 
+ig= 41   gnorm= 0.3460669     92   41   -9.971838 
+ig= 42   gnorm= 0.2964447     93   42   -9.976604 
+ig= 43   gnorm= 0.1823633     94   43   -9.989499 
+ig= 44   gnorm= 0.08684457     95   44   -9.996758 
+ig= 45   gnorm= 0.04053552     96   45   -9.998995 
+ig= 46   gnorm= 0.01921339     97   46   -9.999679 
+ig= 47   gnorm= 0.009571303     98   47   -9.99989 
+ig= 48   gnorm= 0.005275557     99   48   -9.999954 
+ig= 49   gnorm= 0.003605378     100   49   -9.999972 
+*ig= 50   gnorm= 0.003466094     102   50   -9.999972 
+********************No acceptable point
+Reset to gradient search
+  122   50   -9.999972 
+ig= 51   gnorm= 0.003072128     123   51   -9.999976 
+ig= 52   gnorm= 0.00110831     124   52   -9.999992 
+ig= 53   gnorm= 0.0006477779     125   53   -9.999995 
+ig= 54   gnorm= 0.0004573236     126   54   -9.999996 
+******************No acceptable point
+Reset to gradient search
+  144   54   -9.999996 
+ig= 55   gnorm= 0.0004464278     145   55   -9.999996 
+ig= 56   gnorm= 0.0001951979     146   56   -9.999999 
+ig= 57   gnorm= 0.0001730173     147   57   -9.999999 
+*ig= 58   gnorm= 0.0001759026     149   58   -9.999999 
+*ig= 59   gnorm= 0.0001841282     151   59   -9.999999 
+******************No acceptable point
+Reset to gradient search
+  169   59   -9.999999 
+ig= 60   gnorm= 0.0001813124     170   60   -9.999999 
+ig= 61   gnorm= 6.081637e-05     171   61   -10 
+ig= 62   gnorm= 3.478837e-05     172   62   -10 
+ig= 63   gnorm= 2.094389e-05     173   63   -10 
+**ig= 64   gnorm= 2.070019e-05     176   64   -10 
+******************No acceptable point
+Reset to gradient search
+  194   64   -10 
+ig= 65   gnorm= 2.063697e-05     195   65   -10 
+ig= 66   gnorm= 8.493382e-06     196   66   -10 
+ig= 67   gnorm= 7.566688e-06     197   67   -10 
+*ig= 68   gnorm= 7.709213e-06     199   68   -10 
+**ig= 69   gnorm= 7.748668e-06     202   69   -10 
+**ig= 70   gnorm= 7.791002e-06     205   70   -10 
+***ig= 71   gnorm= 7.799509e-06     209   71   -10 
+***ig= 72   gnorm= 7.80797e-06     213   72   -10 
+***ig= 73   gnorm= 7.816956e-06     217   73   -10 
+**ig= 74   gnorm= 7.861255e-06     220   74   -10 
+******************No acceptable point
+Reset to gradient search
+  238   74   -10 
+ig= 75   gnorm= 7.848485e-06     239   75   -10 
+ig= 76   gnorm= 2.54235e-06     240   76   -10 
+ig= 77   gnorm= 1.393434e-06     241   77   -10 
+ig= 78   gnorm= 7.531159e-07     242   78   -10 
+ig= 79   gnorm= 5.433891e-07     243   79   -10 
+*ig= 80   gnorm= 5.324474e-07     245   80   -10 
+**ig= 81   gnorm= 5.321231e-07     248   81   -10 
+******************No acceptable point
+Reset to gradient search
+  266   81   -10 
+ig= 82   gnorm= 5.320371e-07     267   82   -10 
+ig= 83   gnorm= 6.737661e-08     268   83   -10 
+ig= 84   gnorm= 5.835496e-08     269   84   -10 
+*****************No acceptable point
+Reset to gradient search
+  286   84   -10 
+ig= 85   gnorm= 5.833383e-08     287   85   -10 
+ig= 86   gnorm= 4.80302e-08     288   86   -10 
+ig= 87   gnorm= 2.259877e-08     289   87   -10 
+ig= 88   gnorm= 1.957519e-08     290   88   -10 
+ig= 89   gnorm= 2.219704e-08     291   89   -10 
+****************No acceptable point
+Reset to gradient search
+  307   89   -10 
+*********No acceptable point
+Converged 
+Seem to be done Rvmminu
+> print(ansnegmax)
+$par
+[1] 0.9999995 1.9999919 2.9999479 4.0004036 4.9997790 5.9982618
+
+$value
+[1] -10
+
+$counts
+function gradient 
+     316       89 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> 
+> 
+> #####################
+> cat("test bounds and masks\n")
+test bounds and masks
+> nn<-4
+> startx<-rep(pi,nn)
+> lo<-rep(2,nn)
+> up<-rep(10,nn)
+> grbds1<-Rvmmin(startx,genrose.f, genrose.g, lower=lo,upper=up) 
+> print(grbds1)
+$par
+[1]  2.000000  2.000000  3.181997 10.000000
+
+$value
+[1] 556.2391
+
+$counts
+function gradient 
+      29       12 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminb appears to have converged"
+
+$bdmsk
+[1] 1 1 1 1
+
+> 
+> cat("test lower bound only\n")
+test lower bound only
+> nn<-4
+> startx<-rep(pi,nn)
+> lo<-rep(2,nn)
+> grbds2<-Rvmmin(startx,genrose.f, genrose.g, lower=lo) 
+> print(grbds2)
+$par
+[1]  2.000000  2.000000  3.318724 10.914782
+
+$value
+[1] 553.0761
+
+$counts
+function gradient 
+      33       16 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminb appears to have converged"
+
+$bdmsk
+[1] 1 1 1 1
+
+> 
+> cat("test lower bound single value only\n")
+test lower bound single value only
+> nn<-4
+> startx<-rep(pi,nn)
+> lo<-2
+> up<-rep(10,nn)
+> grbds3<-Rvmmin(startx,genrose.f, genrose.g, lower=lo) 
+> print(grbds3)
+$par
+[1]  2.000000  2.000000  3.318724 10.914782
+
+$value
+[1] 553.0761
+
+$counts
+function gradient 
+      33       16 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminb appears to have converged"
+
+$bdmsk
+[1] 1 1 1 1
+
+> 
+> cat("test upper bound only\n")
+test upper bound only
+> nn<-4
+> startx<-rep(pi,nn)
+> lo<-rep(2,nn)
+> up<-rep(10,nn)
+> grbds4<-Rvmmin(startx,genrose.f, genrose.g, upper=up) 
+> print(grbds4)
+$par
+[1] 1 1 1 1
+
+$value
+[1] 1
+
+$counts
+function gradient 
+      51       30 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminb appears to have converged"
+
+$bdmsk
+[1] 1 1 1 1
+
+> 
+> cat("test upper bound single value only\n")
+test upper bound single value only
+> nn<-4
+> startx<-rep(pi,nn)
+> grbds5<-Rvmmin(startx,genrose.f, genrose.g, upper=10) 
+> print(grbds5)
+$par
+[1] 1 1 1 1
+
+$value
+[1] 1
+
+$counts
+function gradient 
+      51       30 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminb appears to have converged"
+
+$bdmsk
+[1] 1 1 1 1
+
+> 
+> 
+> 
+> cat("test masks only\n")
+test masks only
+> nn<-6
+> bd<-c(1,1,0,0,1,1)
+> startx<-rep(pi,nn)
+> grbds6<-Rvmmin(startx,genrose.f, genrose.g, bdmsk=bd) 
+> print(grbds6)
+$par
+[1] -1.331105  1.771839  3.141593  3.141593  5.890351 34.362610
+
+$value
+[1] 7268.939
+
+$counts
+function gradient 
+      76       23 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminb appears to have converged"
+
+$bdmsk
+[1] 1 1 0 0 1 1
+
+> 
+> cat("test upper bound on first two elements only\n")
+test upper bound on first two elements only
+> nn<-4
+> startx<-rep(pi,nn)
+> upper<-c(10,8, Inf, Inf)
+> grbds7<-Rvmmin(startx,genrose.f, genrose.g, upper=upper) 
+> print(grbds7)
+$par
+[1] 1 1 1 1
+
+$value
+[1] 1
+
+$counts
+function gradient 
+      75       37 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminb appears to have converged"
+
+$bdmsk
+[1] 1 1 1 1
+
+> 
+> 
+> cat("test lower bound on first two elements only\n")
+test lower bound on first two elements only
+> nn<-4
+> startx<-rep(0,nn)
+> lower<-c(0,1.1, -Inf, -Inf)
+> grbds8<-Rvmmin(startx,genrose.f,genrose.g,lower=lower, control=list(maxit=2000)) 
+Warning in Rvmmin(startx, genrose.f, genrose.g, lower = lower, control = list(maxit = 2000)) :
+  Parameter out of bounds has been moved to nearest bound
+> print(grbds8)
+$par
+[1] 0.000000 1.100000 1.197717 1.430224
+attr(,"status")
+[1] "L" "L" " " " "
+
+$value
+[1] 122.2511
+
+$counts
+function gradient 
+      42       16 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminb appears to have converged"
+
+$bdmsk
+[1] 1 1 1 1
+
+> 
+> cat("test n=1 problem using simple squares of parameter\n")
+test n=1 problem using simple squares of parameter
+> 
+> sqtst<-function(xx) {
++   res<-sum((xx-2)*(xx-2))
++ }
+> 
+> nn<-1
+> startx<-rep(0,nn)
+> onepar<-Rvmmin(startx,sqtst, gr="grfwd", control=list(trace=1)) 
+WARNING: using gradient approximation ' grfwd '
+Rvmminu -- J C Nash 2009-2015 - an R implementation of Alg 21
+Problem of size n= 1   Dot arguments:
+list()
+WARNING: using gradient approximation ' grfwd '
+Initial fn= 4 
+ig= 1   gnorm= 4.000356     1   1   4 
+*ig= 2   gnorm= 2.399857     3   2   1.439829 
+ig= 3   gnorm= 0.0005332046     4   3   7.161092e-08 
+ig= 4   gnorm= 1.034728e-13     5   4   1e-12 
+ig= 5   gnorm= 2.220446e-16   Seem to be done Rvmminu
+> print(onepar)
+$par
+[1] 1.999999
+
+$value
+[1] 1e-12
+
+$counts
+function gradient 
+       6        5 
+
+$convergence
+[1] 2
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> 
+> cat("Suppress warnings\n")
+Suppress warnings
+> oneparnw<-Rvmmin(startx,sqtst, gr="grfwd", control=list(dowarn=FALSE,trace=1)) 
+WARNING: using gradient approximation ' grfwd '
+Rvmminu -- J C Nash 2009-2015 - an R implementation of Alg 21
+Problem of size n= 1   Dot arguments:
+list()
+WARNING: using gradient approximation ' grfwd '
+Initial fn= 4 
+ig= 1   gnorm= 4.000356     1   1   4 
+*ig= 2   gnorm= 2.399857     3   2   1.439829 
+ig= 3   gnorm= 0.0005332046     4   3   7.161092e-08 
+ig= 4   gnorm= 1.034728e-13     5   4   1e-12 
+ig= 5   gnorm= 2.220446e-16   Seem to be done Rvmminu
+> print(oneparnw)
+$par
+[1] 1.999999
+
+$value
+[1] 1e-12
+
+$counts
+function gradient 
+       6        5 
+
+$convergence
+[1] 2
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Rvmminb")
+> ### * Rvmminb
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rvmminb
+> ### Title: Variable metric nonlinear function minimization with bounds
+> ###   constraints
+> ### Aliases: Rvmminb
+> ### Keywords: nonlinear optimize
+> 
+> ### ** Examples
+> 
+> ## See Rvmmin.Rd
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Rvmminu")
+> ### * Rvmminu
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rvmminu
+> ### Title: Variable metric nonlinear function minimization, unconstrained
+> ### Aliases: Rvmminu
+> ### Keywords: nonlinear optimize
+> 
+> ### ** Examples
+> 
+> ####in Rvmmin.Rd ####
+> 
+> 
+> 
+> cleanEx()
+> nameEx("axsearch")
+> ### * axsearch
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: axsearch
+> ### Title: Perform axial search around a supposed MINIMUM and provide
+> ###   diagnostics
+> ### Aliases: axsearch
+> ### Keywords: nonlinear optimize axial search
+> 
+> ### ** Examples
+> 
+> #####################
+> # require(optimx)
+> # Simple bounds test for n=4
+> bt.f<-function(x){
++   sum(x*x)
++ }
+> 
+> bt.g<-function(x){
++   gg<-2.0*x
++ }
+> 
+> n<-4
+> lower<-rep(0,n)
+> upper<-lower # to get arrays set
+> bdmsk<-rep(1,n)
+> # bdmsk[(trunc(n/2)+1)]<-0
+> for (i in 1:n) { 
++   lower[i]<-1.0*(i-1)*(n-1)/n
++   upper[i]<-1.0*i*(n+1)/n
++ }
+> xx<-0.5*(lower+upper)
+> 
+> cat("lower bounds:")
+lower bounds:> print(lower)
+[1] 0.00 0.75 1.50 2.25
+> cat("start:       ")
+start:       > print(xx)
+[1] 0.625 1.625 2.625 3.625
+> cat("upper bounds:")
+upper bounds:> print(upper)
+[1] 1.25 2.50 3.75 5.00
+> 
+> abtrvm <- list() # ensure we have the structure
+> 
+> cat("Rvmmin \n\n")
+Rvmmin 
+
+> # Note: trace set to 0 below. Change as needed to view progress. 
+> 
+> # Following can be executed if package optimx available
+> # abtrvm <- optimr(xx, bt.f, bt.g, lower=lower, upper=upper, method="Rvmmin", 
+> #                 control=list(trace=0))
+> # Note: use lower=lower etc. because there is a missing hess= argument
+> # print(abtrvm)
+> 
+> abtrvm$par <- c(0.00, 0.75, 1.50, 2.25)
+> abtrvm$value <- 7.875
+> cat("Axial search")
+Axial search> axabtrvm <- axsearch(abtrvm$par, fn=bt.f, fmin=abtrvm$value, lower, upper, bdmsk=NULL)
+> print(axabtrvm)
+$bestfn
+[1] 7.875
+
+$par
+[1] 0.00 0.75 1.50 2.25
+
+$details
+  par0 fback rep.fmin..npar.     ffwd      parstep tilt roc
+1 0.00    NA           7.875 7.875000 3.666853e-07   90 NaN
+2 0.75    NA           7.875 7.875682 4.545258e-04   90 NaN
+3 1.50    NA           7.875 7.877727 9.086849e-04   90 NaN
+4 2.25    NA           7.875 7.881135 1.362844e-03   90 NaN
+
+> 
+> abtrvm1 <- optimr(xx, bt.f, bt.g, lower=lower, upper=upper, method="Rvmmin", 
++                    control=list(maxit=1, trace=0))
+Warning in Rvmminb(par, fn, gr, lower = lower, upper = upper, bdmsk = bdmsk,  :
+  Too many gradient evaluations
+> proptimr(abtrvm1)
+Result  abtrvm1 ( Rvmmin  ->  (no_name) ) calc. min. = 8.884958  at 
+0.625     1.625     2.625     3.625     
+After  2  fn evals, and  2  gr evals and  0  hessian evals
+Termination code is  1 : Rvmminb appears to have converged 
+
+-------------------------------------------------
+> 
+> abtrvm1$value <- 8.884958
+> abtrvm1$par <- c(0.625, 1.625, 2.625, 3.625)
+> 
+> cat("Axial search")
+Axial search> axabtrvm1 <- axsearch(abtrvm1$par, fn=bt.f, fmin=abtrvm1$value, lower, upper, bdmsk=NULL)
+> print(axabtrvm1)
+$bestfn
+[1] 8.884958
+
+$par
+[1] 0.625 1.625 2.625 3.625
+
+$details
+   par0    fback rep.fmin..npar.     ffwd      parstep      tilt          roc
+1 0.625 23.06203        8.884958 23.06297 0.0003788326 -51.34019 4.152308e-08
+2 1.625 23.05930        8.884958 23.06570 0.0009843780 -72.89727 2.687203e-06
+3 2.625 23.05416        8.884958 23.07085 0.0015899235 -79.21570 2.721734e-05
+4 3.625 23.04659        8.884958 23.07842 0.0021954689 -82.14669 1.332738e-04
+
+> 
+> cat("Do NOT try axsearch() with maximize\n")
+Do NOT try axsearch() with maximize
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("bmchk")
+> ### * bmchk
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: bmchk
+> ### Title: Check bounds and masks for parameter constraints used in
+> ###   nonlinear optimization
+> ### Aliases: bmchk
+> ### Keywords: nonlinear optimize upper lower bound mask
+> 
+> ### ** Examples
+> 
+> #####################
+> 
+> ## cat("25-dimensional box constrained function\n")
+> ## flb <- function(x)
+> ##     { p <- length(x); sum(c(1, rep(4, p-1)) * (x - c(1, x[-p])^2)^2) }
+> 
+> start<-rep(2, 25)
+> cat("\n start:")
+
+ start:> print(start)
+ [1] 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+> lo<-rep(2,25)
+> cat("\n lo:")
+
+ lo:> print(lo)
+ [1] 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+> hi<-rep(4,25)
+> cat("\n hi:")
+
+ hi:> print(hi)
+ [1] 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4
+> bt<-bmchk(start, lower=lo, upper=hi, trace=1)
+admissible =  TRUE 
+maskadded =  FALSE 
+parchanged =  FALSE 
+At least one parameter is on a bound
+> print(bt)
+$bvec
+ [1] 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+attr(,"status")
+ [1] "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L"
+[20] "L" "L" "L" "L" "L" "L"
+
+$bdmsk
+ [1] -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3
+
+$bchar
+ [1] "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L"
+[20] "L" "L" "L" "L" "L" "L"
+
+$lower
+ [1] 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+
+$upper
+ [1] 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4
+
+$nolower
+[1] FALSE
+
+$noupper
+[1] FALSE
+
+$bounds
+[1] TRUE
+
+$admissible
+[1] TRUE
+
+$maskadded
+[1] FALSE
+
+$parchanged
+[1] FALSE
+
+$feasible
+[1] TRUE
+
+$onbound
+[1] TRUE
+
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("bmstep")
+> ### * bmstep
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: bmstep
+> ### Title: Compute the maximum step along a search direction.
+> ### Aliases: bmstep
+> ### Keywords: nonlinear optimize upper lower bound mask
+> 
+> ### ** Examples
+> 
+> #####################
+> xx <- c(1, 1)
+> lo <- c(0, 0)
+> up <- c(100, 40)
+> sdir <- c(4,1)
+> bm <- c(1,1) # both free
+> ans <- bmstep(xx, sdir, lo, up, bm, trace=1)
+Distances to bounds, lower then upper
+[1] 1 1
+[1] 99 39
+steplengths, lower then upper
+[1] 0 0
+[1] 24.75 39.00
+steplengths, truncated, lower then upper
+sslo NULL
+ssup:[1] 24.75 39.00
+> # stepsize
+> print(ans)
+[1] 24.75
+> # distance
+> print(ans*sdir)
+[1] 99.00 24.75
+> # New parameters
+> print(xx+ans*sdir)
+[1] 100.00  25.75
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("checksolver")
+> ### * checksolver
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: checksolver
+> ### Title: Test if requested solver is present
+> ### Aliases: checksolver checkallsolvers
+> ### Keywords: nonlinear optimize
+> 
+> ### ** Examples
+> 
+>    allmeth <- c("Rvmmin", "nlminb","ipopttest")
+>    allpkg <- c("Rvmmin", "stats","ipoptr")
+>    
+>    print(checksolver("nlminb", allmeth, allpkg))
+[1] "nlminb"
+>    # If Rvmmin NOT available, get msg that PACKAGE not available.
+>    print(checksolver("Rvmmin", allmeth, allpkg))
+Warning in checksolver("Rvmmin", allmeth, allpkg) :
+  Package Rvmmin for method Rvmmin( is not available
+[1] "????"
+>    # Get message that SOLVER not found
+>    print(checksolver("notasolver", allmeth, allpkg))
+Warning in checksolver("notasolver", allmeth, allpkg) :
+  Package notasolver not found
+NULL
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("coef.opm")
+> ### * coef.opm
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: coef
+> ### Title: Summarize opm object
+> ### Aliases: coef<- coef.opm coef<-.opm coef.optimx coef<-.optimx
+> ### Keywords: nonlinear optimize
+> 
+> ### ** Examples
+> 
+> ans <- opm(fn = function(x) sum(x*x), par = 1:2, method="ALL", control=list(trace=0))
+Warning in opm(fn = function(x) sum(x * x), par = 1:2, method = "ALL", control = list(trace = 0)) :
+  'snewtonm' removed from 'method' -- no hess()
+Warning in opm(fn = function(x) sum(x * x), par = 1:2, method = "ALL", control = list(trace = 0)) :
+  'snewtm' removed from 'method' -- no hess()
+Warning in checksolver(method, control$allmeth, control$allpkg) :
+  Package lbfgsb3c for method lbfgsb3c( is not available
+Error in loadNamespace(x) : there is no package called ‘lbfgsb3c’
+Warning in checksolver(method, control$allmeth, control$allpkg) :
+  Package BB for method spg( is not available
+Error in loadNamespace(x) : there is no package called ‘BB’
+Warning in checksolver(method, control$allmeth, control$allpkg) :
+  Package lbfgs for method lbfgs( is not available
+Warning in checksolver(method, control$allmeth, control$allpkg) :
+  Package subplex for method subplex( is not available
+Error in loadNamespace(x) : there is no package called ‘subplex’
+Error in optimr(par, fn, gr, hess = hess, method = meth, lower = lower,  : 
+  object 'ccode' not found
+Calls: opm -> system.time -> optimr
+Timing stopped at: 0.001 0 0.001
+Execution halted

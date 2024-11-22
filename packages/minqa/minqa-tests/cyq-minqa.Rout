@@ -1,0 +1,125 @@
+
+R version 4.4.0 (2024-04-24) -- "Puppy Cup"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(minqa)
+> # rm(list=ls())
+> cyq.f <- function (x) {
++   rv<-cyq.res(x)
++   f<-sum(rv*rv)
++ }
+> 
+> cyq.res <- function (x) {
++ # Fletcher's chebyquad function m = n -- residuals 
++    n<-length(x)
++    res<-rep(0,n) # initialize
++    for (i in 1:n) { #loop over resids
++      rr<-0.0
++      for (k in 1:n) {
++ 	z7<-1.0
++ 	z2<-2.0*x[k]-1.0
++         z8<-z2
++         j<-1
++         while (j<i) {
++             z6<-z7
++             z7<-z8
++             z8<-2*z2*z7-z6 # recurrence to compute Chebyshev polynomial
++             j<-j+1
++         } # end recurrence loop
++         rr<-rr+z8
++       } # end loop on k
++       rr<-rr/n
++       if (2*trunc(i/2) == i) { rr <- rr + 1.0/(i*i - 1) }
++       res[i]<-rr
++     } # end loop on i
++     res
++ }
+> 
+> xstart<-rep(1,6)
+> lower<-rep(-10,6)
+> upper<-rep(10,6)
+> tu6<-system.time(cu6<-uobyqa(xstart,cyq.f,control=list(iprint=2,maxfun=25000)))
+npt = 8 , n =  6 
+rhobeg =  0.2 , rhoend =  2e-07 
+start par. =  1 1 1 1 1 1 fn =  6.973515 
+rho:    0.020 eval:  29 fn:      3.14975 par:0.762144 0.762144 0.836126 0.836126 0.836126 0.836126 
+rho:   0.0020 eval: 296 fn:  0.000120341 par:-0.139380 0.543844 -0.778352 0.950676 -0.338641 0.350418 
+rho:  0.00020 eval: 340 fn:  2.69590e-07 par:0.361732 0.709121 0.0638755 0.931719 0.287934 0.632422 
+rho:  2.0e-05 eval: 368 fn:  1.26011e-09 par:0.367062 0.711693 0.0669086 0.933197 0.288717 0.633350 
+rho:  2.0e-06 eval: 393 fn:  1.97003e-12 par:0.366690 0.711278 0.0668671 0.933126 0.288713 0.633296 
+rho:  2.0e-07 eval: 395 fn:  2.82847e-16 par:0.366682 0.711259 0.0668761 0.933123 0.288740 0.633317 
+At return
+eval: 401 fn:  2.8284722e-16 par: 0.366682 0.711259 0.0668766 0.933123 0.288741 0.633318
+> str(cu6)
+List of 5
+ $ par  : num [1:6] 0.3667 0.7113 0.0669 0.9331 0.2887 ...
+ $ fval : num 2.83e-16
+ $ feval: int 401
+ $ ierr : int 0
+ $ msg  : chr "Normal exit from uobyqa"
+ - attr(*, "class")= chr [1:2] "uobyqa" "minqa"
+> tu6
+   user  system elapsed 
+  0.031   0.000   0.030 
+> tn6<-system.time(cn6<-newuoa(xstart,cyq.f,control=list(iprint=2,maxfun=25000)))
+npt = 8 , n =  6 
+rhobeg =  0.2 , rhoend =  2e-07 
+start par. =  1 1 1 1 1 1 fn =  6.973515 
+rho:    0.020 eval:  11 fn:      1.60811 par: 1.04277 0.911033 0.911033 0.911033 0.911033 0.911033 
+rho:   0.0020 eval:  21 fn:      1.58471 par: 1.04243 0.909386 0.908411 0.900540 0.921593 0.898046 
+rho:  0.00020 eval: 139 fn:     0.695387 par:0.956398 0.723322 0.990382 0.602663 0.948355 0.836784 
+rho:  2.0e-05 eval: 1266 fn:  1.03172e-05 par:0.366695 0.287883 0.932153 0.0667818 0.633882 0.708972 
+rho:  2.0e-06 eval: 1392 fn:  2.53121e-07 par:0.366358 0.288664 0.933020 0.0668316 0.633001 0.711071 
+rho:  2.0e-07 eval: 1688 fn:  3.47010e-10 par:0.366679 0.288746 0.933125 0.0668798 0.633312 0.711260 
+At return
+eval: 1793 fn:  2.3950674e-11 par: 0.366682 0.288746 0.933124 0.0668780 0.633319 0.711260
+> str(cn6)
+List of 5
+ $ par  : num [1:6] 0.3667 0.2887 0.9331 0.0669 0.6333 ...
+ $ fval : num 2.4e-11
+ $ feval: int 1793
+ $ ierr : int 0
+ $ msg  : chr "Normal exit from newuoa"
+ - attr(*, "class")= chr [1:2] "newuoa" "minqa"
+> tn6
+   user  system elapsed 
+  0.032   0.000   0.032 
+> tb6<-system.time(cb6<-bobyqa(xstart,cyq.f,lower=lower, upper=upper, control=list(iprint=2,maxfun=25000)))
+ctrl$force.start =  FALSE 
+npt = 8 , n =  6 
+rhobeg =  0.2 , rhoend =  2e-07 
+start par. =  1 1 1 1 1 1 fn =  6.973515 
+rho:    0.020 eval:  11 fn:      1.70861 par:0.652960 0.953103 0.953103 0.953103 0.953103 0.953103 
+rho:   0.0020 eval:  23 fn:      1.42929 par:0.741459  1.00427 0.960418 0.955000 0.946916 0.920746 
+rho:  0.00020 eval:  99 fn:     0.201556 par:0.730681 0.950091 0.322996 0.744196 0.967810 0.463371 
+rho:  2.0e-05 eval: 774 fn:  0.000129730 par:0.635509 0.934839 0.0661256 0.372517 0.712588 0.283395 
+rho:  2.0e-06 eval: 948 fn:  1.38882e-06 par:0.633767 0.933306 0.0669111 0.367142 0.711068 0.288676 
+rho:  2.0e-07 eval: 1065 fn:  2.73325e-08 par:0.633221 0.933149 0.0668557 0.366748 0.711363 0.288603 
+At return
+eval: 1304 fn:  1.1168924e-10 par: 0.633321 0.933125 0.0668785 0.366680 0.711262 0.288749
+> str(cb6)
+List of 5
+ $ par  : num [1:6] 0.6333 0.9331 0.0669 0.3667 0.7113 ...
+ $ fval : num 1.12e-10
+ $ feval: int 1304
+ $ ierr : int 0
+ $ msg  : chr "Normal exit from bobyqa"
+ - attr(*, "class")= chr [1:2] "bobyqa" "minqa"
+> tb6
+   user  system elapsed 
+  0.022   0.000   0.022 
+> 
+> 
