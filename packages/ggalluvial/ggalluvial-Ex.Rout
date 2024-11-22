@@ -1,0 +1,653 @@
+
+R version 4.4.0 (2024-04-24) -- "Puppy Cup"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "ggalluvial"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('ggalluvial')
+Loading required package: ggplot2
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("alluvial-data")
+> ### * alluvial-data
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: alluvial-data
+> ### Title: Check for alluvial structure and convert between alluvial
+> ###   formats
+> ### Aliases: alluvial-data is_lodes_form is_alluvia_form to_lodes_form
+> ###   to_alluvia_form
+> 
+> ### ** Examples
+> 
+> # Titanic data in alluvia format
+> titanic_alluvia <- as.data.frame(Titanic)
+> head(titanic_alluvia)
+  Class    Sex   Age Survived Freq
+1   1st   Male Child       No    0
+2   2nd   Male Child       No    0
+3   3rd   Male Child       No   35
+4  Crew   Male Child       No    0
+5   1st Female Child       No    0
+6   2nd Female Child       No    0
+> is_alluvia_form(titanic_alluvia,
++                 weight = "Freq")
+[1] TRUE
+> # Titanic data in lodes format
+> titanic_lodes <- to_lodes_form(titanic_alluvia,
++                                key = "x", value = "stratum", id = "alluvium",
++                                axes = 1:4)
+> head(titanic_lodes)
+  Freq alluvium     x stratum
+1    0        1 Class     1st
+2    0        2 Class     2nd
+3   35        3 Class     3rd
+4    0        4 Class    Crew
+5    0        5 Class     1st
+6    0        6 Class     2nd
+> is_lodes_form(titanic_lodes,
++               key = "x", value = "stratum", id = "alluvium",
++               weight = "Freq")
+[1] TRUE
+> # again in lodes format, this time diffusing the `Class` variable
+> titanic_lodes2 <- to_lodes_form(titanic_alluvia,
++                                 key = variable, value = value,
++                                 id = cohort,
++                                 1:3, diffuse = Class)
+> head(titanic_lodes2)
+  cohort Class Survived Freq variable value
+1      1   1st       No    0    Class   1st
+2      1   1st       No    0      Sex  Male
+3      1   1st       No    0      Age Child
+4      2   2nd       No    0    Class   2nd
+5      2   2nd       No    0      Sex  Male
+6      2   2nd       No    0      Age Child
+> is_lodes_form(titanic_lodes2,
++               key = variable, value = value, id = cohort,
++               weight = Freq)
+[1] TRUE
+> # use `site` to separate data before lode testing
+> is_lodes_form(titanic_lodes2,
++               key = variable, value = value, id = Class,
++               weight = Freq)
+Duplicated id-axis pairings.
+[1] FALSE
+> is_lodes_form(titanic_lodes2,
++               key = variable, value = value, id = Class,
++               weight = Freq, site = cohort)
+[1] TRUE
+> 
+> # curriculum data in lodes format
+> data(majors)
+> head(majors)
+  student semester curriculum
+1       1    CURR1   Painting
+2       2    CURR1   Painting
+3       6    CURR1   Sculpure
+4       8    CURR1   Painting
+5       9    CURR1   Sculpure
+6      10    CURR1   Painting
+> is_lodes_form(majors,
++               key = "semester", value = "curriculum", id = "student")
+[1] TRUE
+> # curriculum data in alluvia format
+> majors_alluvia <- to_alluvia_form(majors,
++                                   key = "semester", value = "curriculum",
++                                   id = "student")
+> head(majors_alluvia)
+  student    CURR1       CURR3       CURR5    CURR7    CURR9   CURR11   CURR13
+1       1 Painting    Painting    Painting Painting Painting Painting Painting
+2       2 Painting    Painting    Painting Painting Painting Painting     <NA>
+3       6 Sculpure    Sculpure    Painting Painting Painting Painting Painting
+4       8 Painting    Painting    Painting Painting     <NA> Painting Painting
+5       9 Sculpure Art History Art History Painting Painting Painting Painting
+6      10 Painting    Painting    Painting Painting Painting Painting     <NA>
+    CURR15
+1 Painting
+2     <NA>
+3 Painting
+4 Painting
+5 Painting
+6     <NA>
+> is_alluvia_form(majors_alluvia, tidyselect::starts_with("CURR"))
+Missing alluvia for some stratum combinations.
+[1] TRUE
+> 
+> # distill variables that vary within `id` values
+> set.seed(1)
+> majors$hypo_grade <- LETTERS[sample(5, size = nrow(majors), replace = TRUE)]
+> majors_alluvia2 <- to_alluvia_form(majors,
++                                    key = "semester", value = "curriculum",
++                                    id = "student",
++                                    distill = "most")
+Distilled variables: hypo_grade
+> head(majors_alluvia2)
+  student hypo_grade    CURR1       CURR3       CURR5    CURR7    CURR9
+1       1          A Painting    Painting    Painting Painting Painting
+2       2          D Painting    Painting    Painting Painting Painting
+3       6          B Sculpure    Sculpure    Painting Painting Painting
+4       8          B Painting    Painting    Painting Painting     <NA>
+5       9          E Sculpure Art History Art History Painting Painting
+6      10          A Painting    Painting    Painting Painting Painting
+    CURR11   CURR13   CURR15
+1 Painting Painting Painting
+2 Painting     <NA>     <NA>
+3 Painting Painting Painting
+4 Painting Painting Painting
+5 Painting Painting Painting
+6 Painting     <NA>     <NA>
+> 
+> # options to distinguish strata at different axes
+> gg <- ggplot(majors_alluvia,
++              aes(axis1 = CURR1, axis2 = CURR7, axis3 = CURR13))
+> gg +
++   geom_alluvium(aes(fill = as.factor(student)), width = 2/5, discern = TRUE) +
++   geom_stratum(width = 2/5, discern = TRUE) +
++   geom_text(stat = "stratum", discern = TRUE, aes(label = after_stat(stratum)))
+> gg +
++   geom_alluvium(aes(fill = as.factor(student)), width = 2/5, discern = FALSE) +
++   geom_stratum(width = 2/5, discern = FALSE) +
++   geom_text(stat = "stratum", discern = FALSE, aes(label = after_stat(stratum)))
+> # warning when inappropriate
+> ggplot(majors[majors$semester %in% paste0("CURR", c(1, 7, 13)), ],
++        aes(x = semester, stratum = curriculum, alluvium = student,
++            label = curriculum)) +
++   geom_alluvium(aes(fill = as.factor(student)), width = 2/5, discern = TRUE) +
++   geom_stratum(width = 2/5, discern = TRUE) +
++   geom_text(stat = "stratum", discern = TRUE)
+Warning in setup_data(...) :
+  Data is already in lodes format, so `discern` will be ignored.
+Warning in setup_data(...) :
+  Data is already in lodes format, so `discern` will be ignored.
+Warning in setup_data(...) :
+  Data is already in lodes format, so `discern` will be ignored.
+Warning: Removed 1 row containing missing values or values outside the scale range
+(`geom_text()`).
+> 
+> 
+> 
+> cleanEx()
+> nameEx("geom_alluvium")
+> ### * geom_alluvium
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: geom_alluvium
+> ### Title: Alluvia across strata
+> ### Aliases: geom_alluvium data_to_alluvium
+> 
+> ### ** Examples
+> 
+> # basic
+> ggplot(as.data.frame(Titanic),
++        aes(y = Freq,
++            axis1 = Class, axis2 = Sex, axis3 = Age,
++            fill = Survived)) +
++   geom_alluvium() +
++   scale_x_discrete(limits = c("Class", "Sex", "Age"))
+> 
+> gg <- ggplot(alluvial::Refugees,
++              aes(y = refugees, x = year, alluvium = country))
+> # time series bump chart (quintic flows)
+> gg + geom_alluvium(aes(fill = country, colour = country),
++                    width = 1/4, alpha = 2/3, decreasing = FALSE,
++                    curve_type = "sigmoid")
+> # time series line plot of refugees data, sorted by country
+> gg + geom_alluvium(aes(fill = country, colour = country),
++                    decreasing = NA, width = 0, knot.pos = 0)
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("geom_flow")
+> ### * geom_flow
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: geom_flow
+> ### Title: Flows between lodes or strata
+> ### Aliases: geom_flow positions_to_flow
+> 
+> ### ** Examples
+> 
+> # use of strata and labels
+> ggplot(as.data.frame(Titanic),
++        aes(y = Freq,
++            axis1 = Class, axis2 = Sex, axis3 = Age)) +
++   geom_flow() +
++   scale_x_discrete(limits = c("Class", "Sex", "Age")) +
++   geom_stratum() +
++   geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
++   ggtitle("Alluvial plot of Titanic passenger demographic data")
+> 
+> # use of facets, with sigmoid flows
+> ggplot(as.data.frame(Titanic),
++        aes(y = Freq,
++            axis1 = Class, axis2 = Sex)) +
++   geom_flow(aes(fill = Age), width = .4, curve_type = "quintic") +
++   geom_stratum(width = .4) +
++   geom_text(stat = "stratum", aes(label = after_stat(stratum)), size = 3) +
++   scale_x_discrete(limits = c("Class", "Sex")) +
++   facet_wrap(~ Survived, scales = "fixed")
+> 
+> # time series alluvia of WorldPhones data
+> wph <- as.data.frame(as.table(WorldPhones))
+> names(wph) <- c("Year", "Region", "Telephones")
+> ggplot(wph,
++        aes(x = Year, alluvium = Region, y = Telephones)) +
++   geom_flow(aes(fill = Region, colour = Region), width = 0)
+> # treat 'Year' as a number rather than as a factor
+> wph$Year <- as.integer(as.character(wph$Year))
+> ggplot(wph,
++        aes(x = Year, alluvium = Region, y = Telephones)) +
++   geom_flow(aes(fill = Region, colour = Region), width = 0)
+> # hold the knot positions fixed
+> ggplot(wph,
++        aes(x = Year, alluvium = Region, y = Telephones)) +
++   geom_flow(aes(fill = Region, colour = Region), width = 0, knot.prop = FALSE)
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("geom_lode")
+> ### * geom_lode
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: geom_lode
+> ### Title: Lodes at intersections of alluvia and strata
+> ### Aliases: geom_lode
+> 
+> ### ** Examples
+> 
+> # one axis
+> ggplot(as.data.frame(Titanic),
++        aes(y = Freq,
++            axis = Class)) +
++   geom_lode(aes(fill = Class, alpha = Survived)) +
++   scale_x_discrete(limits = c("Class")) +
++   scale_alpha_manual(values = c(.25, .75))
+> 
+> gg <- ggplot(as.data.frame(Titanic),
++              aes(y = Freq,
++                  axis1 = Class, axis2 = Sex, axis3 = Age,
++                  fill = Survived))
+> # alluvia and lodes
+> gg + geom_alluvium() + geom_lode()
+> # lodes as strata
+> gg + geom_alluvium() +
++   geom_stratum(stat = "alluvium")
+> 
+> 
+> 
+> cleanEx()
+> nameEx("geom_stratum")
+> ### * geom_stratum
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: geom_stratum
+> ### Title: Strata at axes
+> ### Aliases: geom_stratum
+> 
+> ### ** Examples
+> 
+> # full axis width
+> ggplot(as.data.frame(Titanic),
++        aes(y = Freq,
++            axis1 = Class, axis2 = Sex, axis3 = Age, axis4 = Survived)) +
++   geom_stratum(width = 1) +
++   geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
++   scale_x_discrete(limits = c("Class", "Sex", "Age", "Survived"))
+>   
+> # use of facets
+> ggplot(as.data.frame(Titanic),
++        aes(y = Freq,
++            axis1 = Class, axis2 = Sex)) +
++   geom_flow(aes(fill = Survived)) +
++   geom_stratum() +
++   geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
++   scale_x_discrete(limits = c("Class", "Sex")) +
++   facet_wrap(~ Age, scales = "free_y")
+> 
+> 
+> 
+> cleanEx()
+> nameEx("self-adjoin")
+> ### * self-adjoin
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: self-adjoin
+> ### Title: Adjoin a dataset to itself
+> ### Aliases: self-adjoin self_adjoin
+> 
+> ### ** Examples
+> 
+> # self-adjoin `majors` data
+> data(majors)
+> major_changes <- self_adjoin(majors, key = semester,
++                              by = "student", link = c("semester", "curriculum"))
+> major_changes$change <- major_changes$curriculum.x == major_changes$curriculum.y
+> head(major_changes)
+   step student semester.x curriculum.x semester.y curriculum.y change
+1 CURR1       1      CURR1     Painting      CURR3     Painting   TRUE
+2 CURR1       2      CURR1     Painting      CURR3     Painting   TRUE
+3 CURR1       6      CURR1     Sculpure      CURR3     Sculpure   TRUE
+4 CURR1       8      CURR1     Painting      CURR3     Painting   TRUE
+5 CURR1       9      CURR1     Sculpure      CURR3  Art History  FALSE
+6 CURR1      10      CURR1     Painting      CURR3     Painting   TRUE
+> 
+> # self-adjoin `vaccinations` data
+> data(vaccinations)
+> vaccination_steps <- self_adjoin(vaccinations, key = survey, by = "subject",
++                                  link = c("survey", "response"),
++                                  keep.x = c("freq"))
+> head(vaccination_steps)
+       step subject  survey.x response.x freq  survey.y response.y
+1 ms153_NSA       1 ms153_NSA     Always   48 ms432_NSA     Always
+2 ms153_NSA       2 ms153_NSA     Always    9 ms432_NSA     Always
+3 ms153_NSA       3 ms153_NSA     Always   66 ms432_NSA    Missing
+4 ms153_NSA       4 ms153_NSA     Always    1 ms432_NSA    Missing
+5 ms153_NSA       5 ms153_NSA     Always   11 ms432_NSA    Missing
+6 ms153_NSA       6 ms153_NSA     Always    1 ms432_NSA      Never
+> vaccination_steps <- self_adjoin(vaccinations, key = survey, by = "subject",
++                                  link = c("survey", "response"),
++                                  keep.x = c("freq"),
++                                  keep.y = c("start_date", "end_date"))
+> head(vaccination_steps)
+       step subject  survey.x response.x freq  survey.y response.y start_date
+1 ms153_NSA       1 ms153_NSA     Always   48 ms432_NSA     Always 2015-06-04
+2 ms153_NSA       2 ms153_NSA     Always    9 ms432_NSA     Always 2015-06-04
+3 ms153_NSA       3 ms153_NSA     Always   66 ms432_NSA    Missing 2015-06-04
+4 ms153_NSA       4 ms153_NSA     Always    1 ms432_NSA    Missing 2015-06-04
+5 ms153_NSA       5 ms153_NSA     Always   11 ms432_NSA    Missing 2015-06-04
+6 ms153_NSA       6 ms153_NSA     Always    1 ms432_NSA      Never 2015-06-04
+    end_date
+1 2015-10-05
+2 2015-10-05
+3 2015-10-05
+4 2015-10-05
+5 2015-10-05
+6 2015-10-05
+> 
+> 
+> 
+> cleanEx()
+> nameEx("stat_alluvium")
+> ### * stat_alluvium
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: stat_alluvium
+> ### Title: Alluvial positions
+> ### Aliases: stat_alluvium
+> 
+> ### ** Examples
+> 
+> # illustrate positioning
+> ggplot(as.data.frame(Titanic),
++        aes(y = Freq,
++            axis1 = Class, axis2 = Sex, axis3 = Age,
++            color = Survived)) +
++   stat_stratum(geom = "errorbar") +
++   geom_line(stat = "alluvium") +
++   stat_alluvium(geom = "pointrange") +
++   geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
++   scale_x_discrete(limits = c("Class", "Sex", "Age"))
+> 
+> # lode ordering examples
+> gg <- ggplot(as.data.frame(Titanic),
++              aes(y = Freq,
++                  axis1 = Class, axis2 = Sex, axis3 = Age)) +
++   geom_stratum() +
++   geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
++   scale_x_discrete(limits = c("Class", "Sex", "Age"))
+> # use of lode controls
+> gg + geom_flow(aes(fill = Survived, alpha = Sex), stat = "alluvium",
++                lode.guidance = "forward")
+Warning: Using alpha for a discrete variable is not advised.
+> # prioritize aesthetic binding
+> gg + geom_flow(aes(fill = Survived, alpha = Sex), stat = "alluvium",
++                aes.bind = "alluvia", lode.guidance = "forward")
+Warning: Using alpha for a discrete variable is not advised.
+> # use of custom lode order
+> gg + geom_flow(aes(fill = Survived, alpha = Sex, order = sample(x = 32)),
++                stat = "alluvium")
+Warning in geom_flow(aes(fill = Survived, alpha = Sex, order = sample(x = 32)),  :
+  Ignoring unknown aesthetics: order
+Warning: Using alpha for a discrete variable is not advised.
+> # use of custom luide guidance function
+> lode_custom <- function(n, i) {
++   stopifnot(n == 3)
++   switch(
++     i,
++     `1` = 1:3,
++     `2` = c(2, 3, 1),
++     `3` = 3:1
++   )
++ }
+> gg + geom_flow(aes(fill = Survived, alpha = Sex), stat = "alluvium",
++                aes.bind = "flow", lode.guidance = lode_custom)
+Warning: Using alpha for a discrete variable is not advised.
+> 
+> # omit missing elements & reverse the `y` axis
+> ggplot(ggalluvial::majors,
++        aes(x = semester, stratum = curriculum, alluvium = student, y = 1)) +
++   geom_alluvium(fill = "darkgrey", na.rm = TRUE) +
++   geom_stratum(aes(fill = curriculum), color = NA, na.rm = TRUE) +
++   theme_bw() +
++   scale_y_reverse()
+> 
+> 
+> 
+> # use negative y values to encode deaths versus survivals
+> titanic <- as.data.frame(Titanic)
+> titanic <- transform(titanic, Lives = Freq * (-1) ^ (Survived == "No"))
+> ggplot(subset(titanic, Class != "Crew"),
++        aes(axis1 = Class, axis2 = Sex, axis3 = Age, y = Lives)) +
++   geom_alluvium(aes(alpha = Survived, fill = Class), absolute = FALSE) +
++   geom_stratum(absolute = FALSE) +
++   geom_text(stat = "stratum", aes(label = after_stat(stratum)),
++             absolute = FALSE) +
++   scale_x_discrete(limits = c("Class", "Sex", "Age"), expand = c(.1, .05)) +
++   scale_alpha_discrete(range = c(.25, .75), guide = "none")
+Warning: Using alpha for a discrete variable is not advised.
+> 
+> # faceting with common alluvia
+> ggplot(titanic, aes(y = Freq, axis1 = Class, axis2 = Sex, axis3 = Age)) +
++   facet_wrap(~ Survived) +
++   geom_alluvium() +
++   geom_stratum() +
++   geom_text(stat = "stratum", aes(label = after_stat(stratum)))
+> ggplot(transform(alluvial::Refugees, id = 1),
++        aes(y = refugees, x = year, alluvium = id)) +
++   facet_wrap(~ country) +
++   geom_alluvium(alpha = .75, color = "darkgrey") +
++   scale_x_continuous(breaks = seq(2004, 2012, 4))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("stat_flow")
+> ### * stat_flow
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: stat_flow
+> ### Title: Flow positions
+> ### Aliases: stat_flow
+> 
+> ### ** Examples
+> 
+> # illustrate positioning
+> ggplot(as.data.frame(Titanic),
++        aes(y = Freq,
++            axis1 = Class, axis2 = Sex, axis3 = Age,
++            color = Survived)) +
++   stat_stratum(geom = "errorbar") +
++   geom_line(stat = "flow") +
++   stat_flow(geom = "pointrange") +
++   geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
++   scale_x_discrete(limits = c("Class", "Sex", "Age"))
+> 
+> # alluvium--flow comparison
+> data(vaccinations)
+> gg <- ggplot(vaccinations,
++              aes(x = survey, stratum = response, alluvium = subject,
++                  y = freq, fill = response)) +
++   geom_stratum(alpha = .5) +
++   geom_text(aes(label = response), stat = "stratum")
+> # rightward alluvial aesthetics for vaccine survey data
+> gg + geom_flow(stat = "alluvium", lode.guidance = "forward")
+> # memoryless flows for vaccine survey data
+> gg + geom_flow()
+> 
+> # size filter examples
+> gg <- ggplot(vaccinations,
++        aes(y = freq,
++            x = survey, stratum = response, alluvium = subject,
++            fill = response, label = response)) +
++   stat_stratum(alpha = .5) +
++   geom_text(stat = "stratum")
+> # omit small flows
+> gg + geom_flow(min.y = 50)
+> # omit large flows
+> gg + geom_flow(max.y = 100)
+> 
+> # negate missing entries
+> ggplot(vaccinations,
++        aes(y = freq,
++            x = survey, stratum = response, alluvium = subject,
++            fill = response, label = response,
++            alpha = response != "Missing")) +
++   stat_stratum(negate.strata = "Missing") +
++   geom_flow(negate.strata = "Missing") +
++   geom_text(stat = "stratum", alpha = 1, negate.strata = "Missing") +
++   scale_alpha_discrete(range = c(.2, .6)) +
++   guides(alpha = "none")
+Warning: Using alpha for a discrete variable is not advised.
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("stat_stratum")
+> ### * stat_stratum
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: stat_stratum
+> ### Title: Stratum positions
+> ### Aliases: stat_stratum
+> 
+> ### ** Examples
+> 
+> data(vaccinations)
+> # only `stratum` assignment is necessary to generate strata
+> ggplot(vaccinations,
++        aes(y = freq,
++            x = survey, stratum = response,
++            fill = response)) +
++   stat_stratum(width = .5)
+> 
+> # lode data, positioning with y labels
+> ggplot(vaccinations,
++        aes(y = freq,
++            x = survey, stratum = response, alluvium = subject,
++            label = after_stat(count))) +
++   stat_stratum(geom = "errorbar") +
++   geom_text(stat = "stratum")
+> # alluvium data, positioning with stratum labels
+> ggplot(as.data.frame(Titanic),
++        aes(y = Freq,
++            axis1 = Class, axis2 = Sex, axis3 = Age, axis4 = Survived)) +
++   geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
++   stat_stratum(geom = "errorbar") +
++   scale_x_discrete(limits = c("Class", "Sex", "Age", "Survived"))
+> 
+> # omit labels for strata outside a y range
+> ggplot(vaccinations,
++        aes(y = freq,
++            x = survey, stratum = response,
++            fill = response, label = response)) +
++   stat_stratum(width = .5) +
++   geom_text(stat = "stratum", min.y = 100)
+> 
+> # date-valued axis variables
+> ggplot(vaccinations,
++        aes(x = end_date, y = freq, stratum = response, alluvium = subject,
++            fill = response)) +
++   stat_alluvium(geom = "flow", lode.guidance = "forward",
++                 width = 30) +
++   stat_stratum(width = 30) +
++   labs(x = "Survey date", y = "Number of respondents")
+> 
+> admissions <- as.data.frame(UCBAdmissions)
+> admissions <- transform(admissions, Count = Freq * (-1) ^ (Admit == "Rejected"))
+> # use negative y values to encode rejection versus acceptance
+> ggplot(admissions,
++        aes(y = Count, axis1 = Dept, axis2 = Gender)) +
++   geom_alluvium(aes(fill = Dept), width = 1/12) +
++   geom_stratum(width = 1/12, fill = "black", color = "grey") +
++   geom_label(stat = "stratum", aes(label = after_stat(stratum)), min.y = 200) +
++   scale_x_discrete(limits = c("Department", "Gender"), expand = c(.05, .05))
+> # computed variable 'deposit' indicates order of each signed stratum
+> ggplot(admissions,
++        aes(y = Count, axis1 = Dept, axis2 = Gender)) +
++   geom_alluvium(aes(fill = Dept), width = 1/12) +
++   geom_stratum(width = 1/12, fill = "black", color = "grey") +
++   geom_text(stat = "stratum", aes(label = after_stat(deposit)),
++             color = "white") +
++   scale_x_discrete(limits = c("Department", "Gender"), expand = c(.05, .05))
+> # fixed-width strata with acceptance and rejection totals
+> ggplot(admissions,
++        aes(y = sign(Count), weight = Count, axis1 = Dept, axis2 = Gender)) +
++   geom_alluvium(aes(fill = Dept), width = 1/8) +
++   geom_stratum(width = 1/8, fill = "black", color = "grey") +
++   geom_text(stat = "stratum",
++             aes(label = paste0(stratum,
++                                ifelse(nchar(as.character(stratum)) == 1L,
++                                       ": ", "\n"),
++                                after_stat(n))),
++             color = "white", size = 3) +
++   scale_x_discrete(limits = c("Department", "Gender"), expand = c(.05, .05))
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  21.603 0.154 22.264 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

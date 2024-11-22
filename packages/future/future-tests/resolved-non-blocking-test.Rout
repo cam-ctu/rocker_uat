@@ -1,0 +1,200 @@
+
+R version 4.4.0 (2024-04-24) -- "Puppy Cup"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> source("incl/start.R")
+[18:06:31.728] plan(): Setting new future strategy stack:
+[18:06:31.729] List of future strategies:
+[18:06:31.729] 1. sequential:
+[18:06:31.729]    - args: function (..., envir = parent.frame(), workers = "<NULL>")
+[18:06:31.729]    - tweaked: FALSE
+[18:06:31.729]    - call: future::plan("sequential")
+[18:06:31.752] plan(): nbrOfWorkers() = 1
+> options(future.debug = FALSE)
+> 
+> ## Don't poll too frequently in order for these tests to not fail
+> options(future.wait.interval = 0.1)
+> 
+> message("*** resolved() - assert non-blocking while launching lazy futures ...")
+*** resolved() - assert non-blocking while launching lazy futures ...
+> 
+> for (cores in 1:availCores) {
++   message(sprintf("Testing with %d cores ...", cores))
++   options(mc.cores = cores)
++ 
++   strategies <- supportedStrategies(cores)
++   print(strategies)
++   
++   for (strategy in strategies) {
++     message(sprintf("- plan('%s') with cores=%d ...", strategy, cores))
++     plan(strategy)
++ 
++     ## This test requires that all workers are free when tests start
++     resetWorkers(plan())
++   
++     message("Creating lazy futures:")
++     xs <- as.list(1:3)
++     fs <- lapply(xs, FUN = function(kk) {
++       future({
++         Sys.sleep(kk)
++         kk
++       }, lazy = TRUE)
++     })
++     vs <- vector("list", length = length(fs))
++     ss <- vapply(fs, FUN = function(f) f$state, NA_character_)
++     print(ss)
++     stopifnot(all(ss == "created"))
++     rs <- rep(NA, times = length(fs))
++     
++     for (ff in seq_along(fs)) {
++       for (kk in ff:length(fs)) {
++         message(sprintf("Checking if future #%d is resolved:", kk))
++         rs[[kk]] <- resolved(fs[[kk]])
++         ss <- vapply(fs, FUN = function(f) f$state, NA_character_)
++         print(ss)
++         if (inherits(fs[[kk]], "UniprocessFuture")) {
++           stopifnot(rs[[kk]])
++           stopifnot(ss[[kk]] == "finished")
++         } else if (inherits(fs[[kk]], "MultiprocessFuture")) {
++           if (nbrOfWorkers() + ff - 1L >= kk) {
++             stopifnot(ss[[kk]] == "running")
++           } else {
++             ## Most commonly, we get 'created' here, but it might already be
++             ## 'running' (observed once on win-builder on 2020-10-30)
++             stopifnot(ss[[kk]] %in% c("created", "running"))
++           }
++           stopifnot(!rs[[kk]])
++         }
++       } ## for (kk ...)
++     
++       message(sprintf("Waiting for future #%d to finish ... ", ff), appendLF = FALSE)
++       vs[[ff]] <- value(fs[[ff]])
++       message("done")
++     
++       rs[[ff]] <- resolved(fs[[ff]])
++       stopifnot(rs[ff])
++     
++       ss <- vapply(fs, FUN = function(f) f$state, NA_character_)
++       stopifnot(ss[ff] == "finished")
++       nbrOfFinished <- sum(ss == "finished")
++       if (inherits(fs[[kk]], "UniprocessFuture")) {
++         stopifnot(nbrOfFinished == length(fs))
++       } else {
++         stopifnot(nbrOfFinished == ff)
++       }
++     } ## for (ff ...)
++     
++     ss <- vapply(fs, FUN = function(f) f$state, NA_character_)
++     print(ss)
++     stopifnot(all(ss == "finished"))
++     
++     message("Collecting values:")
++     vs <- value(fs)
++     str(vs)
++     stopifnot(identical(vs, xs))
++   
++     message(sprintf("- plan('%s') with cores=%d ... DONE", strategy, cores))
++   } ## for (strategy ...)
++ 
++   message(sprintf("Testing with %d cores ... DONE", cores))
++ } ## for (cores ...)
+Testing with 1 cores ...
+[1] "sequential"
+- plan('sequential') with cores=1 ...
+Creating lazy futures:
+[1] "created" "created" "created"
+Checking if future #1 is resolved:
+[1] "finished" "created"  "created" 
+Checking if future #2 is resolved:
+[1] "finished" "finished" "created" 
+Checking if future #3 is resolved:
+[1] "finished" "finished" "finished"
+Waiting for future #1 to finish ... done
+Checking if future #2 is resolved:
+[1] "finished" "finished" "finished"
+Checking if future #3 is resolved:
+[1] "finished" "finished" "finished"
+Waiting for future #2 to finish ... done
+Checking if future #3 is resolved:
+[1] "finished" "finished" "finished"
+Waiting for future #3 to finish ... done
+[1] "finished" "finished" "finished"
+Collecting values:
+List of 3
+ $ : int 1
+ $ : int 2
+ $ : int 3
+- plan('sequential') with cores=1 ... DONE
+Testing with 1 cores ... DONE
+Testing with 2 cores ...
+[1] "multicore"    "multisession"
+- plan('multicore') with cores=2 ...
+Creating lazy futures:
+[1] "created" "created" "created"
+Checking if future #1 is resolved:
+[1] "running" "created" "created"
+Checking if future #2 is resolved:
+[1] "running" "running" "created"
+Checking if future #3 is resolved:
+[1] "finished" "running"  "running" 
+Waiting for future #1 to finish ... done
+Checking if future #2 is resolved:
+[1] "finished" "running"  "running" 
+Checking if future #3 is resolved:
+[1] "finished" "running"  "running" 
+Waiting for future #2 to finish ... done
+Checking if future #3 is resolved:
+[1] "finished" "finished" "running" 
+Waiting for future #3 to finish ... done
+[1] "finished" "finished" "finished"
+Collecting values:
+List of 3
+ $ : int 1
+ $ : int 2
+ $ : int 3
+- plan('multicore') with cores=2 ... DONE
+- plan('multisession') with cores=2 ...
+Creating lazy futures:
+[1] "created" "created" "created"
+Checking if future #1 is resolved:
+[1] "running" "created" "created"
+Checking if future #2 is resolved:
+[1] "running" "running" "created"
+Checking if future #3 is resolved:
+[1] "finished" "running"  "running" 
+Waiting for future #1 to finish ... done
+Checking if future #2 is resolved:
+[1] "finished" "running"  "running" 
+Checking if future #3 is resolved:
+[1] "finished" "running"  "running" 
+Waiting for future #2 to finish ... done
+Checking if future #3 is resolved:
+[1] "finished" "finished" "running" 
+Waiting for future #3 to finish ... done
+[1] "finished" "finished" "finished"
+Collecting values:
+List of 3
+ $ : int 1
+ $ : int 2
+ $ : int 3
+- plan('multisession') with cores=2 ... DONE
+Testing with 2 cores ... DONE
+> 
+> message("*** resolved() - assert non-blocking while launching lazy futures ... DONE")
+*** resolved() - assert non-blocking while launching lazy futures ... DONE
+> 
+> source("incl/end.R")
+> 
