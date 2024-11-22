@@ -1,0 +1,3040 @@
+
+R version 4.4.0 (2024-04-24) -- "Puppy Cup"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> source("incl/start.R")
+[18:05:21.098] plan(): Setting new future strategy stack:
+[18:05:21.099] List of future strategies:
+[18:05:21.099] 1. sequential:
+[18:05:21.099]    - args: function (..., envir = parent.frame(), workers = "<NULL>")
+[18:05:21.099]    - tweaked: FALSE
+[18:05:21.099]    - call: future::plan("sequential")
+[18:05:21.123] plan(): nbrOfWorkers() = 1
+> 
+> message("*** nbrOfWorkers() ...")
+*** nbrOfWorkers() ...
+> 
+> strategies <- c("sequential")
+> for (strategy in strategies) {
++   message("Type of future: ", strategy)
++ 
++   evaluator <- get(strategy, mode = "function")
++   n <- nbrOfWorkers(evaluator)
++   message(sprintf("nbrOfWorkers: %d", n))
++   stopifnot(n == 1L)
++ 
++   plan(strategy)
++   n <- nbrOfWorkers()
++   message(sprintf("nbrOfWorkers: %d", n))
++   stopifnot(n == 1L)
++ 
++   n <- nbrOfFreeWorkers()
++   message(sprintf("nbrOfFreeWorkers: %d", n))
++   stopifnot(n == 1L)
++   
++   n <- nbrOfFreeWorkers(background = TRUE)
++   message(sprintf("nbrOfFreeWorkers(background = TRUE): %d", n))
++   stopifnot(n == 0L)
++ } ## for (strategy ...)
+Type of future: sequential
+nbrOfWorkers: 1
+[18:05:21.164] plan(): Setting new future strategy stack:
+[18:05:21.165] List of future strategies:
+[18:05:21.165] 1. sequential:
+[18:05:21.165]    - args: function (..., envir = parent.frame(), workers = "<NULL>")
+[18:05:21.165]    - tweaked: FALSE
+[18:05:21.165]    - call: plan(strategy)
+[18:05:21.188] plan(): nbrOfWorkers() = 1
+nbrOfWorkers: 1
+nbrOfFreeWorkers: 1
+nbrOfFreeWorkers(background = TRUE): 0
+> 
+> 
+> strategies <- c("cluster", "multisession", "multicore")
+> strategies <- intersect(strategies, supportedStrategies())
+> cores <- availableCores()
+> message("Number of available cores: ", cores)
+Number of available cores: 2
+> workers <- availableWorkers()
+> nworkers <- length(workers)
+> message(sprintf("Available workers: [n = %d] %s", nworkers, hpaste(sQuote(workers))))
+Available workers: [n = 2] ‘localhost’, ‘localhost’
+> 
+> allButOneCore <- function() max(1L, future::availableCores() - 1L)
+> allButOneWorker <- function() {
++   w <- future::availableWorkers()
++   if (length(w) > 1) w[-1] else w
++ }
+> 
+> for (strategy in strategies) {
++   ## Speed up CRAN checks: Skip on CRAN Windows 32-bit
++   if (!fullTest && isWin32) next
++ 
++   message("Type of future: ", strategy)
++ 
++   evaluator <- get(strategy, mode = "function")
++   n <- nbrOfWorkers(evaluator)
++   message(sprintf("nbrOfWorkers: %d", n))
++   stopifnot(n == nworkers)
++ 
++   plan(strategy)
++   n <- nbrOfWorkers()
++   message(sprintf("nbrOfWorkers: %d", n))
++   stopifnot(n == nworkers)
++ 
++   n <- nbrOfFreeWorkers()
++   message(sprintf("nbrOfFreeWorkers: %d", n))
++   stopifnot(n == nworkers)
++   
++   n <- nbrOfFreeWorkers(background = TRUE)
++   message(sprintf("nbrOfFreeWorkers(background = TRUE): %d", n))
++ # FIXME  stopifnot(n == 0L)
++ 
++   plan(strategy, workers = 1L)
++   n <- nbrOfWorkers()
++   message(sprintf("nbrOfWorkers: %d", n))
++   stopifnot(n == max(1L, nworkers - 1L))
++   
++   n <- nbrOfFreeWorkers()
++   message(sprintf("nbrOfFreeWorkers: %d", n))
++   stopifnot(n == max(1L, nworkers - 1L))
++   
++   n <- nbrOfFreeWorkers(background = TRUE)
++   message(sprintf("nbrOfFreeWorkers(background = TRUE): %d", n))
++ # FIXME  stopifnot(n == 0L)
++ 
++   plan(strategy, workers = allButOneCore)
++   n <- nbrOfWorkers()
++   message(sprintf("nbrOfWorkers: %d", n))
++   stopifnot(n == max(1L, nworkers - 1L))
++   
++   n <- nbrOfFreeWorkers()
++   message(sprintf("nbrOfFreeWorkers: %d", n))
++   stopifnot(n == max(1L, nworkers - 1L))
++   
++   n <- nbrOfFreeWorkers(background = TRUE)
++   message(sprintf("nbrOfFreeWorkers(background = TRUE): %d", n))
++ # FIXME  stopifnot(n == 0L)
++ } ## for (strategy ...)
+Type of future: multisession
+nbrOfWorkers: 2
+[18:05:21.253] plan(): Setting new future strategy stack:
+[18:05:21.253] List of future strategies:
+[18:05:21.253] 1. multisession:
+[18:05:21.253]    - args: function (..., workers = availableCores(), lazy = FALSE, rscript_libs = .libPaths(), envir = parent.frame())
+[18:05:21.253]    - tweaked: FALSE
+[18:05:21.253]    - call: plan(strategy)
+[18:05:21.254] plan(): plan_init() of ‘multisession’, ‘cluster’, ‘multiprocess’, ‘future’, ‘function’ ...
+[18:05:21.254] multisession:
+[18:05:21.254] - args: function (..., workers = availableCores(), lazy = FALSE, rscript_libs = .libPaths(), envir = parent.frame())
+[18:05:21.254] - tweaked: FALSE
+[18:05:21.254] - call: plan(strategy)
+[18:05:21.264] getGlobalsAndPackages() ...
+[18:05:21.265] Not searching for globals
+[18:05:21.265] - globals: [0] <none>
+[18:05:21.265] getGlobalsAndPackages() ... DONE
+[18:05:21.266] [local output] makeClusterPSOCK() ...
+[18:05:21.316] [local output] Workers: [n = 2] ‘localhost’, ‘localhost’
+[18:05:21.319] [local output] Base port: 11404
+[18:05:21.319] [local output] Getting setup options for 2 cluster nodes ...
+[18:05:21.319] [local output]  - Node 1 of 2 ...
+[18:05:21.320] [local output] localMachine=TRUE => revtunnel=FALSE
+
+[18:05:21.321] Testing if worker's PID can be inferred: ‘'/usr/local/lib/R/bin/Rscript' -e 'try(suppressWarnings(cat(Sys.getpid(),file="/tmp/RtmpuDL7My/worker.rank=1.parallelly.parent=326518.4fb76581316bb.pid")), silent = TRUE)' -e 'file.exists("/tmp/RtmpuDL7My/worker.rank=1.parallelly.parent=326518.4fb76581316bb.pid")'’
+[18:05:21.611] - Possible to infer worker's PID: TRUE
+[18:05:21.612] [local output] Rscript port: 11404
+
+[18:05:21.613] [local output]  - Node 2 of 2 ...
+[18:05:21.613] [local output] localMachine=TRUE => revtunnel=FALSE
+
+[18:05:21.614] [local output] Rscript port: 11404
+
+[18:05:21.615] [local output] Getting setup options for 2 cluster nodes ... done
+[18:05:21.615] [local output]  - Parallel setup requested for some PSOCK nodes
+[18:05:21.616] [local output] Setting up PSOCK nodes in parallel
+[18:05:21.616] List of 36
+[18:05:21.616]  $ worker          : chr "localhost"
+[18:05:21.616]   ..- attr(*, "localhost")= logi TRUE
+[18:05:21.616]  $ master          : chr "localhost"
+[18:05:21.616]  $ port            : int 11404
+[18:05:21.616]  $ connectTimeout  : num 120
+[18:05:21.616]  $ timeout         : num 2592000
+[18:05:21.616]  $ rscript         : chr "'/usr/local/lib/R/bin/Rscript'"
+[18:05:21.616]  $ homogeneous     : logi TRUE
+[18:05:21.616]  $ rscript_args    : chr "--default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppressWarnings(cat(Sys.getpid(),fi"| __truncated__
+[18:05:21.616]  $ rscript_envs    : NULL
+[18:05:21.616]  $ rscript_libs    : chr [1:2] "/usr/local/lib/R/site-library" "/usr/local/lib/R/library"
+[18:05:21.616]  $ rscript_startup : NULL
+[18:05:21.616]  $ rscript_sh      : chr "sh"
+[18:05:21.616]  $ default_packages: chr [1:6] "datasets" "utils" "grDevices" "graphics" ...
+[18:05:21.616]  $ methods         : logi TRUE
+[18:05:21.616]  $ socketOptions   : chr "no-delay"
+[18:05:21.616]  $ useXDR          : logi FALSE
+[18:05:21.616]  $ outfile         : chr "/dev/null"
+[18:05:21.616]  $ renice          : int NA
+[18:05:21.616]  $ rshcmd          : NULL
+[18:05:21.616]  $ user            : chr(0) 
+[18:05:21.616]  $ revtunnel       : logi FALSE
+[18:05:21.616]  $ rshlogfile      : NULL
+[18:05:21.616]  $ rshopts         : chr(0) 
+[18:05:21.616]  $ rank            : int 1
+[18:05:21.616]  $ manual          : logi FALSE
+[18:05:21.616]  $ dryrun          : logi FALSE
+[18:05:21.616]  $ quiet           : logi FALSE
+[18:05:21.616]  $ setup_strategy  : chr "parallel"
+[18:05:21.616]  $ local_cmd       : chr "'/usr/local/lib/R/bin/Rscript' --default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppr"| __truncated__
+[18:05:21.616]  $ pidfile         : chr "/tmp/RtmpuDL7My/worker.rank=1.parallelly.parent=326518.4fb76581316bb.pid"
+[18:05:21.616]  $ rshcmd_label    : NULL
+[18:05:21.616]  $ rsh_call        : NULL
+[18:05:21.616]  $ cmd             : chr "'/usr/local/lib/R/bin/Rscript' --default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppr"| __truncated__
+[18:05:21.616]  $ localMachine    : logi TRUE
+[18:05:21.616]  $ make_fcn        :function (worker = getOption2("parallelly.localhost.hostname", "localhost"), 
+[18:05:21.616]     master = NULL, port, connectTimeout = getOption2("parallelly.makeNodePSOCK.connectTimeout", 
+[18:05:21.616]         2 * 60), timeout = getOption2("parallelly.makeNodePSOCK.timeout", 
+[18:05:21.616]         30 * 24 * 60 * 60), rscript = NULL, homogeneous = NULL, rscript_args = NULL, 
+[18:05:21.616]     rscript_envs = NULL, rscript_libs = NULL, rscript_startup = NULL, rscript_sh = c("auto", 
+[18:05:21.616]         "cmd", "sh"), default_packages = c("datasets", "utils", "grDevices", 
+[18:05:21.616]         "graphics", "stats", if (methods) "methods"), methods = TRUE, socketOptions = getOption2("parallelly.makeNodePSOCK.socketOptions", 
+[18:05:21.616]         "no-delay"), useXDR = getOption2("parallelly.makeNodePSOCK.useXDR", 
+[18:05:21.616]         FALSE), outfile = "/dev/null", renice = NA_integer_, rshcmd = getOption2("parallelly.makeNodePSOCK.rshcmd", 
+[18:05:21.616]         NULL), user = NULL, revtunnel = NA, rshlogfile = NULL, rshopts = getOption2("parallelly.makeNodePSOCK.rshopts", 
+[18:05:21.616]         NULL), rank = 1L, manual = FALSE, dryrun = FALSE, quiet = FALSE, 
+[18:05:21.616]     setup_strategy = getOption2("parallelly.makeNodePSOCK.setup_strategy", 
+[18:05:21.616]         "parallel"), action = c("launch", "options"), verbose = FALSE)  
+[18:05:21.616]  $ arguments       :List of 28
+[18:05:21.616]   ..$ worker          : chr "localhost"
+[18:05:21.616]   ..$ master          : NULL
+[18:05:21.616]   ..$ port            : int 11404
+[18:05:21.616]   ..$ connectTimeout  : num 120
+[18:05:21.616]   ..$ timeout         : num 2592000
+[18:05:21.616]   ..$ rscript         : NULL
+[18:05:21.616]   ..$ homogeneous     : NULL
+[18:05:21.616]   ..$ rscript_args    : NULL
+[18:05:21.616]   ..$ rscript_envs    : NULL
+[18:05:21.616]   ..$ rscript_libs    : chr [1:2] "/usr/local/lib/R/site-library" "/usr/local/lib/R/library"
+[18:05:21.616]   ..$ rscript_startup : NULL
+[18:05:21.616]   ..$ rscript_sh      : chr [1:3] "auto" "cmd" "sh"
+[18:05:21.616]   ..$ default_packages: chr [1:6] "datasets" "utils" "grDevices" "graphics" ...
+[18:05:21.616]   ..$ methods         : logi TRUE
+[18:05:21.616]   ..$ socketOptions   : chr "no-delay"
+[18:05:21.616]   ..$ useXDR          : logi FALSE
+[18:05:21.616]   ..$ outfile         : chr "/dev/null"
+[18:05:21.616]   ..$ renice          : int NA
+[18:05:21.616]   ..$ rshcmd          : NULL
+[18:05:21.616]   ..$ user            : NULL
+[18:05:21.616]   ..$ revtunnel       : logi NA
+[18:05:21.616]   ..$ rshlogfile      : NULL
+[18:05:21.616]   ..$ rshopts         : NULL
+[18:05:21.616]   ..$ rank            : int 1
+[18:05:21.616]   ..$ manual          : logi FALSE
+[18:05:21.616]   ..$ dryrun          : logi FALSE
+[18:05:21.616]   ..$ quiet           : logi FALSE
+[18:05:21.616]   ..$ setup_strategy  : chr "parallel"
+[18:05:21.616]  - attr(*, "class")= chr [1:2] "makeNodePSOCKOptions" "makeNodeOptions"
+[18:05:21.653] [local output] System call to launch all workers:
+[18:05:21.654] [local output] '/usr/local/lib/R/bin/Rscript' --default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppressWarnings(cat(Sys.getpid(),file="/tmp/RtmpuDL7My/worker.rank=1.parallelly.parent=326518.4fb76581316bb.pid")), silent = TRUE)' -e 'options(socketOptions = "no-delay")' -e '.libPaths(c("/usr/local/lib/R/site-library","/usr/local/lib/R/library"))' -e 'workRSOCK <- tryCatch(parallel:::.workRSOCK, error=function(e) parallel:::.slaveRSOCK); workRSOCK()' MASTER=localhost PORT=11404 OUT=/dev/null TIMEOUT=2592000 XDR=FALSE SETUPTIMEOUT=120 SETUPSTRATEGY=parallel
+[18:05:21.654] [local output] Starting PSOCK main server
+[18:05:21.662] [local output] Workers launched
+[18:05:21.662] [local output] Waiting for workers to connect back
+[18:05:21.662]  - [local output] 0 workers out of 2 ready
+[18:05:22.017]  - [local output] 0 workers out of 2 ready
+[18:05:22.018]  - [local output] 1 workers out of 2 ready
+[18:05:22.027]  - [local output] 1 workers out of 2 ready
+[18:05:22.028]  - [local output] 2 workers out of 2 ready
+[18:05:22.028] [local output] Launching of workers completed
+[18:05:22.028] [local output] Collecting session information from workers
+[18:05:22.030] [local output]  - Worker #1 of 2
+[18:05:22.031] [local output]  - Worker #2 of 2
+[18:05:22.031] [local output] makeClusterPSOCK() ... done
+[18:05:22.051] Packages needed by the future expression (n = 0): <none>
+[18:05:22.051] Packages needed by future strategies (n = 0): <none>
+[18:05:22.052] {
+[18:05:22.052]     {
+[18:05:22.052]         {
+[18:05:22.052]             ...future.startTime <- base::Sys.time()
+[18:05:22.052]             {
+[18:05:22.052]                 {
+[18:05:22.052]                   {
+[18:05:22.052]                     {
+[18:05:22.052]                       base::local({
+[18:05:22.052]                         has_future <- base::requireNamespace("future", 
+[18:05:22.052]                           quietly = TRUE)
+[18:05:22.052]                         if (has_future) {
+[18:05:22.052]                           ns <- base::getNamespace("future")
+[18:05:22.052]                           version <- ns[[".package"]][["version"]]
+[18:05:22.052]                           if (is.null(version)) 
+[18:05:22.052]                             version <- utils::packageVersion("future")
+[18:05:22.052]                         }
+[18:05:22.052]                         else {
+[18:05:22.052]                           version <- NULL
+[18:05:22.052]                         }
+[18:05:22.052]                         if (!has_future || version < "1.8.0") {
+[18:05:22.052]                           info <- base::c(r_version = base::gsub("R version ", 
+[18:05:22.052]                             "", base::R.version$version.string), 
+[18:05:22.052]                             platform = base::sprintf("%s (%s-bit)", 
+[18:05:22.052]                               base::R.version$platform, 8 * base::.Machine$sizeof.pointer), 
+[18:05:22.052]                             os = base::paste(base::Sys.info()[base::c("sysname", 
+[18:05:22.052]                               "release", "version")], collapse = " "), 
+[18:05:22.052]                             hostname = base::Sys.info()[["nodename"]])
+[18:05:22.052]                           info <- base::sprintf("%s: %s", base::names(info), 
+[18:05:22.052]                             info)
+[18:05:22.052]                           info <- base::paste(info, collapse = "; ")
+[18:05:22.052]                           if (!has_future) {
+[18:05:22.052]                             msg <- base::sprintf("Package 'future' is not installed on worker (%s)", 
+[18:05:22.052]                               info)
+[18:05:22.052]                           }
+[18:05:22.052]                           else {
+[18:05:22.052]                             msg <- base::sprintf("Package 'future' on worker (%s) must be of version >= 1.8.0: %s", 
+[18:05:22.052]                               info, version)
+[18:05:22.052]                           }
+[18:05:22.052]                           base::stop(msg)
+[18:05:22.052]                         }
+[18:05:22.052]                       })
+[18:05:22.052]                     }
+[18:05:22.052]                     ...future.mc.cores.old <- base::getOption("mc.cores")
+[18:05:22.052]                     base::options(mc.cores = 1L)
+[18:05:22.052]                   }
+[18:05:22.052]                   ...future.strategy.old <- future::plan("list")
+[18:05:22.052]                   options(future.plan = NULL)
+[18:05:22.052]                   Sys.unsetenv("R_FUTURE_PLAN")
+[18:05:22.052]                   future::plan("default", .cleanup = FALSE, .init = FALSE)
+[18:05:22.052]                 }
+[18:05:22.052]                 ...future.workdir <- getwd()
+[18:05:22.052]             }
+[18:05:22.052]             ...future.oldOptions <- base::as.list(base::.Options)
+[18:05:22.052]             ...future.oldEnvVars <- base::Sys.getenv()
+[18:05:22.052]         }
+[18:05:22.052]         base::options(future.startup.script = FALSE, future.globals.onMissing = NULL, 
+[18:05:22.052]             future.globals.maxSize = NULL, future.globals.method = NULL, 
+[18:05:22.052]             future.globals.onMissing = NULL, future.globals.onReference = NULL, 
+[18:05:22.052]             future.globals.resolve = NULL, future.resolve.recursive = NULL, 
+[18:05:22.052]             future.rng.onMisuse = NULL, future.rng.onMisuse.keepFuture = NULL, 
+[18:05:22.052]             future.stdout.windows.reencode = NULL, width = 80L)
+[18:05:22.052]         ...future.futureOptionsAdded <- base::setdiff(base::names(base::.Options), 
+[18:05:22.052]             base::names(...future.oldOptions))
+[18:05:22.052]     }
+[18:05:22.052]     if (FALSE) {
+[18:05:22.052]     }
+[18:05:22.052]     else {
+[18:05:22.052]         if (TRUE) {
+[18:05:22.052]             ...future.stdout <- base::rawConnection(base::raw(0L), 
+[18:05:22.052]                 open = "w")
+[18:05:22.052]         }
+[18:05:22.052]         else {
+[18:05:22.052]             ...future.stdout <- base::file(base::switch(.Platform$OS.type, 
+[18:05:22.052]                 windows = "NUL", "/dev/null"), open = "w")
+[18:05:22.052]         }
+[18:05:22.052]         base::sink(...future.stdout, type = "output", split = FALSE)
+[18:05:22.052]         base::on.exit(if (!base::is.null(...future.stdout)) {
+[18:05:22.052]             base::sink(type = "output", split = FALSE)
+[18:05:22.052]             base::close(...future.stdout)
+[18:05:22.052]         }, add = TRUE)
+[18:05:22.052]     }
+[18:05:22.052]     ...future.frame <- base::sys.nframe()
+[18:05:22.052]     ...future.conditions <- base::list()
+[18:05:22.052]     ...future.rng <- base::globalenv()$.Random.seed
+[18:05:22.052]     if (FALSE) {
+[18:05:22.052]         ...future.globalenv.names <- c(base::names(base::.GlobalEnv), 
+[18:05:22.052]             "...future.value", "...future.globalenv.names", ".Random.seed")
+[18:05:22.052]     }
+[18:05:22.052]     ...future.result <- base::tryCatch({
+[18:05:22.052]         base::withCallingHandlers({
+[18:05:22.052]             ...future.value <- base::withVisible(base::local({
+[18:05:22.052]                 ...future.makeSendCondition <- base::local({
+[18:05:22.052]                   sendCondition <- NULL
+[18:05:22.052]                   function(frame = 1L) {
+[18:05:22.052]                     if (is.function(sendCondition)) 
+[18:05:22.052]                       return(sendCondition)
+[18:05:22.052]                     ns <- getNamespace("parallel")
+[18:05:22.052]                     if (exists("sendData", mode = "function", 
+[18:05:22.052]                       envir = ns)) {
+[18:05:22.052]                       parallel_sendData <- get("sendData", mode = "function", 
+[18:05:22.052]                         envir = ns)
+[18:05:22.052]                       envir <- sys.frame(frame)
+[18:05:22.052]                       master <- NULL
+[18:05:22.052]                       while (!identical(envir, .GlobalEnv) && 
+[18:05:22.052]                         !identical(envir, emptyenv())) {
+[18:05:22.052]                         if (exists("master", mode = "list", envir = envir, 
+[18:05:22.052]                           inherits = FALSE)) {
+[18:05:22.052]                           master <- get("master", mode = "list", 
+[18:05:22.052]                             envir = envir, inherits = FALSE)
+[18:05:22.052]                           if (inherits(master, c("SOCKnode", 
+[18:05:22.052]                             "SOCK0node"))) {
+[18:05:22.052]                             sendCondition <<- function(cond) {
+[18:05:22.052]                               data <- list(type = "VALUE", value = cond, 
+[18:05:22.052]                                 success = TRUE)
+[18:05:22.052]                               parallel_sendData(master, data)
+[18:05:22.052]                             }
+[18:05:22.052]                             return(sendCondition)
+[18:05:22.052]                           }
+[18:05:22.052]                         }
+[18:05:22.052]                         frame <- frame + 1L
+[18:05:22.052]                         envir <- sys.frame(frame)
+[18:05:22.052]                       }
+[18:05:22.052]                     }
+[18:05:22.052]                     sendCondition <<- function(cond) NULL
+[18:05:22.052]                   }
+[18:05:22.052]                 })
+[18:05:22.052]                 withCallingHandlers({
+[18:05:22.052]                   NA
+[18:05:22.052]                 }, immediateCondition = function(cond) {
+[18:05:22.052]                   sendCondition <- ...future.makeSendCondition()
+[18:05:22.052]                   sendCondition(cond)
+[18:05:22.052]                   muffleCondition <- function (cond, pattern = "^muffle") 
+[18:05:22.052]                   {
+[18:05:22.052]                     inherits <- base::inherits
+[18:05:22.052]                     invokeRestart <- base::invokeRestart
+[18:05:22.052]                     is.null <- base::is.null
+[18:05:22.052]                     muffled <- FALSE
+[18:05:22.052]                     if (inherits(cond, "message")) {
+[18:05:22.052]                       muffled <- grepl(pattern, "muffleMessage")
+[18:05:22.052]                       if (muffled) 
+[18:05:22.052]                         invokeRestart("muffleMessage")
+[18:05:22.052]                     }
+[18:05:22.052]                     else if (inherits(cond, "warning")) {
+[18:05:22.052]                       muffled <- grepl(pattern, "muffleWarning")
+[18:05:22.052]                       if (muffled) 
+[18:05:22.052]                         invokeRestart("muffleWarning")
+[18:05:22.052]                     }
+[18:05:22.052]                     else if (inherits(cond, "condition")) {
+[18:05:22.052]                       if (!is.null(pattern)) {
+[18:05:22.052]                         computeRestarts <- base::computeRestarts
+[18:05:22.052]                         grepl <- base::grepl
+[18:05:22.052]                         restarts <- computeRestarts(cond)
+[18:05:22.052]                         for (restart in restarts) {
+[18:05:22.052]                           name <- restart$name
+[18:05:22.052]                           if (is.null(name)) 
+[18:05:22.052]                             next
+[18:05:22.052]                           if (!grepl(pattern, name)) 
+[18:05:22.052]                             next
+[18:05:22.052]                           invokeRestart(restart)
+[18:05:22.052]                           muffled <- TRUE
+[18:05:22.052]                           break
+[18:05:22.052]                         }
+[18:05:22.052]                       }
+[18:05:22.052]                     }
+[18:05:22.052]                     invisible(muffled)
+[18:05:22.052]                   }
+[18:05:22.052]                   muffleCondition(cond)
+[18:05:22.052]                 })
+[18:05:22.052]             }))
+[18:05:22.052]             future::FutureResult(value = ...future.value$value, 
+[18:05:22.052]                 visible = ...future.value$visible, rng = !identical(base::globalenv()$.Random.seed, 
+[18:05:22.052]                   ...future.rng), globalenv = if (FALSE) 
+[18:05:22.052]                   list(added = base::setdiff(base::names(base::.GlobalEnv), 
+[18:05:22.052]                     ...future.globalenv.names))
+[18:05:22.052]                 else NULL, started = ...future.startTime, version = "1.8")
+[18:05:22.052]         }, condition = base::local({
+[18:05:22.052]             c <- base::c
+[18:05:22.052]             inherits <- base::inherits
+[18:05:22.052]             invokeRestart <- base::invokeRestart
+[18:05:22.052]             length <- base::length
+[18:05:22.052]             list <- base::list
+[18:05:22.052]             seq.int <- base::seq.int
+[18:05:22.052]             signalCondition <- base::signalCondition
+[18:05:22.052]             sys.calls <- base::sys.calls
+[18:05:22.052]             `[[` <- base::`[[`
+[18:05:22.052]             `+` <- base::`+`
+[18:05:22.052]             `<<-` <- base::`<<-`
+[18:05:22.052]             sysCalls <- function(calls = sys.calls(), from = 1L) {
+[18:05:22.052]                 calls[seq.int(from = from + 12L, to = length(calls) - 
+[18:05:22.052]                   3L)]
+[18:05:22.052]             }
+[18:05:22.052]             function(cond) {
+[18:05:22.052]                 is_error <- inherits(cond, "error")
+[18:05:22.052]                 ignore <- !is_error && !is.null(NULL) && inherits(cond, 
+[18:05:22.052]                   NULL)
+[18:05:22.052]                 if (is_error) {
+[18:05:22.052]                   sessionInformation <- function() {
+[18:05:22.052]                     list(r = base::R.Version(), locale = base::Sys.getlocale(), 
+[18:05:22.052]                       rngkind = base::RNGkind(), namespaces = base::loadedNamespaces(), 
+[18:05:22.052]                       search = base::search(), system = base::Sys.info())
+[18:05:22.052]                   }
+[18:05:22.052]                   ...future.conditions[[length(...future.conditions) + 
+[18:05:22.052]                     1L]] <<- list(condition = cond, calls = c(sysCalls(from = ...future.frame), 
+[18:05:22.052]                     cond$call), session = sessionInformation(), 
+[18:05:22.052]                     timestamp = base::Sys.time(), signaled = 0L)
+[18:05:22.052]                   signalCondition(cond)
+[18:05:22.052]                 }
+[18:05:22.052]                 else if (!ignore && TRUE && inherits(cond, c("condition", 
+[18:05:22.052]                 "immediateCondition"))) {
+[18:05:22.052]                   signal <- TRUE && inherits(cond, "immediateCondition")
+[18:05:22.052]                   ...future.conditions[[length(...future.conditions) + 
+[18:05:22.052]                     1L]] <<- list(condition = cond, signaled = base::as.integer(signal))
+[18:05:22.052]                   if (TRUE && !signal) {
+[18:05:22.052]                     muffleCondition <- function (cond, pattern = "^muffle") 
+[18:05:22.052]                     {
+[18:05:22.052]                       inherits <- base::inherits
+[18:05:22.052]                       invokeRestart <- base::invokeRestart
+[18:05:22.052]                       is.null <- base::is.null
+[18:05:22.052]                       muffled <- FALSE
+[18:05:22.052]                       if (inherits(cond, "message")) {
+[18:05:22.052]                         muffled <- grepl(pattern, "muffleMessage")
+[18:05:22.052]                         if (muffled) 
+[18:05:22.052]                           invokeRestart("muffleMessage")
+[18:05:22.052]                       }
+[18:05:22.052]                       else if (inherits(cond, "warning")) {
+[18:05:22.052]                         muffled <- grepl(pattern, "muffleWarning")
+[18:05:22.052]                         if (muffled) 
+[18:05:22.052]                           invokeRestart("muffleWarning")
+[18:05:22.052]                       }
+[18:05:22.052]                       else if (inherits(cond, "condition")) {
+[18:05:22.052]                         if (!is.null(pattern)) {
+[18:05:22.052]                           computeRestarts <- base::computeRestarts
+[18:05:22.052]                           grepl <- base::grepl
+[18:05:22.052]                           restarts <- computeRestarts(cond)
+[18:05:22.052]                           for (restart in restarts) {
+[18:05:22.052]                             name <- restart$name
+[18:05:22.052]                             if (is.null(name)) 
+[18:05:22.052]                               next
+[18:05:22.052]                             if (!grepl(pattern, name)) 
+[18:05:22.052]                               next
+[18:05:22.052]                             invokeRestart(restart)
+[18:05:22.052]                             muffled <- TRUE
+[18:05:22.052]                             break
+[18:05:22.052]                           }
+[18:05:22.052]                         }
+[18:05:22.052]                       }
+[18:05:22.052]                       invisible(muffled)
+[18:05:22.052]                     }
+[18:05:22.052]                     muffleCondition(cond, pattern = "^muffle")
+[18:05:22.052]                   }
+[18:05:22.052]                 }
+[18:05:22.052]                 else {
+[18:05:22.052]                   if (TRUE) {
+[18:05:22.052]                     muffleCondition <- function (cond, pattern = "^muffle") 
+[18:05:22.052]                     {
+[18:05:22.052]                       inherits <- base::inherits
+[18:05:22.052]                       invokeRestart <- base::invokeRestart
+[18:05:22.052]                       is.null <- base::is.null
+[18:05:22.052]                       muffled <- FALSE
+[18:05:22.052]                       if (inherits(cond, "message")) {
+[18:05:22.052]                         muffled <- grepl(pattern, "muffleMessage")
+[18:05:22.052]                         if (muffled) 
+[18:05:22.052]                           invokeRestart("muffleMessage")
+[18:05:22.052]                       }
+[18:05:22.052]                       else if (inherits(cond, "warning")) {
+[18:05:22.052]                         muffled <- grepl(pattern, "muffleWarning")
+[18:05:22.052]                         if (muffled) 
+[18:05:22.052]                           invokeRestart("muffleWarning")
+[18:05:22.052]                       }
+[18:05:22.052]                       else if (inherits(cond, "condition")) {
+[18:05:22.052]                         if (!is.null(pattern)) {
+[18:05:22.052]                           computeRestarts <- base::computeRestarts
+[18:05:22.052]                           grepl <- base::grepl
+[18:05:22.052]                           restarts <- computeRestarts(cond)
+[18:05:22.052]                           for (restart in restarts) {
+[18:05:22.052]                             name <- restart$name
+[18:05:22.052]                             if (is.null(name)) 
+[18:05:22.052]                               next
+[18:05:22.052]                             if (!grepl(pattern, name)) 
+[18:05:22.052]                               next
+[18:05:22.052]                             invokeRestart(restart)
+[18:05:22.052]                             muffled <- TRUE
+[18:05:22.052]                             break
+[18:05:22.052]                           }
+[18:05:22.052]                         }
+[18:05:22.052]                       }
+[18:05:22.052]                       invisible(muffled)
+[18:05:22.052]                     }
+[18:05:22.052]                     muffleCondition(cond, pattern = "^muffle")
+[18:05:22.052]                   }
+[18:05:22.052]                 }
+[18:05:22.052]             }
+[18:05:22.052]         }))
+[18:05:22.052]     }, error = function(ex) {
+[18:05:22.052]         base::structure(base::list(value = NULL, visible = NULL, 
+[18:05:22.052]             conditions = ...future.conditions, rng = !identical(base::globalenv()$.Random.seed, 
+[18:05:22.052]                 ...future.rng), started = ...future.startTime, 
+[18:05:22.052]             finished = Sys.time(), session_uuid = NA_character_, 
+[18:05:22.052]             version = "1.8"), class = "FutureResult")
+[18:05:22.052]     }, finally = {
+[18:05:22.052]         if (!identical(...future.workdir, getwd())) 
+[18:05:22.052]             setwd(...future.workdir)
+[18:05:22.052]         {
+[18:05:22.052]             if (identical(getOption("nwarnings"), ...future.oldOptions$nwarnings)) {
+[18:05:22.052]                 ...future.oldOptions$nwarnings <- NULL
+[18:05:22.052]             }
+[18:05:22.052]             base::options(...future.oldOptions)
+[18:05:22.052]             if (.Platform$OS.type == "windows") {
+[18:05:22.052]                 old_names <- names(...future.oldEnvVars)
+[18:05:22.052]                 envs <- base::Sys.getenv()
+[18:05:22.052]                 names <- names(envs)
+[18:05:22.052]                 common <- intersect(names, old_names)
+[18:05:22.052]                 added <- setdiff(names, old_names)
+[18:05:22.052]                 removed <- setdiff(old_names, names)
+[18:05:22.052]                 changed <- common[...future.oldEnvVars[common] != 
+[18:05:22.052]                   envs[common]]
+[18:05:22.052]                 NAMES <- toupper(changed)
+[18:05:22.052]                 args <- list()
+[18:05:22.052]                 for (kk in seq_along(NAMES)) {
+[18:05:22.052]                   name <- changed[[kk]]
+[18:05:22.052]                   NAME <- NAMES[[kk]]
+[18:05:22.052]                   if (name != NAME && is.element(NAME, old_names)) 
+[18:05:22.052]                     next
+[18:05:22.052]                   args[[name]] <- ...future.oldEnvVars[[name]]
+[18:05:22.052]                 }
+[18:05:22.052]                 NAMES <- toupper(added)
+[18:05:22.052]                 for (kk in seq_along(NAMES)) {
+[18:05:22.052]                   name <- added[[kk]]
+[18:05:22.052]                   NAME <- NAMES[[kk]]
+[18:05:22.052]                   if (name != NAME && is.element(NAME, old_names)) 
+[18:05:22.052]                     next
+[18:05:22.052]                   args[[name]] <- ""
+[18:05:22.052]                 }
+[18:05:22.052]                 NAMES <- toupper(removed)
+[18:05:22.052]                 for (kk in seq_along(NAMES)) {
+[18:05:22.052]                   name <- removed[[kk]]
+[18:05:22.052]                   NAME <- NAMES[[kk]]
+[18:05:22.052]                   if (name != NAME && is.element(NAME, old_names)) 
+[18:05:22.052]                     next
+[18:05:22.052]                   args[[name]] <- ...future.oldEnvVars[[name]]
+[18:05:22.052]                 }
+[18:05:22.052]                 if (length(args) > 0) 
+[18:05:22.052]                   base::do.call(base::Sys.setenv, args = args)
+[18:05:22.052]                 args <- names <- old_names <- NAMES <- envs <- common <- added <- removed <- NULL
+[18:05:22.052]             }
+[18:05:22.052]             else {
+[18:05:22.052]                 base::do.call(base::Sys.setenv, args = base::as.list(...future.oldEnvVars))
+[18:05:22.052]             }
+[18:05:22.052]             {
+[18:05:22.052]                 if (base::length(...future.futureOptionsAdded) > 
+[18:05:22.052]                   0L) {
+[18:05:22.052]                   opts <- base::vector("list", length = base::length(...future.futureOptionsAdded))
+[18:05:22.052]                   base::names(opts) <- ...future.futureOptionsAdded
+[18:05:22.052]                   base::options(opts)
+[18:05:22.052]                 }
+[18:05:22.052]                 {
+[18:05:22.052]                   {
+[18:05:22.052]                     base::options(mc.cores = ...future.mc.cores.old)
+[18:05:22.052]                     NULL
+[18:05:22.052]                   }
+[18:05:22.052]                   options(future.plan = NULL)
+[18:05:22.052]                   if (is.na(NA_character_)) 
+[18:05:22.052]                     Sys.unsetenv("R_FUTURE_PLAN")
+[18:05:22.052]                   else Sys.setenv(R_FUTURE_PLAN = NA_character_)
+[18:05:22.052]                   future::plan(...future.strategy.old, .cleanup = FALSE, 
+[18:05:22.052]                     .init = FALSE)
+[18:05:22.052]                 }
+[18:05:22.052]             }
+[18:05:22.052]         }
+[18:05:22.052]     })
+[18:05:22.052]     if (TRUE) {
+[18:05:22.052]         base::sink(type = "output", split = FALSE)
+[18:05:22.052]         if (TRUE) {
+[18:05:22.052]             ...future.result$stdout <- base::rawToChar(base::rawConnectionValue(...future.stdout))
+[18:05:22.052]         }
+[18:05:22.052]         else {
+[18:05:22.052]             ...future.result["stdout"] <- base::list(NULL)
+[18:05:22.052]         }
+[18:05:22.052]         base::close(...future.stdout)
+[18:05:22.052]         ...future.stdout <- NULL
+[18:05:22.052]     }
+[18:05:22.052]     ...future.result$conditions <- ...future.conditions
+[18:05:22.052]     ...future.result$finished <- base::Sys.time()
+[18:05:22.052]     ...future.result
+[18:05:22.052] }
+[18:05:22.154] MultisessionFuture started
+[18:05:22.155] result() for ClusterFuture ...
+[18:05:22.158] receiveMessageFromWorker() for ClusterFuture ...
+[18:05:22.160] - Validating connection of MultisessionFuture
+[18:05:22.222] - received message: FutureResult
+[18:05:22.222] - Received FutureResult
+[18:05:22.227] - Erased future from FutureRegistry
+[18:05:22.228] result() for ClusterFuture ...
+[18:05:22.228] - result already collected: FutureResult
+[18:05:22.229] result() for ClusterFuture ... done
+[18:05:22.229] receiveMessageFromWorker() for ClusterFuture ... done
+[18:05:22.229] result() for ClusterFuture ... done
+[18:05:22.229] result() for ClusterFuture ...
+[18:05:22.230] - result already collected: FutureResult
+[18:05:22.230] result() for ClusterFuture ... done
+[18:05:22.230] plan(): plan_init() of ‘multisession’, ‘cluster’, ‘multiprocess’, ‘future’, ‘function’ ... DONE
+[18:05:22.236] plan(): nbrOfWorkers() = 2
+nbrOfWorkers: 2
+[18:05:22.254] getGlobalsAndPackages() ...
+[18:05:22.255] 
+[18:05:22.255] - globals: [0] <none>
+[18:05:22.255] getGlobalsAndPackages() ... DONE
+nbrOfFreeWorkers: 2
+[18:05:22.286] getGlobalsAndPackages() ...
+[18:05:22.286] 
+[18:05:22.286] - globals: [0] <none>
+[18:05:22.287] getGlobalsAndPackages() ... DONE
+nbrOfFreeWorkers(background = TRUE): 2
+[18:05:22.307] plan(): Setting new future strategy stack:
+[18:05:22.307] List of future strategies:
+[18:05:22.307] 1. multisession:
+[18:05:22.307]    - args: function (..., workers = 1L, envir = parent.frame())
+[18:05:22.307]    - tweaked: TRUE
+[18:05:22.307]    - call: plan(strategy, workers = 1L)
+[18:05:22.311] plan(): plan_init() of ‘tweaked’, ‘multisession’, ‘cluster’, ‘multiprocess’, ‘future’, ‘function’ ...
+[18:05:22.311] multisession:
+[18:05:22.311] - args: function (..., workers = 1L, envir = parent.frame())
+[18:05:22.311] - tweaked: TRUE
+[18:05:22.311] - call: plan(strategy, workers = 1L)
+[18:05:22.312] getGlobalsAndPackages() ...
+[18:05:22.313] Not searching for globals
+[18:05:22.313] - globals: [0] <none>
+[18:05:22.313] getGlobalsAndPackages() ... DONE
+[18:05:22.317] Packages needed by the future expression (n = 0): <none>
+[18:05:22.317] Packages needed by future strategies (n = 0): <none>
+[18:05:22.318] {
+[18:05:22.318]     {
+[18:05:22.318]         {
+[18:05:22.318]             ...future.startTime <- base::Sys.time()
+[18:05:22.318]             {
+[18:05:22.318]                 {
+[18:05:22.318]                   {
+[18:05:22.318]                     base::local({
+[18:05:22.318]                       has_future <- base::requireNamespace("future", 
+[18:05:22.318]                         quietly = TRUE)
+[18:05:22.318]                       if (has_future) {
+[18:05:22.318]                         ns <- base::getNamespace("future")
+[18:05:22.318]                         version <- ns[[".package"]][["version"]]
+[18:05:22.318]                         if (is.null(version)) 
+[18:05:22.318]                           version <- utils::packageVersion("future")
+[18:05:22.318]                       }
+[18:05:22.318]                       else {
+[18:05:22.318]                         version <- NULL
+[18:05:22.318]                       }
+[18:05:22.318]                       if (!has_future || version < "1.8.0") {
+[18:05:22.318]                         info <- base::c(r_version = base::gsub("R version ", 
+[18:05:22.318]                           "", base::R.version$version.string), 
+[18:05:22.318]                           platform = base::sprintf("%s (%s-bit)", 
+[18:05:22.318]                             base::R.version$platform, 8 * base::.Machine$sizeof.pointer), 
+[18:05:22.318]                           os = base::paste(base::Sys.info()[base::c("sysname", 
+[18:05:22.318]                             "release", "version")], collapse = " "), 
+[18:05:22.318]                           hostname = base::Sys.info()[["nodename"]])
+[18:05:22.318]                         info <- base::sprintf("%s: %s", base::names(info), 
+[18:05:22.318]                           info)
+[18:05:22.318]                         info <- base::paste(info, collapse = "; ")
+[18:05:22.318]                         if (!has_future) {
+[18:05:22.318]                           msg <- base::sprintf("Package 'future' is not installed on worker (%s)", 
+[18:05:22.318]                             info)
+[18:05:22.318]                         }
+[18:05:22.318]                         else {
+[18:05:22.318]                           msg <- base::sprintf("Package 'future' on worker (%s) must be of version >= 1.8.0: %s", 
+[18:05:22.318]                             info, version)
+[18:05:22.318]                         }
+[18:05:22.318]                         base::stop(msg)
+[18:05:22.318]                       }
+[18:05:22.318]                     })
+[18:05:22.318]                   }
+[18:05:22.318]                   ...future.strategy.old <- future::plan("list")
+[18:05:22.318]                   options(future.plan = NULL)
+[18:05:22.318]                   Sys.unsetenv("R_FUTURE_PLAN")
+[18:05:22.318]                   future::plan("default", .cleanup = FALSE, .init = FALSE)
+[18:05:22.318]                 }
+[18:05:22.318]                 ...future.workdir <- getwd()
+[18:05:22.318]             }
+[18:05:22.318]             ...future.oldOptions <- base::as.list(base::.Options)
+[18:05:22.318]             ...future.oldEnvVars <- base::Sys.getenv()
+[18:05:22.318]         }
+[18:05:22.318]         base::options(future.startup.script = FALSE, future.globals.onMissing = NULL, 
+[18:05:22.318]             future.globals.maxSize = NULL, future.globals.method = NULL, 
+[18:05:22.318]             future.globals.onMissing = NULL, future.globals.onReference = NULL, 
+[18:05:22.318]             future.globals.resolve = NULL, future.resolve.recursive = NULL, 
+[18:05:22.318]             future.rng.onMisuse = NULL, future.rng.onMisuse.keepFuture = NULL, 
+[18:05:22.318]             future.stdout.windows.reencode = NULL, width = 80L)
+[18:05:22.318]         ...future.futureOptionsAdded <- base::setdiff(base::names(base::.Options), 
+[18:05:22.318]             base::names(...future.oldOptions))
+[18:05:22.318]     }
+[18:05:22.318]     if (FALSE) {
+[18:05:22.318]     }
+[18:05:22.318]     else {
+[18:05:22.318]         if (TRUE) {
+[18:05:22.318]             ...future.stdout <- base::rawConnection(base::raw(0L), 
+[18:05:22.318]                 open = "w")
+[18:05:22.318]         }
+[18:05:22.318]         else {
+[18:05:22.318]             ...future.stdout <- base::file(base::switch(.Platform$OS.type, 
+[18:05:22.318]                 windows = "NUL", "/dev/null"), open = "w")
+[18:05:22.318]         }
+[18:05:22.318]         base::sink(...future.stdout, type = "output", split = FALSE)
+[18:05:22.318]         base::on.exit(if (!base::is.null(...future.stdout)) {
+[18:05:22.318]             base::sink(type = "output", split = FALSE)
+[18:05:22.318]             base::close(...future.stdout)
+[18:05:22.318]         }, add = TRUE)
+[18:05:22.318]     }
+[18:05:22.318]     ...future.frame <- base::sys.nframe()
+[18:05:22.318]     ...future.conditions <- base::list()
+[18:05:22.318]     ...future.rng <- base::globalenv()$.Random.seed
+[18:05:22.318]     if (FALSE) {
+[18:05:22.318]         ...future.globalenv.names <- c(base::names(base::.GlobalEnv), 
+[18:05:22.318]             "...future.value", "...future.globalenv.names", ".Random.seed")
+[18:05:22.318]     }
+[18:05:22.318]     ...future.result <- base::tryCatch({
+[18:05:22.318]         base::withCallingHandlers({
+[18:05:22.318]             ...future.value <- base::withVisible(base::local(NA))
+[18:05:22.318]             future::FutureResult(value = ...future.value$value, 
+[18:05:22.318]                 visible = ...future.value$visible, rng = !identical(base::globalenv()$.Random.seed, 
+[18:05:22.318]                   ...future.rng), globalenv = if (FALSE) 
+[18:05:22.318]                   list(added = base::setdiff(base::names(base::.GlobalEnv), 
+[18:05:22.318]                     ...future.globalenv.names))
+[18:05:22.318]                 else NULL, started = ...future.startTime, version = "1.8")
+[18:05:22.318]         }, condition = base::local({
+[18:05:22.318]             c <- base::c
+[18:05:22.318]             inherits <- base::inherits
+[18:05:22.318]             invokeRestart <- base::invokeRestart
+[18:05:22.318]             length <- base::length
+[18:05:22.318]             list <- base::list
+[18:05:22.318]             seq.int <- base::seq.int
+[18:05:22.318]             signalCondition <- base::signalCondition
+[18:05:22.318]             sys.calls <- base::sys.calls
+[18:05:22.318]             `[[` <- base::`[[`
+[18:05:22.318]             `+` <- base::`+`
+[18:05:22.318]             `<<-` <- base::`<<-`
+[18:05:22.318]             sysCalls <- function(calls = sys.calls(), from = 1L) {
+[18:05:22.318]                 calls[seq.int(from = from + 12L, to = length(calls) - 
+[18:05:22.318]                   3L)]
+[18:05:22.318]             }
+[18:05:22.318]             function(cond) {
+[18:05:22.318]                 is_error <- inherits(cond, "error")
+[18:05:22.318]                 ignore <- !is_error && !is.null(NULL) && inherits(cond, 
+[18:05:22.318]                   NULL)
+[18:05:22.318]                 if (is_error) {
+[18:05:22.318]                   sessionInformation <- function() {
+[18:05:22.318]                     list(r = base::R.Version(), locale = base::Sys.getlocale(), 
+[18:05:22.318]                       rngkind = base::RNGkind(), namespaces = base::loadedNamespaces(), 
+[18:05:22.318]                       search = base::search(), system = base::Sys.info())
+[18:05:22.318]                   }
+[18:05:22.318]                   ...future.conditions[[length(...future.conditions) + 
+[18:05:22.318]                     1L]] <<- list(condition = cond, calls = c(sysCalls(from = ...future.frame), 
+[18:05:22.318]                     cond$call), session = sessionInformation(), 
+[18:05:22.318]                     timestamp = base::Sys.time(), signaled = 0L)
+[18:05:22.318]                   signalCondition(cond)
+[18:05:22.318]                 }
+[18:05:22.318]                 else if (!ignore && TRUE && inherits(cond, c("condition", 
+[18:05:22.318]                 "immediateCondition"))) {
+[18:05:22.318]                   signal <- TRUE && inherits(cond, "immediateCondition")
+[18:05:22.318]                   ...future.conditions[[length(...future.conditions) + 
+[18:05:22.318]                     1L]] <<- list(condition = cond, signaled = base::as.integer(signal))
+[18:05:22.318]                   if (TRUE && !signal) {
+[18:05:22.318]                     muffleCondition <- function (cond, pattern = "^muffle") 
+[18:05:22.318]                     {
+[18:05:22.318]                       inherits <- base::inherits
+[18:05:22.318]                       invokeRestart <- base::invokeRestart
+[18:05:22.318]                       is.null <- base::is.null
+[18:05:22.318]                       muffled <- FALSE
+[18:05:22.318]                       if (inherits(cond, "message")) {
+[18:05:22.318]                         muffled <- grepl(pattern, "muffleMessage")
+[18:05:22.318]                         if (muffled) 
+[18:05:22.318]                           invokeRestart("muffleMessage")
+[18:05:22.318]                       }
+[18:05:22.318]                       else if (inherits(cond, "warning")) {
+[18:05:22.318]                         muffled <- grepl(pattern, "muffleWarning")
+[18:05:22.318]                         if (muffled) 
+[18:05:22.318]                           invokeRestart("muffleWarning")
+[18:05:22.318]                       }
+[18:05:22.318]                       else if (inherits(cond, "condition")) {
+[18:05:22.318]                         if (!is.null(pattern)) {
+[18:05:22.318]                           computeRestarts <- base::computeRestarts
+[18:05:22.318]                           grepl <- base::grepl
+[18:05:22.318]                           restarts <- computeRestarts(cond)
+[18:05:22.318]                           for (restart in restarts) {
+[18:05:22.318]                             name <- restart$name
+[18:05:22.318]                             if (is.null(name)) 
+[18:05:22.318]                               next
+[18:05:22.318]                             if (!grepl(pattern, name)) 
+[18:05:22.318]                               next
+[18:05:22.318]                             invokeRestart(restart)
+[18:05:22.318]                             muffled <- TRUE
+[18:05:22.318]                             break
+[18:05:22.318]                           }
+[18:05:22.318]                         }
+[18:05:22.318]                       }
+[18:05:22.318]                       invisible(muffled)
+[18:05:22.318]                     }
+[18:05:22.318]                     muffleCondition(cond, pattern = "^muffle")
+[18:05:22.318]                   }
+[18:05:22.318]                 }
+[18:05:22.318]                 else {
+[18:05:22.318]                   if (TRUE) {
+[18:05:22.318]                     muffleCondition <- function (cond, pattern = "^muffle") 
+[18:05:22.318]                     {
+[18:05:22.318]                       inherits <- base::inherits
+[18:05:22.318]                       invokeRestart <- base::invokeRestart
+[18:05:22.318]                       is.null <- base::is.null
+[18:05:22.318]                       muffled <- FALSE
+[18:05:22.318]                       if (inherits(cond, "message")) {
+[18:05:22.318]                         muffled <- grepl(pattern, "muffleMessage")
+[18:05:22.318]                         if (muffled) 
+[18:05:22.318]                           invokeRestart("muffleMessage")
+[18:05:22.318]                       }
+[18:05:22.318]                       else if (inherits(cond, "warning")) {
+[18:05:22.318]                         muffled <- grepl(pattern, "muffleWarning")
+[18:05:22.318]                         if (muffled) 
+[18:05:22.318]                           invokeRestart("muffleWarning")
+[18:05:22.318]                       }
+[18:05:22.318]                       else if (inherits(cond, "condition")) {
+[18:05:22.318]                         if (!is.null(pattern)) {
+[18:05:22.318]                           computeRestarts <- base::computeRestarts
+[18:05:22.318]                           grepl <- base::grepl
+[18:05:22.318]                           restarts <- computeRestarts(cond)
+[18:05:22.318]                           for (restart in restarts) {
+[18:05:22.318]                             name <- restart$name
+[18:05:22.318]                             if (is.null(name)) 
+[18:05:22.318]                               next
+[18:05:22.318]                             if (!grepl(pattern, name)) 
+[18:05:22.318]                               next
+[18:05:22.318]                             invokeRestart(restart)
+[18:05:22.318]                             muffled <- TRUE
+[18:05:22.318]                             break
+[18:05:22.318]                           }
+[18:05:22.318]                         }
+[18:05:22.318]                       }
+[18:05:22.318]                       invisible(muffled)
+[18:05:22.318]                     }
+[18:05:22.318]                     muffleCondition(cond, pattern = "^muffle")
+[18:05:22.318]                   }
+[18:05:22.318]                 }
+[18:05:22.318]             }
+[18:05:22.318]         }))
+[18:05:22.318]     }, error = function(ex) {
+[18:05:22.318]         base::structure(base::list(value = NULL, visible = NULL, 
+[18:05:22.318]             conditions = ...future.conditions, rng = !identical(base::globalenv()$.Random.seed, 
+[18:05:22.318]                 ...future.rng), started = ...future.startTime, 
+[18:05:22.318]             finished = Sys.time(), session_uuid = NA_character_, 
+[18:05:22.318]             version = "1.8"), class = "FutureResult")
+[18:05:22.318]     }, finally = {
+[18:05:22.318]         if (!identical(...future.workdir, getwd())) 
+[18:05:22.318]             setwd(...future.workdir)
+[18:05:22.318]         {
+[18:05:22.318]             if (identical(getOption("nwarnings"), ...future.oldOptions$nwarnings)) {
+[18:05:22.318]                 ...future.oldOptions$nwarnings <- NULL
+[18:05:22.318]             }
+[18:05:22.318]             base::options(...future.oldOptions)
+[18:05:22.318]             if (.Platform$OS.type == "windows") {
+[18:05:22.318]                 old_names <- names(...future.oldEnvVars)
+[18:05:22.318]                 envs <- base::Sys.getenv()
+[18:05:22.318]                 names <- names(envs)
+[18:05:22.318]                 common <- intersect(names, old_names)
+[18:05:22.318]                 added <- setdiff(names, old_names)
+[18:05:22.318]                 removed <- setdiff(old_names, names)
+[18:05:22.318]                 changed <- common[...future.oldEnvVars[common] != 
+[18:05:22.318]                   envs[common]]
+[18:05:22.318]                 NAMES <- toupper(changed)
+[18:05:22.318]                 args <- list()
+[18:05:22.318]                 for (kk in seq_along(NAMES)) {
+[18:05:22.318]                   name <- changed[[kk]]
+[18:05:22.318]                   NAME <- NAMES[[kk]]
+[18:05:22.318]                   if (name != NAME && is.element(NAME, old_names)) 
+[18:05:22.318]                     next
+[18:05:22.318]                   args[[name]] <- ...future.oldEnvVars[[name]]
+[18:05:22.318]                 }
+[18:05:22.318]                 NAMES <- toupper(added)
+[18:05:22.318]                 for (kk in seq_along(NAMES)) {
+[18:05:22.318]                   name <- added[[kk]]
+[18:05:22.318]                   NAME <- NAMES[[kk]]
+[18:05:22.318]                   if (name != NAME && is.element(NAME, old_names)) 
+[18:05:22.318]                     next
+[18:05:22.318]                   args[[name]] <- ""
+[18:05:22.318]                 }
+[18:05:22.318]                 NAMES <- toupper(removed)
+[18:05:22.318]                 for (kk in seq_along(NAMES)) {
+[18:05:22.318]                   name <- removed[[kk]]
+[18:05:22.318]                   NAME <- NAMES[[kk]]
+[18:05:22.318]                   if (name != NAME && is.element(NAME, old_names)) 
+[18:05:22.318]                     next
+[18:05:22.318]                   args[[name]] <- ...future.oldEnvVars[[name]]
+[18:05:22.318]                 }
+[18:05:22.318]                 if (length(args) > 0) 
+[18:05:22.318]                   base::do.call(base::Sys.setenv, args = args)
+[18:05:22.318]                 args <- names <- old_names <- NAMES <- envs <- common <- added <- removed <- NULL
+[18:05:22.318]             }
+[18:05:22.318]             else {
+[18:05:22.318]                 base::do.call(base::Sys.setenv, args = base::as.list(...future.oldEnvVars))
+[18:05:22.318]             }
+[18:05:22.318]             {
+[18:05:22.318]                 if (base::length(...future.futureOptionsAdded) > 
+[18:05:22.318]                   0L) {
+[18:05:22.318]                   opts <- base::vector("list", length = base::length(...future.futureOptionsAdded))
+[18:05:22.318]                   base::names(opts) <- ...future.futureOptionsAdded
+[18:05:22.318]                   base::options(opts)
+[18:05:22.318]                 }
+[18:05:22.318]                 {
+[18:05:22.318]                   {
+[18:05:22.318]                     NULL
+[18:05:22.318]                     RNGkind("Mersenne-Twister")
+[18:05:22.318]                     base::rm(list = ".Random.seed", envir = base::globalenv(), 
+[18:05:22.318]                       inherits = FALSE)
+[18:05:22.318]                   }
+[18:05:22.318]                   options(future.plan = NULL)
+[18:05:22.318]                   if (is.na(NA_character_)) 
+[18:05:22.318]                     Sys.unsetenv("R_FUTURE_PLAN")
+[18:05:22.318]                   else Sys.setenv(R_FUTURE_PLAN = NA_character_)
+[18:05:22.318]                   future::plan(...future.strategy.old, .cleanup = FALSE, 
+[18:05:22.318]                     .init = FALSE)
+[18:05:22.318]                 }
+[18:05:22.318]             }
+[18:05:22.318]         }
+[18:05:22.318]     })
+[18:05:22.318]     if (TRUE) {
+[18:05:22.318]         base::sink(type = "output", split = FALSE)
+[18:05:22.318]         if (TRUE) {
+[18:05:22.318]             ...future.result$stdout <- base::rawToChar(base::rawConnectionValue(...future.stdout))
+[18:05:22.318]         }
+[18:05:22.318]         else {
+[18:05:22.318]             ...future.result["stdout"] <- base::list(NULL)
+[18:05:22.318]         }
+[18:05:22.318]         base::close(...future.stdout)
+[18:05:22.318]         ...future.stdout <- NULL
+[18:05:22.318]     }
+[18:05:22.318]     ...future.result$conditions <- ...future.conditions
+[18:05:22.318]     ...future.result$finished <- base::Sys.time()
+[18:05:22.318]     ...future.result
+[18:05:22.318] }
+[18:05:22.322] plan(): Setting new future strategy stack:
+[18:05:22.323] List of future strategies:
+[18:05:22.323] 1. sequential:
+[18:05:22.323]    - args: function (..., envir = parent.frame(), workers = "<NULL>")
+[18:05:22.323]    - tweaked: FALSE
+[18:05:22.323]    - call: NULL
+[18:05:22.324] plan(): nbrOfWorkers() = 1
+[18:05:22.326] plan(): Setting new future strategy stack:
+[18:05:22.327] List of future strategies:
+[18:05:22.327] 1. multisession:
+[18:05:22.327]    - args: function (..., workers = 1L, envir = parent.frame())
+[18:05:22.327]    - tweaked: TRUE
+[18:05:22.327]    - call: plan(strategy, workers = 1L)
+[18:05:22.327] plan(): nbrOfWorkers() = 1
+[18:05:22.328] SequentialFuture started (and completed)
+[18:05:22.329] plan(): plan_init() of ‘tweaked’, ‘multisession’, ‘cluster’, ‘multiprocess’, ‘future’, ‘function’ ... DONE
+[18:05:22.329] plan(): nbrOfWorkers() = 1
+nbrOfWorkers: 1
+[18:05:22.330] getGlobalsAndPackages() ...
+[18:05:22.330] Searching for globals...
+[18:05:22.334] 
+[18:05:22.335] Searching for globals ... DONE
+[18:05:22.335] - globals: [0] <none>
+[18:05:22.335] getGlobalsAndPackages() ... DONE
+nbrOfFreeWorkers: 1
+[18:05:22.336] getGlobalsAndPackages() ...
+[18:05:22.337] Searching for globals...
+[18:05:22.337] 
+[18:05:22.338] Searching for globals ... DONE
+[18:05:22.338] - globals: [0] <none>
+[18:05:22.338] getGlobalsAndPackages() ... DONE
+nbrOfFreeWorkers(background = TRUE): 0
+[18:05:22.340] plan(): Setting new future strategy stack:
+[18:05:22.340] List of future strategies:
+[18:05:22.340] 1. multisession:
+[18:05:22.340]    - args: function (..., workers = "<function () ; max(1L, future::availableCores() - 1L)>", envir = parent.frame())
+[18:05:22.340]    - tweaked: TRUE
+[18:05:22.340]    - call: plan(strategy, workers = allButOneCore)
+[18:05:22.341] plan(): plan_init() of ‘tweaked’, ‘multisession’, ‘cluster’, ‘multiprocess’, ‘future’, ‘function’ ...
+[18:05:22.342] multisession:
+[18:05:22.342] - args: function (..., workers = "<function () ; max(1L, future::availableCores() - 1L)>", envir = parent.frame())
+[18:05:22.342] - tweaked: TRUE
+[18:05:22.342] - call: plan(strategy, workers = allButOneCore)
+[18:05:22.349] getGlobalsAndPackages() ...
+[18:05:22.349] Not searching for globals
+[18:05:22.353] - globals: [0] <none>
+[18:05:22.354] getGlobalsAndPackages() ... DONE
+[18:05:22.354] Packages needed by the future expression (n = 0): <none>
+[18:05:22.354] Packages needed by future strategies (n = 0): <none>
+[18:05:22.355] {
+[18:05:22.355]     {
+[18:05:22.355]         {
+[18:05:22.355]             ...future.startTime <- base::Sys.time()
+[18:05:22.355]             {
+[18:05:22.355]                 {
+[18:05:22.355]                   {
+[18:05:22.355]                     base::local({
+[18:05:22.355]                       has_future <- base::requireNamespace("future", 
+[18:05:22.355]                         quietly = TRUE)
+[18:05:22.355]                       if (has_future) {
+[18:05:22.355]                         ns <- base::getNamespace("future")
+[18:05:22.355]                         version <- ns[[".package"]][["version"]]
+[18:05:22.355]                         if (is.null(version)) 
+[18:05:22.355]                           version <- utils::packageVersion("future")
+[18:05:22.355]                       }
+[18:05:22.355]                       else {
+[18:05:22.355]                         version <- NULL
+[18:05:22.355]                       }
+[18:05:22.355]                       if (!has_future || version < "1.8.0") {
+[18:05:22.355]                         info <- base::c(r_version = base::gsub("R version ", 
+[18:05:22.355]                           "", base::R.version$version.string), 
+[18:05:22.355]                           platform = base::sprintf("%s (%s-bit)", 
+[18:05:22.355]                             base::R.version$platform, 8 * base::.Machine$sizeof.pointer), 
+[18:05:22.355]                           os = base::paste(base::Sys.info()[base::c("sysname", 
+[18:05:22.355]                             "release", "version")], collapse = " "), 
+[18:05:22.355]                           hostname = base::Sys.info()[["nodename"]])
+[18:05:22.355]                         info <- base::sprintf("%s: %s", base::names(info), 
+[18:05:22.355]                           info)
+[18:05:22.355]                         info <- base::paste(info, collapse = "; ")
+[18:05:22.355]                         if (!has_future) {
+[18:05:22.355]                           msg <- base::sprintf("Package 'future' is not installed on worker (%s)", 
+[18:05:22.355]                             info)
+[18:05:22.355]                         }
+[18:05:22.355]                         else {
+[18:05:22.355]                           msg <- base::sprintf("Package 'future' on worker (%s) must be of version >= 1.8.0: %s", 
+[18:05:22.355]                             info, version)
+[18:05:22.355]                         }
+[18:05:22.355]                         base::stop(msg)
+[18:05:22.355]                       }
+[18:05:22.355]                     })
+[18:05:22.355]                   }
+[18:05:22.355]                   ...future.strategy.old <- future::plan("list")
+[18:05:22.355]                   options(future.plan = NULL)
+[18:05:22.355]                   Sys.unsetenv("R_FUTURE_PLAN")
+[18:05:22.355]                   future::plan("default", .cleanup = FALSE, .init = FALSE)
+[18:05:22.355]                 }
+[18:05:22.355]                 ...future.workdir <- getwd()
+[18:05:22.355]             }
+[18:05:22.355]             ...future.oldOptions <- base::as.list(base::.Options)
+[18:05:22.355]             ...future.oldEnvVars <- base::Sys.getenv()
+[18:05:22.355]         }
+[18:05:22.355]         base::options(future.startup.script = FALSE, future.globals.onMissing = NULL, 
+[18:05:22.355]             future.globals.maxSize = NULL, future.globals.method = NULL, 
+[18:05:22.355]             future.globals.onMissing = NULL, future.globals.onReference = NULL, 
+[18:05:22.355]             future.globals.resolve = NULL, future.resolve.recursive = NULL, 
+[18:05:22.355]             future.rng.onMisuse = NULL, future.rng.onMisuse.keepFuture = NULL, 
+[18:05:22.355]             future.stdout.windows.reencode = NULL, width = 80L)
+[18:05:22.355]         ...future.futureOptionsAdded <- base::setdiff(base::names(base::.Options), 
+[18:05:22.355]             base::names(...future.oldOptions))
+[18:05:22.355]     }
+[18:05:22.355]     if (FALSE) {
+[18:05:22.355]     }
+[18:05:22.355]     else {
+[18:05:22.355]         if (TRUE) {
+[18:05:22.355]             ...future.stdout <- base::rawConnection(base::raw(0L), 
+[18:05:22.355]                 open = "w")
+[18:05:22.355]         }
+[18:05:22.355]         else {
+[18:05:22.355]             ...future.stdout <- base::file(base::switch(.Platform$OS.type, 
+[18:05:22.355]                 windows = "NUL", "/dev/null"), open = "w")
+[18:05:22.355]         }
+[18:05:22.355]         base::sink(...future.stdout, type = "output", split = FALSE)
+[18:05:22.355]         base::on.exit(if (!base::is.null(...future.stdout)) {
+[18:05:22.355]             base::sink(type = "output", split = FALSE)
+[18:05:22.355]             base::close(...future.stdout)
+[18:05:22.355]         }, add = TRUE)
+[18:05:22.355]     }
+[18:05:22.355]     ...future.frame <- base::sys.nframe()
+[18:05:22.355]     ...future.conditions <- base::list()
+[18:05:22.355]     ...future.rng <- base::globalenv()$.Random.seed
+[18:05:22.355]     if (FALSE) {
+[18:05:22.355]         ...future.globalenv.names <- c(base::names(base::.GlobalEnv), 
+[18:05:22.355]             "...future.value", "...future.globalenv.names", ".Random.seed")
+[18:05:22.355]     }
+[18:05:22.355]     ...future.result <- base::tryCatch({
+[18:05:22.355]         base::withCallingHandlers({
+[18:05:22.355]             ...future.value <- base::withVisible(base::local(NA))
+[18:05:22.355]             future::FutureResult(value = ...future.value$value, 
+[18:05:22.355]                 visible = ...future.value$visible, rng = !identical(base::globalenv()$.Random.seed, 
+[18:05:22.355]                   ...future.rng), globalenv = if (FALSE) 
+[18:05:22.355]                   list(added = base::setdiff(base::names(base::.GlobalEnv), 
+[18:05:22.355]                     ...future.globalenv.names))
+[18:05:22.355]                 else NULL, started = ...future.startTime, version = "1.8")
+[18:05:22.355]         }, condition = base::local({
+[18:05:22.355]             c <- base::c
+[18:05:22.355]             inherits <- base::inherits
+[18:05:22.355]             invokeRestart <- base::invokeRestart
+[18:05:22.355]             length <- base::length
+[18:05:22.355]             list <- base::list
+[18:05:22.355]             seq.int <- base::seq.int
+[18:05:22.355]             signalCondition <- base::signalCondition
+[18:05:22.355]             sys.calls <- base::sys.calls
+[18:05:22.355]             `[[` <- base::`[[`
+[18:05:22.355]             `+` <- base::`+`
+[18:05:22.355]             `<<-` <- base::`<<-`
+[18:05:22.355]             sysCalls <- function(calls = sys.calls(), from = 1L) {
+[18:05:22.355]                 calls[seq.int(from = from + 12L, to = length(calls) - 
+[18:05:22.355]                   3L)]
+[18:05:22.355]             }
+[18:05:22.355]             function(cond) {
+[18:05:22.355]                 is_error <- inherits(cond, "error")
+[18:05:22.355]                 ignore <- !is_error && !is.null(NULL) && inherits(cond, 
+[18:05:22.355]                   NULL)
+[18:05:22.355]                 if (is_error) {
+[18:05:22.355]                   sessionInformation <- function() {
+[18:05:22.355]                     list(r = base::R.Version(), locale = base::Sys.getlocale(), 
+[18:05:22.355]                       rngkind = base::RNGkind(), namespaces = base::loadedNamespaces(), 
+[18:05:22.355]                       search = base::search(), system = base::Sys.info())
+[18:05:22.355]                   }
+[18:05:22.355]                   ...future.conditions[[length(...future.conditions) + 
+[18:05:22.355]                     1L]] <<- list(condition = cond, calls = c(sysCalls(from = ...future.frame), 
+[18:05:22.355]                     cond$call), session = sessionInformation(), 
+[18:05:22.355]                     timestamp = base::Sys.time(), signaled = 0L)
+[18:05:22.355]                   signalCondition(cond)
+[18:05:22.355]                 }
+[18:05:22.355]                 else if (!ignore && TRUE && inherits(cond, c("condition", 
+[18:05:22.355]                 "immediateCondition"))) {
+[18:05:22.355]                   signal <- TRUE && inherits(cond, "immediateCondition")
+[18:05:22.355]                   ...future.conditions[[length(...future.conditions) + 
+[18:05:22.355]                     1L]] <<- list(condition = cond, signaled = base::as.integer(signal))
+[18:05:22.355]                   if (TRUE && !signal) {
+[18:05:22.355]                     muffleCondition <- function (cond, pattern = "^muffle") 
+[18:05:22.355]                     {
+[18:05:22.355]                       inherits <- base::inherits
+[18:05:22.355]                       invokeRestart <- base::invokeRestart
+[18:05:22.355]                       is.null <- base::is.null
+[18:05:22.355]                       muffled <- FALSE
+[18:05:22.355]                       if (inherits(cond, "message")) {
+[18:05:22.355]                         muffled <- grepl(pattern, "muffleMessage")
+[18:05:22.355]                         if (muffled) 
+[18:05:22.355]                           invokeRestart("muffleMessage")
+[18:05:22.355]                       }
+[18:05:22.355]                       else if (inherits(cond, "warning")) {
+[18:05:22.355]                         muffled <- grepl(pattern, "muffleWarning")
+[18:05:22.355]                         if (muffled) 
+[18:05:22.355]                           invokeRestart("muffleWarning")
+[18:05:22.355]                       }
+[18:05:22.355]                       else if (inherits(cond, "condition")) {
+[18:05:22.355]                         if (!is.null(pattern)) {
+[18:05:22.355]                           computeRestarts <- base::computeRestarts
+[18:05:22.355]                           grepl <- base::grepl
+[18:05:22.355]                           restarts <- computeRestarts(cond)
+[18:05:22.355]                           for (restart in restarts) {
+[18:05:22.355]                             name <- restart$name
+[18:05:22.355]                             if (is.null(name)) 
+[18:05:22.355]                               next
+[18:05:22.355]                             if (!grepl(pattern, name)) 
+[18:05:22.355]                               next
+[18:05:22.355]                             invokeRestart(restart)
+[18:05:22.355]                             muffled <- TRUE
+[18:05:22.355]                             break
+[18:05:22.355]                           }
+[18:05:22.355]                         }
+[18:05:22.355]                       }
+[18:05:22.355]                       invisible(muffled)
+[18:05:22.355]                     }
+[18:05:22.355]                     muffleCondition(cond, pattern = "^muffle")
+[18:05:22.355]                   }
+[18:05:22.355]                 }
+[18:05:22.355]                 else {
+[18:05:22.355]                   if (TRUE) {
+[18:05:22.355]                     muffleCondition <- function (cond, pattern = "^muffle") 
+[18:05:22.355]                     {
+[18:05:22.355]                       inherits <- base::inherits
+[18:05:22.355]                       invokeRestart <- base::invokeRestart
+[18:05:22.355]                       is.null <- base::is.null
+[18:05:22.355]                       muffled <- FALSE
+[18:05:22.355]                       if (inherits(cond, "message")) {
+[18:05:22.355]                         muffled <- grepl(pattern, "muffleMessage")
+[18:05:22.355]                         if (muffled) 
+[18:05:22.355]                           invokeRestart("muffleMessage")
+[18:05:22.355]                       }
+[18:05:22.355]                       else if (inherits(cond, "warning")) {
+[18:05:22.355]                         muffled <- grepl(pattern, "muffleWarning")
+[18:05:22.355]                         if (muffled) 
+[18:05:22.355]                           invokeRestart("muffleWarning")
+[18:05:22.355]                       }
+[18:05:22.355]                       else if (inherits(cond, "condition")) {
+[18:05:22.355]                         if (!is.null(pattern)) {
+[18:05:22.355]                           computeRestarts <- base::computeRestarts
+[18:05:22.355]                           grepl <- base::grepl
+[18:05:22.355]                           restarts <- computeRestarts(cond)
+[18:05:22.355]                           for (restart in restarts) {
+[18:05:22.355]                             name <- restart$name
+[18:05:22.355]                             if (is.null(name)) 
+[18:05:22.355]                               next
+[18:05:22.355]                             if (!grepl(pattern, name)) 
+[18:05:22.355]                               next
+[18:05:22.355]                             invokeRestart(restart)
+[18:05:22.355]                             muffled <- TRUE
+[18:05:22.355]                             break
+[18:05:22.355]                           }
+[18:05:22.355]                         }
+[18:05:22.355]                       }
+[18:05:22.355]                       invisible(muffled)
+[18:05:22.355]                     }
+[18:05:22.355]                     muffleCondition(cond, pattern = "^muffle")
+[18:05:22.355]                   }
+[18:05:22.355]                 }
+[18:05:22.355]             }
+[18:05:22.355]         }))
+[18:05:22.355]     }, error = function(ex) {
+[18:05:22.355]         base::structure(base::list(value = NULL, visible = NULL, 
+[18:05:22.355]             conditions = ...future.conditions, rng = !identical(base::globalenv()$.Random.seed, 
+[18:05:22.355]                 ...future.rng), started = ...future.startTime, 
+[18:05:22.355]             finished = Sys.time(), session_uuid = NA_character_, 
+[18:05:22.355]             version = "1.8"), class = "FutureResult")
+[18:05:22.355]     }, finally = {
+[18:05:22.355]         if (!identical(...future.workdir, getwd())) 
+[18:05:22.355]             setwd(...future.workdir)
+[18:05:22.355]         {
+[18:05:22.355]             if (identical(getOption("nwarnings"), ...future.oldOptions$nwarnings)) {
+[18:05:22.355]                 ...future.oldOptions$nwarnings <- NULL
+[18:05:22.355]             }
+[18:05:22.355]             base::options(...future.oldOptions)
+[18:05:22.355]             if (.Platform$OS.type == "windows") {
+[18:05:22.355]                 old_names <- names(...future.oldEnvVars)
+[18:05:22.355]                 envs <- base::Sys.getenv()
+[18:05:22.355]                 names <- names(envs)
+[18:05:22.355]                 common <- intersect(names, old_names)
+[18:05:22.355]                 added <- setdiff(names, old_names)
+[18:05:22.355]                 removed <- setdiff(old_names, names)
+[18:05:22.355]                 changed <- common[...future.oldEnvVars[common] != 
+[18:05:22.355]                   envs[common]]
+[18:05:22.355]                 NAMES <- toupper(changed)
+[18:05:22.355]                 args <- list()
+[18:05:22.355]                 for (kk in seq_along(NAMES)) {
+[18:05:22.355]                   name <- changed[[kk]]
+[18:05:22.355]                   NAME <- NAMES[[kk]]
+[18:05:22.355]                   if (name != NAME && is.element(NAME, old_names)) 
+[18:05:22.355]                     next
+[18:05:22.355]                   args[[name]] <- ...future.oldEnvVars[[name]]
+[18:05:22.355]                 }
+[18:05:22.355]                 NAMES <- toupper(added)
+[18:05:22.355]                 for (kk in seq_along(NAMES)) {
+[18:05:22.355]                   name <- added[[kk]]
+[18:05:22.355]                   NAME <- NAMES[[kk]]
+[18:05:22.355]                   if (name != NAME && is.element(NAME, old_names)) 
+[18:05:22.355]                     next
+[18:05:22.355]                   args[[name]] <- ""
+[18:05:22.355]                 }
+[18:05:22.355]                 NAMES <- toupper(removed)
+[18:05:22.355]                 for (kk in seq_along(NAMES)) {
+[18:05:22.355]                   name <- removed[[kk]]
+[18:05:22.355]                   NAME <- NAMES[[kk]]
+[18:05:22.355]                   if (name != NAME && is.element(NAME, old_names)) 
+[18:05:22.355]                     next
+[18:05:22.355]                   args[[name]] <- ...future.oldEnvVars[[name]]
+[18:05:22.355]                 }
+[18:05:22.355]                 if (length(args) > 0) 
+[18:05:22.355]                   base::do.call(base::Sys.setenv, args = args)
+[18:05:22.355]                 args <- names <- old_names <- NAMES <- envs <- common <- added <- removed <- NULL
+[18:05:22.355]             }
+[18:05:22.355]             else {
+[18:05:22.355]                 base::do.call(base::Sys.setenv, args = base::as.list(...future.oldEnvVars))
+[18:05:22.355]             }
+[18:05:22.355]             {
+[18:05:22.355]                 if (base::length(...future.futureOptionsAdded) > 
+[18:05:22.355]                   0L) {
+[18:05:22.355]                   opts <- base::vector("list", length = base::length(...future.futureOptionsAdded))
+[18:05:22.355]                   base::names(opts) <- ...future.futureOptionsAdded
+[18:05:22.355]                   base::options(opts)
+[18:05:22.355]                 }
+[18:05:22.355]                 {
+[18:05:22.355]                   {
+[18:05:22.355]                     NULL
+[18:05:22.355]                     RNGkind("Mersenne-Twister")
+[18:05:22.355]                     base::rm(list = ".Random.seed", envir = base::globalenv(), 
+[18:05:22.355]                       inherits = FALSE)
+[18:05:22.355]                   }
+[18:05:22.355]                   options(future.plan = NULL)
+[18:05:22.355]                   if (is.na(NA_character_)) 
+[18:05:22.355]                     Sys.unsetenv("R_FUTURE_PLAN")
+[18:05:22.355]                   else Sys.setenv(R_FUTURE_PLAN = NA_character_)
+[18:05:22.355]                   future::plan(...future.strategy.old, .cleanup = FALSE, 
+[18:05:22.355]                     .init = FALSE)
+[18:05:22.355]                 }
+[18:05:22.355]             }
+[18:05:22.355]         }
+[18:05:22.355]     })
+[18:05:22.355]     if (TRUE) {
+[18:05:22.355]         base::sink(type = "output", split = FALSE)
+[18:05:22.355]         if (TRUE) {
+[18:05:22.355]             ...future.result$stdout <- base::rawToChar(base::rawConnectionValue(...future.stdout))
+[18:05:22.355]         }
+[18:05:22.355]         else {
+[18:05:22.355]             ...future.result["stdout"] <- base::list(NULL)
+[18:05:22.355]         }
+[18:05:22.355]         base::close(...future.stdout)
+[18:05:22.355]         ...future.stdout <- NULL
+[18:05:22.355]     }
+[18:05:22.355]     ...future.result$conditions <- ...future.conditions
+[18:05:22.355]     ...future.result$finished <- base::Sys.time()
+[18:05:22.355]     ...future.result
+[18:05:22.355] }
+[18:05:22.359] plan(): Setting new future strategy stack:
+[18:05:22.359] List of future strategies:
+[18:05:22.359] 1. sequential:
+[18:05:22.359]    - args: function (..., envir = parent.frame(), workers = "<NULL>")
+[18:05:22.359]    - tweaked: FALSE
+[18:05:22.359]    - call: NULL
+[18:05:22.360] plan(): nbrOfWorkers() = 1
+[18:05:22.361] plan(): Setting new future strategy stack:
+[18:05:22.361] List of future strategies:
+[18:05:22.361] 1. multisession:
+[18:05:22.361]    - args: function (..., workers = "<function () ; max(1L, future::availableCores() - 1L)>", envir = parent.frame())
+[18:05:22.361]    - tweaked: TRUE
+[18:05:22.361]    - call: plan(strategy, workers = allButOneCore)
+[18:05:22.371] plan(): nbrOfWorkers() = 1
+[18:05:22.372] SequentialFuture started (and completed)
+[18:05:22.373] plan(): plan_init() of ‘tweaked’, ‘multisession’, ‘cluster’, ‘multiprocess’, ‘future’, ‘function’ ... DONE
+[18:05:22.379] plan(): nbrOfWorkers() = 1
+nbrOfWorkers: 1
+[18:05:22.395] getGlobalsAndPackages() ...
+[18:05:22.396] Searching for globals...
+[18:05:22.396] 
+[18:05:22.397] Searching for globals ... DONE
+[18:05:22.397] - globals: [0] <none>
+[18:05:22.397] getGlobalsAndPackages() ... DONE
+nbrOfFreeWorkers: 1
+[18:05:22.409] getGlobalsAndPackages() ...
+[18:05:22.409] Searching for globals...
+[18:05:22.410] 
+[18:05:22.410] Searching for globals ... DONE
+[18:05:22.410] - globals: [0] <none>
+[18:05:22.410] getGlobalsAndPackages() ... DONE
+nbrOfFreeWorkers(background = TRUE): 0
+Type of future: multicore
+nbrOfWorkers: 2
+[18:05:22.417] plan(): Setting new future strategy stack:
+[18:05:22.417] List of future strategies:
+[18:05:22.417] 1. multicore:
+[18:05:22.417]    - args: function (..., workers = availableCores(constraints = "multicore"), envir = parent.frame())
+[18:05:22.417]    - tweaked: FALSE
+[18:05:22.417]    - call: plan(strategy)
+[18:05:22.423] plan(): nbrOfWorkers() = 2
+nbrOfWorkers: 2
+nbrOfFreeWorkers: 2
+nbrOfFreeWorkers(background = TRUE): 2
+[18:05:22.442] plan(): Setting new future strategy stack:
+[18:05:22.442] List of future strategies:
+[18:05:22.442] 1. multicore:
+[18:05:22.442]    - args: function (..., workers = 1L, envir = parent.frame())
+[18:05:22.442]    - tweaked: TRUE
+[18:05:22.442]    - call: plan(strategy, workers = 1L)
+[18:05:22.443] plan(): nbrOfWorkers() = 1
+nbrOfWorkers: 1
+nbrOfFreeWorkers: 1
+nbrOfFreeWorkers(background = TRUE): 1
+[18:05:22.445] plan(): Setting new future strategy stack:
+[18:05:22.446] List of future strategies:
+[18:05:22.446] 1. multicore:
+[18:05:22.446]    - args: function (..., workers = "<function () ; max(1L, future::availableCores() - 1L); <bytecode: 0x65078a9c5c00>>", envir = parent.frame())
+[18:05:22.446]    - tweaked: TRUE
+[18:05:22.446]    - call: plan(strategy, workers = allButOneCore)
+[18:05:22.453] plan(): nbrOfWorkers() = 1
+nbrOfWorkers: 1
+nbrOfFreeWorkers: 1
+nbrOfFreeWorkers(background = TRUE): 1
+> 
+> 
+> message("Type of future: cluster")
+Type of future: cluster
+> workers <- rep("localhost", times = 2L)
+> plan(cluster, workers = workers)
+[18:05:22.470] plan(): Setting new future strategy stack:
+[18:05:22.470] List of future strategies:
+[18:05:22.470] 1. cluster:
+[18:05:22.470]    - args: function (..., workers = c("localhost", "localhost"), envir = parent.frame())
+[18:05:22.470]    - tweaked: TRUE
+[18:05:22.470]    - call: plan(cluster, workers = workers)
+[18:05:22.471] plan(): plan_init() of ‘tweaked’, ‘cluster’, ‘multiprocess’, ‘future’, ‘function’ ...
+[18:05:22.471] cluster:
+[18:05:22.471] - args: function (..., workers = c("localhost", "localhost"), envir = parent.frame())
+[18:05:22.471] - tweaked: TRUE
+[18:05:22.471] - call: plan(cluster, workers = workers)
+[18:05:22.472] getGlobalsAndPackages() ...
+[18:05:22.472] Not searching for globals
+[18:05:22.472] - globals: [0] <none>
+[18:05:22.473] getGlobalsAndPackages() ... DONE
+[18:05:22.474] [local output] makeClusterPSOCK() ...
+[18:05:22.474] [local output] Workers: [n = 2] ‘localhost’, ‘localhost’
+[18:05:22.476] [local output] Base port: 11915
+[18:05:22.476] [local output] Getting setup options for 2 cluster nodes ...
+[18:05:22.476] [local output]  - Node 1 of 2 ...
+[18:05:22.477] [local output] localMachine=TRUE => revtunnel=FALSE
+
+[18:05:22.478] [local output] Rscript port: 11915
+
+[18:05:22.479] [local output]  - Node 2 of 2 ...
+[18:05:22.479] [local output] localMachine=TRUE => revtunnel=FALSE
+
+[18:05:22.480] [local output] Rscript port: 11915
+
+[18:05:22.481] [local output] Getting setup options for 2 cluster nodes ... done
+[18:05:22.481] [local output]  - Parallel setup requested for some PSOCK nodes
+[18:05:22.481] [local output] Setting up PSOCK nodes in parallel
+[18:05:22.482] List of 36
+[18:05:22.482]  $ worker          : chr "localhost"
+[18:05:22.482]   ..- attr(*, "localhost")= logi TRUE
+[18:05:22.482]  $ master          : chr "localhost"
+[18:05:22.482]  $ port            : int 11915
+[18:05:22.482]  $ connectTimeout  : num 120
+[18:05:22.482]  $ timeout         : num 2592000
+[18:05:22.482]  $ rscript         : chr "'/usr/local/lib/R/bin/Rscript'"
+[18:05:22.482]  $ homogeneous     : logi TRUE
+[18:05:22.482]  $ rscript_args    : chr "--default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppressWarnings(cat(Sys.getpid(),fi"| __truncated__
+[18:05:22.482]  $ rscript_envs    : NULL
+[18:05:22.482]  $ rscript_libs    : NULL
+[18:05:22.482]  $ rscript_startup : NULL
+[18:05:22.482]  $ rscript_sh      : chr "sh"
+[18:05:22.482]  $ default_packages: chr [1:6] "datasets" "utils" "grDevices" "graphics" ...
+[18:05:22.482]  $ methods         : logi TRUE
+[18:05:22.482]  $ socketOptions   : chr "no-delay"
+[18:05:22.482]  $ useXDR          : logi FALSE
+[18:05:22.482]  $ outfile         : chr "/dev/null"
+[18:05:22.482]  $ renice          : int NA
+[18:05:22.482]  $ rshcmd          : NULL
+[18:05:22.482]  $ user            : chr(0) 
+[18:05:22.482]  $ revtunnel       : logi FALSE
+[18:05:22.482]  $ rshlogfile      : NULL
+[18:05:22.482]  $ rshopts         : chr(0) 
+[18:05:22.482]  $ rank            : int 1
+[18:05:22.482]  $ manual          : logi FALSE
+[18:05:22.482]  $ dryrun          : logi FALSE
+[18:05:22.482]  $ quiet           : logi FALSE
+[18:05:22.482]  $ setup_strategy  : chr "parallel"
+[18:05:22.482]  $ local_cmd       : chr "'/usr/local/lib/R/bin/Rscript' --default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppr"| __truncated__
+[18:05:22.482]  $ pidfile         : chr "/tmp/RtmpuDL7My/worker.rank=1.parallelly.parent=326518.4fb761d82f3b3.pid"
+[18:05:22.482]  $ rshcmd_label    : NULL
+[18:05:22.482]  $ rsh_call        : NULL
+[18:05:22.482]  $ cmd             : chr "'/usr/local/lib/R/bin/Rscript' --default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppr"| __truncated__
+[18:05:22.482]  $ localMachine    : logi TRUE
+[18:05:22.482]  $ make_fcn        :function (worker = getOption2("parallelly.localhost.hostname", "localhost"), 
+[18:05:22.482]     master = NULL, port, connectTimeout = getOption2("parallelly.makeNodePSOCK.connectTimeout", 
+[18:05:22.482]         2 * 60), timeout = getOption2("parallelly.makeNodePSOCK.timeout", 
+[18:05:22.482]         30 * 24 * 60 * 60), rscript = NULL, homogeneous = NULL, rscript_args = NULL, 
+[18:05:22.482]     rscript_envs = NULL, rscript_libs = NULL, rscript_startup = NULL, rscript_sh = c("auto", 
+[18:05:22.482]         "cmd", "sh"), default_packages = c("datasets", "utils", "grDevices", 
+[18:05:22.482]         "graphics", "stats", if (methods) "methods"), methods = TRUE, socketOptions = getOption2("parallelly.makeNodePSOCK.socketOptions", 
+[18:05:22.482]         "no-delay"), useXDR = getOption2("parallelly.makeNodePSOCK.useXDR", 
+[18:05:22.482]         FALSE), outfile = "/dev/null", renice = NA_integer_, rshcmd = getOption2("parallelly.makeNodePSOCK.rshcmd", 
+[18:05:22.482]         NULL), user = NULL, revtunnel = NA, rshlogfile = NULL, rshopts = getOption2("parallelly.makeNodePSOCK.rshopts", 
+[18:05:22.482]         NULL), rank = 1L, manual = FALSE, dryrun = FALSE, quiet = FALSE, 
+[18:05:22.482]     setup_strategy = getOption2("parallelly.makeNodePSOCK.setup_strategy", 
+[18:05:22.482]         "parallel"), action = c("launch", "options"), verbose = FALSE)  
+[18:05:22.482]  $ arguments       :List of 28
+[18:05:22.482]   ..$ worker          : chr "localhost"
+[18:05:22.482]   ..$ master          : NULL
+[18:05:22.482]   ..$ port            : int 11915
+[18:05:22.482]   ..$ connectTimeout  : num 120
+[18:05:22.482]   ..$ timeout         : num 2592000
+[18:05:22.482]   ..$ rscript         : NULL
+[18:05:22.482]   ..$ homogeneous     : NULL
+[18:05:22.482]   ..$ rscript_args    : NULL
+[18:05:22.482]   ..$ rscript_envs    : NULL
+[18:05:22.482]   ..$ rscript_libs    : NULL
+[18:05:22.482]   ..$ rscript_startup : NULL
+[18:05:22.482]   ..$ rscript_sh      : chr [1:3] "auto" "cmd" "sh"
+[18:05:22.482]   ..$ default_packages: chr [1:6] "datasets" "utils" "grDevices" "graphics" ...
+[18:05:22.482]   ..$ methods         : logi TRUE
+[18:05:22.482]   ..$ socketOptions   : chr "no-delay"
+[18:05:22.482]   ..$ useXDR          : logi FALSE
+[18:05:22.482]   ..$ outfile         : chr "/dev/null"
+[18:05:22.482]   ..$ renice          : int NA
+[18:05:22.482]   ..$ rshcmd          : NULL
+[18:05:22.482]   ..$ user            : NULL
+[18:05:22.482]   ..$ revtunnel       : logi NA
+[18:05:22.482]   ..$ rshlogfile      : NULL
+[18:05:22.482]   ..$ rshopts         : NULL
+[18:05:22.482]   ..$ rank            : int 1
+[18:05:22.482]   ..$ manual          : logi FALSE
+[18:05:22.482]   ..$ dryrun          : logi FALSE
+[18:05:22.482]   ..$ quiet           : logi FALSE
+[18:05:22.482]   ..$ setup_strategy  : chr "parallel"
+[18:05:22.482]  - attr(*, "class")= chr [1:2] "makeNodePSOCKOptions" "makeNodeOptions"
+[18:05:22.516] [local output] System call to launch all workers:
+[18:05:22.516] [local output] '/usr/local/lib/R/bin/Rscript' --default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppressWarnings(cat(Sys.getpid(),file="/tmp/RtmpuDL7My/worker.rank=1.parallelly.parent=326518.4fb761d82f3b3.pid")), silent = TRUE)' -e 'options(socketOptions = "no-delay")' -e 'workRSOCK <- tryCatch(parallel:::.workRSOCK, error=function(e) parallel:::.slaveRSOCK); workRSOCK()' MASTER=localhost PORT=11915 OUT=/dev/null TIMEOUT=2592000 XDR=FALSE SETUPTIMEOUT=120 SETUPSTRATEGY=parallel
+[18:05:22.516] [local output] Starting PSOCK main server
+[18:05:22.518] [local output] Workers launched
+[18:05:22.518] [local output] Waiting for workers to connect back
+[18:05:22.519]  - [local output] 0 workers out of 2 ready
+[18:05:22.871]  - [local output] 0 workers out of 2 ready
+[18:05:22.872]  - [local output] 1 workers out of 2 ready
+[18:05:22.877]  - [local output] 1 workers out of 2 ready
+[18:05:22.878]  - [local output] 2 workers out of 2 ready
+[18:05:22.878] [local output] Launching of workers completed
+[18:05:22.878] [local output] Collecting session information from workers
+[18:05:22.879] [local output]  - Worker #1 of 2
+[18:05:22.880] [local output]  - Worker #2 of 2
+[18:05:22.881] [local output] makeClusterPSOCK() ... done
+[18:05:22.901] Packages needed by the future expression (n = 0): <none>
+[18:05:22.902] Packages needed by future strategies (n = 0): <none>
+[18:05:22.903] {
+[18:05:22.903]     {
+[18:05:22.903]         {
+[18:05:22.903]             ...future.startTime <- base::Sys.time()
+[18:05:22.903]             {
+[18:05:22.903]                 {
+[18:05:22.903]                   {
+[18:05:22.903]                     base::local({
+[18:05:22.903]                       has_future <- base::requireNamespace("future", 
+[18:05:22.903]                         quietly = TRUE)
+[18:05:22.903]                       if (has_future) {
+[18:05:22.903]                         ns <- base::getNamespace("future")
+[18:05:22.903]                         version <- ns[[".package"]][["version"]]
+[18:05:22.903]                         if (is.null(version)) 
+[18:05:22.903]                           version <- utils::packageVersion("future")
+[18:05:22.903]                       }
+[18:05:22.903]                       else {
+[18:05:22.903]                         version <- NULL
+[18:05:22.903]                       }
+[18:05:22.903]                       if (!has_future || version < "1.8.0") {
+[18:05:22.903]                         info <- base::c(r_version = base::gsub("R version ", 
+[18:05:22.903]                           "", base::R.version$version.string), 
+[18:05:22.903]                           platform = base::sprintf("%s (%s-bit)", 
+[18:05:22.903]                             base::R.version$platform, 8 * base::.Machine$sizeof.pointer), 
+[18:05:22.903]                           os = base::paste(base::Sys.info()[base::c("sysname", 
+[18:05:22.903]                             "release", "version")], collapse = " "), 
+[18:05:22.903]                           hostname = base::Sys.info()[["nodename"]])
+[18:05:22.903]                         info <- base::sprintf("%s: %s", base::names(info), 
+[18:05:22.903]                           info)
+[18:05:22.903]                         info <- base::paste(info, collapse = "; ")
+[18:05:22.903]                         if (!has_future) {
+[18:05:22.903]                           msg <- base::sprintf("Package 'future' is not installed on worker (%s)", 
+[18:05:22.903]                             info)
+[18:05:22.903]                         }
+[18:05:22.903]                         else {
+[18:05:22.903]                           msg <- base::sprintf("Package 'future' on worker (%s) must be of version >= 1.8.0: %s", 
+[18:05:22.903]                             info, version)
+[18:05:22.903]                         }
+[18:05:22.903]                         base::stop(msg)
+[18:05:22.903]                       }
+[18:05:22.903]                     })
+[18:05:22.903]                   }
+[18:05:22.903]                   ...future.strategy.old <- future::plan("list")
+[18:05:22.903]                   options(future.plan = NULL)
+[18:05:22.903]                   Sys.unsetenv("R_FUTURE_PLAN")
+[18:05:22.903]                   future::plan("default", .cleanup = FALSE, .init = FALSE)
+[18:05:22.903]                 }
+[18:05:22.903]                 ...future.workdir <- getwd()
+[18:05:22.903]             }
+[18:05:22.903]             ...future.oldOptions <- base::as.list(base::.Options)
+[18:05:22.903]             ...future.oldEnvVars <- base::Sys.getenv()
+[18:05:22.903]         }
+[18:05:22.903]         base::options(future.startup.script = FALSE, future.globals.onMissing = NULL, 
+[18:05:22.903]             future.globals.maxSize = NULL, future.globals.method = NULL, 
+[18:05:22.903]             future.globals.onMissing = NULL, future.globals.onReference = NULL, 
+[18:05:22.903]             future.globals.resolve = NULL, future.resolve.recursive = NULL, 
+[18:05:22.903]             future.rng.onMisuse = NULL, future.rng.onMisuse.keepFuture = NULL, 
+[18:05:22.903]             future.stdout.windows.reencode = NULL, width = 80L)
+[18:05:22.903]         ...future.futureOptionsAdded <- base::setdiff(base::names(base::.Options), 
+[18:05:22.903]             base::names(...future.oldOptions))
+[18:05:22.903]     }
+[18:05:22.903]     if (FALSE) {
+[18:05:22.903]     }
+[18:05:22.903]     else {
+[18:05:22.903]         if (TRUE) {
+[18:05:22.903]             ...future.stdout <- base::rawConnection(base::raw(0L), 
+[18:05:22.903]                 open = "w")
+[18:05:22.903]         }
+[18:05:22.903]         else {
+[18:05:22.903]             ...future.stdout <- base::file(base::switch(.Platform$OS.type, 
+[18:05:22.903]                 windows = "NUL", "/dev/null"), open = "w")
+[18:05:22.903]         }
+[18:05:22.903]         base::sink(...future.stdout, type = "output", split = FALSE)
+[18:05:22.903]         base::on.exit(if (!base::is.null(...future.stdout)) {
+[18:05:22.903]             base::sink(type = "output", split = FALSE)
+[18:05:22.903]             base::close(...future.stdout)
+[18:05:22.903]         }, add = TRUE)
+[18:05:22.903]     }
+[18:05:22.903]     ...future.frame <- base::sys.nframe()
+[18:05:22.903]     ...future.conditions <- base::list()
+[18:05:22.903]     ...future.rng <- base::globalenv()$.Random.seed
+[18:05:22.903]     if (FALSE) {
+[18:05:22.903]         ...future.globalenv.names <- c(base::names(base::.GlobalEnv), 
+[18:05:22.903]             "...future.value", "...future.globalenv.names", ".Random.seed")
+[18:05:22.903]     }
+[18:05:22.903]     ...future.result <- base::tryCatch({
+[18:05:22.903]         base::withCallingHandlers({
+[18:05:22.903]             ...future.value <- base::withVisible(base::local({
+[18:05:22.903]                 ...future.makeSendCondition <- base::local({
+[18:05:22.903]                   sendCondition <- NULL
+[18:05:22.903]                   function(frame = 1L) {
+[18:05:22.903]                     if (is.function(sendCondition)) 
+[18:05:22.903]                       return(sendCondition)
+[18:05:22.903]                     ns <- getNamespace("parallel")
+[18:05:22.903]                     if (exists("sendData", mode = "function", 
+[18:05:22.903]                       envir = ns)) {
+[18:05:22.903]                       parallel_sendData <- get("sendData", mode = "function", 
+[18:05:22.903]                         envir = ns)
+[18:05:22.903]                       envir <- sys.frame(frame)
+[18:05:22.903]                       master <- NULL
+[18:05:22.903]                       while (!identical(envir, .GlobalEnv) && 
+[18:05:22.903]                         !identical(envir, emptyenv())) {
+[18:05:22.903]                         if (exists("master", mode = "list", envir = envir, 
+[18:05:22.903]                           inherits = FALSE)) {
+[18:05:22.903]                           master <- get("master", mode = "list", 
+[18:05:22.903]                             envir = envir, inherits = FALSE)
+[18:05:22.903]                           if (inherits(master, c("SOCKnode", 
+[18:05:22.903]                             "SOCK0node"))) {
+[18:05:22.903]                             sendCondition <<- function(cond) {
+[18:05:22.903]                               data <- list(type = "VALUE", value = cond, 
+[18:05:22.903]                                 success = TRUE)
+[18:05:22.903]                               parallel_sendData(master, data)
+[18:05:22.903]                             }
+[18:05:22.903]                             return(sendCondition)
+[18:05:22.903]                           }
+[18:05:22.903]                         }
+[18:05:22.903]                         frame <- frame + 1L
+[18:05:22.903]                         envir <- sys.frame(frame)
+[18:05:22.903]                       }
+[18:05:22.903]                     }
+[18:05:22.903]                     sendCondition <<- function(cond) NULL
+[18:05:22.903]                   }
+[18:05:22.903]                 })
+[18:05:22.903]                 withCallingHandlers({
+[18:05:22.903]                   NA
+[18:05:22.903]                 }, immediateCondition = function(cond) {
+[18:05:22.903]                   sendCondition <- ...future.makeSendCondition()
+[18:05:22.903]                   sendCondition(cond)
+[18:05:22.903]                   muffleCondition <- function (cond, pattern = "^muffle") 
+[18:05:22.903]                   {
+[18:05:22.903]                     inherits <- base::inherits
+[18:05:22.903]                     invokeRestart <- base::invokeRestart
+[18:05:22.903]                     is.null <- base::is.null
+[18:05:22.903]                     muffled <- FALSE
+[18:05:22.903]                     if (inherits(cond, "message")) {
+[18:05:22.903]                       muffled <- grepl(pattern, "muffleMessage")
+[18:05:22.903]                       if (muffled) 
+[18:05:22.903]                         invokeRestart("muffleMessage")
+[18:05:22.903]                     }
+[18:05:22.903]                     else if (inherits(cond, "warning")) {
+[18:05:22.903]                       muffled <- grepl(pattern, "muffleWarning")
+[18:05:22.903]                       if (muffled) 
+[18:05:22.903]                         invokeRestart("muffleWarning")
+[18:05:22.903]                     }
+[18:05:22.903]                     else if (inherits(cond, "condition")) {
+[18:05:22.903]                       if (!is.null(pattern)) {
+[18:05:22.903]                         computeRestarts <- base::computeRestarts
+[18:05:22.903]                         grepl <- base::grepl
+[18:05:22.903]                         restarts <- computeRestarts(cond)
+[18:05:22.903]                         for (restart in restarts) {
+[18:05:22.903]                           name <- restart$name
+[18:05:22.903]                           if (is.null(name)) 
+[18:05:22.903]                             next
+[18:05:22.903]                           if (!grepl(pattern, name)) 
+[18:05:22.903]                             next
+[18:05:22.903]                           invokeRestart(restart)
+[18:05:22.903]                           muffled <- TRUE
+[18:05:22.903]                           break
+[18:05:22.903]                         }
+[18:05:22.903]                       }
+[18:05:22.903]                     }
+[18:05:22.903]                     invisible(muffled)
+[18:05:22.903]                   }
+[18:05:22.903]                   muffleCondition(cond)
+[18:05:22.903]                 })
+[18:05:22.903]             }))
+[18:05:22.903]             future::FutureResult(value = ...future.value$value, 
+[18:05:22.903]                 visible = ...future.value$visible, rng = !identical(base::globalenv()$.Random.seed, 
+[18:05:22.903]                   ...future.rng), globalenv = if (FALSE) 
+[18:05:22.903]                   list(added = base::setdiff(base::names(base::.GlobalEnv), 
+[18:05:22.903]                     ...future.globalenv.names))
+[18:05:22.903]                 else NULL, started = ...future.startTime, version = "1.8")
+[18:05:22.903]         }, condition = base::local({
+[18:05:22.903]             c <- base::c
+[18:05:22.903]             inherits <- base::inherits
+[18:05:22.903]             invokeRestart <- base::invokeRestart
+[18:05:22.903]             length <- base::length
+[18:05:22.903]             list <- base::list
+[18:05:22.903]             seq.int <- base::seq.int
+[18:05:22.903]             signalCondition <- base::signalCondition
+[18:05:22.903]             sys.calls <- base::sys.calls
+[18:05:22.903]             `[[` <- base::`[[`
+[18:05:22.903]             `+` <- base::`+`
+[18:05:22.903]             `<<-` <- base::`<<-`
+[18:05:22.903]             sysCalls <- function(calls = sys.calls(), from = 1L) {
+[18:05:22.903]                 calls[seq.int(from = from + 12L, to = length(calls) - 
+[18:05:22.903]                   3L)]
+[18:05:22.903]             }
+[18:05:22.903]             function(cond) {
+[18:05:22.903]                 is_error <- inherits(cond, "error")
+[18:05:22.903]                 ignore <- !is_error && !is.null(NULL) && inherits(cond, 
+[18:05:22.903]                   NULL)
+[18:05:22.903]                 if (is_error) {
+[18:05:22.903]                   sessionInformation <- function() {
+[18:05:22.903]                     list(r = base::R.Version(), locale = base::Sys.getlocale(), 
+[18:05:22.903]                       rngkind = base::RNGkind(), namespaces = base::loadedNamespaces(), 
+[18:05:22.903]                       search = base::search(), system = base::Sys.info())
+[18:05:22.903]                   }
+[18:05:22.903]                   ...future.conditions[[length(...future.conditions) + 
+[18:05:22.903]                     1L]] <<- list(condition = cond, calls = c(sysCalls(from = ...future.frame), 
+[18:05:22.903]                     cond$call), session = sessionInformation(), 
+[18:05:22.903]                     timestamp = base::Sys.time(), signaled = 0L)
+[18:05:22.903]                   signalCondition(cond)
+[18:05:22.903]                 }
+[18:05:22.903]                 else if (!ignore && TRUE && inherits(cond, c("condition", 
+[18:05:22.903]                 "immediateCondition"))) {
+[18:05:22.903]                   signal <- TRUE && inherits(cond, "immediateCondition")
+[18:05:22.903]                   ...future.conditions[[length(...future.conditions) + 
+[18:05:22.903]                     1L]] <<- list(condition = cond, signaled = base::as.integer(signal))
+[18:05:22.903]                   if (TRUE && !signal) {
+[18:05:22.903]                     muffleCondition <- function (cond, pattern = "^muffle") 
+[18:05:22.903]                     {
+[18:05:22.903]                       inherits <- base::inherits
+[18:05:22.903]                       invokeRestart <- base::invokeRestart
+[18:05:22.903]                       is.null <- base::is.null
+[18:05:22.903]                       muffled <- FALSE
+[18:05:22.903]                       if (inherits(cond, "message")) {
+[18:05:22.903]                         muffled <- grepl(pattern, "muffleMessage")
+[18:05:22.903]                         if (muffled) 
+[18:05:22.903]                           invokeRestart("muffleMessage")
+[18:05:22.903]                       }
+[18:05:22.903]                       else if (inherits(cond, "warning")) {
+[18:05:22.903]                         muffled <- grepl(pattern, "muffleWarning")
+[18:05:22.903]                         if (muffled) 
+[18:05:22.903]                           invokeRestart("muffleWarning")
+[18:05:22.903]                       }
+[18:05:22.903]                       else if (inherits(cond, "condition")) {
+[18:05:22.903]                         if (!is.null(pattern)) {
+[18:05:22.903]                           computeRestarts <- base::computeRestarts
+[18:05:22.903]                           grepl <- base::grepl
+[18:05:22.903]                           restarts <- computeRestarts(cond)
+[18:05:22.903]                           for (restart in restarts) {
+[18:05:22.903]                             name <- restart$name
+[18:05:22.903]                             if (is.null(name)) 
+[18:05:22.903]                               next
+[18:05:22.903]                             if (!grepl(pattern, name)) 
+[18:05:22.903]                               next
+[18:05:22.903]                             invokeRestart(restart)
+[18:05:22.903]                             muffled <- TRUE
+[18:05:22.903]                             break
+[18:05:22.903]                           }
+[18:05:22.903]                         }
+[18:05:22.903]                       }
+[18:05:22.903]                       invisible(muffled)
+[18:05:22.903]                     }
+[18:05:22.903]                     muffleCondition(cond, pattern = "^muffle")
+[18:05:22.903]                   }
+[18:05:22.903]                 }
+[18:05:22.903]                 else {
+[18:05:22.903]                   if (TRUE) {
+[18:05:22.903]                     muffleCondition <- function (cond, pattern = "^muffle") 
+[18:05:22.903]                     {
+[18:05:22.903]                       inherits <- base::inherits
+[18:05:22.903]                       invokeRestart <- base::invokeRestart
+[18:05:22.903]                       is.null <- base::is.null
+[18:05:22.903]                       muffled <- FALSE
+[18:05:22.903]                       if (inherits(cond, "message")) {
+[18:05:22.903]                         muffled <- grepl(pattern, "muffleMessage")
+[18:05:22.903]                         if (muffled) 
+[18:05:22.903]                           invokeRestart("muffleMessage")
+[18:05:22.903]                       }
+[18:05:22.903]                       else if (inherits(cond, "warning")) {
+[18:05:22.903]                         muffled <- grepl(pattern, "muffleWarning")
+[18:05:22.903]                         if (muffled) 
+[18:05:22.903]                           invokeRestart("muffleWarning")
+[18:05:22.903]                       }
+[18:05:22.903]                       else if (inherits(cond, "condition")) {
+[18:05:22.903]                         if (!is.null(pattern)) {
+[18:05:22.903]                           computeRestarts <- base::computeRestarts
+[18:05:22.903]                           grepl <- base::grepl
+[18:05:22.903]                           restarts <- computeRestarts(cond)
+[18:05:22.903]                           for (restart in restarts) {
+[18:05:22.903]                             name <- restart$name
+[18:05:22.903]                             if (is.null(name)) 
+[18:05:22.903]                               next
+[18:05:22.903]                             if (!grepl(pattern, name)) 
+[18:05:22.903]                               next
+[18:05:22.903]                             invokeRestart(restart)
+[18:05:22.903]                             muffled <- TRUE
+[18:05:22.903]                             break
+[18:05:22.903]                           }
+[18:05:22.903]                         }
+[18:05:22.903]                       }
+[18:05:22.903]                       invisible(muffled)
+[18:05:22.903]                     }
+[18:05:22.903]                     muffleCondition(cond, pattern = "^muffle")
+[18:05:22.903]                   }
+[18:05:22.903]                 }
+[18:05:22.903]             }
+[18:05:22.903]         }))
+[18:05:22.903]     }, error = function(ex) {
+[18:05:22.903]         base::structure(base::list(value = NULL, visible = NULL, 
+[18:05:22.903]             conditions = ...future.conditions, rng = !identical(base::globalenv()$.Random.seed, 
+[18:05:22.903]                 ...future.rng), started = ...future.startTime, 
+[18:05:22.903]             finished = Sys.time(), session_uuid = NA_character_, 
+[18:05:22.903]             version = "1.8"), class = "FutureResult")
+[18:05:22.903]     }, finally = {
+[18:05:22.903]         if (!identical(...future.workdir, getwd())) 
+[18:05:22.903]             setwd(...future.workdir)
+[18:05:22.903]         {
+[18:05:22.903]             if (identical(getOption("nwarnings"), ...future.oldOptions$nwarnings)) {
+[18:05:22.903]                 ...future.oldOptions$nwarnings <- NULL
+[18:05:22.903]             }
+[18:05:22.903]             base::options(...future.oldOptions)
+[18:05:22.903]             if (.Platform$OS.type == "windows") {
+[18:05:22.903]                 old_names <- names(...future.oldEnvVars)
+[18:05:22.903]                 envs <- base::Sys.getenv()
+[18:05:22.903]                 names <- names(envs)
+[18:05:22.903]                 common <- intersect(names, old_names)
+[18:05:22.903]                 added <- setdiff(names, old_names)
+[18:05:22.903]                 removed <- setdiff(old_names, names)
+[18:05:22.903]                 changed <- common[...future.oldEnvVars[common] != 
+[18:05:22.903]                   envs[common]]
+[18:05:22.903]                 NAMES <- toupper(changed)
+[18:05:22.903]                 args <- list()
+[18:05:22.903]                 for (kk in seq_along(NAMES)) {
+[18:05:22.903]                   name <- changed[[kk]]
+[18:05:22.903]                   NAME <- NAMES[[kk]]
+[18:05:22.903]                   if (name != NAME && is.element(NAME, old_names)) 
+[18:05:22.903]                     next
+[18:05:22.903]                   args[[name]] <- ...future.oldEnvVars[[name]]
+[18:05:22.903]                 }
+[18:05:22.903]                 NAMES <- toupper(added)
+[18:05:22.903]                 for (kk in seq_along(NAMES)) {
+[18:05:22.903]                   name <- added[[kk]]
+[18:05:22.903]                   NAME <- NAMES[[kk]]
+[18:05:22.903]                   if (name != NAME && is.element(NAME, old_names)) 
+[18:05:22.903]                     next
+[18:05:22.903]                   args[[name]] <- ""
+[18:05:22.903]                 }
+[18:05:22.903]                 NAMES <- toupper(removed)
+[18:05:22.903]                 for (kk in seq_along(NAMES)) {
+[18:05:22.903]                   name <- removed[[kk]]
+[18:05:22.903]                   NAME <- NAMES[[kk]]
+[18:05:22.903]                   if (name != NAME && is.element(NAME, old_names)) 
+[18:05:22.903]                     next
+[18:05:22.903]                   args[[name]] <- ...future.oldEnvVars[[name]]
+[18:05:22.903]                 }
+[18:05:22.903]                 if (length(args) > 0) 
+[18:05:22.903]                   base::do.call(base::Sys.setenv, args = args)
+[18:05:22.903]                 args <- names <- old_names <- NAMES <- envs <- common <- added <- removed <- NULL
+[18:05:22.903]             }
+[18:05:22.903]             else {
+[18:05:22.903]                 base::do.call(base::Sys.setenv, args = base::as.list(...future.oldEnvVars))
+[18:05:22.903]             }
+[18:05:22.903]             {
+[18:05:22.903]                 if (base::length(...future.futureOptionsAdded) > 
+[18:05:22.903]                   0L) {
+[18:05:22.903]                   opts <- base::vector("list", length = base::length(...future.futureOptionsAdded))
+[18:05:22.903]                   base::names(opts) <- ...future.futureOptionsAdded
+[18:05:22.903]                   base::options(opts)
+[18:05:22.903]                 }
+[18:05:22.903]                 {
+[18:05:22.903]                   NULL
+[18:05:22.903]                   options(future.plan = NULL)
+[18:05:22.903]                   if (is.na(NA_character_)) 
+[18:05:22.903]                     Sys.unsetenv("R_FUTURE_PLAN")
+[18:05:22.903]                   else Sys.setenv(R_FUTURE_PLAN = NA_character_)
+[18:05:22.903]                   future::plan(...future.strategy.old, .cleanup = FALSE, 
+[18:05:22.903]                     .init = FALSE)
+[18:05:22.903]                 }
+[18:05:22.903]             }
+[18:05:22.903]         }
+[18:05:22.903]     })
+[18:05:22.903]     if (TRUE) {
+[18:05:22.903]         base::sink(type = "output", split = FALSE)
+[18:05:22.903]         if (TRUE) {
+[18:05:22.903]             ...future.result$stdout <- base::rawToChar(base::rawConnectionValue(...future.stdout))
+[18:05:22.903]         }
+[18:05:22.903]         else {
+[18:05:22.903]             ...future.result["stdout"] <- base::list(NULL)
+[18:05:22.903]         }
+[18:05:22.903]         base::close(...future.stdout)
+[18:05:22.903]         ...future.stdout <- NULL
+[18:05:22.903]     }
+[18:05:22.903]     ...future.result$conditions <- ...future.conditions
+[18:05:22.903]     ...future.result$finished <- base::Sys.time()
+[18:05:22.903]     ...future.result
+[18:05:22.903] }
+[18:05:23.004] ClusterFuture started
+[18:05:23.004] result() for ClusterFuture ...
+[18:05:23.004] receiveMessageFromWorker() for ClusterFuture ...
+[18:05:23.006] - Validating connection of ClusterFuture
+[18:05:23.069] - received message: FutureResult
+[18:05:23.069] - Received FutureResult
+[18:05:23.070] - Erased future from FutureRegistry
+[18:05:23.070] result() for ClusterFuture ...
+[18:05:23.070] - result already collected: FutureResult
+[18:05:23.071] result() for ClusterFuture ... done
+[18:05:23.071] receiveMessageFromWorker() for ClusterFuture ... done
+[18:05:23.071] result() for ClusterFuture ... done
+[18:05:23.071] result() for ClusterFuture ...
+[18:05:23.072] - result already collected: FutureResult
+[18:05:23.072] result() for ClusterFuture ... done
+[18:05:23.072] plan(): plan_init() of ‘tweaked’, ‘cluster’, ‘multiprocess’, ‘future’, ‘function’ ... DONE
+[18:05:23.073] plan(): nbrOfWorkers() = 2
+> n <- nbrOfWorkers()
+> message(sprintf("nbrOfWorkers: %d", n))
+nbrOfWorkers: 2
+> stopifnot(n == length(workers))
+> plan(cluster, workers = allButOneWorker)
+[18:05:23.074] plan(): Setting new future strategy stack:
+[18:05:23.074] List of future strategies:
+[18:05:23.074] 1. cluster:
+[18:05:23.074]    - args: function (..., workers = "<function ()  >", envir = parent.frame())
+[18:05:23.074]    - tweaked: TRUE
+[18:05:23.074]    - call: plan(cluster, workers = allButOneWorker)
+[18:05:23.077] plan(): plan_init() of ‘tweaked’, ‘cluster’, ‘multiprocess’, ‘future’, ‘function’ ...
+[18:05:23.077] cluster:
+[18:05:23.077] - args: function (..., workers = "<function ()  >", envir = parent.frame())
+[18:05:23.077] - tweaked: TRUE
+[18:05:23.077] - call: plan(cluster, workers = allButOneWorker)
+[18:05:23.079] getGlobalsAndPackages() ...
+[18:05:23.080] Not searching for globals
+[18:05:23.080] - globals: [0] <none>
+[18:05:23.080] getGlobalsAndPackages() ... DONE
+[18:05:23.087] [local output] makeClusterPSOCK() ...
+[18:05:23.088] [local output] Workers: [n = 1] ‘localhost’
+[18:05:23.089] [local output] Base port: 11558
+[18:05:23.089] [local output] Getting setup options for 1 cluster nodes ...
+[18:05:23.090] [local output]  - Node 1 of 1 ...
+[18:05:23.090] [local output] localMachine=TRUE => revtunnel=FALSE
+
+[18:05:23.092] [local output] Rscript port: 11558
+
+[18:05:23.092] [local output] Getting setup options for 1 cluster nodes ... done
+[18:05:23.092] [local output]  - Parallel setup requested for some PSOCK nodes
+[18:05:23.093] [local output] Setting up PSOCK nodes in parallel
+[18:05:23.093] List of 36
+[18:05:23.093]  $ worker          : chr "localhost"
+[18:05:23.093]   ..- attr(*, "localhost")= logi TRUE
+[18:05:23.093]  $ master          : chr "localhost"
+[18:05:23.093]  $ port            : int 11558
+[18:05:23.093]  $ connectTimeout  : num 120
+[18:05:23.093]  $ timeout         : num 2592000
+[18:05:23.093]  $ rscript         : chr "'/usr/local/lib/R/bin/Rscript'"
+[18:05:23.093]  $ homogeneous     : logi TRUE
+[18:05:23.093]  $ rscript_args    : chr "--default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppressWarnings(cat(Sys.getpid(),fi"| __truncated__
+[18:05:23.093]  $ rscript_envs    : NULL
+[18:05:23.093]  $ rscript_libs    : NULL
+[18:05:23.093]  $ rscript_startup : NULL
+[18:05:23.093]  $ rscript_sh      : chr "sh"
+[18:05:23.093]  $ default_packages: chr [1:6] "datasets" "utils" "grDevices" "graphics" ...
+[18:05:23.093]  $ methods         : logi TRUE
+[18:05:23.093]  $ socketOptions   : chr "no-delay"
+[18:05:23.093]  $ useXDR          : logi FALSE
+[18:05:23.093]  $ outfile         : chr "/dev/null"
+[18:05:23.093]  $ renice          : int NA
+[18:05:23.093]  $ rshcmd          : NULL
+[18:05:23.093]  $ user            : chr(0) 
+[18:05:23.093]  $ revtunnel       : logi FALSE
+[18:05:23.093]  $ rshlogfile      : NULL
+[18:05:23.093]  $ rshopts         : chr(0) 
+[18:05:23.093]  $ rank            : int 1
+[18:05:23.093]  $ manual          : logi FALSE
+[18:05:23.093]  $ dryrun          : logi FALSE
+[18:05:23.093]  $ quiet           : logi FALSE
+[18:05:23.093]  $ setup_strategy  : chr "parallel"
+[18:05:23.093]  $ local_cmd       : chr "'/usr/local/lib/R/bin/Rscript' --default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppr"| __truncated__
+[18:05:23.093]  $ pidfile         : chr "/tmp/RtmpuDL7My/worker.rank=1.parallelly.parent=326518.4fb76406f2f57.pid"
+[18:05:23.093]  $ rshcmd_label    : NULL
+[18:05:23.093]  $ rsh_call        : NULL
+[18:05:23.093]  $ cmd             : chr "'/usr/local/lib/R/bin/Rscript' --default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppr"| __truncated__
+[18:05:23.093]  $ localMachine    : logi TRUE
+[18:05:23.093]  $ make_fcn        :function (worker = getOption2("parallelly.localhost.hostname", "localhost"), 
+[18:05:23.093]     master = NULL, port, connectTimeout = getOption2("parallelly.makeNodePSOCK.connectTimeout", 
+[18:05:23.093]         2 * 60), timeout = getOption2("parallelly.makeNodePSOCK.timeout", 
+[18:05:23.093]         30 * 24 * 60 * 60), rscript = NULL, homogeneous = NULL, rscript_args = NULL, 
+[18:05:23.093]     rscript_envs = NULL, rscript_libs = NULL, rscript_startup = NULL, rscript_sh = c("auto", 
+[18:05:23.093]         "cmd", "sh"), default_packages = c("datasets", "utils", "grDevices", 
+[18:05:23.093]         "graphics", "stats", if (methods) "methods"), methods = TRUE, socketOptions = getOption2("parallelly.makeNodePSOCK.socketOptions", 
+[18:05:23.093]         "no-delay"), useXDR = getOption2("parallelly.makeNodePSOCK.useXDR", 
+[18:05:23.093]         FALSE), outfile = "/dev/null", renice = NA_integer_, rshcmd = getOption2("parallelly.makeNodePSOCK.rshcmd", 
+[18:05:23.093]         NULL), user = NULL, revtunnel = NA, rshlogfile = NULL, rshopts = getOption2("parallelly.makeNodePSOCK.rshopts", 
+[18:05:23.093]         NULL), rank = 1L, manual = FALSE, dryrun = FALSE, quiet = FALSE, 
+[18:05:23.093]     setup_strategy = getOption2("parallelly.makeNodePSOCK.setup_strategy", 
+[18:05:23.093]         "parallel"), action = c("launch", "options"), verbose = FALSE)  
+[18:05:23.093]  $ arguments       :List of 28
+[18:05:23.093]   ..$ worker          : chr "localhost"
+[18:05:23.093]   ..$ master          : NULL
+[18:05:23.093]   ..$ port            : int 11558
+[18:05:23.093]   ..$ connectTimeout  : num 120
+[18:05:23.093]   ..$ timeout         : num 2592000
+[18:05:23.093]   ..$ rscript         : NULL
+[18:05:23.093]   ..$ homogeneous     : NULL
+[18:05:23.093]   ..$ rscript_args    : NULL
+[18:05:23.093]   ..$ rscript_envs    : NULL
+[18:05:23.093]   ..$ rscript_libs    : NULL
+[18:05:23.093]   ..$ rscript_startup : NULL
+[18:05:23.093]   ..$ rscript_sh      : chr [1:3] "auto" "cmd" "sh"
+[18:05:23.093]   ..$ default_packages: chr [1:6] "datasets" "utils" "grDevices" "graphics" ...
+[18:05:23.093]   ..$ methods         : logi TRUE
+[18:05:23.093]   ..$ socketOptions   : chr "no-delay"
+[18:05:23.093]   ..$ useXDR          : logi FALSE
+[18:05:23.093]   ..$ outfile         : chr "/dev/null"
+[18:05:23.093]   ..$ renice          : int NA
+[18:05:23.093]   ..$ rshcmd          : NULL
+[18:05:23.093]   ..$ user            : NULL
+[18:05:23.093]   ..$ revtunnel       : logi NA
+[18:05:23.093]   ..$ rshlogfile      : NULL
+[18:05:23.093]   ..$ rshopts         : NULL
+[18:05:23.093]   ..$ rank            : int 1
+[18:05:23.093]   ..$ manual          : logi FALSE
+[18:05:23.093]   ..$ dryrun          : logi FALSE
+[18:05:23.093]   ..$ quiet           : logi FALSE
+[18:05:23.093]   ..$ setup_strategy  : chr "parallel"
+[18:05:23.093]  - attr(*, "class")= chr [1:2] "makeNodePSOCKOptions" "makeNodeOptions"
+[18:05:23.127] [local output] System call to launch all workers:
+[18:05:23.128] [local output] '/usr/local/lib/R/bin/Rscript' --default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppressWarnings(cat(Sys.getpid(),file="/tmp/RtmpuDL7My/worker.rank=1.parallelly.parent=326518.4fb76406f2f57.pid")), silent = TRUE)' -e 'options(socketOptions = "no-delay")' -e 'workRSOCK <- tryCatch(parallel:::.workRSOCK, error=function(e) parallel:::.slaveRSOCK); workRSOCK()' MASTER=localhost PORT=11558 OUT=/dev/null TIMEOUT=2592000 XDR=FALSE SETUPTIMEOUT=120 SETUPSTRATEGY=parallel
+[18:05:23.128] [local output] Starting PSOCK main server
+[18:05:23.130] [local output] Workers launched
+[18:05:23.130] [local output] Waiting for workers to connect back
+[18:05:23.130]  - [local output] 0 workers out of 1 ready
+[18:05:23.411]  - [local output] 0 workers out of 1 ready
+[18:05:23.412]  - [local output] 1 workers out of 1 ready
+[18:05:23.412] [local output] Launching of workers completed
+[18:05:23.413] [local output] Collecting session information from workers
+[18:05:23.414] [local output]  - Worker #1 of 1
+[18:05:23.414] [local output] makeClusterPSOCK() ... done
+[18:05:23.425] Packages needed by the future expression (n = 0): <none>
+[18:05:23.425] Packages needed by future strategies (n = 0): <none>
+[18:05:23.426] {
+[18:05:23.426]     {
+[18:05:23.426]         {
+[18:05:23.426]             ...future.startTime <- base::Sys.time()
+[18:05:23.426]             {
+[18:05:23.426]                 {
+[18:05:23.426]                   {
+[18:05:23.426]                     base::local({
+[18:05:23.426]                       has_future <- base::requireNamespace("future", 
+[18:05:23.426]                         quietly = TRUE)
+[18:05:23.426]                       if (has_future) {
+[18:05:23.426]                         ns <- base::getNamespace("future")
+[18:05:23.426]                         version <- ns[[".package"]][["version"]]
+[18:05:23.426]                         if (is.null(version)) 
+[18:05:23.426]                           version <- utils::packageVersion("future")
+[18:05:23.426]                       }
+[18:05:23.426]                       else {
+[18:05:23.426]                         version <- NULL
+[18:05:23.426]                       }
+[18:05:23.426]                       if (!has_future || version < "1.8.0") {
+[18:05:23.426]                         info <- base::c(r_version = base::gsub("R version ", 
+[18:05:23.426]                           "", base::R.version$version.string), 
+[18:05:23.426]                           platform = base::sprintf("%s (%s-bit)", 
+[18:05:23.426]                             base::R.version$platform, 8 * base::.Machine$sizeof.pointer), 
+[18:05:23.426]                           os = base::paste(base::Sys.info()[base::c("sysname", 
+[18:05:23.426]                             "release", "version")], collapse = " "), 
+[18:05:23.426]                           hostname = base::Sys.info()[["nodename"]])
+[18:05:23.426]                         info <- base::sprintf("%s: %s", base::names(info), 
+[18:05:23.426]                           info)
+[18:05:23.426]                         info <- base::paste(info, collapse = "; ")
+[18:05:23.426]                         if (!has_future) {
+[18:05:23.426]                           msg <- base::sprintf("Package 'future' is not installed on worker (%s)", 
+[18:05:23.426]                             info)
+[18:05:23.426]                         }
+[18:05:23.426]                         else {
+[18:05:23.426]                           msg <- base::sprintf("Package 'future' on worker (%s) must be of version >= 1.8.0: %s", 
+[18:05:23.426]                             info, version)
+[18:05:23.426]                         }
+[18:05:23.426]                         base::stop(msg)
+[18:05:23.426]                       }
+[18:05:23.426]                     })
+[18:05:23.426]                   }
+[18:05:23.426]                   ...future.strategy.old <- future::plan("list")
+[18:05:23.426]                   options(future.plan = NULL)
+[18:05:23.426]                   Sys.unsetenv("R_FUTURE_PLAN")
+[18:05:23.426]                   future::plan("default", .cleanup = FALSE, .init = FALSE)
+[18:05:23.426]                 }
+[18:05:23.426]                 ...future.workdir <- getwd()
+[18:05:23.426]             }
+[18:05:23.426]             ...future.oldOptions <- base::as.list(base::.Options)
+[18:05:23.426]             ...future.oldEnvVars <- base::Sys.getenv()
+[18:05:23.426]         }
+[18:05:23.426]         base::options(future.startup.script = FALSE, future.globals.onMissing = NULL, 
+[18:05:23.426]             future.globals.maxSize = NULL, future.globals.method = NULL, 
+[18:05:23.426]             future.globals.onMissing = NULL, future.globals.onReference = NULL, 
+[18:05:23.426]             future.globals.resolve = NULL, future.resolve.recursive = NULL, 
+[18:05:23.426]             future.rng.onMisuse = NULL, future.rng.onMisuse.keepFuture = NULL, 
+[18:05:23.426]             future.stdout.windows.reencode = NULL, width = 80L)
+[18:05:23.426]         ...future.futureOptionsAdded <- base::setdiff(base::names(base::.Options), 
+[18:05:23.426]             base::names(...future.oldOptions))
+[18:05:23.426]     }
+[18:05:23.426]     if (FALSE) {
+[18:05:23.426]     }
+[18:05:23.426]     else {
+[18:05:23.426]         if (TRUE) {
+[18:05:23.426]             ...future.stdout <- base::rawConnection(base::raw(0L), 
+[18:05:23.426]                 open = "w")
+[18:05:23.426]         }
+[18:05:23.426]         else {
+[18:05:23.426]             ...future.stdout <- base::file(base::switch(.Platform$OS.type, 
+[18:05:23.426]                 windows = "NUL", "/dev/null"), open = "w")
+[18:05:23.426]         }
+[18:05:23.426]         base::sink(...future.stdout, type = "output", split = FALSE)
+[18:05:23.426]         base::on.exit(if (!base::is.null(...future.stdout)) {
+[18:05:23.426]             base::sink(type = "output", split = FALSE)
+[18:05:23.426]             base::close(...future.stdout)
+[18:05:23.426]         }, add = TRUE)
+[18:05:23.426]     }
+[18:05:23.426]     ...future.frame <- base::sys.nframe()
+[18:05:23.426]     ...future.conditions <- base::list()
+[18:05:23.426]     ...future.rng <- base::globalenv()$.Random.seed
+[18:05:23.426]     if (FALSE) {
+[18:05:23.426]         ...future.globalenv.names <- c(base::names(base::.GlobalEnv), 
+[18:05:23.426]             "...future.value", "...future.globalenv.names", ".Random.seed")
+[18:05:23.426]     }
+[18:05:23.426]     ...future.result <- base::tryCatch({
+[18:05:23.426]         base::withCallingHandlers({
+[18:05:23.426]             ...future.value <- base::withVisible(base::local({
+[18:05:23.426]                 ...future.makeSendCondition <- base::local({
+[18:05:23.426]                   sendCondition <- NULL
+[18:05:23.426]                   function(frame = 1L) {
+[18:05:23.426]                     if (is.function(sendCondition)) 
+[18:05:23.426]                       return(sendCondition)
+[18:05:23.426]                     ns <- getNamespace("parallel")
+[18:05:23.426]                     if (exists("sendData", mode = "function", 
+[18:05:23.426]                       envir = ns)) {
+[18:05:23.426]                       parallel_sendData <- get("sendData", mode = "function", 
+[18:05:23.426]                         envir = ns)
+[18:05:23.426]                       envir <- sys.frame(frame)
+[18:05:23.426]                       master <- NULL
+[18:05:23.426]                       while (!identical(envir, .GlobalEnv) && 
+[18:05:23.426]                         !identical(envir, emptyenv())) {
+[18:05:23.426]                         if (exists("master", mode = "list", envir = envir, 
+[18:05:23.426]                           inherits = FALSE)) {
+[18:05:23.426]                           master <- get("master", mode = "list", 
+[18:05:23.426]                             envir = envir, inherits = FALSE)
+[18:05:23.426]                           if (inherits(master, c("SOCKnode", 
+[18:05:23.426]                             "SOCK0node"))) {
+[18:05:23.426]                             sendCondition <<- function(cond) {
+[18:05:23.426]                               data <- list(type = "VALUE", value = cond, 
+[18:05:23.426]                                 success = TRUE)
+[18:05:23.426]                               parallel_sendData(master, data)
+[18:05:23.426]                             }
+[18:05:23.426]                             return(sendCondition)
+[18:05:23.426]                           }
+[18:05:23.426]                         }
+[18:05:23.426]                         frame <- frame + 1L
+[18:05:23.426]                         envir <- sys.frame(frame)
+[18:05:23.426]                       }
+[18:05:23.426]                     }
+[18:05:23.426]                     sendCondition <<- function(cond) NULL
+[18:05:23.426]                   }
+[18:05:23.426]                 })
+[18:05:23.426]                 withCallingHandlers({
+[18:05:23.426]                   NA
+[18:05:23.426]                 }, immediateCondition = function(cond) {
+[18:05:23.426]                   sendCondition <- ...future.makeSendCondition()
+[18:05:23.426]                   sendCondition(cond)
+[18:05:23.426]                   muffleCondition <- function (cond, pattern = "^muffle") 
+[18:05:23.426]                   {
+[18:05:23.426]                     inherits <- base::inherits
+[18:05:23.426]                     invokeRestart <- base::invokeRestart
+[18:05:23.426]                     is.null <- base::is.null
+[18:05:23.426]                     muffled <- FALSE
+[18:05:23.426]                     if (inherits(cond, "message")) {
+[18:05:23.426]                       muffled <- grepl(pattern, "muffleMessage")
+[18:05:23.426]                       if (muffled) 
+[18:05:23.426]                         invokeRestart("muffleMessage")
+[18:05:23.426]                     }
+[18:05:23.426]                     else if (inherits(cond, "warning")) {
+[18:05:23.426]                       muffled <- grepl(pattern, "muffleWarning")
+[18:05:23.426]                       if (muffled) 
+[18:05:23.426]                         invokeRestart("muffleWarning")
+[18:05:23.426]                     }
+[18:05:23.426]                     else if (inherits(cond, "condition")) {
+[18:05:23.426]                       if (!is.null(pattern)) {
+[18:05:23.426]                         computeRestarts <- base::computeRestarts
+[18:05:23.426]                         grepl <- base::grepl
+[18:05:23.426]                         restarts <- computeRestarts(cond)
+[18:05:23.426]                         for (restart in restarts) {
+[18:05:23.426]                           name <- restart$name
+[18:05:23.426]                           if (is.null(name)) 
+[18:05:23.426]                             next
+[18:05:23.426]                           if (!grepl(pattern, name)) 
+[18:05:23.426]                             next
+[18:05:23.426]                           invokeRestart(restart)
+[18:05:23.426]                           muffled <- TRUE
+[18:05:23.426]                           break
+[18:05:23.426]                         }
+[18:05:23.426]                       }
+[18:05:23.426]                     }
+[18:05:23.426]                     invisible(muffled)
+[18:05:23.426]                   }
+[18:05:23.426]                   muffleCondition(cond)
+[18:05:23.426]                 })
+[18:05:23.426]             }))
+[18:05:23.426]             future::FutureResult(value = ...future.value$value, 
+[18:05:23.426]                 visible = ...future.value$visible, rng = !identical(base::globalenv()$.Random.seed, 
+[18:05:23.426]                   ...future.rng), globalenv = if (FALSE) 
+[18:05:23.426]                   list(added = base::setdiff(base::names(base::.GlobalEnv), 
+[18:05:23.426]                     ...future.globalenv.names))
+[18:05:23.426]                 else NULL, started = ...future.startTime, version = "1.8")
+[18:05:23.426]         }, condition = base::local({
+[18:05:23.426]             c <- base::c
+[18:05:23.426]             inherits <- base::inherits
+[18:05:23.426]             invokeRestart <- base::invokeRestart
+[18:05:23.426]             length <- base::length
+[18:05:23.426]             list <- base::list
+[18:05:23.426]             seq.int <- base::seq.int
+[18:05:23.426]             signalCondition <- base::signalCondition
+[18:05:23.426]             sys.calls <- base::sys.calls
+[18:05:23.426]             `[[` <- base::`[[`
+[18:05:23.426]             `+` <- base::`+`
+[18:05:23.426]             `<<-` <- base::`<<-`
+[18:05:23.426]             sysCalls <- function(calls = sys.calls(), from = 1L) {
+[18:05:23.426]                 calls[seq.int(from = from + 12L, to = length(calls) - 
+[18:05:23.426]                   3L)]
+[18:05:23.426]             }
+[18:05:23.426]             function(cond) {
+[18:05:23.426]                 is_error <- inherits(cond, "error")
+[18:05:23.426]                 ignore <- !is_error && !is.null(NULL) && inherits(cond, 
+[18:05:23.426]                   NULL)
+[18:05:23.426]                 if (is_error) {
+[18:05:23.426]                   sessionInformation <- function() {
+[18:05:23.426]                     list(r = base::R.Version(), locale = base::Sys.getlocale(), 
+[18:05:23.426]                       rngkind = base::RNGkind(), namespaces = base::loadedNamespaces(), 
+[18:05:23.426]                       search = base::search(), system = base::Sys.info())
+[18:05:23.426]                   }
+[18:05:23.426]                   ...future.conditions[[length(...future.conditions) + 
+[18:05:23.426]                     1L]] <<- list(condition = cond, calls = c(sysCalls(from = ...future.frame), 
+[18:05:23.426]                     cond$call), session = sessionInformation(), 
+[18:05:23.426]                     timestamp = base::Sys.time(), signaled = 0L)
+[18:05:23.426]                   signalCondition(cond)
+[18:05:23.426]                 }
+[18:05:23.426]                 else if (!ignore && TRUE && inherits(cond, c("condition", 
+[18:05:23.426]                 "immediateCondition"))) {
+[18:05:23.426]                   signal <- TRUE && inherits(cond, "immediateCondition")
+[18:05:23.426]                   ...future.conditions[[length(...future.conditions) + 
+[18:05:23.426]                     1L]] <<- list(condition = cond, signaled = base::as.integer(signal))
+[18:05:23.426]                   if (TRUE && !signal) {
+[18:05:23.426]                     muffleCondition <- function (cond, pattern = "^muffle") 
+[18:05:23.426]                     {
+[18:05:23.426]                       inherits <- base::inherits
+[18:05:23.426]                       invokeRestart <- base::invokeRestart
+[18:05:23.426]                       is.null <- base::is.null
+[18:05:23.426]                       muffled <- FALSE
+[18:05:23.426]                       if (inherits(cond, "message")) {
+[18:05:23.426]                         muffled <- grepl(pattern, "muffleMessage")
+[18:05:23.426]                         if (muffled) 
+[18:05:23.426]                           invokeRestart("muffleMessage")
+[18:05:23.426]                       }
+[18:05:23.426]                       else if (inherits(cond, "warning")) {
+[18:05:23.426]                         muffled <- grepl(pattern, "muffleWarning")
+[18:05:23.426]                         if (muffled) 
+[18:05:23.426]                           invokeRestart("muffleWarning")
+[18:05:23.426]                       }
+[18:05:23.426]                       else if (inherits(cond, "condition")) {
+[18:05:23.426]                         if (!is.null(pattern)) {
+[18:05:23.426]                           computeRestarts <- base::computeRestarts
+[18:05:23.426]                           grepl <- base::grepl
+[18:05:23.426]                           restarts <- computeRestarts(cond)
+[18:05:23.426]                           for (restart in restarts) {
+[18:05:23.426]                             name <- restart$name
+[18:05:23.426]                             if (is.null(name)) 
+[18:05:23.426]                               next
+[18:05:23.426]                             if (!grepl(pattern, name)) 
+[18:05:23.426]                               next
+[18:05:23.426]                             invokeRestart(restart)
+[18:05:23.426]                             muffled <- TRUE
+[18:05:23.426]                             break
+[18:05:23.426]                           }
+[18:05:23.426]                         }
+[18:05:23.426]                       }
+[18:05:23.426]                       invisible(muffled)
+[18:05:23.426]                     }
+[18:05:23.426]                     muffleCondition(cond, pattern = "^muffle")
+[18:05:23.426]                   }
+[18:05:23.426]                 }
+[18:05:23.426]                 else {
+[18:05:23.426]                   if (TRUE) {
+[18:05:23.426]                     muffleCondition <- function (cond, pattern = "^muffle") 
+[18:05:23.426]                     {
+[18:05:23.426]                       inherits <- base::inherits
+[18:05:23.426]                       invokeRestart <- base::invokeRestart
+[18:05:23.426]                       is.null <- base::is.null
+[18:05:23.426]                       muffled <- FALSE
+[18:05:23.426]                       if (inherits(cond, "message")) {
+[18:05:23.426]                         muffled <- grepl(pattern, "muffleMessage")
+[18:05:23.426]                         if (muffled) 
+[18:05:23.426]                           invokeRestart("muffleMessage")
+[18:05:23.426]                       }
+[18:05:23.426]                       else if (inherits(cond, "warning")) {
+[18:05:23.426]                         muffled <- grepl(pattern, "muffleWarning")
+[18:05:23.426]                         if (muffled) 
+[18:05:23.426]                           invokeRestart("muffleWarning")
+[18:05:23.426]                       }
+[18:05:23.426]                       else if (inherits(cond, "condition")) {
+[18:05:23.426]                         if (!is.null(pattern)) {
+[18:05:23.426]                           computeRestarts <- base::computeRestarts
+[18:05:23.426]                           grepl <- base::grepl
+[18:05:23.426]                           restarts <- computeRestarts(cond)
+[18:05:23.426]                           for (restart in restarts) {
+[18:05:23.426]                             name <- restart$name
+[18:05:23.426]                             if (is.null(name)) 
+[18:05:23.426]                               next
+[18:05:23.426]                             if (!grepl(pattern, name)) 
+[18:05:23.426]                               next
+[18:05:23.426]                             invokeRestart(restart)
+[18:05:23.426]                             muffled <- TRUE
+[18:05:23.426]                             break
+[18:05:23.426]                           }
+[18:05:23.426]                         }
+[18:05:23.426]                       }
+[18:05:23.426]                       invisible(muffled)
+[18:05:23.426]                     }
+[18:05:23.426]                     muffleCondition(cond, pattern = "^muffle")
+[18:05:23.426]                   }
+[18:05:23.426]                 }
+[18:05:23.426]             }
+[18:05:23.426]         }))
+[18:05:23.426]     }, error = function(ex) {
+[18:05:23.426]         base::structure(base::list(value = NULL, visible = NULL, 
+[18:05:23.426]             conditions = ...future.conditions, rng = !identical(base::globalenv()$.Random.seed, 
+[18:05:23.426]                 ...future.rng), started = ...future.startTime, 
+[18:05:23.426]             finished = Sys.time(), session_uuid = NA_character_, 
+[18:05:23.426]             version = "1.8"), class = "FutureResult")
+[18:05:23.426]     }, finally = {
+[18:05:23.426]         if (!identical(...future.workdir, getwd())) 
+[18:05:23.426]             setwd(...future.workdir)
+[18:05:23.426]         {
+[18:05:23.426]             if (identical(getOption("nwarnings"), ...future.oldOptions$nwarnings)) {
+[18:05:23.426]                 ...future.oldOptions$nwarnings <- NULL
+[18:05:23.426]             }
+[18:05:23.426]             base::options(...future.oldOptions)
+[18:05:23.426]             if (.Platform$OS.type == "windows") {
+[18:05:23.426]                 old_names <- names(...future.oldEnvVars)
+[18:05:23.426]                 envs <- base::Sys.getenv()
+[18:05:23.426]                 names <- names(envs)
+[18:05:23.426]                 common <- intersect(names, old_names)
+[18:05:23.426]                 added <- setdiff(names, old_names)
+[18:05:23.426]                 removed <- setdiff(old_names, names)
+[18:05:23.426]                 changed <- common[...future.oldEnvVars[common] != 
+[18:05:23.426]                   envs[common]]
+[18:05:23.426]                 NAMES <- toupper(changed)
+[18:05:23.426]                 args <- list()
+[18:05:23.426]                 for (kk in seq_along(NAMES)) {
+[18:05:23.426]                   name <- changed[[kk]]
+[18:05:23.426]                   NAME <- NAMES[[kk]]
+[18:05:23.426]                   if (name != NAME && is.element(NAME, old_names)) 
+[18:05:23.426]                     next
+[18:05:23.426]                   args[[name]] <- ...future.oldEnvVars[[name]]
+[18:05:23.426]                 }
+[18:05:23.426]                 NAMES <- toupper(added)
+[18:05:23.426]                 for (kk in seq_along(NAMES)) {
+[18:05:23.426]                   name <- added[[kk]]
+[18:05:23.426]                   NAME <- NAMES[[kk]]
+[18:05:23.426]                   if (name != NAME && is.element(NAME, old_names)) 
+[18:05:23.426]                     next
+[18:05:23.426]                   args[[name]] <- ""
+[18:05:23.426]                 }
+[18:05:23.426]                 NAMES <- toupper(removed)
+[18:05:23.426]                 for (kk in seq_along(NAMES)) {
+[18:05:23.426]                   name <- removed[[kk]]
+[18:05:23.426]                   NAME <- NAMES[[kk]]
+[18:05:23.426]                   if (name != NAME && is.element(NAME, old_names)) 
+[18:05:23.426]                     next
+[18:05:23.426]                   args[[name]] <- ...future.oldEnvVars[[name]]
+[18:05:23.426]                 }
+[18:05:23.426]                 if (length(args) > 0) 
+[18:05:23.426]                   base::do.call(base::Sys.setenv, args = args)
+[18:05:23.426]                 args <- names <- old_names <- NAMES <- envs <- common <- added <- removed <- NULL
+[18:05:23.426]             }
+[18:05:23.426]             else {
+[18:05:23.426]                 base::do.call(base::Sys.setenv, args = base::as.list(...future.oldEnvVars))
+[18:05:23.426]             }
+[18:05:23.426]             {
+[18:05:23.426]                 if (base::length(...future.futureOptionsAdded) > 
+[18:05:23.426]                   0L) {
+[18:05:23.426]                   opts <- base::vector("list", length = base::length(...future.futureOptionsAdded))
+[18:05:23.426]                   base::names(opts) <- ...future.futureOptionsAdded
+[18:05:23.426]                   base::options(opts)
+[18:05:23.426]                 }
+[18:05:23.426]                 {
+[18:05:23.426]                   NULL
+[18:05:23.426]                   options(future.plan = NULL)
+[18:05:23.426]                   if (is.na(NA_character_)) 
+[18:05:23.426]                     Sys.unsetenv("R_FUTURE_PLAN")
+[18:05:23.426]                   else Sys.setenv(R_FUTURE_PLAN = NA_character_)
+[18:05:23.426]                   future::plan(...future.strategy.old, .cleanup = FALSE, 
+[18:05:23.426]                     .init = FALSE)
+[18:05:23.426]                 }
+[18:05:23.426]             }
+[18:05:23.426]         }
+[18:05:23.426]     })
+[18:05:23.426]     if (TRUE) {
+[18:05:23.426]         base::sink(type = "output", split = FALSE)
+[18:05:23.426]         if (TRUE) {
+[18:05:23.426]             ...future.result$stdout <- base::rawToChar(base::rawConnectionValue(...future.stdout))
+[18:05:23.426]         }
+[18:05:23.426]         else {
+[18:05:23.426]             ...future.result["stdout"] <- base::list(NULL)
+[18:05:23.426]         }
+[18:05:23.426]         base::close(...future.stdout)
+[18:05:23.426]         ...future.stdout <- NULL
+[18:05:23.426]     }
+[18:05:23.426]     ...future.result$conditions <- ...future.conditions
+[18:05:23.426]     ...future.result$finished <- base::Sys.time()
+[18:05:23.426]     ...future.result
+[18:05:23.426] }
+[18:05:23.530] ClusterFuture started
+[18:05:23.530] result() for ClusterFuture ...
+[18:05:23.530] receiveMessageFromWorker() for ClusterFuture ...
+[18:05:23.531] - Validating connection of ClusterFuture
+[18:05:23.594] - received message: FutureResult
+[18:05:23.594] - Received FutureResult
+[18:05:23.594] - Erased future from FutureRegistry
+[18:05:23.595] result() for ClusterFuture ...
+[18:05:23.595] - result already collected: FutureResult
+[18:05:23.595] result() for ClusterFuture ... done
+[18:05:23.595] receiveMessageFromWorker() for ClusterFuture ... done
+[18:05:23.595] result() for ClusterFuture ... done
+[18:05:23.596] result() for ClusterFuture ...
+[18:05:23.596] - result already collected: FutureResult
+[18:05:23.596] result() for ClusterFuture ... done
+[18:05:23.596] plan(): plan_init() of ‘tweaked’, ‘cluster’, ‘multiprocess’, ‘future’, ‘function’ ... DONE
+[18:05:23.607] plan(): nbrOfWorkers() = 1
+> n <- nbrOfWorkers()
+> message(sprintf("nbrOfWorkers: %d", n))
+nbrOfWorkers: 1
+> stopifnot(n == max(1L, nworkers - 1L))
+> 
+> message("Type of future: constant")
+Type of future: constant
+> n <- nbrOfWorkers(constant)
+> message(sprintf("nbrOfWorkers: %d", n))
+nbrOfWorkers: 1
+> stopifnot(n == 1)
+> 
+> message("Type of future: <future>")
+Type of future: <future>
+> foo <- structure(function(...) NULL, class = c("future"))
+> n <- nbrOfWorkers(foo)
+> message(sprintf("nbrOfWorkers: %g", n))
+nbrOfWorkers: Inf
+> stopifnot(n >= 0, is.infinite(n))
+> 
+> 
+> message("Type of future: cluster with workers = <cluster object>")
+Type of future: cluster with workers = <cluster object>
+> 
+> workers <- makeClusterPSOCK(2L)
+[18:05:23.615] [local output] makeClusterPSOCK() ...
+[18:05:23.621] [local output] Workers: [n = 2] ‘localhost’, ‘localhost’
+[18:05:23.622] [local output] Base port: 11495
+[18:05:23.622] [local output] Getting setup options for 2 cluster nodes ...
+[18:05:23.622] [local output]  - Node 1 of 2 ...
+[18:05:23.623] [local output] localMachine=TRUE => revtunnel=FALSE
+
+[18:05:23.624] [local output] Rscript port: 11495
+
+[18:05:23.625] [local output]  - Node 2 of 2 ...
+[18:05:23.625] [local output] localMachine=TRUE => revtunnel=FALSE
+
+[18:05:23.626] [local output] Rscript port: 11495
+
+[18:05:23.627] [local output] Getting setup options for 2 cluster nodes ... done
+[18:05:23.627] [local output]  - Parallel setup requested for some PSOCK nodes
+[18:05:23.628] [local output] Setting up PSOCK nodes in parallel
+[18:05:23.628] List of 36
+[18:05:23.628]  $ worker          : chr "localhost"
+[18:05:23.628]   ..- attr(*, "localhost")= logi TRUE
+[18:05:23.628]  $ master          : chr "localhost"
+[18:05:23.628]  $ port            : int 11495
+[18:05:23.628]  $ connectTimeout  : num 120
+[18:05:23.628]  $ timeout         : num 2592000
+[18:05:23.628]  $ rscript         : chr "'/usr/local/lib/R/bin/Rscript'"
+[18:05:23.628]  $ homogeneous     : logi TRUE
+[18:05:23.628]  $ rscript_args    : chr "--default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppressWarnings(cat(Sys.getpid(),fi"| __truncated__
+[18:05:23.628]  $ rscript_envs    : NULL
+[18:05:23.628]  $ rscript_libs    : NULL
+[18:05:23.628]  $ rscript_startup : NULL
+[18:05:23.628]  $ rscript_sh      : chr "sh"
+[18:05:23.628]  $ default_packages: chr [1:6] "datasets" "utils" "grDevices" "graphics" ...
+[18:05:23.628]  $ methods         : logi TRUE
+[18:05:23.628]  $ socketOptions   : chr "no-delay"
+[18:05:23.628]  $ useXDR          : logi FALSE
+[18:05:23.628]  $ outfile         : chr "/dev/null"
+[18:05:23.628]  $ renice          : int NA
+[18:05:23.628]  $ rshcmd          : NULL
+[18:05:23.628]  $ user            : chr(0) 
+[18:05:23.628]  $ revtunnel       : logi FALSE
+[18:05:23.628]  $ rshlogfile      : NULL
+[18:05:23.628]  $ rshopts         : chr(0) 
+[18:05:23.628]  $ rank            : int 1
+[18:05:23.628]  $ manual          : logi FALSE
+[18:05:23.628]  $ dryrun          : logi FALSE
+[18:05:23.628]  $ quiet           : logi FALSE
+[18:05:23.628]  $ setup_strategy  : chr "parallel"
+[18:05:23.628]  $ local_cmd       : chr "'/usr/local/lib/R/bin/Rscript' --default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppr"| __truncated__
+[18:05:23.628]  $ pidfile         : chr "/tmp/RtmpuDL7My/worker.rank=1.parallelly.parent=326518.4fb762e749b2b.pid"
+[18:05:23.628]  $ rshcmd_label    : NULL
+[18:05:23.628]  $ rsh_call        : NULL
+[18:05:23.628]  $ cmd             : chr "'/usr/local/lib/R/bin/Rscript' --default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppr"| __truncated__
+[18:05:23.628]  $ localMachine    : logi TRUE
+[18:05:23.628]  $ make_fcn        :function (worker = getOption2("parallelly.localhost.hostname", "localhost"), 
+[18:05:23.628]     master = NULL, port, connectTimeout = getOption2("parallelly.makeNodePSOCK.connectTimeout", 
+[18:05:23.628]         2 * 60), timeout = getOption2("parallelly.makeNodePSOCK.timeout", 
+[18:05:23.628]         30 * 24 * 60 * 60), rscript = NULL, homogeneous = NULL, rscript_args = NULL, 
+[18:05:23.628]     rscript_envs = NULL, rscript_libs = NULL, rscript_startup = NULL, rscript_sh = c("auto", 
+[18:05:23.628]         "cmd", "sh"), default_packages = c("datasets", "utils", "grDevices", 
+[18:05:23.628]         "graphics", "stats", if (methods) "methods"), methods = TRUE, socketOptions = getOption2("parallelly.makeNodePSOCK.socketOptions", 
+[18:05:23.628]         "no-delay"), useXDR = getOption2("parallelly.makeNodePSOCK.useXDR", 
+[18:05:23.628]         FALSE), outfile = "/dev/null", renice = NA_integer_, rshcmd = getOption2("parallelly.makeNodePSOCK.rshcmd", 
+[18:05:23.628]         NULL), user = NULL, revtunnel = NA, rshlogfile = NULL, rshopts = getOption2("parallelly.makeNodePSOCK.rshopts", 
+[18:05:23.628]         NULL), rank = 1L, manual = FALSE, dryrun = FALSE, quiet = FALSE, 
+[18:05:23.628]     setup_strategy = getOption2("parallelly.makeNodePSOCK.setup_strategy", 
+[18:05:23.628]         "parallel"), action = c("launch", "options"), verbose = FALSE)  
+[18:05:23.628]  $ arguments       :List of 28
+[18:05:23.628]   ..$ worker          : chr "localhost"
+[18:05:23.628]   ..$ master          : NULL
+[18:05:23.628]   ..$ port            : int 11495
+[18:05:23.628]   ..$ connectTimeout  : num 120
+[18:05:23.628]   ..$ timeout         : num 2592000
+[18:05:23.628]   ..$ rscript         : NULL
+[18:05:23.628]   ..$ homogeneous     : NULL
+[18:05:23.628]   ..$ rscript_args    : NULL
+[18:05:23.628]   ..$ rscript_envs    : NULL
+[18:05:23.628]   ..$ rscript_libs    : NULL
+[18:05:23.628]   ..$ rscript_startup : NULL
+[18:05:23.628]   ..$ rscript_sh      : chr [1:3] "auto" "cmd" "sh"
+[18:05:23.628]   ..$ default_packages: chr [1:6] "datasets" "utils" "grDevices" "graphics" ...
+[18:05:23.628]   ..$ methods         : logi TRUE
+[18:05:23.628]   ..$ socketOptions   : chr "no-delay"
+[18:05:23.628]   ..$ useXDR          : logi FALSE
+[18:05:23.628]   ..$ outfile         : chr "/dev/null"
+[18:05:23.628]   ..$ renice          : int NA
+[18:05:23.628]   ..$ rshcmd          : NULL
+[18:05:23.628]   ..$ user            : NULL
+[18:05:23.628]   ..$ revtunnel       : logi NA
+[18:05:23.628]   ..$ rshlogfile      : NULL
+[18:05:23.628]   ..$ rshopts         : NULL
+[18:05:23.628]   ..$ rank            : int 1
+[18:05:23.628]   ..$ manual          : logi FALSE
+[18:05:23.628]   ..$ dryrun          : logi FALSE
+[18:05:23.628]   ..$ quiet           : logi FALSE
+[18:05:23.628]   ..$ setup_strategy  : chr "parallel"
+[18:05:23.628]  - attr(*, "class")= chr [1:2] "makeNodePSOCKOptions" "makeNodeOptions"
+[18:05:23.664] [local output] System call to launch all workers:
+[18:05:23.664] [local output] '/usr/local/lib/R/bin/Rscript' --default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppressWarnings(cat(Sys.getpid(),file="/tmp/RtmpuDL7My/worker.rank=1.parallelly.parent=326518.4fb762e749b2b.pid")), silent = TRUE)' -e 'options(socketOptions = "no-delay")' -e 'workRSOCK <- tryCatch(parallel:::.workRSOCK, error=function(e) parallel:::.slaveRSOCK); workRSOCK()' MASTER=localhost PORT=11495 OUT=/dev/null TIMEOUT=2592000 XDR=FALSE SETUPTIMEOUT=120 SETUPSTRATEGY=parallel
+[18:05:23.664] [local output] Starting PSOCK main server
+[18:05:23.666] [local output] Workers launched
+[18:05:23.667] [local output] Waiting for workers to connect back
+[18:05:23.667]  - [local output] 0 workers out of 2 ready
+[18:05:24.009]  - [local output] 0 workers out of 2 ready
+[18:05:24.010]  - [local output] 1 workers out of 2 ready
+[18:05:24.011]  - [local output] 1 workers out of 2 ready
+[18:05:24.012]  - [local output] 2 workers out of 2 ready
+[18:05:24.012] [local output] Launching of workers completed
+[18:05:24.012] [local output] Collecting session information from workers
+[18:05:24.013] [local output]  - Worker #1 of 2
+[18:05:24.015] [local output]  - Worker #2 of 2
+[18:05:24.015] [local output] makeClusterPSOCK() ... done
+> print(workers)
+Socket cluster with 2 nodes where 2 nodes are on host ‘localhost’ (R version 4.4.0 (2024-04-24), platform x86_64-pc-linux-gnu)
+> plan(cluster, workers = workers)
+[18:05:24.022] plan(): Setting new future strategy stack:
+[18:05:24.022] List of future strategies:
+[18:05:24.022] 1. cluster:
+[18:05:24.022]    - args: function (..., workers = "<Socket cluster with 2 nodes where 2 nodes are on host ‘localhost’ (R version 4.4.0 (2024-04-24), platform x86_64-pc-linux-gnu)>", envir = parent.frame())
+[18:05:24.022]    - tweaked: TRUE
+[18:05:24.022]    - call: plan(cluster, workers = workers)
+[18:05:24.026] plan(): plan_init() of ‘tweaked’, ‘cluster’, ‘multiprocess’, ‘future’, ‘function’ ...
+[18:05:24.026] cluster:
+[18:05:24.026] - args: function (..., workers = "<Socket cluster with 2 nodes where 2 nodes are on host ‘localhost’ (R version 4.4.0 (2024-04-24), platform x86_64-pc-linux-gnu)>", envir = parent.frame())
+[18:05:24.026] - tweaked: TRUE
+[18:05:24.026] - call: plan(cluster, workers = workers)
+[18:05:24.030] getGlobalsAndPackages() ...
+[18:05:24.030] Not searching for globals
+[18:05:24.031] - globals: [0] <none>
+[18:05:24.031] getGlobalsAndPackages() ... DONE
+[18:05:24.048] Packages needed by the future expression (n = 0): <none>
+[18:05:24.049] Packages needed by future strategies (n = 0): <none>
+[18:05:24.050] {
+[18:05:24.050]     {
+[18:05:24.050]         {
+[18:05:24.050]             ...future.startTime <- base::Sys.time()
+[18:05:24.050]             {
+[18:05:24.050]                 {
+[18:05:24.050]                   {
+[18:05:24.050]                     base::local({
+[18:05:24.050]                       has_future <- base::requireNamespace("future", 
+[18:05:24.050]                         quietly = TRUE)
+[18:05:24.050]                       if (has_future) {
+[18:05:24.050]                         ns <- base::getNamespace("future")
+[18:05:24.050]                         version <- ns[[".package"]][["version"]]
+[18:05:24.050]                         if (is.null(version)) 
+[18:05:24.050]                           version <- utils::packageVersion("future")
+[18:05:24.050]                       }
+[18:05:24.050]                       else {
+[18:05:24.050]                         version <- NULL
+[18:05:24.050]                       }
+[18:05:24.050]                       if (!has_future || version < "1.8.0") {
+[18:05:24.050]                         info <- base::c(r_version = base::gsub("R version ", 
+[18:05:24.050]                           "", base::R.version$version.string), 
+[18:05:24.050]                           platform = base::sprintf("%s (%s-bit)", 
+[18:05:24.050]                             base::R.version$platform, 8 * base::.Machine$sizeof.pointer), 
+[18:05:24.050]                           os = base::paste(base::Sys.info()[base::c("sysname", 
+[18:05:24.050]                             "release", "version")], collapse = " "), 
+[18:05:24.050]                           hostname = base::Sys.info()[["nodename"]])
+[18:05:24.050]                         info <- base::sprintf("%s: %s", base::names(info), 
+[18:05:24.050]                           info)
+[18:05:24.050]                         info <- base::paste(info, collapse = "; ")
+[18:05:24.050]                         if (!has_future) {
+[18:05:24.050]                           msg <- base::sprintf("Package 'future' is not installed on worker (%s)", 
+[18:05:24.050]                             info)
+[18:05:24.050]                         }
+[18:05:24.050]                         else {
+[18:05:24.050]                           msg <- base::sprintf("Package 'future' on worker (%s) must be of version >= 1.8.0: %s", 
+[18:05:24.050]                             info, version)
+[18:05:24.050]                         }
+[18:05:24.050]                         base::stop(msg)
+[18:05:24.050]                       }
+[18:05:24.050]                     })
+[18:05:24.050]                   }
+[18:05:24.050]                   ...future.strategy.old <- future::plan("list")
+[18:05:24.050]                   options(future.plan = NULL)
+[18:05:24.050]                   Sys.unsetenv("R_FUTURE_PLAN")
+[18:05:24.050]                   future::plan("default", .cleanup = FALSE, .init = FALSE)
+[18:05:24.050]                 }
+[18:05:24.050]                 ...future.workdir <- getwd()
+[18:05:24.050]             }
+[18:05:24.050]             ...future.oldOptions <- base::as.list(base::.Options)
+[18:05:24.050]             ...future.oldEnvVars <- base::Sys.getenv()
+[18:05:24.050]         }
+[18:05:24.050]         base::options(future.startup.script = FALSE, future.globals.onMissing = NULL, 
+[18:05:24.050]             future.globals.maxSize = NULL, future.globals.method = NULL, 
+[18:05:24.050]             future.globals.onMissing = NULL, future.globals.onReference = NULL, 
+[18:05:24.050]             future.globals.resolve = NULL, future.resolve.recursive = NULL, 
+[18:05:24.050]             future.rng.onMisuse = NULL, future.rng.onMisuse.keepFuture = NULL, 
+[18:05:24.050]             future.stdout.windows.reencode = NULL, width = 80L)
+[18:05:24.050]         ...future.futureOptionsAdded <- base::setdiff(base::names(base::.Options), 
+[18:05:24.050]             base::names(...future.oldOptions))
+[18:05:24.050]     }
+[18:05:24.050]     if (FALSE) {
+[18:05:24.050]     }
+[18:05:24.050]     else {
+[18:05:24.050]         if (TRUE) {
+[18:05:24.050]             ...future.stdout <- base::rawConnection(base::raw(0L), 
+[18:05:24.050]                 open = "w")
+[18:05:24.050]         }
+[18:05:24.050]         else {
+[18:05:24.050]             ...future.stdout <- base::file(base::switch(.Platform$OS.type, 
+[18:05:24.050]                 windows = "NUL", "/dev/null"), open = "w")
+[18:05:24.050]         }
+[18:05:24.050]         base::sink(...future.stdout, type = "output", split = FALSE)
+[18:05:24.050]         base::on.exit(if (!base::is.null(...future.stdout)) {
+[18:05:24.050]             base::sink(type = "output", split = FALSE)
+[18:05:24.050]             base::close(...future.stdout)
+[18:05:24.050]         }, add = TRUE)
+[18:05:24.050]     }
+[18:05:24.050]     ...future.frame <- base::sys.nframe()
+[18:05:24.050]     ...future.conditions <- base::list()
+[18:05:24.050]     ...future.rng <- base::globalenv()$.Random.seed
+[18:05:24.050]     if (FALSE) {
+[18:05:24.050]         ...future.globalenv.names <- c(base::names(base::.GlobalEnv), 
+[18:05:24.050]             "...future.value", "...future.globalenv.names", ".Random.seed")
+[18:05:24.050]     }
+[18:05:24.050]     ...future.result <- base::tryCatch({
+[18:05:24.050]         base::withCallingHandlers({
+[18:05:24.050]             ...future.value <- base::withVisible(base::local({
+[18:05:24.050]                 ...future.makeSendCondition <- base::local({
+[18:05:24.050]                   sendCondition <- NULL
+[18:05:24.050]                   function(frame = 1L) {
+[18:05:24.050]                     if (is.function(sendCondition)) 
+[18:05:24.050]                       return(sendCondition)
+[18:05:24.050]                     ns <- getNamespace("parallel")
+[18:05:24.050]                     if (exists("sendData", mode = "function", 
+[18:05:24.050]                       envir = ns)) {
+[18:05:24.050]                       parallel_sendData <- get("sendData", mode = "function", 
+[18:05:24.050]                         envir = ns)
+[18:05:24.050]                       envir <- sys.frame(frame)
+[18:05:24.050]                       master <- NULL
+[18:05:24.050]                       while (!identical(envir, .GlobalEnv) && 
+[18:05:24.050]                         !identical(envir, emptyenv())) {
+[18:05:24.050]                         if (exists("master", mode = "list", envir = envir, 
+[18:05:24.050]                           inherits = FALSE)) {
+[18:05:24.050]                           master <- get("master", mode = "list", 
+[18:05:24.050]                             envir = envir, inherits = FALSE)
+[18:05:24.050]                           if (inherits(master, c("SOCKnode", 
+[18:05:24.050]                             "SOCK0node"))) {
+[18:05:24.050]                             sendCondition <<- function(cond) {
+[18:05:24.050]                               data <- list(type = "VALUE", value = cond, 
+[18:05:24.050]                                 success = TRUE)
+[18:05:24.050]                               parallel_sendData(master, data)
+[18:05:24.050]                             }
+[18:05:24.050]                             return(sendCondition)
+[18:05:24.050]                           }
+[18:05:24.050]                         }
+[18:05:24.050]                         frame <- frame + 1L
+[18:05:24.050]                         envir <- sys.frame(frame)
+[18:05:24.050]                       }
+[18:05:24.050]                     }
+[18:05:24.050]                     sendCondition <<- function(cond) NULL
+[18:05:24.050]                   }
+[18:05:24.050]                 })
+[18:05:24.050]                 withCallingHandlers({
+[18:05:24.050]                   NA
+[18:05:24.050]                 }, immediateCondition = function(cond) {
+[18:05:24.050]                   sendCondition <- ...future.makeSendCondition()
+[18:05:24.050]                   sendCondition(cond)
+[18:05:24.050]                   muffleCondition <- function (cond, pattern = "^muffle") 
+[18:05:24.050]                   {
+[18:05:24.050]                     inherits <- base::inherits
+[18:05:24.050]                     invokeRestart <- base::invokeRestart
+[18:05:24.050]                     is.null <- base::is.null
+[18:05:24.050]                     muffled <- FALSE
+[18:05:24.050]                     if (inherits(cond, "message")) {
+[18:05:24.050]                       muffled <- grepl(pattern, "muffleMessage")
+[18:05:24.050]                       if (muffled) 
+[18:05:24.050]                         invokeRestart("muffleMessage")
+[18:05:24.050]                     }
+[18:05:24.050]                     else if (inherits(cond, "warning")) {
+[18:05:24.050]                       muffled <- grepl(pattern, "muffleWarning")
+[18:05:24.050]                       if (muffled) 
+[18:05:24.050]                         invokeRestart("muffleWarning")
+[18:05:24.050]                     }
+[18:05:24.050]                     else if (inherits(cond, "condition")) {
+[18:05:24.050]                       if (!is.null(pattern)) {
+[18:05:24.050]                         computeRestarts <- base::computeRestarts
+[18:05:24.050]                         grepl <- base::grepl
+[18:05:24.050]                         restarts <- computeRestarts(cond)
+[18:05:24.050]                         for (restart in restarts) {
+[18:05:24.050]                           name <- restart$name
+[18:05:24.050]                           if (is.null(name)) 
+[18:05:24.050]                             next
+[18:05:24.050]                           if (!grepl(pattern, name)) 
+[18:05:24.050]                             next
+[18:05:24.050]                           invokeRestart(restart)
+[18:05:24.050]                           muffled <- TRUE
+[18:05:24.050]                           break
+[18:05:24.050]                         }
+[18:05:24.050]                       }
+[18:05:24.050]                     }
+[18:05:24.050]                     invisible(muffled)
+[18:05:24.050]                   }
+[18:05:24.050]                   muffleCondition(cond)
+[18:05:24.050]                 })
+[18:05:24.050]             }))
+[18:05:24.050]             future::FutureResult(value = ...future.value$value, 
+[18:05:24.050]                 visible = ...future.value$visible, rng = !identical(base::globalenv()$.Random.seed, 
+[18:05:24.050]                   ...future.rng), globalenv = if (FALSE) 
+[18:05:24.050]                   list(added = base::setdiff(base::names(base::.GlobalEnv), 
+[18:05:24.050]                     ...future.globalenv.names))
+[18:05:24.050]                 else NULL, started = ...future.startTime, version = "1.8")
+[18:05:24.050]         }, condition = base::local({
+[18:05:24.050]             c <- base::c
+[18:05:24.050]             inherits <- base::inherits
+[18:05:24.050]             invokeRestart <- base::invokeRestart
+[18:05:24.050]             length <- base::length
+[18:05:24.050]             list <- base::list
+[18:05:24.050]             seq.int <- base::seq.int
+[18:05:24.050]             signalCondition <- base::signalCondition
+[18:05:24.050]             sys.calls <- base::sys.calls
+[18:05:24.050]             `[[` <- base::`[[`
+[18:05:24.050]             `+` <- base::`+`
+[18:05:24.050]             `<<-` <- base::`<<-`
+[18:05:24.050]             sysCalls <- function(calls = sys.calls(), from = 1L) {
+[18:05:24.050]                 calls[seq.int(from = from + 12L, to = length(calls) - 
+[18:05:24.050]                   3L)]
+[18:05:24.050]             }
+[18:05:24.050]             function(cond) {
+[18:05:24.050]                 is_error <- inherits(cond, "error")
+[18:05:24.050]                 ignore <- !is_error && !is.null(NULL) && inherits(cond, 
+[18:05:24.050]                   NULL)
+[18:05:24.050]                 if (is_error) {
+[18:05:24.050]                   sessionInformation <- function() {
+[18:05:24.050]                     list(r = base::R.Version(), locale = base::Sys.getlocale(), 
+[18:05:24.050]                       rngkind = base::RNGkind(), namespaces = base::loadedNamespaces(), 
+[18:05:24.050]                       search = base::search(), system = base::Sys.info())
+[18:05:24.050]                   }
+[18:05:24.050]                   ...future.conditions[[length(...future.conditions) + 
+[18:05:24.050]                     1L]] <<- list(condition = cond, calls = c(sysCalls(from = ...future.frame), 
+[18:05:24.050]                     cond$call), session = sessionInformation(), 
+[18:05:24.050]                     timestamp = base::Sys.time(), signaled = 0L)
+[18:05:24.050]                   signalCondition(cond)
+[18:05:24.050]                 }
+[18:05:24.050]                 else if (!ignore && TRUE && inherits(cond, c("condition", 
+[18:05:24.050]                 "immediateCondition"))) {
+[18:05:24.050]                   signal <- TRUE && inherits(cond, "immediateCondition")
+[18:05:24.050]                   ...future.conditions[[length(...future.conditions) + 
+[18:05:24.050]                     1L]] <<- list(condition = cond, signaled = base::as.integer(signal))
+[18:05:24.050]                   if (TRUE && !signal) {
+[18:05:24.050]                     muffleCondition <- function (cond, pattern = "^muffle") 
+[18:05:24.050]                     {
+[18:05:24.050]                       inherits <- base::inherits
+[18:05:24.050]                       invokeRestart <- base::invokeRestart
+[18:05:24.050]                       is.null <- base::is.null
+[18:05:24.050]                       muffled <- FALSE
+[18:05:24.050]                       if (inherits(cond, "message")) {
+[18:05:24.050]                         muffled <- grepl(pattern, "muffleMessage")
+[18:05:24.050]                         if (muffled) 
+[18:05:24.050]                           invokeRestart("muffleMessage")
+[18:05:24.050]                       }
+[18:05:24.050]                       else if (inherits(cond, "warning")) {
+[18:05:24.050]                         muffled <- grepl(pattern, "muffleWarning")
+[18:05:24.050]                         if (muffled) 
+[18:05:24.050]                           invokeRestart("muffleWarning")
+[18:05:24.050]                       }
+[18:05:24.050]                       else if (inherits(cond, "condition")) {
+[18:05:24.050]                         if (!is.null(pattern)) {
+[18:05:24.050]                           computeRestarts <- base::computeRestarts
+[18:05:24.050]                           grepl <- base::grepl
+[18:05:24.050]                           restarts <- computeRestarts(cond)
+[18:05:24.050]                           for (restart in restarts) {
+[18:05:24.050]                             name <- restart$name
+[18:05:24.050]                             if (is.null(name)) 
+[18:05:24.050]                               next
+[18:05:24.050]                             if (!grepl(pattern, name)) 
+[18:05:24.050]                               next
+[18:05:24.050]                             invokeRestart(restart)
+[18:05:24.050]                             muffled <- TRUE
+[18:05:24.050]                             break
+[18:05:24.050]                           }
+[18:05:24.050]                         }
+[18:05:24.050]                       }
+[18:05:24.050]                       invisible(muffled)
+[18:05:24.050]                     }
+[18:05:24.050]                     muffleCondition(cond, pattern = "^muffle")
+[18:05:24.050]                   }
+[18:05:24.050]                 }
+[18:05:24.050]                 else {
+[18:05:24.050]                   if (TRUE) {
+[18:05:24.050]                     muffleCondition <- function (cond, pattern = "^muffle") 
+[18:05:24.050]                     {
+[18:05:24.050]                       inherits <- base::inherits
+[18:05:24.050]                       invokeRestart <- base::invokeRestart
+[18:05:24.050]                       is.null <- base::is.null
+[18:05:24.050]                       muffled <- FALSE
+[18:05:24.050]                       if (inherits(cond, "message")) {
+[18:05:24.050]                         muffled <- grepl(pattern, "muffleMessage")
+[18:05:24.050]                         if (muffled) 
+[18:05:24.050]                           invokeRestart("muffleMessage")
+[18:05:24.050]                       }
+[18:05:24.050]                       else if (inherits(cond, "warning")) {
+[18:05:24.050]                         muffled <- grepl(pattern, "muffleWarning")
+[18:05:24.050]                         if (muffled) 
+[18:05:24.050]                           invokeRestart("muffleWarning")
+[18:05:24.050]                       }
+[18:05:24.050]                       else if (inherits(cond, "condition")) {
+[18:05:24.050]                         if (!is.null(pattern)) {
+[18:05:24.050]                           computeRestarts <- base::computeRestarts
+[18:05:24.050]                           grepl <- base::grepl
+[18:05:24.050]                           restarts <- computeRestarts(cond)
+[18:05:24.050]                           for (restart in restarts) {
+[18:05:24.050]                             name <- restart$name
+[18:05:24.050]                             if (is.null(name)) 
+[18:05:24.050]                               next
+[18:05:24.050]                             if (!grepl(pattern, name)) 
+[18:05:24.050]                               next
+[18:05:24.050]                             invokeRestart(restart)
+[18:05:24.050]                             muffled <- TRUE
+[18:05:24.050]                             break
+[18:05:24.050]                           }
+[18:05:24.050]                         }
+[18:05:24.050]                       }
+[18:05:24.050]                       invisible(muffled)
+[18:05:24.050]                     }
+[18:05:24.050]                     muffleCondition(cond, pattern = "^muffle")
+[18:05:24.050]                   }
+[18:05:24.050]                 }
+[18:05:24.050]             }
+[18:05:24.050]         }))
+[18:05:24.050]     }, error = function(ex) {
+[18:05:24.050]         base::structure(base::list(value = NULL, visible = NULL, 
+[18:05:24.050]             conditions = ...future.conditions, rng = !identical(base::globalenv()$.Random.seed, 
+[18:05:24.050]                 ...future.rng), started = ...future.startTime, 
+[18:05:24.050]             finished = Sys.time(), session_uuid = NA_character_, 
+[18:05:24.050]             version = "1.8"), class = "FutureResult")
+[18:05:24.050]     }, finally = {
+[18:05:24.050]         if (!identical(...future.workdir, getwd())) 
+[18:05:24.050]             setwd(...future.workdir)
+[18:05:24.050]         {
+[18:05:24.050]             if (identical(getOption("nwarnings"), ...future.oldOptions$nwarnings)) {
+[18:05:24.050]                 ...future.oldOptions$nwarnings <- NULL
+[18:05:24.050]             }
+[18:05:24.050]             base::options(...future.oldOptions)
+[18:05:24.050]             if (.Platform$OS.type == "windows") {
+[18:05:24.050]                 old_names <- names(...future.oldEnvVars)
+[18:05:24.050]                 envs <- base::Sys.getenv()
+[18:05:24.050]                 names <- names(envs)
+[18:05:24.050]                 common <- intersect(names, old_names)
+[18:05:24.050]                 added <- setdiff(names, old_names)
+[18:05:24.050]                 removed <- setdiff(old_names, names)
+[18:05:24.050]                 changed <- common[...future.oldEnvVars[common] != 
+[18:05:24.050]                   envs[common]]
+[18:05:24.050]                 NAMES <- toupper(changed)
+[18:05:24.050]                 args <- list()
+[18:05:24.050]                 for (kk in seq_along(NAMES)) {
+[18:05:24.050]                   name <- changed[[kk]]
+[18:05:24.050]                   NAME <- NAMES[[kk]]
+[18:05:24.050]                   if (name != NAME && is.element(NAME, old_names)) 
+[18:05:24.050]                     next
+[18:05:24.050]                   args[[name]] <- ...future.oldEnvVars[[name]]
+[18:05:24.050]                 }
+[18:05:24.050]                 NAMES <- toupper(added)
+[18:05:24.050]                 for (kk in seq_along(NAMES)) {
+[18:05:24.050]                   name <- added[[kk]]
+[18:05:24.050]                   NAME <- NAMES[[kk]]
+[18:05:24.050]                   if (name != NAME && is.element(NAME, old_names)) 
+[18:05:24.050]                     next
+[18:05:24.050]                   args[[name]] <- ""
+[18:05:24.050]                 }
+[18:05:24.050]                 NAMES <- toupper(removed)
+[18:05:24.050]                 for (kk in seq_along(NAMES)) {
+[18:05:24.050]                   name <- removed[[kk]]
+[18:05:24.050]                   NAME <- NAMES[[kk]]
+[18:05:24.050]                   if (name != NAME && is.element(NAME, old_names)) 
+[18:05:24.050]                     next
+[18:05:24.050]                   args[[name]] <- ...future.oldEnvVars[[name]]
+[18:05:24.050]                 }
+[18:05:24.050]                 if (length(args) > 0) 
+[18:05:24.050]                   base::do.call(base::Sys.setenv, args = args)
+[18:05:24.050]                 args <- names <- old_names <- NAMES <- envs <- common <- added <- removed <- NULL
+[18:05:24.050]             }
+[18:05:24.050]             else {
+[18:05:24.050]                 base::do.call(base::Sys.setenv, args = base::as.list(...future.oldEnvVars))
+[18:05:24.050]             }
+[18:05:24.050]             {
+[18:05:24.050]                 if (base::length(...future.futureOptionsAdded) > 
+[18:05:24.050]                   0L) {
+[18:05:24.050]                   opts <- base::vector("list", length = base::length(...future.futureOptionsAdded))
+[18:05:24.050]                   base::names(opts) <- ...future.futureOptionsAdded
+[18:05:24.050]                   base::options(opts)
+[18:05:24.050]                 }
+[18:05:24.050]                 {
+[18:05:24.050]                   NULL
+[18:05:24.050]                   options(future.plan = NULL)
+[18:05:24.050]                   if (is.na(NA_character_)) 
+[18:05:24.050]                     Sys.unsetenv("R_FUTURE_PLAN")
+[18:05:24.050]                   else Sys.setenv(R_FUTURE_PLAN = NA_character_)
+[18:05:24.050]                   future::plan(...future.strategy.old, .cleanup = FALSE, 
+[18:05:24.050]                     .init = FALSE)
+[18:05:24.050]                 }
+[18:05:24.050]             }
+[18:05:24.050]         }
+[18:05:24.050]     })
+[18:05:24.050]     if (TRUE) {
+[18:05:24.050]         base::sink(type = "output", split = FALSE)
+[18:05:24.050]         if (TRUE) {
+[18:05:24.050]             ...future.result$stdout <- base::rawToChar(base::rawConnectionValue(...future.stdout))
+[18:05:24.050]         }
+[18:05:24.050]         else {
+[18:05:24.050]             ...future.result["stdout"] <- base::list(NULL)
+[18:05:24.050]         }
+[18:05:24.050]         base::close(...future.stdout)
+[18:05:24.050]         ...future.stdout <- NULL
+[18:05:24.050]     }
+[18:05:24.050]     ...future.result$conditions <- ...future.conditions
+[18:05:24.050]     ...future.result$finished <- base::Sys.time()
+[18:05:24.050]     ...future.result
+[18:05:24.050] }
+[18:05:24.147] ClusterFuture started
+[18:05:24.148] result() for ClusterFuture ...
+[18:05:24.148] receiveMessageFromWorker() for ClusterFuture ...
+[18:05:24.148] - Validating connection of ClusterFuture
+[18:05:24.211] - received message: FutureResult
+[18:05:24.212] - Received FutureResult
+[18:05:24.212] - Erased future from FutureRegistry
+[18:05:24.212] result() for ClusterFuture ...
+[18:05:24.213] - result already collected: FutureResult
+[18:05:24.213] result() for ClusterFuture ... done
+[18:05:24.213] receiveMessageFromWorker() for ClusterFuture ... done
+[18:05:24.214] result() for ClusterFuture ... done
+[18:05:24.214] result() for ClusterFuture ...
+[18:05:24.214] - result already collected: FutureResult
+[18:05:24.214] result() for ClusterFuture ... done
+[18:05:24.215] plan(): plan_init() of ‘tweaked’, ‘cluster’, ‘multiprocess’, ‘future’, ‘function’ ... DONE
+[18:05:24.215] plan(): nbrOfWorkers() = 2
+> n <- nbrOfWorkers()
+> message(sprintf("nbrOfWorkers: %g", n))
+nbrOfWorkers: 2
+> stopifnot(n == length(workers))
+> parallel::stopCluster(workers)
+> 
+> message("*** nbrOfWorkers() ... DONE")
+*** nbrOfWorkers() ... DONE
+> 
+> source("incl/end.R")
+[18:05:24.218] plan(): Setting new future strategy stack:
+[18:05:24.218] List of future strategies:
+[18:05:24.218] 1. FutureStrategy:
+[18:05:24.218]    - args: function (..., envir = parent.frame(), workers = "<NULL>")
+[18:05:24.218]    - tweaked: FALSE
+[18:05:24.218]    - call: future::plan(oplan)
+[18:05:24.221] plan(): nbrOfWorkers() = 1
+> 
