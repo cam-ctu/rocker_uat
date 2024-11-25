@@ -1,12 +1,8 @@
 
 
-# Might want to evolve this to read parameters to choose to clear log
-# source("edit_log.R"); clear_log()  ....?
+source("edit_log.R")
+clear_log()
 
-if(!file.exists( "log.Rdata") ){
-  log <- data.frame(name=character(0),result=integer(0),date_stamp=character(0))
-  save(log, file="log.Rdata")
-}
 
 # should create the qmd files for each packages testing
 
