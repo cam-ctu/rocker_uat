@@ -1,0 +1,86 @@
+
+R version 4.4.0 (2024-04-24) -- "Puppy Cup"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> source("incl/start.R")
+> stopCluster <- parallel::stopCluster
+> 
+> message("*** Connections ...")
+*** Connections ...
+> 
+> con <- stdin()
+> idx <- as.integer(con)
+> id <- connectionId(con)
+> valid <- isConnectionValid(con)
+> stopifnot(inherits(con, "connection"), idx == 0L, id == 0L, isTRUE(valid))
+> 
+> con <- stdout()
+> idx <- as.integer(con)
+> id <- connectionId(con)
+> valid <- isConnectionValid(con)
+> stopifnot(inherits(con, "connection"), idx == 1L, id == 1L, isTRUE(valid))
+> 
+> con <- stderr()
+> idx <- as.integer(con)
+> id <- connectionId(con)
+> valid <- isConnectionValid(con)
+> stopifnot(inherits(con, "connection"), idx == 2L, id == 2L, isTRUE(valid))
+> 
+> message("- Connections cannot be serialized")
+- Connections cannot be serialized
+> 
+> con <- file(tempfile(), open = "w")
+> x <- list(value = 42, stderr = stderr(), con = con)
+> y <- unserialize(serialize(x, connection = NULL))
+> print(connectionId(x$stderr))
+[1] 2
+> print(connectionId(x$con))
+[1] 71
+attr(,"raw_id")
+[1] "<pointer: 0x47>"
+> print(isConnectionValid(x$stderr))
+[1] TRUE
+> print(isConnectionValid(x$con))
+[1] TRUE
+> print(connectionId(y$stderr))
+[1] 2
+> print(connectionId(y$con))
+[1] -1
+> print(isConnectionValid(y$stderr))
+[1] TRUE
+> print(isConnectionValid(y$con))
+[1] FALSE
+attr(,"reason")
+[1] "Connection (connection: index=3, description=\"/tmp/RtmpebmRqq/filefb123ee5de24\", class=\"file\", mode=\"w\", text=\"text\", opened=\"opened\", can read=\"no\", can write=\"yes\", id=-1) is no longer valid. It differ from the currently registered R connection with the same index 3 (connection: index=3, description=\"/tmp/RtmpebmRqq/filefb123ee5de24\", class=\"file\", mode=\"w\", text=\"text\", opened=\"opened\", can read=\"no\", can write=\"yes\", id=71, raw_id=\"<pointer: 0x47>\")"
+> 
+> stopifnot(
++   identical(y$value, x$value),
++   connectionId(x$stderr) == 2L,
++   isConnectionValid(x$stderr),
++   isConnectionValid(y$stderr),
++   identical(connectionId(y$stderr), connectionId(x$stderr)),
++   connectionId(x$con) >= 3L,
++   isConnectionValid(x$con),
++   connectionId(y$con) == -1L,
++   !isConnectionValid(y$con)
++ )
+> close(con)
+> 
+> message("*** Connections ... DONE")
+*** Connections ... DONE
+> 
+> source("incl/end.R")
+> 

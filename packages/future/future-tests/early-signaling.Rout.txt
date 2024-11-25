@@ -1,0 +1,228 @@
+
+R version 4.4.0 (2024-04-24) -- "Puppy Cup"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> source("incl/start.R")
+[17:02:06.030] plan(): Setting new future strategy stack:
+[17:02:06.031] List of future strategies:
+[17:02:06.031] 1. sequential:
+[17:02:06.031]    - args: function (..., envir = parent.frame(), workers = "<NULL>")
+[17:02:06.031]    - tweaked: FALSE
+[17:02:06.031]    - call: future::plan("sequential")
+[17:02:06.042] plan(): nbrOfWorkers() = 1
+> 
+> options(future.debug = FALSE)
+> 
+> message("*** Early signaling of conditions ...")
+*** Early signaling of conditions ...
+> 
+> message("*** Early signaling of conditions with sequential futures ...")
+*** Early signaling of conditions with sequential futures ...
+> 
+> plan(sequential)
+> f <- future({ stop("bang!") })
+> r <- resolved(f)
+> stopifnot(r)
+> v <- tryCatch(value(f), error = identity)
+> stopifnot(inherits(v, "error"))
+> 
+> message("- with lazy evaluation ...")
+- with lazy evaluation ...
+> f <- future({ stop("bang!") }, lazy = TRUE)
+> r <- resolved(f)
+> stopifnot(r)
+> v <- tryCatch(value(f), error = identity)
+> stopifnot(inherits(v, "error"))
+> 
+> plan(sequential, earlySignal = TRUE)
+> f <- tryCatch(future({ stop("bang!") }), error = identity)
+> stopifnot(inherits(f, "error"))
+> 
+> message("- with lazy evaluation ...")
+- with lazy evaluation ...
+> 
+> ## Errors
+> f <- future({ stop("bang!") }, lazy = TRUE)
+> r <- tryCatch(resolved(f), error = identity)
+> stopifnot(inherits(r, "error"))
+> v <- tryCatch(value(f), error = identity)
+> stopifnot(inherits(v, "error"))
+> 
+> ## Warnings
+> f <- future({ warning("careful!") }, lazy = TRUE)
+> res <- tryCatch({
++   r <- resolved(f)
++ }, condition = function(w) w)
+> str(res)
+List of 2
+ $ message: chr "careful!"
+ $ call   : language eval(quote({     warning("careful!") ...
+ - attr(*, "class")= chr [1:3] "simpleWarning" "warning" "condition"
+> stopifnot(inherits(res, "warning"))
+> 
+> ## Messages
+> f <- future({ message("hey!") }, lazy = TRUE)
+> res <- tryCatch({
++   r <- resolved(f)
++ }, condition = function(w) w)
+> stopifnot(inherits(res, "message"))
+> 
+> ## Condition
+> f <- future({ signalCondition(simpleCondition("hmm")) }, lazy = TRUE)
+> res <- tryCatch({
++   r <- resolved(f)
++ }, condition = function(w) w)
+> stopifnot(inherits(res, "condition"))
+> 
+> message("*** Early signaling of conditions with sequential futures ... DONE")
+*** Early signaling of conditions with sequential futures ... DONE
+> 
+> 
+> message("Number of available cores: ", availableCores())
+Number of available cores: 2
+> 
+> message("*** Early signaling of conditions with multisession futures ...")
+*** Early signaling of conditions with multisession futures ...
+> 
+> plan(multisession)
+> f <- future({ stop("bang!") })
+> Sys.sleep(1.0)
+> r <- resolved(f)
+> stopifnot(r)
+> v <- tryCatch(value(f), error = identity)
+> stopifnot(inherits(v, "error"))
+> 
+> if (availableCores() > 1L) {
++   plan(multisession, earlySignal = TRUE)
++   f <- future({ stop("bang!") })
++   Sys.sleep(1.0)
++   print(f)
++   r <- tryCatch(resolved(f), error = identity)
++   stopifnot(inherits(r, "error") || inherits(f, "SequentialFuture"))
++   v <- tryCatch(value(f), error = identity)
++   stopifnot(inherits(v, "error"))
++ } else {
++   message("- Skipping earlySignal = TRUE with 'multisession' because availableCores() == 1")
++ }
+MultisessionFuture:
+Label: ‘<none>’
+Expression:
+{
+    stop("bang!")
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: TRUE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: TRUE
+Owner process: 1ef33d4f-390f-6420-fee9-89c8f9aef741
+Class: ‘MultisessionFuture’, ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+> 
+> 
+> message("*** Early signaling of conditions with multisession futures ... DONE")
+*** Early signaling of conditions with multisession futures ... DONE
+> 
+> 
+> if (supportsMulticore()) {
++   message("*** Early signaling of conditions with multicore futures ...")
++   
++   plan(multicore)
++   f <- future({ stop("bang!") })
++   Sys.sleep(1.0)
++   r <- resolved(f)
++   stopifnot(r)
++   v <- tryCatch(value(f), error = identity)
++   stopifnot(inherits(v, "error"))
++   
++   if (availableCores() > 1L) {
++     plan(multicore, earlySignal = TRUE)
++     f <- future({ stop("bang!") })
++     Sys.sleep(1.0)
++     print(f)
++     r <- tryCatch(resolved(f), error = identity)
++     stopifnot(inherits(r, "error") || inherits(f, "SequentialFuture"))
++     v <- tryCatch(value(f), error = identity)
++     stopifnot(inherits(v, "error"))
++   
++     ## Errors
++     f <- future({ stop("bang!") }, earlySignal = TRUE)
++     Sys.sleep(1.0)
++     r <- tryCatch(resolved(f), error = identity)
++     stopifnot(inherits(r, "error") || inherits(f, "SequentialFuture"))
++     v <- tryCatch(value(f), error = identity)
++     stopifnot(inherits(v, "error"))
++   } else {
++     message("- Skipping earlySignal = TRUE with 'multicore' because availableCores() == 1")
++   }
++   
++   ## Warnings
++   f <- future({ warning("careful!") }, earlySignal = TRUE)
++   Sys.sleep(1.0)
++   res <- tryCatch({ r <- resolved(f) }, condition = function(w) w)
++   #stopifnot(inherits(res, "warning"))
++   
++   ## Messages
++   f <- future({ message("hey!") }, earlySignal = TRUE)
++   Sys.sleep(1.0)
++   res <- tryCatch({ r <- resolved(f) }, condition = function(w) w)
++   #stopifnot(inherits(res, "message"))
++   
++   ## Condition
++   f <- future({ signalCondition(simpleCondition("hmm")) }, earlySignal = TRUE)
++   Sys.sleep(1.0)
++   res <- tryCatch({ r <- resolved(f) }, condition = function(w) w)
++   #stopifnot(inherits(res, "condition"))
++   
++   message("*** Early signaling of conditions with multicore futures ... DONE")
++ }
+*** Early signaling of conditions with multicore futures ...
+MulticoreFuture:
+Label: ‘<none>’
+Expression:
+{
+    stop("bang!")
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: TRUE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: TRUE
+Owner process: 1ef33d4f-390f-6420-fee9-89c8f9aef741
+Class: ‘MulticoreFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+*** Early signaling of conditions with multicore futures ... DONE
+> 
+> 
+> message("*** Early signaling of conditions ... DONE")
+*** Early signaling of conditions ... DONE
+> 
+> source("incl/end.R")
+> 
