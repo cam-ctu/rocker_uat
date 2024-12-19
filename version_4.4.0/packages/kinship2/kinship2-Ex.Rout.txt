@@ -1,0 +1,545 @@
+
+R version 4.4.0 (2024-04-24) -- "Puppy Cup"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "kinship2"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('kinship2')
+Loading required package: Matrix
+Loading required package: quadprog
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("autohint")
+> ### * autohint
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: autohint
+> ### Title: Align a pedigree to print well
+> ### Aliases: autohint
+> ### Keywords: genetics
+> 
+> ### ** Examples
+> 
+> data(testped1)
+> ped1 <- with(testped1, pedigree(id, father, mother, sex))
+> plot(ped1, cex=.7, symbolsize=.7)
+> 
+> # rearrange some founders
+> temp <- 1:nrow(testped1)
+> temp[76] <- .1
+> temp[77] <- .2
+> temp[74] <- .3
+> temp[60] <- .4
+> temp[30] <- temp[8] + .1
+> temp[65] <- temp[4] + .1
+> temp[14] <- temp[3] + .1
+> ped1$hints <- autohint(ped1, temp)
+> plot(ped1, cex=.7)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("familycheck")
+> ### * familycheck
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: familycheck
+> ### Title: Error check for a family classification
+> ### Aliases: familycheck
+> ### Keywords: genetics
+> 
+> ### ** Examples
+> 
+> # use 2 sample peds
+> data(sample.ped)
+> pedAll <- with(sample.ped, pedigree(id, father, mother, sex,
++                     affected=cbind(affected, avail), famid=ped))
+> 
+> ## check them giving separate ped ids
+> fcheck.sep <- with(sample.ped, familycheck(ped, id, father, mother))
+> fcheck.sep
+  famid  n unrelated split join
+1     1 41         1     1    0
+2     2 14         0     1    0
+> 
+> ## check assigning them same ped id
+> fcheck.combined <- with(sample.ped, familycheck(rep(1,nrow(sample.ped)), id, father, mother))
+> fcheck.combined
+  famid  n unrelated split join
+1     1 55         1     2    0
+> 
+> #make person 120's father be her son.
+> sample.ped[20,3] <- 131
+> fcheck1.bad <- try({with(sample.ped, familycheck(ped, id, father, mother))}, silent=FALSE)
+Error in kindepth(id, father.id, mother.id) : 
+  Impossible pedegree: someone is their own ancestor
+> 
+> ## fcheck1.bad is a try-error
+> 
+> 
+> 
+> cleanEx()
+> nameEx("fixParents")
+> ### * fixParents
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: fixParents
+> ### Title: Fix details on the parents for children of the pedigree
+> ### Aliases: fixParents
+> 
+> ### ** Examples
+> 
+> test1char <- data.frame(id=paste("fam", 101:111, sep=""),
++   sex=c("male","female")[c(1,2,1,2,1, 1,2, 2,1,2, 1)],
++   father=c(0,0,"fam101","fam101","fam101", 0,0,"fam106","fam106","fam106", "fam109"),
++   mother=c(0,0,"fam102","fam102","fam102", 0,0,"fam107","fam107","fam107", "fam112"))
+> test1newmom <- with(test1char, fixParents(id, father, mother, sex, missid="0"))
+> newped <- with(test1newmom, pedigree(id, dadid, momid, sex, missid="0"))
+> as.data.frame(newped)
+       id  dadid  momid    sex
+1  fam101      0      0   male
+2  fam102      0      0 female
+3  fam103 fam101 fam102   male
+4  fam104 fam101 fam102 female
+5  fam105 fam101 fam102   male
+6  fam106      0      0   male
+7  fam107      0      0 female
+8  fam108 fam106 fam107 female
+9  fam109 fam106 fam107   male
+10 fam110 fam106 fam107 female
+11 fam111 fam109 fam112   male
+12 fam112      0      0 female
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("kinship")
+> ### * kinship
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: kinship
+> ### Title: Compute a kinship matrix
+> ### Aliases: kinship kinship.default kinship.pedigree kinship.pedigreeList
+> ### Keywords: genetics
+> 
+> ### ** Examples
+> 
+> test1 <- data.frame(id  =c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14),
++                     mom =c(0, 0, 0, 0, 2, 2, 4, 4, 6,  2,  0,  0, 12, 13),
++                     dad =c(0, 0, 0, 0, 1, 1, 3, 3, 3,  7,  0,  0, 11, 10),
++                     sex =c(0, 1, 0, 1, 0, 1, 0, 1, 0,  0,  0,  1,  1,  1))
+> tped <- with(test1, pedigree(id, dad, mom, sex))
+> round(8*kinship(tped))
+   1 2 3 4 5 6 7 8 9 10 11 12 13 14
+1  4 0 0 0 2 2 0 0 1  0  0  0  0  0
+2  0 4 0 0 2 2 0 0 1  2  0  0  0  1
+3  0 0 4 0 0 0 2 2 2  1  0  0  0  0
+4  0 0 0 4 0 0 2 2 0  1  0  0  0  0
+5  2 2 0 0 4 2 0 0 1  1  0  0  0  0
+6  2 2 0 0 2 4 0 0 2  1  0  0  0  0
+7  0 0 2 2 0 0 4 2 1  2  0  0  0  1
+8  0 0 2 2 0 0 2 4 1  1  0  0  0  0
+9  1 1 2 0 1 2 1 1 4  1  0  0  0  0
+10 0 2 1 1 1 1 2 1 1  4  0  0  0  2
+11 0 0 0 0 0 0 0 0 0  0  4  0  2  1
+12 0 0 0 0 0 0 0 0 0  0  0  4  2  1
+13 0 0 0 0 0 0 0 0 0  0  2  2  4  2
+14 0 1 0 0 0 0 1 0 0  2  1  1  2  4
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("kinship2")
+> ### * kinship2
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: kinship2
+> ### Title: The kinship2 package for pedigree data
+> ### Aliases: kinship2
+> 
+> ### ** Examples
+> 
+> library(kinship2)
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("legendPlot")
+> ### * legendPlot
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: legendPlot
+> ### Title: Legend Pedigree Plot
+> ### Aliases: legendPlot
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D data(sample.ped)
+> ##D pedAll <- pedigree(sample.ped$id, sample.ped$father,
+> ##D    sample.ped$mother, sample.ped$sex,
+> ##D    affected=cbind(sample.ped$affected, sample.ped$avail),
+> ##D    famid=sample.ped$ped)
+> ##D ped1 <- pedAll["1"]
+> ##D legendPlot(ped1,  affected.label=c("cancer","available"))
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("makekinship")
+> ### * makekinship
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: makekinship
+> ### Title: Create a sparse kinship matrix
+> ### Aliases: makekinship
+> ### Keywords: genetics
+> 
+> ### ** Examples
+> 
+> # Data set from a large family study of breast cancer
+> #  there are 26050 subjects in the file, from 426 families
+> ## Not run: 
+> ##D > table(cdata$sex)
+> ##D      F     M 
+> ##D  12699 13351
+> ##D > length(unique(cdata$famid))
+> ##D [1] 426
+> ##D 
+> ##D > kin1 <- makekinship(cdata$famid, cdata$gid, cdata$dadid, cdata$momid)
+> ##D > dim(kin1)
+> ##D [1] 26050 26050
+> ##D > class(kin1)
+> ##D [1] "bdsmatrix"
+> ##D # The next line shows that few of the elements of the full matrix are >0
+> ##D > length(kin1@blocks)/ prod(dim(kin1))
+> ##D [1] 0.00164925
+> ##D 
+> ##D # kinship matrix for the females only
+> ##D > femid <- cdata$gid[cdata$sex=='F']
+> ##D > femindex <- !is.na(match(dimnames(kin1)[[1]], femid))
+> ##D > kin2 <- kin1[femindex, femindex]
+> ##D #
+> ##D # Note that "femindex <- match(femid, dimnames(kin1)[[1]])" is wrong, since
+> ##D #  then kin1[femindex, femindex] might improperly reorder the rows/cols 
+> ##D #  (if families were not contiguous in cdata).  
+> ##D # However sort(match(femid, dimnames(kin1)[[1]])) would be okay.
+> ## End(Not run)
+> 
+> 
+> cleanEx()
+> nameEx("minnbreast")
+> ### * minnbreast
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: minnbreast
+> ### Title: Minnesota Breast Cancer Study
+> ### Aliases: minnbreast minnbreast2
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> data(minnbreast)
+> breastped <- with(minnbreast, pedigree(id, fatherid, motherid, sex,
++                   status=(cancer& !is.na(cancer)), affected=proband,
++                    famid=famid))
+> print(breastped["8"])
+Pedigree object with 40 subjects, family id= 8 
+Bit size= 26 
+> print(breastped[8])
+Pedigree object with 100 subjects, family id= 12 
+Bit size= 71 
+> #plot(breastped["8"])  #plot family 8, proband is solid, slash for cancers
+> #Note that breastped[8] is a different family, since ids are not 1,2,3,...
+> 
+> 
+> 
+> cleanEx()
+> nameEx("pedigree.legend")
+> ### * pedigree.legend
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: pedigree.legend
+> ### Title: plot a legend for a pedigree
+> ### Aliases: pedigree.legend
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D data(sample.ped)
+> ##D fam1 <- sample.ped[sample.ped$ped==1,]
+> ##D ped1 <- with(fam1, pedigree(id, father, mother, sex,
+> ##D              affected=cbind(avail,affected)))
+> ##D plot(ped1)
+> ##D pedigree.legend(ped1, location="bottomright", radius=.8)
+> ##D pedigree.legend(ped1, location="topleft", radius=.6, cex=1.2)
+> ##D pedigree.legend(ped1, new=FALSE)
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("pedigree.shrink")
+> ### * pedigree.shrink
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: pedigree.shrink
+> ### Title: Shrink pedigree object
+> ### Aliases: pedigree.shrink print.pedigree.shrink
+> 
+> ### ** Examples
+> 
+> data(sample.ped)
+> pedAll <- pedigree(sample.ped$id, sample.ped$father, sample.ped$mother,
++   sample.ped$sex, affected=cbind(sample.ped$affected, sample.ped$avail),
++   famid=sample.ped$ped)
+> ped1 <- pedAll['1']
+> pedigree.shrink(ped1, maxBits=12, avail=ped1$affected[,2])
+Pedigree Size:
+                 N.subj Bits
+Original             41   46
+Only Informative     28   29
+Trimmed              13   11
+
+ Unavailable subjects trimmed:
+ 101 102 107 108 111 113 121 122 123 131 132 134 139 
+
+ Informative subjects trimmed:
+ 140 141 133 126 125 130 129 128 
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("pedigree.unrelated")
+> ### * pedigree.unrelated
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: pedigree.unrelated
+> ### Title: Determine set of maximum number of unrelated available subjects
+> ###   from a pedigree
+> ### Aliases: pedigree.unrelated
+> 
+> ### ** Examples
+> 
+> data(sample.ped)
+> fam1 <- sample.ped[sample.ped$ped==1,]
+> 
+> 
+> ped1 <- pedigree(fam1$id, fam1$father, fam1$mother,
++                  fam1$sex, fam1$affected, fam1$avail)
+> 
+> ## to see plot:
+> ## plot.pedigree(ped1, align=FALSE)
+> id1 <- pedigree.unrelated(ped1, avail=fam1$avail)
+> 
+> id1
+[1] "109" "110" "113" "130"
+> ## some possible vectors
+> ##[1] "110" "113" "133" "109"
+> ##[1] "113" "118" "141" "109" 
+> ##[1] "113" "118" "140" "109" 
+> ##[1] "110" "113" "116" "109" 
+> ##[1] "113" "133" "141" "109" 
+> 
+>  
+> fam2 <- sample.ped[sample.ped$ped==2,]
+> 
+> ped2 <- pedigree(fam2$id, fam2$father, fam2$mother,
++                fam2$sex, fam2$affected, fam2$avail)
+> 
+> ## to see plot:
+> ## plot.pedigree(ped2, align=FALSE)
+> 
+> id2 <- pedigree.unrelated(ped2, avail=fam2$avail)
+> 
+> ## some possible vectors
+> ##[1] "203" "207"
+> ##[1] "203" "204"
+> ##[1] "201" "203"
+> ##[1] "214" "203"
+> id2
+[1] "203" "206"
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("plot.pedigree")
+> ### * plot.pedigree
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: plot.pedigree
+> ### Title: plot pedigrees
+> ### Aliases: plot.pedigree
+> ### Keywords: genetics
+> 
+> ### ** Examples
+> 
+> data(sample.ped)
+> 
+> pedAll <- pedigree(sample.ped$id, sample.ped$father, sample.ped$mother, 
++        sample.ped$sex,  #affected=sample.ped$affected,
++        affected=cbind(sample.ped$affected, sample.ped$avail), 
++        famid=sample.ped$ped)
+> 
+> ped2 <- pedAll['2']
+> 
+> print(ped2)
+Pedigree object with 14 subjects, family id= 2 
+Bit size= 16 
+> 
+> 
+> ## plot(ped2)
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("plot.pedigree.shrink")
+> ### * plot.pedigree.shrink
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: plot.pedigree.shrink
+> ### Title: plot pedigree.shrink object that is a shrunk pedigree object
+> ### Aliases: plot.pedigree.shrink
+> 
+> ### ** Examples
+> 
+> data(sample.ped)
+> 
+> fam2 <- sample.ped[sample.ped$ped==2,]
+> ped2 <- pedigree(fam2$id, fam2$father, fam2$mother, fam2$sex,
++                  fam2$affected, fam2$avail)
+> 
+> shrink2 <- pedigree.shrink(ped2,avail=fam2$avail)
+> shrink2
+Pedigree Size:
+                 N.subj Bits
+Original             14   16
+Only Informative      9    9
+Trimmed               9    9
+
+ Unavailable subjects trimmed:
+ 205 210 213 
+
+ Non-informative subjects trimmed:
+ 203 211 
+> 
+> plot(ped2)
+> 
+> plot.pedigree.shrink(shrink2, title="Sample Pedigree 2")
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("sample.ped")
+> ### * sample.ped
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: sample.ped
+> ### Title: Two example pedigrees
+> ### Aliases: sample.ped
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> data(sample.ped)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("testped1")
+> ### * testped1
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: testped1
+> ### Title: testped1
+> ### Aliases: testped1
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> data(testped1)
+> testped1[1:20,]
+   id father mother sex
+1   1      0      0   1
+2   2      0      0   1
+3   3      0      0   2
+4   4      0      0   2
+5   5      0      0   1
+6   6      7      3   2
+7   7      0      0   1
+8   8      0      0   2
+9   9      5      4   2
+10 10      0      0   1
+11 11     79     65   1
+12 12      0      0   1
+13 13      5      4   2
+14 14      0      0   2
+15 15     61     60   2
+16 16      0      0   1
+17 17     11     13   1
+18 18     61     60   1
+19 19     20      9   2
+20 20      1     14   1
+> 
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  1.282 0.58 1.25 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

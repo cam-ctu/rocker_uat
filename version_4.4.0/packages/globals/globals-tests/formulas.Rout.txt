@@ -1,0 +1,150 @@
+
+R version 4.4.0 (2024-04-24) -- "Puppy Cup"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> source("incl/start.R")
+> 
+> message("findGlobals() with formula ...")
+findGlobals() with formula ...
+> 
+> g <- findGlobals(. ~ x + y : z, substitute = TRUE)
+> print(g)
+[1] "~" "." "+" "x" ":" "y" "z"
+> assert_identical_sets(g, c("~", ".", "+", "x", ":", "y", "z"))
+> 
+> g <- findGlobals(map(1L, ~ typeof(.x)), substitute = TRUE)
+> print(g)
+[1] "map"    "~"      "typeof" ".x"    
+> assert_identical_sets(g, c("map", "~", "typeof", ".x"))
+> 
+> 
+> message("- findGlobals() with NULL in the formula ...")
+- findGlobals() with NULL in the formula ...
+> ## BUG: https://github.com/HenrikBengtsson/globals/issues/59
+> for (substitute in c(TRUE, FALSE)) {
++   message("- substitute = ", substitute)
++   
++   g <- findGlobals(. ~ NULL, substitute = substitute)
++   print(g)
++   assert_identical_sets(g, c(".", "~"))
++ 
++   g <- findGlobals(NULL ~ NULL, substitute = substitute)
++   print(g)
++   assert_identical_sets(g, c("~"))
++ 
++   g <- findGlobals(~ NULL, substitute = substitute)
++   print(g)
++   assert_identical_sets(g, c("~"))
++ 
++   g <- findGlobals(NULL ~ ., substitute = substitute)
++   print(g)
++   assert_identical_sets(g, c("~", "."))
++ }
+- substitute = TRUE
+[1] "~" "."
+[1] "~"
+[1] "~"
+[1] "~" "."
+- substitute = FALSE
+[1] "~" "."
+[1] "~"
+[1] "~"
+[1] "~" "."
+> 
+> # ## substitute=FALSE
+> # Browse[2]> str(expr)
+> #  language ~NULL
+> # 
+> # ## substitute=TRUE
+> # Browse[2]> str(expr)
+> # Class 'formula'  language ~NULL
+> #   ..- attr(*, ".Environment")=<environment: R_GlobalEnv> 
+> 
+> 
+> message("- findGlobals() with ellipsis in formulas ...")
+- findGlobals() with ellipsis in formulas ...
+> ## BUG: https://github.com/HenrikBengtsson/globals/issues/62
+> 
+> g <- findGlobals(list(..., ..3) ~ list(., .x, ..., ..1, ..2))
+> print(g)
+[1] "~"    "list" "..."  "..3"  "."    ".x"   "..1"  "..2" 
+> assert_identical_sets(g, c("~", "list", "...", "..3", ".", ".x", "..1", "..2"))
+> 
+> message("- findGlobals() with NULL in formulas ...")
+- findGlobals() with NULL in formulas ...
+> ## BUG: https://github.com/HenrikBengtsson/globals/issues/64
+> 
+> env <- new.env(parent = globalenv())
+> env$`~` <- function(...) "OVERRIDE!"
+> 
+> x <- ~ NULL
+> g <- eval(quote(findGlobals(x)), env)
+> assert_identical_sets(g, "~")
+> 
+> x <- list(~ NULL)
+> g <- eval(quote(findGlobals(x)), env)
+> assert_identical_sets(g, "~")
+> 
+> x <- list(NULL ~ NULL)
+> g <- eval(quote(findGlobals(x)), env)
+> assert_identical_sets(g, "~")
+> 
+> x <- list(NULL ~ b)
+> g <- eval(quote(findGlobals(x)), env)
+> assert_identical_sets(g, c("~", "b"))
+> 
+> 
+> message("findGlobals() with formula ... DONE")
+findGlobals() with formula ... DONE
+> 
+> 
+> message("globalsOf() with formula ...")
+globalsOf() with formula ...
+> 
+> foo <- function(x) {
++   map(1L, ~ typeof(x + .x))
++ }
+> 
+> g <- globalsOf(foo(1L), substitute = TRUE, mustExist = FALSE)
+> str(g)
+List of 8
+ $ foo   :function (x)  
+ $ {     :.Primitive("{") 
+ $ map   : NULL
+ $ ~     :.Primitive("~") 
+ $ typeof:function (x)  
+ $ +     :function (e1, e2)  
+ $ x     :List of 1
+  ..$ :Class 'formula'  language NULL ~ b
+  .. .. ..- attr(*, ".Environment")=<environment: R_GlobalEnv> 
+ $ .x    : NULL
+ - attr(*, "where")=List of 8
+  ..$ foo   :<environment: R_GlobalEnv> 
+  ..$ {     :<environment: base> 
+  ..$ map   : NULL
+  ..$ ~     :<environment: base> 
+  ..$ typeof:<environment: base> 
+  ..$ +     :<environment: base> 
+  ..$ x     :<environment: R_GlobalEnv> 
+  ..$ .x    : NULL
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> assert_identical_sets(names(g), c("foo", "map", "{", "~", "typeof", "+", "x", ".x"))
+> 
+> message("globalsOf() with formula ... DONE")
+globalsOf() with formula ... DONE
+> 
+> source("incl/end.R")
+> 

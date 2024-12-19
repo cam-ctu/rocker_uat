@@ -1,0 +1,131 @@
+
+R version 4.4.0 (2024-04-24) -- "Puppy Cup"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> source("incl/start.R")
+[09:31:38.119] plan(): Setting new future strategy stack:
+[09:31:38.119] List of future strategies:
+[09:31:38.119] 1. sequential:
+[09:31:38.119]    - args: function (..., envir = parent.frame(), workers = "<NULL>")
+[09:31:38.119]    - tweaked: FALSE
+[09:31:38.119]    - call: future::plan("sequential")
+[09:31:38.130] plan(): nbrOfWorkers() = 1
+> library("globals")
+> 
+> 
+> message("*** tweakExpression() ...")
+*** tweakExpression() ...
+> 
+> expr <- substitute({ a <<- 1; b <- 2; 3 ->> c }, env = list())
+> print(expr)
+{
+    a <<- 1
+    b <- 2
+    c <<- 3
+}
+> exprT <- tweakExpression(expr)
+> print(exprT)
+{
+    {
+        a <- 1
+        a <<- 1
+    }
+    b <- 2
+    {
+        c <- 3
+        c <<- 3
+    }
+}
+> 
+> 
+> b <- 2
+> exprs <- list(
++   A = substitute({ a <- b; }, env = list()),
++   B = substitute({ a <- b; b <- 1 }, env = list()),
++   C = substitute({ a <- 1; a <- 2 }, env = list()),
++   D = substitute({ a <<- 1; a <- 2 }, env = list()),
++   E = substitute({ a <<- 1 }, env = list())
++ )
+> 
+> truth <- list(
++   A = "b",
++   B = "b",
++   C = character(0L),
++   D = character(0L),
++   E = character(0L)
++ )
+> 
+> 
+> for (kk in seq_along(exprs)) {
++   name <- names(exprs)[kk]
++   expr <- exprs[[kk]]
++   cat(sprintf("Expression #%d ('%s'):", kk, name))
++   print(expr)
++   globals <- globalsOf(expr, tweak = tweakExpression, recursive = TRUE)
++   globals <- cleanup(globals)
++   str(globals)
++   stopifnot(identical(names(globals), truth[[name]]))
++ }
+Expression #1 ('A'):{
+    a <- b
+}
+List of 1
+ $ b: num 2
+ - attr(*, "where")=List of 1
+  ..$ b:<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+Expression #2 ('B'):{
+    a <- b
+    b <- 1
+}
+List of 1
+ $ b: num 2
+ - attr(*, "where")=List of 1
+  ..$ b:<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+Expression #3 ('C'):{
+    a <- 1
+    a <- 2
+}
+ Named list()
+ - attr(*, "where")= Named list()
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+Expression #4 ('D'):{
+    a <<- 1
+    a <- 2
+}
+ Named list()
+ - attr(*, "where")= Named list()
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+Expression #5 ('E'):{
+    a <<- 1
+}
+ Named list()
+ - attr(*, "where")= Named list()
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> 
+> message("*** tweakExpression() ... DONE")
+*** tweakExpression() ... DONE
+> 
+> source("incl/end.R")
+[09:31:38.170] plan(): Setting new future strategy stack:
+[09:31:38.170] List of future strategies:
+[09:31:38.170] 1. FutureStrategy:
+[09:31:38.170]    - args: function (..., envir = parent.frame(), workers = "<NULL>")
+[09:31:38.170]    - tweaked: FALSE
+[09:31:38.170]    - call: future::plan(oplan)
+[09:31:38.183] plan(): nbrOfWorkers() = 1
+> 

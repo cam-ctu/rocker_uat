@@ -1,0 +1,2926 @@
+
+R version 4.4.0 (2024-04-24) -- "Puppy Cup"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "tidyr"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('tidyr')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("check_pivot_spec")
+> ### * check_pivot_spec
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: check_pivot_spec
+> ### Title: Check assumptions about a pivot 'spec'
+> ### Aliases: check_pivot_spec
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> # A valid spec
+> spec <- tibble(.name = "a", .value = "b", foo = 1)
+> check_pivot_spec(spec)
+# A tibble: 1 × 3
+  .name .value   foo
+  <chr> <chr>  <dbl>
+1 a     b          1
+> 
+> spec <- tibble(.name = "a")
+> try(check_pivot_spec(spec))
+Error : `spec` must have `.name` and `.value` columns.
+> 
+> # `.name` and `.value` are forced to be the first two columns
+> spec <- tibble(foo = 1, .value = "b", .name = "a")
+> check_pivot_spec(spec)
+# A tibble: 1 × 3
+  .name .value   foo
+  <chr> <chr>  <dbl>
+1 a     b          1
+> 
+> 
+> 
+> cleanEx()
+> nameEx("chop")
+> ### * chop
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: chop
+> ### Title: Chop and unchop
+> ### Aliases: chop unchop
+> 
+> ### ** Examples
+> 
+> # Chop ----------------------------------------------------------------------
+> df <- tibble(x = c(1, 1, 1, 2, 2, 3), y = 1:6, z = 6:1)
+> # Note that we get one row of output for each unique combination of
+> # non-chopped variables
+> df %>% chop(c(y, z))
+# A tibble: 3 × 3
+      x           y           z
+  <dbl> <list<int>> <list<int>>
+1     1         [3]         [3]
+2     2         [2]         [2]
+3     3         [1]         [1]
+> # cf nest
+> df %>% nest(data = c(y, z))
+# A tibble: 3 × 2
+      x data            
+  <dbl> <list>          
+1     1 <tibble [3 × 2]>
+2     2 <tibble [2 × 2]>
+3     3 <tibble [1 × 2]>
+> 
+> # Unchop --------------------------------------------------------------------
+> df <- tibble(x = 1:4, y = list(integer(), 1L, 1:2, 1:3))
+> df %>% unchop(y)
+# A tibble: 6 × 2
+      x     y
+  <int> <int>
+1     2     1
+2     3     1
+3     3     2
+4     4     1
+5     4     2
+6     4     3
+> df %>% unchop(y, keep_empty = TRUE)
+# A tibble: 7 × 2
+      x     y
+  <int> <int>
+1     1    NA
+2     2     1
+3     3     1
+4     3     2
+5     4     1
+6     4     2
+7     4     3
+> 
+> # unchop will error if the types are not compatible:
+> df <- tibble(x = 1:2, y = list("1", 1:3))
+> try(df %>% unchop(y))
+Error in list_unchop(col, ptype = col_ptype) : 
+  Can't combine `x[[1]]` <character> and `x[[2]]` <integer>.
+> 
+> # Unchopping a list-col of data frames must generate a df-col because
+> # unchop leaves the column names unchanged
+> df <- tibble(x = 1:3, y = list(NULL, tibble(x = 1), tibble(y = 1:2)))
+> df %>% unchop(y)
+# A tibble: 3 × 2
+      x   y$x    $y
+  <int> <dbl> <int>
+1     2     1    NA
+2     3    NA     1
+3     3    NA     2
+> df %>% unchop(y, keep_empty = TRUE)
+# A tibble: 4 × 2
+      x   y$x    $y
+  <int> <dbl> <int>
+1     1    NA    NA
+2     2     1    NA
+3     3    NA     1
+4     3    NA     2
+> 
+> 
+> 
+> cleanEx()
+> nameEx("cms_patient_experience")
+> ### * cms_patient_experience
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: cms_patient_experience
+> ### Title: Data from the Centers for Medicare & Medicaid Services
+> ### Aliases: cms_patient_experience cms_patient_care
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> cms_patient_experience %>%
++   dplyr::distinct(measure_cd, measure_title)
+# A tibble: 6 × 2
+  measure_cd   measure_title                                                    
+  <chr>        <chr>                                                            
+1 CAHPS_GRP_1  CAHPS for MIPS SSM: Getting Timely Care, Appointments, and Infor…
+2 CAHPS_GRP_2  CAHPS for MIPS SSM: How Well Providers Communicate               
+3 CAHPS_GRP_3  CAHPS for MIPS SSM: Patient's Rating of Provider                 
+4 CAHPS_GRP_5  CAHPS for MIPS SSM: Health Promotion and Education               
+5 CAHPS_GRP_8  CAHPS for MIPS SSM: Courteous and Helpful Office Staff           
+6 CAHPS_GRP_12 CAHPS for MIPS SSM: Stewardship of Patient Resources             
+> 
+> cms_patient_experience %>%
++   pivot_wider(
++     id_cols = starts_with("org"),
++     names_from = measure_cd,
++     values_from = prf_rate
++  )
+# A tibble: 95 × 8
+   org_pac_id org_nm CAHPS_GRP_1 CAHPS_GRP_2 CAHPS_GRP_3 CAHPS_GRP_5 CAHPS_GRP_8
+   <chr>      <chr>        <dbl>       <dbl>       <dbl>       <dbl>       <dbl>
+ 1 0446157747 USC C…          63          87          86          57          85
+ 2 0446162697 ASSOC…          59          85          83          63          88
+ 3 0547164295 BEAVE…          49          NA          75          44          73
+ 4 0749333730 CAPE …          67          84          85          65          82
+ 5 0840104360 ALLIA…          66          87          87          64          87
+ 6 0840109864 REX H…          73          87          84          67          91
+ 7 0840513552 SCL H…          58          83          76          58          78
+ 8 0941545784 GRITM…          46          86          81          54          NA
+ 9 1052612785 COMMU…          65          84          80          58          87
+10 1254237779 OUR L…          61          NA          NA          65          NA
+# ℹ 85 more rows
+# ℹ 1 more variable: CAHPS_GRP_12 <dbl>
+> 
+> cms_patient_care %>%
++   pivot_wider(
++     names_from = type,
++     values_from = score
++   )
+# A tibble: 126 × 5
+   ccn    facility_name                        measure_abbr denominator observed
+   <chr>  <chr>                                <chr>              <dbl>    <dbl>
+ 1 011500 BAPTIST HOSPICE                      beliefs_add…         202    100  
+ 2 011500 BAPTIST HOSPICE                      composite_p…         202     88.1
+ 3 011500 BAPTIST HOSPICE                      dyspena_tre…         110     99.1
+ 4 011500 BAPTIST HOSPICE                      dyspnea_scr…         202    100  
+ 5 011500 BAPTIST HOSPICE                      opioid_bowel          61    100  
+ 6 011500 BAPTIST HOSPICE                      pain_assess…         107    100  
+ 7 011500 BAPTIST HOSPICE                      pain_screen…         202     88.6
+ 8 011500 BAPTIST HOSPICE                      treat_pref           202    100  
+ 9 011500 BAPTIST HOSPICE                      visits_immi…         232     96.1
+10 011501 SOUTHERNCARE NEW BEACON N. BIRMINGH… beliefs_add…         525    100  
+# ℹ 116 more rows
+> 
+> cms_patient_care %>%
++   pivot_wider(
++     names_from = measure_abbr,
++     values_from = score
++   )
+# A tibble: 28 × 12
+   ccn    facility_name                type  beliefs_addressed composite_process
+   <chr>  <chr>                        <chr>             <dbl>             <dbl>
+ 1 011500 BAPTIST HOSPICE              deno…             202               202  
+ 2 011500 BAPTIST HOSPICE              obse…             100                88.1
+ 3 011501 SOUTHERNCARE NEW BEACON N. … deno…             525               525  
+ 4 011501 SOUTHERNCARE NEW BEACON N. … obse…             100               100  
+ 5 011502 COMFORT CARE COASTAL HOSPIC… deno…             295               295  
+ 6 011502 COMFORT CARE COASTAL HOSPIC… obse…             100                99.3
+ 7 011503 SAAD HOSPICE SERVICES        deno…             694               694  
+ 8 011503 SAAD HOSPICE SERVICES        obse…              99.9              96  
+ 9 011505 HOSPICE FAMILY CARE          deno…             600               600  
+10 011505 HOSPICE FAMILY CARE          obse…              97.8              92  
+# ℹ 18 more rows
+# ℹ 7 more variables: dyspena_treatment <dbl>, dyspnea_screening <dbl>,
+#   opioid_bowel <dbl>, pain_assessment <dbl>, pain_screening <dbl>,
+#   treat_pref <dbl>, visits_imminent <dbl>
+> 
+> cms_patient_care %>%
++   pivot_wider(
++     names_from = c(measure_abbr, type),
++     values_from = score
++   )
+# A tibble: 14 × 20
+   ccn    facility_name            beliefs_addressed_de…¹ beliefs_addressed_ob…²
+   <chr>  <chr>                                     <dbl>                  <dbl>
+ 1 011500 BAPTIST HOSPICE                             202                  100  
+ 2 011501 SOUTHERNCARE NEW BEACON…                    525                  100  
+ 3 011502 COMFORT CARE COASTAL HO…                    295                  100  
+ 4 011503 SAAD HOSPICE SERVICES                       694                   99.9
+ 5 011505 HOSPICE FAMILY CARE                         600                   97.8
+ 6 011506 SOUTHERNCARE NEW BEACON…                    589                  100  
+ 7 011508 SOUTHERNCARE NEW BEACON…                    420                  100  
+ 8 011510 CULLMAN REGIONAL HOSPICE                     54                  100  
+ 9 011511 HOSPICE OF THE VALLEY, …                    179                  100  
+10 011512 SOUTHERNCARE NEW BEACON…                    396                  100  
+11 011513 SHEPHERD'S COVE HOSPICE                     335                   99.1
+12 011514 ST VINCENT'S HOSPICE                        210                  100  
+13 011516 HOSPICE OF LIMESTONE CO…                    103                  100  
+14 011517 HOSPICE OF WEST ALABAMA                     400                   99.8
+# ℹ abbreviated names: ¹​beliefs_addressed_denominator,
+#   ²​beliefs_addressed_observed
+# ℹ 16 more variables: composite_process_denominator <dbl>,
+#   composite_process_observed <dbl>, dyspena_treatment_denominator <dbl>,
+#   dyspena_treatment_observed <dbl>, dyspnea_screening_denominator <dbl>,
+#   dyspnea_screening_observed <dbl>, opioid_bowel_denominator <dbl>,
+#   opioid_bowel_observed <dbl>, pain_assessment_denominator <dbl>, …
+> 
+> 
+> 
+> cleanEx()
+> nameEx("complete")
+> ### * complete
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: complete
+> ### Title: Complete a data frame with missing combinations of data
+> ### Aliases: complete
+> 
+> ### ** Examples
+> 
+> df <- tibble(
++   group = c(1:2, 1, 2),
++   item_id = c(1:2, 2, 3),
++   item_name = c("a", "a", "b", "b"),
++   value1 = c(1, NA, 3, 4),
++   value2 = 4:7
++ )
+> df
+# A tibble: 4 × 5
+  group item_id item_name value1 value2
+  <dbl>   <dbl> <chr>      <dbl>  <int>
+1     1       1 a              1      4
+2     2       2 a             NA      5
+3     1       2 b              3      6
+4     2       3 b              4      7
+> 
+> # Combinations --------------------------------------------------------------
+> # Generate all possible combinations of `group`, `item_id`, and `item_name`
+> # (whether or not they appear in the data)
+> df %>% complete(group, item_id, item_name)
+# A tibble: 12 × 5
+   group item_id item_name value1 value2
+   <dbl>   <dbl> <chr>      <dbl>  <int>
+ 1     1       1 a              1      4
+ 2     1       1 b             NA     NA
+ 3     1       2 a             NA     NA
+ 4     1       2 b              3      6
+ 5     1       3 a             NA     NA
+ 6     1       3 b             NA     NA
+ 7     2       1 a             NA     NA
+ 8     2       1 b             NA     NA
+ 9     2       2 a             NA      5
+10     2       2 b             NA     NA
+11     2       3 a             NA     NA
+12     2       3 b              4      7
+> 
+> # Cross all possible `group` values with the unique pairs of
+> # `(item_id, item_name)` that already exist in the data
+> df %>% complete(group, nesting(item_id, item_name))
+# A tibble: 8 × 5
+  group item_id item_name value1 value2
+  <dbl>   <dbl> <chr>      <dbl>  <int>
+1     1       1 a              1      4
+2     1       2 a             NA     NA
+3     1       2 b              3      6
+4     1       3 b             NA     NA
+5     2       1 a             NA     NA
+6     2       2 a             NA      5
+7     2       2 b             NA     NA
+8     2       3 b              4      7
+> 
+> # Within each `group`, generate all possible combinations of
+> # `item_id` and `item_name` that occur in that group
+> df %>%
++   dplyr::group_by(group) %>%
++   complete(item_id, item_name)
+# A tibble: 8 × 5
+# Groups:   group [2]
+  group item_id item_name value1 value2
+  <dbl>   <dbl> <chr>      <dbl>  <int>
+1     1       1 a              1      4
+2     1       1 b             NA     NA
+3     1       2 a             NA     NA
+4     1       2 b              3      6
+5     2       2 a             NA      5
+6     2       2 b             NA     NA
+7     2       3 a             NA     NA
+8     2       3 b              4      7
+> 
+> # Supplying values for new rows ---------------------------------------------
+> # Use `fill` to replace NAs with some value. By default, affects both new
+> # (implicit) and pre-existing (explicit) missing values.
+> df %>%
++   complete(
++     group,
++     nesting(item_id, item_name),
++     fill = list(value1 = 0, value2 = 99)
++   )
+# A tibble: 8 × 5
+  group item_id item_name value1 value2
+  <dbl>   <dbl> <chr>      <dbl>  <int>
+1     1       1 a              1      4
+2     1       2 a              0     99
+3     1       2 b              3      6
+4     1       3 b              0     99
+5     2       1 a              0     99
+6     2       2 a              0      5
+7     2       2 b              0     99
+8     2       3 b              4      7
+> 
+> # Limit the fill to only the newly created (i.e. previously implicit)
+> # missing values with `explicit = FALSE`
+> df %>%
++   complete(
++     group,
++     nesting(item_id, item_name),
++     fill = list(value1 = 0, value2 = 99),
++     explicit = FALSE
++   )
+# A tibble: 8 × 5
+  group item_id item_name value1 value2
+  <dbl>   <dbl> <chr>      <dbl>  <int>
+1     1       1 a              1      4
+2     1       2 a              0     99
+3     1       2 b              3      6
+4     1       3 b              0     99
+5     2       1 a              0     99
+6     2       2 a             NA      5
+7     2       2 b              0     99
+8     2       3 b              4      7
+> 
+> 
+> 
+> cleanEx()
+> nameEx("drop_na")
+> ### * drop_na
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: drop_na
+> ### Title: Drop rows containing missing values
+> ### Aliases: drop_na
+> 
+> ### ** Examples
+> 
+> df <- tibble(x = c(1, 2, NA), y = c("a", NA, "b"))
+> df %>% drop_na()
+# A tibble: 1 × 2
+      x y    
+  <dbl> <chr>
+1     1 a    
+> df %>% drop_na(x)
+# A tibble: 2 × 2
+      x y    
+  <dbl> <chr>
+1     1 a    
+2     2 <NA> 
+> 
+> vars <- "y"
+> df %>% drop_na(x, any_of(vars))
+# A tibble: 1 × 2
+      x y    
+  <dbl> <chr>
+1     1 a    
+> 
+> 
+> 
+> cleanEx()
+> nameEx("expand")
+> ### * expand
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: expand
+> ### Title: Expand data frame to include all possible combinations of values
+> ### Aliases: expand crossing nesting
+> 
+> ### ** Examples
+> 
+> # Finding combinations ------------------------------------------------------
+> fruits <- tibble(
++   type = c("apple", "orange", "apple", "orange", "orange", "orange"),
++   year = c(2010, 2010, 2012, 2010, 2011, 2012),
++   size = factor(
++     c("XS", "S", "M", "S", "S", "M"),
++     levels = c("XS", "S", "M", "L")
++   ),
++   weights = rnorm(6, as.numeric(size) + 2)
++ )
+> 
+> # All combinations, including factor levels that are not used
+> fruits %>% expand(type)
+# A tibble: 2 × 1
+  type  
+  <chr> 
+1 apple 
+2 orange
+> fruits %>% expand(size)
+# A tibble: 4 × 1
+  size 
+  <fct>
+1 XS   
+2 S    
+3 M    
+4 L    
+> fruits %>% expand(type, size)
+# A tibble: 8 × 2
+  type   size 
+  <chr>  <fct>
+1 apple  XS   
+2 apple  S    
+3 apple  M    
+4 apple  L    
+5 orange XS   
+6 orange S    
+7 orange M    
+8 orange L    
+> fruits %>% expand(type, size, year)
+# A tibble: 24 × 3
+   type  size   year
+   <chr> <fct> <dbl>
+ 1 apple XS     2010
+ 2 apple XS     2011
+ 3 apple XS     2012
+ 4 apple S      2010
+ 5 apple S      2011
+ 6 apple S      2012
+ 7 apple M      2010
+ 8 apple M      2011
+ 9 apple M      2012
+10 apple L      2010
+# ℹ 14 more rows
+> 
+> # Only combinations that already appear in the data
+> fruits %>% expand(nesting(type))
+# A tibble: 2 × 1
+  type  
+  <chr> 
+1 apple 
+2 orange
+> fruits %>% expand(nesting(size))
+# A tibble: 3 × 1
+  size 
+  <fct>
+1 XS   
+2 S    
+3 M    
+> fruits %>% expand(nesting(type, size))
+# A tibble: 4 × 2
+  type   size 
+  <chr>  <fct>
+1 apple  XS   
+2 apple  M    
+3 orange S    
+4 orange M    
+> fruits %>% expand(nesting(type, size, year))
+# A tibble: 5 × 3
+  type   size   year
+  <chr>  <fct> <dbl>
+1 apple  XS     2010
+2 apple  M      2012
+3 orange S      2010
+4 orange S      2011
+5 orange M      2012
+> 
+> # Other uses ----------------------------------------------------------------
+> # Use with `full_seq()` to fill in values of continuous variables
+> fruits %>% expand(type, size, full_seq(year, 1))
+# A tibble: 24 × 3
+   type  size  `full_seq(year, 1)`
+   <chr> <fct>               <dbl>
+ 1 apple XS                   2010
+ 2 apple XS                   2011
+ 3 apple XS                   2012
+ 4 apple S                    2010
+ 5 apple S                    2011
+ 6 apple S                    2012
+ 7 apple M                    2010
+ 8 apple M                    2011
+ 9 apple M                    2012
+10 apple L                    2010
+# ℹ 14 more rows
+> fruits %>% expand(type, size, 2010:2013)
+# A tibble: 32 × 3
+   type  size  `2010:2013`
+   <chr> <fct>       <int>
+ 1 apple XS           2010
+ 2 apple XS           2011
+ 3 apple XS           2012
+ 4 apple XS           2013
+ 5 apple S            2010
+ 6 apple S            2011
+ 7 apple S            2012
+ 8 apple S            2013
+ 9 apple M            2010
+10 apple M            2011
+# ℹ 22 more rows
+> 
+> # Use `anti_join()` to determine which observations are missing
+> all <- fruits %>% expand(type, size, year)
+> all
+# A tibble: 24 × 3
+   type  size   year
+   <chr> <fct> <dbl>
+ 1 apple XS     2010
+ 2 apple XS     2011
+ 3 apple XS     2012
+ 4 apple S      2010
+ 5 apple S      2011
+ 6 apple S      2012
+ 7 apple M      2010
+ 8 apple M      2011
+ 9 apple M      2012
+10 apple L      2010
+# ℹ 14 more rows
+> all %>% dplyr::anti_join(fruits)
+Joining with `by = join_by(type, size, year)`
+# A tibble: 19 × 3
+   type   size   year
+   <chr>  <fct> <dbl>
+ 1 apple  XS     2011
+ 2 apple  XS     2012
+ 3 apple  S      2010
+ 4 apple  S      2011
+ 5 apple  S      2012
+ 6 apple  M      2010
+ 7 apple  M      2011
+ 8 apple  L      2010
+ 9 apple  L      2011
+10 apple  L      2012
+11 orange XS     2010
+12 orange XS     2011
+13 orange XS     2012
+14 orange S      2012
+15 orange M      2010
+16 orange M      2011
+17 orange L      2010
+18 orange L      2011
+19 orange L      2012
+> 
+> # Use with `right_join()` to fill in missing rows (like `complete()`)
+> fruits %>% dplyr::right_join(all)
+Joining with `by = join_by(type, year, size)`
+# A tibble: 25 × 4
+   type    year size  weights
+   <chr>  <dbl> <fct>   <dbl>
+ 1 apple   2010 XS       2.37
+ 2 orange  2010 S        4.18
+ 3 apple   2012 M        4.16
+ 4 orange  2010 S        5.60
+ 5 orange  2011 S        4.33
+ 6 orange  2012 M        4.18
+ 7 apple   2011 XS      NA   
+ 8 apple   2012 XS      NA   
+ 9 apple   2010 S       NA   
+10 apple   2011 S       NA   
+# ℹ 15 more rows
+> 
+> # Use with `group_by()` to expand within each group
+> fruits %>%
++   dplyr::group_by(type) %>%
++   expand(year, size)
+# A tibble: 20 × 3
+# Groups:   type [2]
+   type    year size 
+   <chr>  <dbl> <fct>
+ 1 apple   2010 XS   
+ 2 apple   2010 S    
+ 3 apple   2010 M    
+ 4 apple   2010 L    
+ 5 apple   2012 XS   
+ 6 apple   2012 S    
+ 7 apple   2012 M    
+ 8 apple   2012 L    
+ 9 orange  2010 XS   
+10 orange  2010 S    
+11 orange  2010 M    
+12 orange  2010 L    
+13 orange  2011 XS   
+14 orange  2011 S    
+15 orange  2011 M    
+16 orange  2011 L    
+17 orange  2012 XS   
+18 orange  2012 S    
+19 orange  2012 M    
+20 orange  2012 L    
+> 
+> 
+> 
+> cleanEx()
+> nameEx("expand_grid")
+> ### * expand_grid
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: expand_grid
+> ### Title: Create a tibble from all combinations of inputs
+> ### Aliases: expand_grid
+> 
+> ### ** Examples
+> 
+> expand_grid(x = 1:3, y = 1:2)
+# A tibble: 6 × 2
+      x     y
+  <int> <int>
+1     1     1
+2     1     2
+3     2     1
+4     2     2
+5     3     1
+6     3     2
+> expand_grid(l1 = letters, l2 = LETTERS)
+# A tibble: 676 × 2
+   l1    l2   
+   <chr> <chr>
+ 1 a     A    
+ 2 a     B    
+ 3 a     C    
+ 4 a     D    
+ 5 a     E    
+ 6 a     F    
+ 7 a     G    
+ 8 a     H    
+ 9 a     I    
+10 a     J    
+# ℹ 666 more rows
+> 
+> # Can also expand data frames
+> expand_grid(df = tibble(x = 1:2, y = c(2, 1)), z = 1:3)
+# A tibble: 6 × 2
+   df$x    $y     z
+  <int> <dbl> <int>
+1     1     2     1
+2     1     2     2
+3     1     2     3
+4     2     1     1
+5     2     1     2
+6     2     1     3
+> # And matrices
+> expand_grid(x1 = matrix(1:4, nrow = 2), x2 = matrix(5:8, nrow = 2))
+# A tibble: 4 × 2
+  x1[,1]  [,2] x2[,1]  [,2]
+   <int> <int>  <int> <int>
+1      1     3      5     7
+2      1     3      6     8
+3      2     4      5     7
+4      2     4      6     8
+> 
+> 
+> 
+> cleanEx()
+> nameEx("extract")
+> ### * extract
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: extract
+> ### Title: Extract a character column into multiple columns using regular
+> ###   expression groups
+> ### Aliases: extract
+> 
+> ### ** Examples
+> 
+> df <- tibble(x = c(NA, "a-b", "a-d", "b-c", "d-e"))
+> df %>% extract(x, "A")
+# A tibble: 5 × 1
+  A    
+  <chr>
+1 <NA> 
+2 a    
+3 a    
+4 b    
+5 d    
+> df %>% extract(x, c("A", "B"), "([[:alnum:]]+)-([[:alnum:]]+)")
+# A tibble: 5 × 2
+  A     B    
+  <chr> <chr>
+1 <NA>  <NA> 
+2 a     b    
+3 a     d    
+4 b     c    
+5 d     e    
+> 
+> # Now recommended
+> df %>%
++   separate_wider_regex(
++     x,
++     patterns = c(A = "[[:alnum:]]+", "-", B = "[[:alnum:]]+")
++   )
+# A tibble: 5 × 2
+  A     B    
+  <chr> <chr>
+1 <NA>  <NA> 
+2 a     b    
+3 a     d    
+4 b     c    
+5 d     e    
+> 
+> # If no match, NA:
+> df %>% extract(x, c("A", "B"), "([a-d]+)-([a-d]+)")
+# A tibble: 5 × 2
+  A     B    
+  <chr> <chr>
+1 <NA>  <NA> 
+2 a     b    
+3 a     d    
+4 b     c    
+5 <NA>  <NA> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("fill")
+> ### * fill
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: fill
+> ### Title: Fill in missing values with previous or next value
+> ### Aliases: fill
+> 
+> ### ** Examples
+> 
+> # direction = "down" --------------------------------------------------------
+> # Value (year) is recorded only when it changes
+> sales <- tibble::tribble(
++   ~quarter, ~year, ~sales,
++   "Q1",    2000,    66013,
++   "Q2",      NA,    69182,
++   "Q3",      NA,    53175,
++   "Q4",      NA,    21001,
++   "Q1",    2001,    46036,
++   "Q2",      NA,    58842,
++   "Q3",      NA,    44568,
++   "Q4",      NA,    50197,
++   "Q1",    2002,    39113,
++   "Q2",      NA,    41668,
++   "Q3",      NA,    30144,
++   "Q4",      NA,    52897,
++   "Q1",    2004,    32129,
++   "Q2",      NA,    67686,
++   "Q3",      NA,    31768,
++   "Q4",      NA,    49094
++ )
+> # `fill()` defaults to replacing missing data from top to bottom
+> sales %>% fill(year)
+# A tibble: 16 × 3
+   quarter  year sales
+   <chr>   <dbl> <dbl>
+ 1 Q1       2000 66013
+ 2 Q2       2000 69182
+ 3 Q3       2000 53175
+ 4 Q4       2000 21001
+ 5 Q1       2001 46036
+ 6 Q2       2001 58842
+ 7 Q3       2001 44568
+ 8 Q4       2001 50197
+ 9 Q1       2002 39113
+10 Q2       2002 41668
+11 Q3       2002 30144
+12 Q4       2002 52897
+13 Q1       2004 32129
+14 Q2       2004 67686
+15 Q3       2004 31768
+16 Q4       2004 49094
+> 
+> # direction = "up" ----------------------------------------------------------
+> # Value (pet_type) is missing above
+> tidy_pets <- tibble::tribble(
++   ~rank, ~pet_type, ~breed,
++   1L,        NA,    "Boston Terrier",
++   2L,        NA,    "Retrievers (Labrador)",
++   3L,        NA,    "Retrievers (Golden)",
++   4L,        NA,    "French Bulldogs",
++   5L,        NA,    "Bulldogs",
++   6L,     "Dog",    "Beagles",
++   1L,        NA,    "Persian",
++   2L,        NA,    "Maine Coon",
++   3L,        NA,    "Ragdoll",
++   4L,        NA,    "Exotic",
++   5L,        NA,    "Siamese",
++   6L,     "Cat",    "American Short"
++ )
+> 
+> # For values that are missing above you can use `.direction = "up"`
+> tidy_pets %>%
++   fill(pet_type, .direction = "up")
+# A tibble: 12 × 3
+    rank pet_type breed                
+   <int> <chr>    <chr>                
+ 1     1 Dog      Boston Terrier       
+ 2     2 Dog      Retrievers (Labrador)
+ 3     3 Dog      Retrievers (Golden)  
+ 4     4 Dog      French Bulldogs      
+ 5     5 Dog      Bulldogs             
+ 6     6 Dog      Beagles              
+ 7     1 Cat      Persian              
+ 8     2 Cat      Maine Coon           
+ 9     3 Cat      Ragdoll              
+10     4 Cat      Exotic               
+11     5 Cat      Siamese              
+12     6 Cat      American Short       
+> 
+> # direction = "downup" ------------------------------------------------------
+> # Value (n_squirrels) is missing above and below within a group
+> squirrels <- tibble::tribble(
++   ~group,    ~name,     ~role,     ~n_squirrels,
++   1,      "Sam",    "Observer",   NA,
++   1,     "Mara", "Scorekeeper",    8,
++   1,    "Jesse",    "Observer",   NA,
++   1,      "Tom",    "Observer",   NA,
++   2,     "Mike",    "Observer",   NA,
++   2,  "Rachael",    "Observer",   NA,
++   2,  "Sydekea", "Scorekeeper",   14,
++   2, "Gabriela",    "Observer",   NA,
++   3,  "Derrick",    "Observer",   NA,
++   3,     "Kara", "Scorekeeper",    9,
++   3,    "Emily",    "Observer",   NA,
++   3, "Danielle",    "Observer",   NA
++ )
+> 
+> # The values are inconsistently missing by position within the group
+> # Use .direction = "downup" to fill missing values in both directions
+> squirrels %>%
++   dplyr::group_by(group) %>%
++   fill(n_squirrels, .direction = "downup") %>%
++   dplyr::ungroup()
+# A tibble: 12 × 4
+   group name     role        n_squirrels
+   <dbl> <chr>    <chr>             <dbl>
+ 1     1 Sam      Observer              8
+ 2     1 Mara     Scorekeeper           8
+ 3     1 Jesse    Observer              8
+ 4     1 Tom      Observer              8
+ 5     2 Mike     Observer             14
+ 6     2 Rachael  Observer             14
+ 7     2 Sydekea  Scorekeeper          14
+ 8     2 Gabriela Observer             14
+ 9     3 Derrick  Observer              9
+10     3 Kara     Scorekeeper           9
+11     3 Emily    Observer              9
+12     3 Danielle Observer              9
+> 
+> # Using `.direction = "updown"` accomplishes the same goal in this example
+> 
+> 
+> 
+> cleanEx()
+> nameEx("full_seq")
+> ### * full_seq
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: full_seq
+> ### Title: Create the full sequence of values in a vector
+> ### Aliases: full_seq
+> 
+> ### ** Examples
+> 
+> full_seq(c(1, 2, 4, 5, 10), 1)
+ [1]  1  2  3  4  5  6  7  8  9 10
+> 
+> 
+> 
+> cleanEx()
+> nameEx("gather")
+> ### * gather
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: gather
+> ### Title: Gather columns into key-value pairs
+> ### Aliases: gather
+> 
+> ### ** Examples
+> 
+> # From https://stackoverflow.com/questions/1181060
+> stocks <- tibble(
++   time = as.Date("2009-01-01") + 0:9,
++   X = rnorm(10, 0, 1),
++   Y = rnorm(10, 0, 2),
++   Z = rnorm(10, 0, 4)
++ )
+> 
+> gather(stocks, "stock", "price", -time)
+# A tibble: 30 × 3
+   time       stock  price
+   <date>     <chr>  <dbl>
+ 1 2009-01-01 X     -0.626
+ 2 2009-01-02 X      0.184
+ 3 2009-01-03 X     -0.836
+ 4 2009-01-04 X      1.60 
+ 5 2009-01-05 X      0.330
+ 6 2009-01-06 X     -0.820
+ 7 2009-01-07 X      0.487
+ 8 2009-01-08 X      0.738
+ 9 2009-01-09 X      0.576
+10 2009-01-10 X     -0.305
+# ℹ 20 more rows
+> stocks %>% gather("stock", "price", -time)
+# A tibble: 30 × 3
+   time       stock  price
+   <date>     <chr>  <dbl>
+ 1 2009-01-01 X     -0.626
+ 2 2009-01-02 X      0.184
+ 3 2009-01-03 X     -0.836
+ 4 2009-01-04 X      1.60 
+ 5 2009-01-05 X      0.330
+ 6 2009-01-06 X     -0.820
+ 7 2009-01-07 X      0.487
+ 8 2009-01-08 X      0.738
+ 9 2009-01-09 X      0.576
+10 2009-01-10 X     -0.305
+# ℹ 20 more rows
+> 
+> # get first observation for each Species in iris data -- base R
+> mini_iris <- iris[c(1, 51, 101), ]
+> # gather Sepal.Length, Sepal.Width, Petal.Length, Petal.Width
+> gather(mini_iris, key = "flower_att", value = "measurement",
++        Sepal.Length, Sepal.Width, Petal.Length, Petal.Width)
+      Species   flower_att measurement
+1      setosa Sepal.Length         5.1
+2  versicolor Sepal.Length         7.0
+3   virginica Sepal.Length         6.3
+4      setosa  Sepal.Width         3.5
+5  versicolor  Sepal.Width         3.2
+6   virginica  Sepal.Width         3.3
+7      setosa Petal.Length         1.4
+8  versicolor Petal.Length         4.7
+9   virginica Petal.Length         6.0
+10     setosa  Petal.Width         0.2
+11 versicolor  Petal.Width         1.4
+12  virginica  Petal.Width         2.5
+> # same result but less verbose
+> gather(mini_iris, key = "flower_att", value = "measurement", -Species)
+      Species   flower_att measurement
+1      setosa Sepal.Length         5.1
+2  versicolor Sepal.Length         7.0
+3   virginica Sepal.Length         6.3
+4      setosa  Sepal.Width         3.5
+5  versicolor  Sepal.Width         3.2
+6   virginica  Sepal.Width         3.3
+7      setosa Petal.Length         1.4
+8  versicolor Petal.Length         4.7
+9   virginica Petal.Length         6.0
+10     setosa  Petal.Width         0.2
+11 versicolor  Petal.Width         1.4
+12  virginica  Petal.Width         2.5
+> 
+> 
+> 
+> cleanEx()
+> nameEx("hoist")
+> ### * hoist
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: hoist
+> ### Title: Hoist values out of list-columns
+> ### Aliases: hoist
+> 
+> ### ** Examples
+> 
+> df <- tibble(
++   character = c("Toothless", "Dory"),
++   metadata = list(
++     list(
++       species = "dragon",
++       color = "black",
++       films = c(
++         "How to Train Your Dragon",
++         "How to Train Your Dragon 2",
++         "How to Train Your Dragon: The Hidden World"
++       )
++     ),
++     list(
++       species = "blue tang",
++       color = "blue",
++       films = c("Finding Nemo", "Finding Dory")
++     )
++   )
++ )
+> df
+# A tibble: 2 × 2
+  character metadata        
+  <chr>     <list>          
+1 Toothless <named list [3]>
+2 Dory      <named list [3]>
+> 
+> # Extract only specified components
+> df %>% hoist(metadata,
++   "species",
++   first_film = list("films", 1L),
++   third_film = list("films", 3L)
++ )
+# A tibble: 2 × 5
+  character species   first_film               third_film           metadata    
+  <chr>     <chr>     <chr>                    <chr>                <list>      
+1 Toothless dragon    How to Train Your Dragon How to Train Your D… <named list>
+2 Dory      blue tang Finding Nemo             <NA>                 <named list>
+> 
+> 
+> 
+> cleanEx()
+> nameEx("nest")
+> ### * nest
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: nest
+> ### Title: Nest rows into a list-column of data frames
+> ### Aliases: nest
+> 
+> ### ** Examples
+> 
+> df <- tibble(x = c(1, 1, 1, 2, 2, 3), y = 1:6, z = 6:1)
+> 
+> # Specify variables to nest using name-variable pairs.
+> # Note that we get one row of output for each unique combination of
+> # non-nested variables.
+> df %>% nest(data = c(y, z))
+# A tibble: 3 × 2
+      x data            
+  <dbl> <list>          
+1     1 <tibble [3 × 2]>
+2     2 <tibble [2 × 2]>
+3     3 <tibble [1 × 2]>
+> 
+> # Specify variables to nest by (rather than variables to nest) using `.by`
+> df %>% nest(.by = x)
+# A tibble: 3 × 2
+      x data            
+  <dbl> <list>          
+1     1 <tibble [3 × 2]>
+2     2 <tibble [2 × 2]>
+3     3 <tibble [1 × 2]>
+> 
+> # In this case, since `...` isn't used you can specify the resulting column
+> # name with `.key`
+> df %>% nest(.by = x, .key = "cols")
+# A tibble: 3 × 2
+      x cols            
+  <dbl> <list>          
+1     1 <tibble [3 × 2]>
+2     2 <tibble [2 × 2]>
+3     3 <tibble [1 × 2]>
+> 
+> # Use tidyselect syntax and helpers, just like in `dplyr::select()`
+> df %>% nest(data = any_of(c("y", "z")))
+# A tibble: 3 × 2
+      x data            
+  <dbl> <list>          
+1     1 <tibble [3 × 2]>
+2     2 <tibble [2 × 2]>
+3     3 <tibble [1 × 2]>
+> 
+> # `...` and `.by` can be used together to drop columns you no longer need,
+> # or to include the columns you are nesting by in the inner data frame too.
+> # This drops `z`:
+> df %>% nest(data = y, .by = x)
+# A tibble: 3 × 2
+      x data            
+  <dbl> <list>          
+1     1 <tibble [3 × 1]>
+2     2 <tibble [2 × 1]>
+3     3 <tibble [1 × 1]>
+> # This includes `x` in the inner data frame:
+> df %>% nest(data = everything(), .by = x)
+# A tibble: 3 × 2
+      x data            
+  <dbl> <list>          
+1     1 <tibble [3 × 3]>
+2     2 <tibble [2 × 3]>
+3     3 <tibble [1 × 3]>
+> 
+> # Multiple nesting structures can be specified at once
+> iris %>%
++   nest(petal = starts_with("Petal"), sepal = starts_with("Sepal"))
+# A tibble: 3 × 3
+  Species    petal             sepal            
+  <fct>      <list>            <list>           
+1 setosa     <tibble [50 × 2]> <tibble [50 × 2]>
+2 versicolor <tibble [50 × 2]> <tibble [50 × 2]>
+3 virginica  <tibble [50 × 2]> <tibble [50 × 2]>
+> iris %>%
++   nest(width = contains("Width"), length = contains("Length"))
+# A tibble: 3 × 3
+  Species    width             length           
+  <fct>      <list>            <list>           
+1 setosa     <tibble [50 × 2]> <tibble [50 × 2]>
+2 versicolor <tibble [50 × 2]> <tibble [50 × 2]>
+3 virginica  <tibble [50 × 2]> <tibble [50 × 2]>
+> 
+> # Nesting a grouped data frame nests all variables apart from the group vars
+> fish_encounters %>%
++   dplyr::group_by(fish) %>%
++   nest()
+# A tibble: 19 × 2
+# Groups:   fish [19]
+   fish  data             
+   <fct> <list>           
+ 1 4842  <tibble [11 × 2]>
+ 2 4843  <tibble [11 × 2]>
+ 3 4844  <tibble [11 × 2]>
+ 4 4845  <tibble [5 × 2]> 
+ 5 4847  <tibble [3 × 2]> 
+ 6 4848  <tibble [4 × 2]> 
+ 7 4849  <tibble [2 × 2]> 
+ 8 4850  <tibble [6 × 2]> 
+ 9 4851  <tibble [2 × 2]> 
+10 4854  <tibble [2 × 2]> 
+11 4855  <tibble [5 × 2]> 
+12 4857  <tibble [9 × 2]> 
+13 4858  <tibble [11 × 2]>
+14 4859  <tibble [5 × 2]> 
+15 4861  <tibble [11 × 2]>
+16 4862  <tibble [9 × 2]> 
+17 4863  <tibble [2 × 2]> 
+18 4864  <tibble [2 × 2]> 
+19 4865  <tibble [3 × 2]> 
+> 
+> # That is similar to `nest(.by = )`, except here the result isn't grouped
+> fish_encounters %>%
++   nest(.by = fish)
+# A tibble: 19 × 2
+   fish  data             
+   <fct> <list>           
+ 1 4842  <tibble [11 × 2]>
+ 2 4843  <tibble [11 × 2]>
+ 3 4844  <tibble [11 × 2]>
+ 4 4845  <tibble [5 × 2]> 
+ 5 4847  <tibble [3 × 2]> 
+ 6 4848  <tibble [4 × 2]> 
+ 7 4849  <tibble [2 × 2]> 
+ 8 4850  <tibble [6 × 2]> 
+ 9 4851  <tibble [2 × 2]> 
+10 4854  <tibble [2 × 2]> 
+11 4855  <tibble [5 × 2]> 
+12 4857  <tibble [9 × 2]> 
+13 4858  <tibble [11 × 2]>
+14 4859  <tibble [5 × 2]> 
+15 4861  <tibble [11 × 2]>
+16 4862  <tibble [9 × 2]> 
+17 4863  <tibble [2 × 2]> 
+18 4864  <tibble [2 × 2]> 
+19 4865  <tibble [3 × 2]> 
+> 
+> # Nesting is often useful for creating per group models
+> mtcars %>%
++   nest(.by = cyl) %>%
++   dplyr::mutate(models = lapply(data, function(df) lm(mpg ~ wt, data = df)))
+# A tibble: 3 × 3
+    cyl data               models
+  <dbl> <list>             <list>
+1     6 <tibble [7 × 10]>  <lm>  
+2     4 <tibble [11 × 10]> <lm>  
+3     8 <tibble [14 × 10]> <lm>  
+> 
+> 
+> 
+> cleanEx()
+> nameEx("nest_legacy")
+> ### * nest_legacy
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: nest_legacy
+> ### Title: Legacy versions of 'nest()' and 'unnest()'
+> ### Aliases: nest_legacy unnest_legacy
+> 
+> ### ** Examples
+> 
+> # Nest and unnest are inverses
+> df <- tibble(x = c(1, 1, 2), y = 3:1)
+> df %>% nest_legacy(y)
+# A tibble: 2 × 2
+      x data            
+  <dbl> <list>          
+1     1 <tibble [2 × 1]>
+2     2 <tibble [1 × 1]>
+> df %>% nest_legacy(y) %>% unnest_legacy()
+# A tibble: 3 × 2
+      x     y
+  <dbl> <int>
+1     1     3
+2     1     2
+3     2     1
+> 
+> # nesting -------------------------------------------------------------------
+> as_tibble(iris) %>% nest_legacy(!Species)
+# A tibble: 3 × 2
+  Species    data             
+  <fct>      <list>           
+1 setosa     <tibble [50 × 4]>
+2 versicolor <tibble [50 × 4]>
+3 virginica  <tibble [50 × 4]>
+> as_tibble(chickwts) %>% nest_legacy(weight)
+# A tibble: 6 × 2
+  feed      data             
+  <fct>     <list>           
+1 horsebean <tibble [10 × 1]>
+2 linseed   <tibble [12 × 1]>
+3 soybean   <tibble [14 × 1]>
+4 sunflower <tibble [12 × 1]>
+5 meatmeal  <tibble [11 × 1]>
+6 casein    <tibble [12 × 1]>
+> 
+> # unnesting -----------------------------------------------------------------
+> df <- tibble(
++   x = 1:2,
++   y = list(
++     tibble(z = 1),
++     tibble(z = 3:4)
++   )
++ )
+> df %>% unnest_legacy(y)
+# A tibble: 3 × 2
+      x     z
+  <int> <dbl>
+1     1     1
+2     2     3
+3     2     4
+> 
+> # You can also unnest multiple columns simultaneously
+> df <- tibble(
++   a = list(c("a", "b"), "c"),
++   b = list(1:2, 3),
++   c = c(11, 22)
++ )
+> df %>% unnest_legacy(a, b)
+# A tibble: 3 × 3
+      c a         b
+  <dbl> <chr> <dbl>
+1    11 a         1
+2    11 b         2
+3    22 c         3
+> # If you omit the column names, it'll unnest all list-cols
+> df %>% unnest_legacy()
+# A tibble: 3 × 3
+      c a         b
+  <dbl> <chr> <dbl>
+1    11 a         1
+2    11 b         2
+3    22 c         3
+> 
+> 
+> 
+> cleanEx()
+> nameEx("pack")
+> ### * pack
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: pack
+> ### Title: Pack and unpack
+> ### Aliases: pack unpack
+> 
+> ### ** Examples
+> 
+> # Packing -------------------------------------------------------------------
+> # It's not currently clear why you would ever want to pack columns
+> # since few functions work with this sort of data.
+> df <- tibble(x1 = 1:3, x2 = 4:6, x3 = 7:9, y = 1:3)
+> df
+# A tibble: 3 × 4
+     x1    x2    x3     y
+  <int> <int> <int> <int>
+1     1     4     7     1
+2     2     5     8     2
+3     3     6     9     3
+> df %>% pack(x = starts_with("x"))
+# A tibble: 3 × 2
+      y  x$x1   $x2   $x3
+  <int> <int> <int> <int>
+1     1     1     4     7
+2     2     2     5     8
+3     3     3     6     9
+> df %>% pack(x = c(x1, x2, x3), y = y)
+# A tibble: 3 × 2
+   x$x1   $x2   $x3   y$y
+  <int> <int> <int> <int>
+1     1     4     7     1
+2     2     5     8     2
+3     3     6     9     3
+> 
+> # .names_sep allows you to strip off common prefixes; this
+> # acts as a natural inverse to name_sep in unpack()
+> iris %>%
++   as_tibble() %>%
++   pack(
++     Sepal = starts_with("Sepal"),
++     Petal = starts_with("Petal"),
++     .names_sep = "."
++   )
+# A tibble: 150 × 3
+   Species Sepal$Length $Width Petal$Length $Width
+   <fct>          <dbl>  <dbl>        <dbl>  <dbl>
+ 1 setosa           5.1    3.5          1.4    0.2
+ 2 setosa           4.9    3            1.4    0.2
+ 3 setosa           4.7    3.2          1.3    0.2
+ 4 setosa           4.6    3.1          1.5    0.2
+ 5 setosa           5      3.6          1.4    0.2
+ 6 setosa           5.4    3.9          1.7    0.4
+ 7 setosa           4.6    3.4          1.4    0.3
+ 8 setosa           5      3.4          1.5    0.2
+ 9 setosa           4.4    2.9          1.4    0.2
+10 setosa           4.9    3.1          1.5    0.1
+# ℹ 140 more rows
+> 
+> # Unpacking -----------------------------------------------------------------
+> df <- tibble(
++   x = 1:3,
++   y = tibble(a = 1:3, b = 3:1),
++   z = tibble(X = c("a", "b", "c"), Y = runif(3), Z = c(TRUE, FALSE, NA))
++ )
+> df
+# A tibble: 3 × 3
+      x   y$a    $b z$X      $Y $Z   
+  <int> <int> <int> <chr> <dbl> <lgl>
+1     1     1     3 a     0.266 TRUE 
+2     2     2     2 b     0.372 FALSE
+3     3     3     1 c     0.573 NA   
+> df %>% unpack(y)
+# A tibble: 3 × 4
+      x     a     b z$X      $Y $Z   
+  <int> <int> <int> <chr> <dbl> <lgl>
+1     1     1     3 a     0.266 TRUE 
+2     2     2     2 b     0.372 FALSE
+3     3     3     1 c     0.573 NA   
+> df %>% unpack(c(y, z))
+# A tibble: 3 × 6
+      x     a     b X         Y Z    
+  <int> <int> <int> <chr> <dbl> <lgl>
+1     1     1     3 a     0.266 TRUE 
+2     2     2     2 b     0.372 FALSE
+3     3     3     1 c     0.573 NA   
+> df %>% unpack(c(y, z), names_sep = "_")
+# A tibble: 3 × 6
+      x   y_a   y_b z_X     z_Y z_Z  
+  <int> <int> <int> <chr> <dbl> <lgl>
+1     1     1     3 a     0.266 TRUE 
+2     2     2     2 b     0.372 FALSE
+3     3     3     1 c     0.573 NA   
+> 
+> 
+> 
+> cleanEx()
+> nameEx("pivot_longer")
+> ### * pivot_longer
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: pivot_longer
+> ### Title: Pivot data from wide to long
+> ### Aliases: pivot_longer
+> 
+> ### ** Examples
+> 
+> # See vignette("pivot") for examples and explanation
+> 
+> # Simplest case where column names are character data
+> relig_income
+# A tibble: 18 × 11
+   religion `<$10k` `$10-20k` `$20-30k` `$30-40k` `$40-50k` `$50-75k` `$75-100k`
+   <chr>      <dbl>     <dbl>     <dbl>     <dbl>     <dbl>     <dbl>      <dbl>
+ 1 Agnostic      27        34        60        81        76       137        122
+ 2 Atheist       12        27        37        52        35        70         73
+ 3 Buddhist      27        21        30        34        33        58         62
+ 4 Catholic     418       617       732       670       638      1116        949
+ 5 Don’t k…      15        14        15        11        10        35         21
+ 6 Evangel…     575       869      1064       982       881      1486        949
+ 7 Hindu          1         9         7         9        11        34         47
+ 8 Histori…     228       244       236       238       197       223        131
+ 9 Jehovah…      20        27        24        24        21        30         15
+10 Jewish        19        19        25        25        30        95         69
+11 Mainlin…     289       495       619       655       651      1107        939
+12 Mormon        29        40        48        51        56       112         85
+13 Muslim         6         7         9        10         9        23         16
+14 Orthodox      13        17        23        32        32        47         38
+15 Other C…       9         7        11        13        13        14         18
+16 Other F…      20        33        40        46        49        63         46
+17 Other W…       5         2         3         4         2         7          3
+18 Unaffil…     217       299       374       365       341       528        407
+# ℹ 3 more variables: `$100-150k` <dbl>, `>150k` <dbl>,
+#   `Don't know/refused` <dbl>
+> relig_income %>%
++   pivot_longer(!religion, names_to = "income", values_to = "count")
+# A tibble: 180 × 3
+   religion income             count
+   <chr>    <chr>              <dbl>
+ 1 Agnostic <$10k                 27
+ 2 Agnostic $10-20k               34
+ 3 Agnostic $20-30k               60
+ 4 Agnostic $30-40k               81
+ 5 Agnostic $40-50k               76
+ 6 Agnostic $50-75k              137
+ 7 Agnostic $75-100k             122
+ 8 Agnostic $100-150k            109
+ 9 Agnostic >150k                 84
+10 Agnostic Don't know/refused    96
+# ℹ 170 more rows
+> 
+> # Slightly more complex case where columns have common prefix,
+> # and missing missings are structural so should be dropped.
+> billboard
+# A tibble: 317 × 79
+   artist     track date.entered   wk1   wk2   wk3   wk4   wk5   wk6   wk7   wk8
+   <chr>      <chr> <date>       <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
+ 1 2 Pac      Baby… 2000-02-26      87    82    72    77    87    94    99    NA
+ 2 2Ge+her    The … 2000-09-02      91    87    92    NA    NA    NA    NA    NA
+ 3 3 Doors D… Kryp… 2000-04-08      81    70    68    67    66    57    54    53
+ 4 3 Doors D… Loser 2000-10-21      76    76    72    69    67    65    55    59
+ 5 504 Boyz   Wobb… 2000-04-15      57    34    25    17    17    31    36    49
+ 6 98^0       Give… 2000-08-19      51    39    34    26    26    19     2     2
+ 7 A*Teens    Danc… 2000-07-08      97    97    96    95   100    NA    NA    NA
+ 8 Aaliyah    I Do… 2000-01-29      84    62    51    41    38    35    35    38
+ 9 Aaliyah    Try … 2000-03-18      59    53    38    28    21    18    16    14
+10 Adams, Yo… Open… 2000-08-26      76    76    74    69    68    67    61    58
+# ℹ 307 more rows
+# ℹ 68 more variables: wk9 <dbl>, wk10 <dbl>, wk11 <dbl>, wk12 <dbl>,
+#   wk13 <dbl>, wk14 <dbl>, wk15 <dbl>, wk16 <dbl>, wk17 <dbl>, wk18 <dbl>,
+#   wk19 <dbl>, wk20 <dbl>, wk21 <dbl>, wk22 <dbl>, wk23 <dbl>, wk24 <dbl>,
+#   wk25 <dbl>, wk26 <dbl>, wk27 <dbl>, wk28 <dbl>, wk29 <dbl>, wk30 <dbl>,
+#   wk31 <dbl>, wk32 <dbl>, wk33 <dbl>, wk34 <dbl>, wk35 <dbl>, wk36 <dbl>,
+#   wk37 <dbl>, wk38 <dbl>, wk39 <dbl>, wk40 <dbl>, wk41 <dbl>, wk42 <dbl>, …
+> billboard %>%
++   pivot_longer(
++     cols = starts_with("wk"),
++     names_to = "week",
++     names_prefix = "wk",
++     values_to = "rank",
++     values_drop_na = TRUE
++   )
+# A tibble: 5,307 × 5
+   artist  track                   date.entered week   rank
+   <chr>   <chr>                   <date>       <chr> <dbl>
+ 1 2 Pac   Baby Don't Cry (Keep... 2000-02-26   1        87
+ 2 2 Pac   Baby Don't Cry (Keep... 2000-02-26   2        82
+ 3 2 Pac   Baby Don't Cry (Keep... 2000-02-26   3        72
+ 4 2 Pac   Baby Don't Cry (Keep... 2000-02-26   4        77
+ 5 2 Pac   Baby Don't Cry (Keep... 2000-02-26   5        87
+ 6 2 Pac   Baby Don't Cry (Keep... 2000-02-26   6        94
+ 7 2 Pac   Baby Don't Cry (Keep... 2000-02-26   7        99
+ 8 2Ge+her The Hardest Part Of ... 2000-09-02   1        91
+ 9 2Ge+her The Hardest Part Of ... 2000-09-02   2        87
+10 2Ge+her The Hardest Part Of ... 2000-09-02   3        92
+# ℹ 5,297 more rows
+> 
+> # Multiple variables stored in column names
+> who %>% pivot_longer(
++   cols = new_sp_m014:newrel_f65,
++   names_to = c("diagnosis", "gender", "age"),
++   names_pattern = "new_?(.*)_(.)(.*)",
++   values_to = "count"
++ )
+# A tibble: 405,440 × 8
+   country     iso2  iso3   year diagnosis gender age   count
+   <chr>       <chr> <chr> <dbl> <chr>     <chr>  <chr> <dbl>
+ 1 Afghanistan AF    AFG    1980 sp        m      014      NA
+ 2 Afghanistan AF    AFG    1980 sp        m      1524     NA
+ 3 Afghanistan AF    AFG    1980 sp        m      2534     NA
+ 4 Afghanistan AF    AFG    1980 sp        m      3544     NA
+ 5 Afghanistan AF    AFG    1980 sp        m      4554     NA
+ 6 Afghanistan AF    AFG    1980 sp        m      5564     NA
+ 7 Afghanistan AF    AFG    1980 sp        m      65       NA
+ 8 Afghanistan AF    AFG    1980 sp        f      014      NA
+ 9 Afghanistan AF    AFG    1980 sp        f      1524     NA
+10 Afghanistan AF    AFG    1980 sp        f      2534     NA
+# ℹ 405,430 more rows
+> 
+> # Multiple observations per row. Since all columns are used in the pivoting
+> # process, we'll use `cols_vary` to keep values from the original columns
+> # close together in the output.
+> anscombe
+   x1 x2 x3 x4    y1   y2    y3    y4
+1  10 10 10  8  8.04 9.14  7.46  6.58
+2   8  8  8  8  6.95 8.14  6.77  5.76
+3  13 13 13  8  7.58 8.74 12.74  7.71
+4   9  9  9  8  8.81 8.77  7.11  8.84
+5  11 11 11  8  8.33 9.26  7.81  8.47
+6  14 14 14  8  9.96 8.10  8.84  7.04
+7   6  6  6  8  7.24 6.13  6.08  5.25
+8   4  4  4 19  4.26 3.10  5.39 12.50
+9  12 12 12  8 10.84 9.13  8.15  5.56
+10  7  7  7  8  4.82 7.26  6.42  7.91
+11  5  5  5  8  5.68 4.74  5.73  6.89
+> anscombe %>%
++   pivot_longer(
++     everything(),
++     cols_vary = "slowest",
++     names_to = c(".value", "set"),
++     names_pattern = "(.)(.)"
++   )
+# A tibble: 44 × 3
+   set       x     y
+   <chr> <dbl> <dbl>
+ 1 1        10  8.04
+ 2 1         8  6.95
+ 3 1        13  7.58
+ 4 1         9  8.81
+ 5 1        11  8.33
+ 6 1        14  9.96
+ 7 1         6  7.24
+ 8 1         4  4.26
+ 9 1        12 10.8 
+10 1         7  4.82
+# ℹ 34 more rows
+> 
+> 
+> 
+> cleanEx()
+> nameEx("pivot_longer_spec")
+> ### * pivot_longer_spec
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: pivot_longer_spec
+> ### Title: Pivot data from wide to long using a spec
+> ### Aliases: pivot_longer_spec build_longer_spec
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> # See vignette("pivot") for examples and explanation
+> 
+> # Use `build_longer_spec()` to build `spec` using similar syntax to `pivot_longer()`
+> # and run `pivot_longer_spec()` based on `spec`.
+> spec <- relig_income %>% build_longer_spec(
++   cols = !religion,
++   names_to = "income",
++   values_to = "count"
++ )
+> spec
+# A tibble: 10 × 3
+   .name              .value income            
+   <chr>              <chr>  <chr>             
+ 1 <$10k              count  <$10k             
+ 2 $10-20k            count  $10-20k           
+ 3 $20-30k            count  $20-30k           
+ 4 $30-40k            count  $30-40k           
+ 5 $40-50k            count  $40-50k           
+ 6 $50-75k            count  $50-75k           
+ 7 $75-100k           count  $75-100k          
+ 8 $100-150k          count  $100-150k         
+ 9 >150k              count  >150k             
+10 Don't know/refused count  Don't know/refused
+> 
+> pivot_longer_spec(relig_income, spec)
+# A tibble: 180 × 3
+   religion income             count
+   <chr>    <chr>              <dbl>
+ 1 Agnostic <$10k                 27
+ 2 Agnostic $10-20k               34
+ 3 Agnostic $20-30k               60
+ 4 Agnostic $30-40k               81
+ 5 Agnostic $40-50k               76
+ 6 Agnostic $50-75k              137
+ 7 Agnostic $75-100k             122
+ 8 Agnostic $100-150k            109
+ 9 Agnostic >150k                 84
+10 Agnostic Don't know/refused    96
+# ℹ 170 more rows
+> 
+> # Is equivalent to:
+> relig_income %>% pivot_longer(
++   cols = !religion,
++   names_to = "income",
++   values_to = "count"
++ )
+# A tibble: 180 × 3
+   religion income             count
+   <chr>    <chr>              <dbl>
+ 1 Agnostic <$10k                 27
+ 2 Agnostic $10-20k               34
+ 3 Agnostic $20-30k               60
+ 4 Agnostic $30-40k               81
+ 5 Agnostic $40-50k               76
+ 6 Agnostic $50-75k              137
+ 7 Agnostic $75-100k             122
+ 8 Agnostic $100-150k            109
+ 9 Agnostic >150k                 84
+10 Agnostic Don't know/refused    96
+# ℹ 170 more rows
+> 
+> 
+> 
+> cleanEx()
+> nameEx("pivot_wider")
+> ### * pivot_wider
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: pivot_wider
+> ### Title: Pivot data from long to wide
+> ### Aliases: pivot_wider
+> 
+> ### ** Examples
+> 
+> # See vignette("pivot") for examples and explanation
+> 
+> fish_encounters
+# A tibble: 114 × 3
+   fish  station  seen
+   <fct> <fct>   <int>
+ 1 4842  Release     1
+ 2 4842  I80_1       1
+ 3 4842  Lisbon      1
+ 4 4842  Rstr        1
+ 5 4842  Base_TD     1
+ 6 4842  BCE         1
+ 7 4842  BCW         1
+ 8 4842  BCE2        1
+ 9 4842  BCW2        1
+10 4842  MAE         1
+# ℹ 104 more rows
+> fish_encounters %>%
++   pivot_wider(names_from = station, values_from = seen)
+# A tibble: 19 × 12
+   fish  Release I80_1 Lisbon  Rstr Base_TD   BCE   BCW  BCE2  BCW2   MAE   MAW
+   <fct>   <int> <int>  <int> <int>   <int> <int> <int> <int> <int> <int> <int>
+ 1 4842        1     1      1     1       1     1     1     1     1     1     1
+ 2 4843        1     1      1     1       1     1     1     1     1     1     1
+ 3 4844        1     1      1     1       1     1     1     1     1     1     1
+ 4 4845        1     1      1     1       1    NA    NA    NA    NA    NA    NA
+ 5 4847        1     1      1    NA      NA    NA    NA    NA    NA    NA    NA
+ 6 4848        1     1      1     1      NA    NA    NA    NA    NA    NA    NA
+ 7 4849        1     1     NA    NA      NA    NA    NA    NA    NA    NA    NA
+ 8 4850        1     1     NA     1       1     1     1    NA    NA    NA    NA
+ 9 4851        1     1     NA    NA      NA    NA    NA    NA    NA    NA    NA
+10 4854        1     1     NA    NA      NA    NA    NA    NA    NA    NA    NA
+11 4855        1     1      1     1       1    NA    NA    NA    NA    NA    NA
+12 4857        1     1      1     1       1     1     1     1     1    NA    NA
+13 4858        1     1      1     1       1     1     1     1     1     1     1
+14 4859        1     1      1     1       1    NA    NA    NA    NA    NA    NA
+15 4861        1     1      1     1       1     1     1     1     1     1     1
+16 4862        1     1      1     1       1     1     1     1     1    NA    NA
+17 4863        1     1     NA    NA      NA    NA    NA    NA    NA    NA    NA
+18 4864        1     1     NA    NA      NA    NA    NA    NA    NA    NA    NA
+19 4865        1     1      1    NA      NA    NA    NA    NA    NA    NA    NA
+> # Fill in missing values
+> fish_encounters %>%
++   pivot_wider(names_from = station, values_from = seen, values_fill = 0)
+# A tibble: 19 × 12
+   fish  Release I80_1 Lisbon  Rstr Base_TD   BCE   BCW  BCE2  BCW2   MAE   MAW
+   <fct>   <int> <int>  <int> <int>   <int> <int> <int> <int> <int> <int> <int>
+ 1 4842        1     1      1     1       1     1     1     1     1     1     1
+ 2 4843        1     1      1     1       1     1     1     1     1     1     1
+ 3 4844        1     1      1     1       1     1     1     1     1     1     1
+ 4 4845        1     1      1     1       1     0     0     0     0     0     0
+ 5 4847        1     1      1     0       0     0     0     0     0     0     0
+ 6 4848        1     1      1     1       0     0     0     0     0     0     0
+ 7 4849        1     1      0     0       0     0     0     0     0     0     0
+ 8 4850        1     1      0     1       1     1     1     0     0     0     0
+ 9 4851        1     1      0     0       0     0     0     0     0     0     0
+10 4854        1     1      0     0       0     0     0     0     0     0     0
+11 4855        1     1      1     1       1     0     0     0     0     0     0
+12 4857        1     1      1     1       1     1     1     1     1     0     0
+13 4858        1     1      1     1       1     1     1     1     1     1     1
+14 4859        1     1      1     1       1     0     0     0     0     0     0
+15 4861        1     1      1     1       1     1     1     1     1     1     1
+16 4862        1     1      1     1       1     1     1     1     1     0     0
+17 4863        1     1      0     0       0     0     0     0     0     0     0
+18 4864        1     1      0     0       0     0     0     0     0     0     0
+19 4865        1     1      1     0       0     0     0     0     0     0     0
+> 
+> # Generate column names from multiple variables
+> us_rent_income
+# A tibble: 104 × 5
+   GEOID NAME       variable estimate   moe
+   <chr> <chr>      <chr>       <dbl> <dbl>
+ 1 01    Alabama    income      24476   136
+ 2 01    Alabama    rent          747     3
+ 3 02    Alaska     income      32940   508
+ 4 02    Alaska     rent         1200    13
+ 5 04    Arizona    income      27517   148
+ 6 04    Arizona    rent          972     4
+ 7 05    Arkansas   income      23789   165
+ 8 05    Arkansas   rent          709     5
+ 9 06    California income      29454   109
+10 06    California rent         1358     3
+# ℹ 94 more rows
+> us_rent_income %>%
++   pivot_wider(
++     names_from = variable,
++     values_from = c(estimate, moe)
++   )
+# A tibble: 52 × 6
+   GEOID NAME                 estimate_income estimate_rent moe_income moe_rent
+   <chr> <chr>                          <dbl>         <dbl>      <dbl>    <dbl>
+ 1 01    Alabama                        24476           747        136        3
+ 2 02    Alaska                         32940          1200        508       13
+ 3 04    Arizona                        27517           972        148        4
+ 4 05    Arkansas                       23789           709        165        5
+ 5 06    California                     29454          1358        109        3
+ 6 08    Colorado                       32401          1125        109        5
+ 7 09    Connecticut                    35326          1123        195        5
+ 8 10    Delaware                       31560          1076        247       10
+ 9 11    District of Columbia           43198          1424        681       17
+10 12    Florida                        25952          1077         70        3
+# ℹ 42 more rows
+> 
+> # You can control whether `names_from` values vary fastest or slowest
+> # relative to the `values_from` column names using `names_vary`.
+> us_rent_income %>%
++   pivot_wider(
++     names_from = variable,
++     values_from = c(estimate, moe),
++     names_vary = "slowest"
++   )
+# A tibble: 52 × 6
+   GEOID NAME                 estimate_income moe_income estimate_rent moe_rent
+   <chr> <chr>                          <dbl>      <dbl>         <dbl>    <dbl>
+ 1 01    Alabama                        24476        136           747        3
+ 2 02    Alaska                         32940        508          1200       13
+ 3 04    Arizona                        27517        148           972        4
+ 4 05    Arkansas                       23789        165           709        5
+ 5 06    California                     29454        109          1358        3
+ 6 08    Colorado                       32401        109          1125        5
+ 7 09    Connecticut                    35326        195          1123        5
+ 8 10    Delaware                       31560        247          1076       10
+ 9 11    District of Columbia           43198        681          1424       17
+10 12    Florida                        25952         70          1077        3
+# ℹ 42 more rows
+> 
+> # When there are multiple `names_from` or `values_from`, you can use
+> # use `names_sep` or `names_glue` to control the output variable names
+> us_rent_income %>%
++   pivot_wider(
++     names_from = variable,
++     names_sep = ".",
++     values_from = c(estimate, moe)
++   )
+# A tibble: 52 × 6
+   GEOID NAME                 estimate.income estimate.rent moe.income moe.rent
+   <chr> <chr>                          <dbl>         <dbl>      <dbl>    <dbl>
+ 1 01    Alabama                        24476           747        136        3
+ 2 02    Alaska                         32940          1200        508       13
+ 3 04    Arizona                        27517           972        148        4
+ 4 05    Arkansas                       23789           709        165        5
+ 5 06    California                     29454          1358        109        3
+ 6 08    Colorado                       32401          1125        109        5
+ 7 09    Connecticut                    35326          1123        195        5
+ 8 10    Delaware                       31560          1076        247       10
+ 9 11    District of Columbia           43198          1424        681       17
+10 12    Florida                        25952          1077         70        3
+# ℹ 42 more rows
+> us_rent_income %>%
++   pivot_wider(
++     names_from = variable,
++     names_glue = "{variable}_{.value}",
++     values_from = c(estimate, moe)
++   )
+# A tibble: 52 × 6
+   GEOID NAME                 income_estimate rent_estimate income_moe rent_moe
+   <chr> <chr>                          <dbl>         <dbl>      <dbl>    <dbl>
+ 1 01    Alabama                        24476           747        136        3
+ 2 02    Alaska                         32940          1200        508       13
+ 3 04    Arizona                        27517           972        148        4
+ 4 05    Arkansas                       23789           709        165        5
+ 5 06    California                     29454          1358        109        3
+ 6 08    Colorado                       32401          1125        109        5
+ 7 09    Connecticut                    35326          1123        195        5
+ 8 10    Delaware                       31560          1076        247       10
+ 9 11    District of Columbia           43198          1424        681       17
+10 12    Florida                        25952          1077         70        3
+# ℹ 42 more rows
+> 
+> # Can perform aggregation with `values_fn`
+> warpbreaks <- as_tibble(warpbreaks[c("wool", "tension", "breaks")])
+> warpbreaks
+# A tibble: 54 × 3
+   wool  tension breaks
+   <fct> <fct>    <dbl>
+ 1 A     L           26
+ 2 A     L           30
+ 3 A     L           54
+ 4 A     L           25
+ 5 A     L           70
+ 6 A     L           52
+ 7 A     L           51
+ 8 A     L           26
+ 9 A     L           67
+10 A     M           18
+# ℹ 44 more rows
+> warpbreaks %>%
++   pivot_wider(
++     names_from = wool,
++     values_from = breaks,
++     values_fn = mean
++   )
+# A tibble: 3 × 3
+  tension     A     B
+  <fct>   <dbl> <dbl>
+1 L        44.6  28.2
+2 M        24    28.8
+3 H        24.6  18.8
+> 
+> # Can pass an anonymous function to `values_fn` when you
+> # need to supply additional arguments
+> warpbreaks$breaks[1] <- NA
+> warpbreaks %>%
++   pivot_wider(
++     names_from = wool,
++     values_from = breaks,
++     values_fn = ~ mean(.x, na.rm = TRUE)
++   )
+# A tibble: 3 × 3
+  tension     A     B
+  <fct>   <dbl> <dbl>
+1 L        46.9  28.2
+2 M        24    28.8
+3 H        24.6  18.8
+> 
+> 
+> 
+> cleanEx()
+> nameEx("pivot_wider_spec")
+> ### * pivot_wider_spec
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: pivot_wider_spec
+> ### Title: Pivot data from long to wide using a spec
+> ### Aliases: pivot_wider_spec build_wider_spec
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> # See vignette("pivot") for examples and explanation
+> 
+> us_rent_income
+# A tibble: 104 × 5
+   GEOID NAME       variable estimate   moe
+   <chr> <chr>      <chr>       <dbl> <dbl>
+ 1 01    Alabama    income      24476   136
+ 2 01    Alabama    rent          747     3
+ 3 02    Alaska     income      32940   508
+ 4 02    Alaska     rent         1200    13
+ 5 04    Arizona    income      27517   148
+ 6 04    Arizona    rent          972     4
+ 7 05    Arkansas   income      23789   165
+ 8 05    Arkansas   rent          709     5
+ 9 06    California income      29454   109
+10 06    California rent         1358     3
+# ℹ 94 more rows
+> spec1 <- us_rent_income %>%
++   build_wider_spec(names_from = variable, values_from = c(estimate, moe))
+> spec1
+# A tibble: 4 × 3
+  .name           .value   variable
+  <chr>           <chr>    <chr>   
+1 estimate_income estimate income  
+2 estimate_rent   estimate rent    
+3 moe_income      moe      income  
+4 moe_rent        moe      rent    
+> 
+> us_rent_income %>%
++   pivot_wider_spec(spec1)
+# A tibble: 52 × 6
+   GEOID NAME                 estimate_income estimate_rent moe_income moe_rent
+   <chr> <chr>                          <dbl>         <dbl>      <dbl>    <dbl>
+ 1 01    Alabama                        24476           747        136        3
+ 2 02    Alaska                         32940          1200        508       13
+ 3 04    Arizona                        27517           972        148        4
+ 4 05    Arkansas                       23789           709        165        5
+ 5 06    California                     29454          1358        109        3
+ 6 08    Colorado                       32401          1125        109        5
+ 7 09    Connecticut                    35326          1123        195        5
+ 8 10    Delaware                       31560          1076        247       10
+ 9 11    District of Columbia           43198          1424        681       17
+10 12    Florida                        25952          1077         70        3
+# ℹ 42 more rows
+> 
+> # Is equivalent to
+> us_rent_income %>%
++   pivot_wider(names_from = variable, values_from = c(estimate, moe))
+# A tibble: 52 × 6
+   GEOID NAME                 estimate_income estimate_rent moe_income moe_rent
+   <chr> <chr>                          <dbl>         <dbl>      <dbl>    <dbl>
+ 1 01    Alabama                        24476           747        136        3
+ 2 02    Alaska                         32940          1200        508       13
+ 3 04    Arizona                        27517           972        148        4
+ 4 05    Arkansas                       23789           709        165        5
+ 5 06    California                     29454          1358        109        3
+ 6 08    Colorado                       32401          1125        109        5
+ 7 09    Connecticut                    35326          1123        195        5
+ 8 10    Delaware                       31560          1076        247       10
+ 9 11    District of Columbia           43198          1424        681       17
+10 12    Florida                        25952          1077         70        3
+# ℹ 42 more rows
+> 
+> # `pivot_wider_spec()` provides more control over column names and output format
+> # instead of creating columns with estimate_ and moe_ prefixes,
+> # keep original variable name for estimates and attach _moe as suffix
+> spec2 <- tibble(
++   .name = c("income", "rent", "income_moe", "rent_moe"),
++   .value = c("estimate", "estimate", "moe", "moe"),
++   variable = c("income", "rent", "income", "rent")
++ )
+> 
+> us_rent_income %>%
++   pivot_wider_spec(spec2)
+# A tibble: 52 × 6
+   GEOID NAME                 income  rent income_moe rent_moe
+   <chr> <chr>                 <dbl> <dbl>      <dbl>    <dbl>
+ 1 01    Alabama               24476   747        136        3
+ 2 02    Alaska                32940  1200        508       13
+ 3 04    Arizona               27517   972        148        4
+ 4 05    Arkansas              23789   709        165        5
+ 5 06    California            29454  1358        109        3
+ 6 08    Colorado              32401  1125        109        5
+ 7 09    Connecticut           35326  1123        195        5
+ 8 10    Delaware              31560  1076        247       10
+ 9 11    District of Columbia  43198  1424        681       17
+10 12    Florida               25952  1077         70        3
+# ℹ 42 more rows
+> 
+> 
+> 
+> cleanEx()
+> nameEx("replace_na")
+> ### * replace_na
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: replace_na
+> ### Title: Replace NAs with specified values
+> ### Aliases: replace_na
+> 
+> ### ** Examples
+> 
+> # Replace NAs in a data frame
+> df <- tibble(x = c(1, 2, NA), y = c("a", NA, "b"))
+> df %>% replace_na(list(x = 0, y = "unknown"))
+# A tibble: 3 × 2
+      x y      
+  <dbl> <chr>  
+1     1 a      
+2     2 unknown
+3     0 b      
+> 
+> # Replace NAs in a vector
+> df %>% dplyr::mutate(x = replace_na(x, 0))
+# A tibble: 3 × 2
+      x y    
+  <dbl> <chr>
+1     1 a    
+2     2 <NA> 
+3     0 b    
+> # OR
+> df$x %>% replace_na(0)
+[1] 1 2 0
+> df$y %>% replace_na("unknown")
+[1] "a"       "unknown" "b"      
+> 
+> # Replace NULLs in a list: NULLs are the list-col equivalent of NAs
+> df_list <- tibble(z = list(1:5, NULL, 10:20))
+> df_list %>% replace_na(list(z = list(5)))
+# A tibble: 3 × 1
+  z         
+  <list>    
+1 <int [5]> 
+2 <dbl [1]> 
+3 <int [11]>
+> 
+> 
+> 
+> cleanEx()
+> nameEx("separate")
+> ### * separate
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: separate
+> ### Title: Separate a character column into multiple columns with a regular
+> ###   expression or numeric locations
+> ### Aliases: separate
+> 
+> ### ** Examples
+> 
+> # If you want to split by any non-alphanumeric value (the default):
+> df <- tibble(x = c(NA, "x.y", "x.z", "y.z"))
+> df %>% separate(x, c("A", "B"))
+# A tibble: 4 × 2
+  A     B    
+  <chr> <chr>
+1 <NA>  <NA> 
+2 x     y    
+3 x     z    
+4 y     z    
+> 
+> # If you just want the second variable:
+> df %>% separate(x, c(NA, "B"))
+# A tibble: 4 × 1
+  B    
+  <chr>
+1 <NA> 
+2 y    
+3 z    
+4 z    
+> 
+> # We now recommend separate_wider_delim() instead:
+> df %>% separate_wider_delim(x, ".", names = c("A", "B"))
+# A tibble: 4 × 2
+  A     B    
+  <chr> <chr>
+1 <NA>  <NA> 
+2 x     y    
+3 x     z    
+4 y     z    
+> df %>% separate_wider_delim(x, ".", names = c(NA, "B"))
+# A tibble: 4 × 1
+  B    
+  <chr>
+1 <NA> 
+2 y    
+3 z    
+4 z    
+> 
+> # Controlling uneven splits -------------------------------------------------
+> # If every row doesn't split into the same number of pieces, use
+> # the extra and fill arguments to control what happens:
+> df <- tibble(x = c("x", "x y", "x y z", NA))
+> df %>% separate(x, c("a", "b"))
+Warning: Expected 2 pieces. Additional pieces discarded in 1 rows [3].
+Warning: Expected 2 pieces. Missing pieces filled with `NA` in 1 rows [1].
+# A tibble: 4 × 2
+  a     b    
+  <chr> <chr>
+1 x     <NA> 
+2 x     y    
+3 x     y    
+4 <NA>  <NA> 
+> # The same behaviour as previous, but drops the c without warnings:
+> df %>% separate(x, c("a", "b"), extra = "drop", fill = "right")
+# A tibble: 4 × 2
+  a     b    
+  <chr> <chr>
+1 x     <NA> 
+2 x     y    
+3 x     y    
+4 <NA>  <NA> 
+> # Opposite of previous, keeping the c and filling left:
+> df %>% separate(x, c("a", "b"), extra = "merge", fill = "left")
+# A tibble: 4 × 2
+  a     b    
+  <chr> <chr>
+1 <NA>  x    
+2 x     y    
+3 x     y z  
+4 <NA>  <NA> 
+> # Or you can keep all three:
+> df %>% separate(x, c("a", "b", "c"))
+Warning: Expected 3 pieces. Missing pieces filled with `NA` in 2 rows [1, 2].
+# A tibble: 4 × 3
+  a     b     c    
+  <chr> <chr> <chr>
+1 x     <NA>  <NA> 
+2 x     y     <NA> 
+3 x     y     z    
+4 <NA>  <NA>  <NA> 
+> 
+> # To only split a specified number of times use extra = "merge":
+> df <- tibble(x = c("x: 123", "y: error: 7"))
+> df %>% separate(x, c("key", "value"), ": ", extra = "merge")
+# A tibble: 2 × 2
+  key   value   
+  <chr> <chr>   
+1 x     123     
+2 y     error: 7
+> 
+> # Controlling column types --------------------------------------------------
+> # convert = TRUE detects column classes:
+> df <- tibble(x = c("x:1", "x:2", "y:4", "z", NA))
+> df %>% separate(x, c("key", "value"), ":") %>% str()
+Warning: Expected 2 pieces. Missing pieces filled with `NA` in 1 rows [4].
+tibble [5 × 2] (S3: tbl_df/tbl/data.frame)
+ $ key  : chr [1:5] "x" "x" "y" "z" ...
+ $ value: chr [1:5] "1" "2" "4" NA ...
+> df %>% separate(x, c("key", "value"), ":", convert = TRUE) %>% str()
+Warning: Expected 2 pieces. Missing pieces filled with `NA` in 1 rows [4].
+tibble [5 × 2] (S3: tbl_df/tbl/data.frame)
+ $ key  : chr [1:5] "x" "x" "y" "z" ...
+ $ value: int [1:5] 1 2 4 NA NA
+> 
+> 
+> 
+> cleanEx()
+> nameEx("separate_longer_delim")
+> ### * separate_longer_delim
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: separate_longer_delim
+> ### Title: Split a string into rows
+> ### Aliases: separate_longer_delim separate_longer_position
+> 
+> ### ** Examples
+> 
+> df <- tibble(id = 1:4, x = c("x", "x y", "x y z", NA))
+> df %>% separate_longer_delim(x, delim = " ")
+# A tibble: 7 × 2
+     id x    
+  <int> <chr>
+1     1 x    
+2     2 x    
+3     2 y    
+4     3 x    
+5     3 y    
+6     3 z    
+7     4 <NA> 
+> 
+> # You can separate multiple columns at once if they have the same structure
+> df <- tibble(id = 1:3, x = c("x", "x y", "x y z"), y = c("a", "a b", "a b c"))
+> df %>% separate_longer_delim(c(x, y), delim = " ")
+# A tibble: 6 × 3
+     id x     y    
+  <int> <chr> <chr>
+1     1 x     a    
+2     2 x     a    
+3     2 y     b    
+4     3 x     a    
+5     3 y     b    
+6     3 z     c    
+> 
+> # Or instead split by a fixed length
+> df <- tibble(id = 1:3, x = c("ab", "def", ""))
+> df %>% separate_longer_position(x, 1)
+# A tibble: 5 × 2
+     id x    
+  <int> <chr>
+1     1 a    
+2     1 b    
+3     2 d    
+4     2 e    
+5     2 f    
+> df %>% separate_longer_position(x, 2)
+# A tibble: 3 × 2
+     id x    
+  <int> <chr>
+1     1 ab   
+2     2 de   
+3     2 f    
+> df %>% separate_longer_position(x, 2, keep_empty = TRUE)
+# A tibble: 4 × 2
+     id x    
+  <int> <chr>
+1     1 ab   
+2     2 de   
+3     2 f    
+4     3 <NA> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("separate_rows")
+> ### * separate_rows
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: separate_rows
+> ### Title: Separate a collapsed column into multiple rows
+> ### Aliases: separate_rows
+> 
+> ### ** Examples
+> 
+> df <- tibble(
++   x = 1:3,
++   y = c("a", "d,e,f", "g,h"),
++   z = c("1", "2,3,4", "5,6")
++ )
+> separate_rows(df, y, z, convert = TRUE)
+# A tibble: 6 × 3
+      x y         z
+  <int> <chr> <int>
+1     1 a         1
+2     2 d         2
+3     2 e         3
+4     2 f         4
+5     3 g         5
+6     3 h         6
+> 
+> # Now recommended
+> df %>%
++   separate_longer_delim(c(y, z), delim = ",")
+# A tibble: 6 × 3
+      x y     z    
+  <int> <chr> <chr>
+1     1 a     1    
+2     2 d     2    
+3     2 e     3    
+4     2 f     4    
+5     3 g     5    
+6     3 h     6    
+> 
+> 
+> 
+> cleanEx()
+> nameEx("separate_wider_delim")
+> ### * separate_wider_delim
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: separate_wider_delim
+> ### Title: Split a string into columns
+> ### Aliases: separate_wider_delim separate_wider_position
+> ###   separate_wider_regex
+> 
+> ### ** Examples
+> 
+> df <- tibble(id = 1:3, x = c("m-123", "f-455", "f-123"))
+> # There are three basic ways to split up a string into pieces:
+> # 1. with a delimiter
+> df %>% separate_wider_delim(x, delim = "-", names = c("gender", "unit"))
+# A tibble: 3 × 3
+     id gender unit 
+  <int> <chr>  <chr>
+1     1 m      123  
+2     2 f      455  
+3     3 f      123  
+> # 2. by length
+> df %>% separate_wider_position(x, c(gender = 1, 1, unit = 3))
+# A tibble: 3 × 3
+     id gender unit 
+  <int> <chr>  <chr>
+1     1 m      123  
+2     2 f      455  
+3     3 f      123  
+> # 3. defining each component with a regular expression
+> df %>% separate_wider_regex(x, c(gender = ".", ".", unit = "\\d+"))
+# A tibble: 3 × 3
+     id gender unit 
+  <int> <chr>  <chr>
+1     1 m      123  
+2     2 f      455  
+3     3 f      123  
+> 
+> # Sometimes you split on the "last" delimiter
+> df <- tibble(var = c("race_1", "race_2", "age_bucket_1", "age_bucket_2"))
+> # _delim won't help because it always splits on the first delimiter
+> try(df %>% separate_wider_delim(var, "_", names = c("var1", "var2")))
+Error in separate_wider_delim(., var, "_", names = c("var1", "var2")) : 
+  Expected 2 pieces in each element of `var`.
+! 2 values were too long.
+ℹ Use `too_many = "debug"` to diagnose the problem.
+ℹ Use `too_many = "drop"/"merge"` to silence this message.
+> df %>% separate_wider_delim(var, "_", names = c("var1", "var2"), too_many = "merge")
+# A tibble: 4 × 2
+  var1  var2    
+  <chr> <chr>   
+1 race  1       
+2 race  2       
+3 age   bucket_1
+4 age   bucket_2
+> # Instead, you can use _regex
+> df %>% separate_wider_regex(var, c(var1 = ".*", "_", var2 = ".*"))
+# A tibble: 4 × 2
+  var1       var2 
+  <chr>      <chr>
+1 race       1    
+2 race       2    
+3 age_bucket 1    
+4 age_bucket 2    
+> # this works because * is greedy; you can mimic the _delim behaviour with .*?
+> df %>% separate_wider_regex(var, c(var1 = ".*?", "_", var2 = ".*"))
+# A tibble: 4 × 2
+  var1  var2    
+  <chr> <chr>   
+1 race  1       
+2 race  2       
+3 age   bucket_1
+4 age   bucket_2
+> 
+> # If the number of components varies, it's most natural to split into rows
+> df <- tibble(id = 1:4, x = c("x", "x y", "x y z", NA))
+> df %>% separate_longer_delim(x, delim = " ")
+# A tibble: 7 × 2
+     id x    
+  <int> <chr>
+1     1 x    
+2     2 x    
+3     2 y    
+4     3 x    
+5     3 y    
+6     3 z    
+7     4 <NA> 
+> # But separate_wider_delim() provides some tools to deal with the problem
+> # The default behaviour tells you that there's a problem
+> try(df %>% separate_wider_delim(x, delim = " ", names = c("a", "b")))
+Error in separate_wider_delim(., x, delim = " ", names = c("a", "b")) : 
+  Expected 2 pieces in each element of `x`.
+! 1 value was too short.
+ℹ Use `too_few = "debug"` to diagnose the problem.
+ℹ Use `too_few = "align_start"/"align_end"` to silence this message.
+! 1 value was too long.
+ℹ Use `too_many = "debug"` to diagnose the problem.
+ℹ Use `too_many = "drop"/"merge"` to silence this message.
+> # You can get additional insight by using the debug options
+> df %>%
++   separate_wider_delim(
++     x,
++     delim = " ",
++     names = c("a", "b"),
++     too_few = "debug",
++     too_many = "debug"
++   )
+Warning: Debug mode activated: adding variables `x_ok`, `x_pieces`, and `x_remainder`.
+# A tibble: 4 × 7
+     id a     b     x     x_ok  x_pieces x_remainder
+  <int> <chr> <chr> <chr> <lgl>    <int> <chr>      
+1     1 x     <NA>  x     FALSE        1 ""         
+2     2 x     y     x y   TRUE         2 ""         
+3     3 x     y     x y z FALSE        3 " z"       
+4     4 <NA>  <NA>  <NA>  TRUE        NA <NA>       
+> 
+> # But you can suppress the warnings
+> df %>%
++   separate_wider_delim(
++     x,
++     delim = " ",
++     names = c("a", "b"),
++     too_few = "align_start",
++     too_many = "merge"
++   )
+# A tibble: 4 × 3
+     id a     b    
+  <int> <chr> <chr>
+1     1 x     <NA> 
+2     2 x     y    
+3     3 x     y z  
+4     4 <NA>  <NA> 
+> 
+> # Or choose to automatically name the columns, producing as many as needed
+> df %>% separate_wider_delim(x, delim = " ", names_sep = "", too_few = "align_start")
+# A tibble: 4 × 4
+     id x1    x2    x3   
+  <int> <chr> <chr> <chr>
+1     1 x     <NA>  <NA> 
+2     2 x     y     <NA> 
+3     3 x     y     z    
+4     4 <NA>  <NA>  <NA> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("spread")
+> ### * spread
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: spread
+> ### Title: Spread a key-value pair across multiple columns
+> ### Aliases: spread
+> 
+> ### ** Examples
+> 
+> stocks <- tibble(
++   time = as.Date("2009-01-01") + 0:9,
++   X = rnorm(10, 0, 1),
++   Y = rnorm(10, 0, 2),
++   Z = rnorm(10, 0, 4)
++ )
+> stocksm <- stocks %>% gather(stock, price, -time)
+> stocksm %>% spread(stock, price)
+# A tibble: 10 × 4
+   time            X       Y      Z
+   <date>      <dbl>   <dbl>  <dbl>
+ 1 2009-01-01 -0.626  3.02    3.68 
+ 2 2009-01-02  0.184  0.780   3.13 
+ 3 2009-01-03 -0.836 -1.24    0.298
+ 4 2009-01-04  1.60  -4.43   -7.96 
+ 5 2009-01-05  0.330  2.25    2.48 
+ 6 2009-01-06 -0.820 -0.0899 -0.225
+ 7 2009-01-07  0.487 -0.0324 -0.623
+ 8 2009-01-08  0.738  1.89   -5.88 
+ 9 2009-01-09  0.576  1.64   -1.91 
+10 2009-01-10 -0.305  1.19    1.67 
+> stocksm %>% spread(time, price)
+# A tibble: 3 × 11
+  stock `2009-01-01` `2009-01-02` `2009-01-03` `2009-01-04` `2009-01-05`
+  <chr>        <dbl>        <dbl>        <dbl>        <dbl>        <dbl>
+1 X           -0.626        0.184       -0.836         1.60        0.330
+2 Y            3.02         0.780       -1.24         -4.43        2.25 
+3 Z            3.68         3.13         0.298        -7.96        2.48 
+# ℹ 5 more variables: `2009-01-06` <dbl>, `2009-01-07` <dbl>,
+#   `2009-01-08` <dbl>, `2009-01-09` <dbl>, `2009-01-10` <dbl>
+> 
+> # Spread and gather are complements
+> df <- tibble(x = c("a", "b"), y = c(3, 4), z = c(5, 6))
+> df %>%
++   spread(x, y) %>%
++   gather("x", "y", a:b, na.rm = TRUE)
+# A tibble: 2 × 3
+      z x         y
+  <dbl> <chr> <dbl>
+1     5 a         3
+2     6 b         4
+> 
+> # Use 'convert = TRUE' to produce variables of mixed type
+> df <- tibble(
++   row = rep(c(1, 51), each = 3),
++   var = rep(c("Sepal.Length", "Species", "Species_num"), 2),
++   value = c(5.1, "setosa", 1, 7.0, "versicolor", 2)
++ )
+> df %>% spread(var, value) %>% str()
+tibble [2 × 4] (S3: tbl_df/tbl/data.frame)
+ $ row         : num [1:2] 1 51
+ $ Sepal.Length: chr [1:2] "5.1" "7"
+ $ Species     : chr [1:2] "setosa" "versicolor"
+ $ Species_num : chr [1:2] "1" "2"
+> df %>% spread(var, value, convert = TRUE) %>% str()
+tibble [2 × 4] (S3: tbl_df/tbl/data.frame)
+ $ row         : num [1:2] 1 51
+ $ Sepal.Length: num [1:2] 5.1 7
+ $ Species     : chr [1:2] "setosa" "versicolor"
+ $ Species_num : int [1:2] 1 2
+> 
+> 
+> 
+> cleanEx()
+> nameEx("tidyr_legacy")
+> ### * tidyr_legacy
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: tidyr_legacy
+> ### Title: Legacy name repair
+> ### Aliases: tidyr_legacy
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> df <- tibble(x = 1:2, y = list(tibble(x = 3:5), tibble(x = 4:7)))
+> 
+> # Doesn't work because it would produce a data frame with two
+> # columns called x
+> ## Not run: 
+> ##D unnest(df, y)
+> ## End(Not run)
+> 
+> # The new tidyverse standard:
+> unnest(df, y, names_repair = "universal")
+New names:
+• `x` -> `x...1`
+• `x` -> `x...2`
+# A tibble: 7 × 2
+  x...1 x...2
+  <int> <int>
+1     1     3
+2     1     4
+3     1     5
+4     2     4
+5     2     5
+6     2     6
+7     2     7
+> 
+> # The old tidyr approach
+> unnest(df, y, names_repair = tidyr_legacy)
+# A tibble: 7 × 2
+      x    x1
+  <int> <int>
+1     1     3
+2     1     4
+3     1     5
+4     2     4
+5     2     5
+6     2     6
+7     2     7
+> 
+> 
+> 
+> cleanEx()
+> nameEx("uncount")
+> ### * uncount
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: uncount
+> ### Title: "Uncount" a data frame
+> ### Aliases: uncount
+> 
+> ### ** Examples
+> 
+> df <- tibble(x = c("a", "b"), n = c(1, 2))
+> uncount(df, n)
+# A tibble: 3 × 1
+  x    
+  <chr>
+1 a    
+2 b    
+3 b    
+> uncount(df, n, .id = "id")
+# A tibble: 3 × 2
+  x        id
+  <chr> <int>
+1 a         1
+2 b         1
+3 b         2
+> 
+> # You can also use constants
+> uncount(df, 2)
+# A tibble: 4 × 2
+  x         n
+  <chr> <dbl>
+1 a         1
+2 a         1
+3 b         2
+4 b         2
+> 
+> # Or expressions
+> uncount(df, 2 / n)
+# A tibble: 3 × 2
+  x         n
+  <chr> <dbl>
+1 a         1
+2 a         1
+3 b         2
+> 
+> 
+> 
+> cleanEx()
+> nameEx("unite")
+> ### * unite
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: unite
+> ### Title: Unite multiple columns into one by pasting strings together
+> ### Aliases: unite
+> 
+> ### ** Examples
+> 
+> df <- expand_grid(x = c("a", NA), y = c("b", NA))
+> df
+# A tibble: 4 × 2
+  x     y    
+  <chr> <chr>
+1 a     b    
+2 a     <NA> 
+3 <NA>  b    
+4 <NA>  <NA> 
+> 
+> df %>% unite("z", x:y, remove = FALSE)
+# A tibble: 4 × 3
+  z     x     y    
+  <chr> <chr> <chr>
+1 a_b   a     b    
+2 a_NA  a     <NA> 
+3 NA_b  <NA>  b    
+4 NA_NA <NA>  <NA> 
+> # To remove missing values:
+> df %>% unite("z", x:y, na.rm = TRUE, remove = FALSE)
+# A tibble: 4 × 3
+  z     x     y    
+  <chr> <chr> <chr>
+1 "a_b" a     b    
+2 "a"   a     <NA> 
+3 "b"   <NA>  b    
+4 ""    <NA>  <NA> 
+> 
+> # Separate is almost the complement of unite
+> df %>%
++   unite("xy", x:y) %>%
++   separate(xy, c("x", "y"))
+# A tibble: 4 × 2
+  x     y    
+  <chr> <chr>
+1 a     b    
+2 a     NA   
+3 NA    b    
+4 NA    NA   
+> # (but note `x` and `y` contain now "NA" not NA)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("unnest")
+> ### * unnest
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: unnest
+> ### Title: Unnest a list-column of data frames into rows and columns
+> ### Aliases: unnest
+> 
+> ### ** Examples
+> 
+> # unnest() is designed to work with lists of data frames
+> df <- tibble(
++   x = 1:3,
++   y = list(
++     NULL,
++     tibble(a = 1, b = 2),
++     tibble(a = 1:3, b = 3:1, c = 4)
++   )
++ )
+> # unnest() recycles input rows for each row of the list-column
+> # and adds a column for each column
+> df %>% unnest(y)
+# A tibble: 4 × 4
+      x     a     b     c
+  <int> <dbl> <dbl> <dbl>
+1     2     1     2    NA
+2     3     1     3     4
+3     3     2     2     4
+4     3     3     1     4
+> 
+> # input rows with 0 rows in the list-column will usually disappear,
+> # but you can keep them (generating NAs) with keep_empty = TRUE:
+> df %>% unnest(y, keep_empty = TRUE)
+# A tibble: 5 × 4
+      x     a     b     c
+  <int> <dbl> <dbl> <dbl>
+1     1    NA    NA    NA
+2     2     1     2    NA
+3     3     1     3     4
+4     3     2     2     4
+5     3     3     1     4
+> 
+> # Multiple columns ----------------------------------------------------------
+> # You can unnest multiple columns simultaneously
+> df <- tibble(
++   x = 1:2,
++   y = list(
++     tibble(a = 1, b = 2),
++     tibble(a = 3:4, b = 5:6)
++   ),
++   z = list(
++     tibble(c = 1, d = 2),
++     tibble(c = 3:4, d = 5:6)
++   )
++ )
+> df %>% unnest(c(y, z))
+# A tibble: 3 × 5
+      x     a     b     c     d
+  <int> <dbl> <dbl> <dbl> <dbl>
+1     1     1     2     1     2
+2     2     3     5     3     5
+3     2     4     6     4     6
+> 
+> # Compare with unnesting one column at a time, which generates
+> # the Cartesian product
+> df %>%
++   unnest(y) %>%
++   unnest(z)
+# A tibble: 5 × 5
+      x     a     b     c     d
+  <int> <dbl> <dbl> <dbl> <dbl>
+1     1     1     2     1     2
+2     2     3     5     3     5
+3     2     3     5     4     6
+4     2     4     6     3     5
+5     2     4     6     4     6
+> 
+> 
+> 
+> cleanEx()
+> nameEx("unnest_longer")
+> ### * unnest_longer
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: unnest_longer
+> ### Title: Unnest a list-column into rows
+> ### Aliases: unnest_longer
+> 
+> ### ** Examples
+> 
+> # `unnest_longer()` is useful when each component of the list should
+> # form a row
+> df <- tibble(
++   x = 1:4,
++   y = list(NULL, 1:3, 4:5, integer())
++ )
+> df %>% unnest_longer(y)
+# A tibble: 5 × 2
+      x     y
+  <int> <int>
+1     2     1
+2     2     2
+3     2     3
+4     3     4
+5     3     5
+> 
+> # Note that empty values like `NULL` and `integer()` are dropped by
+> # default. If you'd like to keep them, set `keep_empty = TRUE`.
+> df %>% unnest_longer(y, keep_empty = TRUE)
+# A tibble: 7 × 2
+      x     y
+  <int> <int>
+1     1    NA
+2     2     1
+3     2     2
+4     2     3
+5     3     4
+6     3     5
+7     4    NA
+> 
+> # If the inner vectors are named, the names are copied to an `_id` column
+> df <- tibble(
++   x = 1:2,
++   y = list(c(a = 1, b = 2), c(a = 10, b = 11, c = 12))
++ )
+> df %>% unnest_longer(y)
+# A tibble: 5 × 3
+      x     y y_id 
+  <int> <dbl> <chr>
+1     1     1 a    
+2     1     2 b    
+3     2    10 a    
+4     2    11 b    
+5     2    12 c    
+> 
+> # Multiple columns ----------------------------------------------------------
+> # If columns are aligned, you can unnest simultaneously
+> df <- tibble(
++   x = 1:2,
++   y = list(1:2, 3:4),
++   z = list(5:6, 7:8)
++ )
+> df %>%
++   unnest_longer(c(y, z))
+# A tibble: 4 × 3
+      x     y     z
+  <int> <int> <int>
+1     1     1     5
+2     1     2     6
+3     2     3     7
+4     2     4     8
+> 
+> # This is important because sequential unnesting would generate the
+> # Cartesian product of the rows
+> df %>%
++   unnest_longer(y) %>%
++   unnest_longer(z)
+# A tibble: 8 × 3
+      x     y     z
+  <int> <int> <int>
+1     1     1     5
+2     1     1     6
+3     1     2     5
+4     1     2     6
+5     2     3     7
+6     2     3     8
+7     2     4     7
+8     2     4     8
+> 
+> 
+> 
+> cleanEx()
+> nameEx("unnest_wider")
+> ### * unnest_wider
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: unnest_wider
+> ### Title: Unnest a list-column into columns
+> ### Aliases: unnest_wider
+> 
+> ### ** Examples
+> 
+> df <- tibble(
++   character = c("Toothless", "Dory"),
++   metadata = list(
++     list(
++       species = "dragon",
++       color = "black",
++       films = c(
++         "How to Train Your Dragon",
++         "How to Train Your Dragon 2",
++         "How to Train Your Dragon: The Hidden World"
++       )
++     ),
++     list(
++       species = "blue tang",
++       color = "blue",
++       films = c("Finding Nemo", "Finding Dory")
++     )
++   )
++ )
+> df
+# A tibble: 2 × 2
+  character metadata        
+  <chr>     <list>          
+1 Toothless <named list [3]>
+2 Dory      <named list [3]>
+> 
+> # Turn all components of metadata into columns
+> df %>% unnest_wider(metadata)
+# A tibble: 2 × 4
+  character species   color films    
+  <chr>     <chr>     <chr> <list>   
+1 Toothless dragon    black <chr [3]>
+2 Dory      blue tang blue  <chr [2]>
+> 
+> # Choose not to simplify list-cols of length-1 elements
+> df %>% unnest_wider(metadata, simplify = FALSE)
+# A tibble: 2 × 4
+  character species   color     films    
+  <chr>     <list>    <list>    <list>   
+1 Toothless <chr [1]> <chr [1]> <chr [3]>
+2 Dory      <chr [1]> <chr [1]> <chr [2]>
+> df %>% unnest_wider(metadata, simplify = list(color = FALSE))
+# A tibble: 2 × 4
+  character species   color     films    
+  <chr>     <chr>     <list>    <list>   
+1 Toothless dragon    <chr [1]> <chr [3]>
+2 Dory      blue tang <chr [1]> <chr [2]>
+> 
+> # You can also widen unnamed list-cols:
+> df <- tibble(
++   x = 1:3,
++   y = list(NULL, 1:3, 4:5)
++ )
+> # but you must supply `names_sep` to do so, which generates automatic names:
+> df %>% unnest_wider(y, names_sep = "_")
+# A tibble: 3 × 4
+      x   y_1   y_2   y_3
+  <int> <int> <int> <int>
+1     1    NA    NA    NA
+2     2     1     2     3
+3     3     4     5    NA
+> 
+> # 0-length elements ---------------------------------------------------------
+> # The defaults of `unnest_wider()` treat empty types (like `list()`) as `NULL`.
+> json <- list(
++   list(x = 1:2, y = 1:2),
++   list(x = list(), y = 3:4),
++   list(x = 3L, y = list())
++ )
+> 
+> df <- tibble(json = json)
+> df %>%
++   unnest_wider(json)
+# A tibble: 3 × 2
+  x         y        
+  <list>    <list>   
+1 <int [2]> <int [2]>
+2 <NULL>    <int [2]>
+3 <int [1]> <NULL>   
+> 
+> # To instead enforce strict vctrs typing rules, use `strict`
+> df %>%
++   unnest_wider(json, strict = TRUE)
+# A tibble: 3 × 2
+  x          y         
+  <list>     <list>    
+1 <int [2]>  <int [2]> 
+2 <list [0]> <int [2]> 
+3 <int [1]>  <list [0]>
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  2.672 0.056 2.729 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')
