@@ -1,0 +1,276 @@
+
+R version 4.4.1 (2024-06-14) -- "Race for Your Life"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "rvest"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('rvest')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("LiveHTML")
+> ### * LiveHTML
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: LiveHTML
+> ### Title: Interact with a live web page
+> ### Aliases: LiveHTML
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D # To retrieve data for this paginated site, we need to repeatedly push
+> ##D # the "Load More" button
+> ##D sess <- read_html_live("https://www.bodybuilding.com/exercises/finder")
+> ##D sess$view()
+> ##D 
+> ##D sess %>% html_elements(".ExResult-row") %>% length()
+> ##D sess$click(".ExLoadMore-btn")
+> ##D sess %>% html_elements(".ExResult-row") %>% length()
+> ##D sess$click(".ExLoadMore-btn")
+> ##D sess %>% html_elements(".ExResult-row") %>% length()
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("html_attr")
+> ### * html_attr
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: html_attr
+> ### Title: Get element attributes
+> ### Aliases: html_attr html_attrs
+> 
+> ### ** Examples
+> 
+> html <- minimal_html('<ul>
++   <li><a href="https://a.com" class="important">a</a></li>
++   <li class="active"><a href="https://c.com">b</a></li>
++   <li><a href="https://c.com">b</a></li>
++   </ul>')
+> 
+> html %>% html_elements("a") %>% html_attrs()
+[[1]]
+           href           class 
+"https://a.com"     "important" 
+
+[[2]]
+           href 
+"https://c.com" 
+
+[[3]]
+           href 
+"https://c.com" 
+
+> 
+> html %>% html_elements("a") %>% html_attr("href")
+[1] "https://a.com" "https://c.com" "https://c.com"
+> html %>% html_elements("li") %>% html_attr("class")
+[1] NA       "active" NA      
+> html %>% html_elements("li") %>% html_attr("class", default = "inactive")
+[1] "inactive" "active"   "inactive"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("html_children")
+> ### * html_children
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: html_children
+> ### Title: Get element children
+> ### Aliases: html_children
+> 
+> ### ** Examples
+> 
+> html <- minimal_html("<ul><li>1<li>2<li>3</ul>")
+> ul <- html_elements(html, "ul")
+> html_children(ul)
+{xml_nodeset (3)}
+[1] <li>1</li>\n
+[2] <li>2</li>\n
+[3] <li>3</li>
+> 
+> html <- minimal_html("<p>Hello <b>Hadley</b><i>!</i>")
+> p <- html_elements(html, "p")
+> html_children(p)
+{xml_nodeset (2)}
+[1] <b>Hadley</b>
+[2] <i>!</i>
+> 
+> 
+> 
+> cleanEx()
+> nameEx("html_element")
+> ### * html_element
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: html_element
+> ### Title: Select elements from an HTML document
+> ### Aliases: html_element html_elements
+> 
+> ### ** Examples
+> 
+> html <- minimal_html("
++   <h1>This is a heading</h1>
++   <p id='first'>This is a paragraph</p>
++   <p class='important'>This is an important paragraph</p>
++ ")
+> 
+> html %>% html_element("h1")
+{html_node}
+<h1>
+> html %>% html_elements("p")
+{xml_nodeset (2)}
+[1] <p id="first">This is a paragraph</p>
+[2] <p class="important">This is an important paragraph</p>
+> html %>% html_elements(".important")
+{xml_nodeset (1)}
+[1] <p class="important">This is an important paragraph</p>
+> html %>% html_elements("#first")
+{xml_nodeset (1)}
+[1] <p id="first">This is a paragraph</p>
+> 
+> # html_element() vs html_elements() --------------------------------------
+> html <- minimal_html("
++   <ul>
++     <li><b>C-3PO</b> is a <i>droid</i> that weighs <span class='weight'>167 kg</span></li>
++     <li><b>R2-D2</b> is a <i>droid</i> that weighs <span class='weight'>96 kg</span></li>
++     <li><b>Yoda</b> weighs <span class='weight'>66 kg</span></li>
++     <li><b>R4-P17</b> is a <i>droid</i></li>
++   </ul>
++ ")
+> li <- html %>% html_elements("li")
+> 
+> # When applied to a node set, html_elements() returns all matching elements
+> # beneath any of the inputs, flattening results into a new node set.
+> li %>% html_elements("i")
+{xml_nodeset (3)}
+[1] <i>droid</i>
+[2] <i>droid</i>
+[3] <i>droid</i>
+> 
+> # When applied to a node set, html_element() always returns a vector the
+> # same length as the input, using a "missing" element where needed.
+> li %>% html_element("i")
+{xml_nodeset (4)}
+[1] <i>droid</i>
+[2] <i>droid</i>
+[3] NA
+[4] <i>droid</i>
+> # and html_text() and html_attr() will return NA
+> li %>% html_element("i") %>% html_text2()
+[1] "droid" "droid" NA      "droid"
+> li %>% html_element("span") %>% html_attr("class")
+[1] "weight" "weight" "weight" NA      
+> 
+> 
+> 
+> cleanEx()
+> nameEx("html_encoding_guess")
+> ### * html_encoding_guess
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: html_encoding_guess
+> ### Title: Guess faulty character encoding
+> ### Aliases: html_encoding_guess guess_encoding
+> 
+> ### ** Examples
+> 
+> # A file with bad encoding included in the package
+> path <- system.file("html-ex", "bad-encoding.html", package = "rvest")
+> x <- read_html(path)
+> x %>% html_elements("p") %>% html_text()
+[1] "Émigré cause célèbre déjà vu."
+> 
+> html_encoding_guess(x)
+       encoding language confidence
+1         UTF-8                1.00
+2  windows-1252       fr       0.31
+3  windows-1250       ro       0.22
+4      UTF-16BE                0.10
+5      UTF-16LE                0.10
+6       GB18030       zh       0.10
+7          Big5       zh       0.10
+8  windows-1254       tr       0.06
+9    IBM424_rtl       he       0.01
+10   IBM424_ltr       he       0.01
+> # Two valid encodings, only one of which is correct
+> read_html(path, encoding = "ISO-8859-1") %>% html_elements("p") %>% html_text()
+[1] "Émigré cause célèbre déjà vu."
+> read_html(path, encoding = "ISO-8859-2") %>% html_elements("p") %>% html_text()
+[1] "Émigré cause célčbre déjŕ vu."
+> 
+> 
+> 
+> cleanEx()
+> nameEx("html_form")
+> ### * html_form
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: html_form
+> ### Title: Parse forms and set values
+> ### Aliases: html_form html_form_set html_form_submit
+> 
+> ### ** Examples
+> 
+> html <- read_html("http://www.google.com")
+> search <- html_form(html)[[1]]
+> 
+> search <- search %>% html_form_set(q = "My little pony", hl = "fr")
+Warning: Setting value of hidden field "hl".
+> 
+> # Or if you have a list of values, use !!!
+> vals <- list(q = "web scraping", hl = "en")
+> search <- search %>% html_form_set(!!!vals)
+Warning: Setting value of hidden field "hl".
+> 
+> # To submit and get result:
+> ## Not run: 
+> ##D resp <- html_form_submit(search)
+> ##D read_html(resp)
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("html_name")
+> ### * html_name
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: html_name
+> ### Title: Get element name
+> ### Aliases: html_name
+> 
+> ### ** Examples
+> 
+> url <- "https://rvest.tidyverse.org/articles/starwars.html"
+> html <- read_html(url)
+Error in open.connection(x, "rb") : Couldn't connect to server
+Calls: read_html -> read_html.default
+Execution halted
