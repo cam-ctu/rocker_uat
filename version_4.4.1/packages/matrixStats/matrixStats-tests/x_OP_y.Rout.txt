@@ -1,0 +1,522 @@
+
+R version 4.4.1 (2024-06-14) -- "Race for Your Life"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library("matrixStats")
+> 
+> x_OP_y_R <- function(x, y, OP, na.rm = FALSE) {
++   if (na.rm) {
++     xnok <- is.na(x)
++     ynok <- is.na(y)
++     anok <- xnok & ynok
++     unit <- switch(OP,
++       "+" = 0,
++       "-" = NA_real_,
++       "*" = 1,
++       "/" = NA_real_,
++       stop("Unknown 'OP' operator: ", OP)
++     )
++     x[xnok] <- unit
++     y[ynok] <- unit
++   }
++ 
++   ans <- switch(OP,
++     "+" = x + y,
++     "-" = x - y,
++     "*" = x * y,
++     "/" = x / y,
++     stop("Unknown 'OP' operator: ", OP)
++   )
++ 
++   if (na.rm) {
++     ans[anok] <- NA_real_
++   }
++ 
++   ans
++ } # x_OP_y_R()
+> 
+> 
+> 
+> t_tx_OP_y_R <- function(x, y, OP, na.rm = FALSE) {
++   t(x_OP_y_R(x = t(x), y = y, OP = OP, na.rm = na.rm))
++ }
+> 
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # No missing values
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> x <- matrix(1:16, nrow = 4, ncol = 4)
+> y <- 1:nrow(x)
+> storage.mode(y) <- storage.mode(x)
+> 
+> for (OP in c("+", "-", "*", "/")) {
++   for (na.rm in c(FALSE, TRUE)) {
++     cat(sprintf("OP = '%s', na.rm = %s\n", OP, na.rm))
++ 
++     a0 <- x_OP_y_R(x, y, OP, na.rm = na.rm)
++     a1 <- x_OP_y(x, y, OP, na.rm = na.rm)
++     str(a1)
++     stopifnot(all.equal(a1, a0))
++ 
++     b0 <- t_tx_OP_y_R(x, y, OP, na.rm = na.rm)
++     b1 <- t_tx_OP_y(x, y, OP, na.rm = na.rm)
++     str(b1)
++     stopifnot(all.equal(b1, b0))
++   }
++ }
+OP = '+', na.rm = FALSE
+ int [1:4, 1:4] 2 4 6 8 6 8 10 12 10 12 ...
+ int [1:4, 1:4] 2 3 4 5 7 8 9 10 12 13 ...
+OP = '+', na.rm = TRUE
+ int [1:4, 1:4] 2 4 6 8 6 8 10 12 10 12 ...
+ int [1:4, 1:4] 2 3 4 5 7 8 9 10 12 13 ...
+OP = '-', na.rm = FALSE
+ int [1:4, 1:4] 0 0 0 0 4 4 4 4 8 8 ...
+ int [1:4, 1:4] 0 1 2 3 3 4 5 6 6 7 ...
+OP = '-', na.rm = TRUE
+ int [1:4, 1:4] 0 0 0 0 4 4 4 4 8 8 ...
+ int [1:4, 1:4] 0 1 2 3 3 4 5 6 6 7 ...
+OP = '*', na.rm = FALSE
+ int [1:4, 1:4] 1 4 9 16 5 12 21 32 9 20 ...
+ int [1:4, 1:4] 1 2 3 4 10 12 14 16 27 30 ...
+OP = '*', na.rm = TRUE
+ int [1:4, 1:4] 1 4 9 16 5 12 21 32 9 20 ...
+ int [1:4, 1:4] 1 2 3 4 10 12 14 16 27 30 ...
+OP = '/', na.rm = FALSE
+ num [1:4, 1:4] 1 1 1 1 5 ...
+ num [1:4, 1:4] 1 2 3 4 2.5 ...
+OP = '/', na.rm = TRUE
+ num [1:4, 1:4] 1 1 1 1 5 ...
+ num [1:4, 1:4] 1 2 3 4 2.5 ...
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Missing values in x, y, or both.
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> for (which in c("x", "y", "both")) {
++   x <- matrix(1:16, nrow = 4, ncol = 4)
++   y <- 1:nrow(x)
++   storage.mode(y) <- storage.mode(x)
++ 
++   if (which == "x") {
++     x[3:6] <- NA_real_
++   } else if (which == "y") {
++     y[c(1, 3)] <- NA_real_
++   } else if (which == "both") {
++     x[3:6] <- NA_real_
++     y[c(1, 3)] <- NA_real_
++   }
++ 
++   for (OP in c("+", "-", "*", "/")) {
++     for (na.rm in c(FALSE, TRUE)) {
++       cat(sprintf("OP = '%s', na.rm = %s\n", OP, na.rm))
++       a0 <- x_OP_y_R(x, y, OP, na.rm = na.rm)
++       a1 <- x_OP_y(x, y, OP, na.rm = na.rm)
++       str(a1)
++       stopifnot(all.equal(a1, a0))
++ 
++       b0 <- t_tx_OP_y_R(x, y, OP, na.rm = na.rm)
++       b1 <- t_tx_OP_y(x, y, OP, na.rm = na.rm)
++       str(b1)
++       stopifnot(all.equal(b1, b0))
++     }
++   }
++ }
+OP = '+', na.rm = FALSE
+ num [1:4, 1:4] 2 4 NA NA NA NA 10 12 10 12 ...
+ num [1:4, 1:4] 2 3 NA NA NA NA 9 10 12 13 ...
+OP = '+', na.rm = TRUE
+ num [1:4, 1:4] 2 4 3 4 1 2 10 12 10 12 ...
+ num [1:4, 1:4] 2 3 1 1 2 2 9 10 12 13 ...
+OP = '-', na.rm = FALSE
+ num [1:4, 1:4] 0 0 NA NA NA NA 4 4 8 8 ...
+ num [1:4, 1:4] 0 1 NA NA NA NA 5 6 6 7 ...
+OP = '-', na.rm = TRUE
+ num [1:4, 1:4] 0 0 NA NA NA NA 4 4 8 8 ...
+ num [1:4, 1:4] 0 1 NA NA NA NA 5 6 6 7 ...
+OP = '*', na.rm = FALSE
+ num [1:4, 1:4] 1 4 NA NA NA NA 21 32 9 20 ...
+ num [1:4, 1:4] 1 2 NA NA NA NA 14 16 27 30 ...
+OP = '*', na.rm = TRUE
+ num [1:4, 1:4] 1 4 3 4 1 2 21 32 9 20 ...
+ num [1:4, 1:4] 1 2 1 1 2 2 14 16 27 30 ...
+OP = '/', na.rm = FALSE
+ num [1:4, 1:4] 1 1 NA NA NA ...
+ num [1:4, 1:4] 1 2 NA NA NA ...
+OP = '/', na.rm = TRUE
+ num [1:4, 1:4] 1 1 NA NA NA ...
+ num [1:4, 1:4] 1 2 NA NA NA ...
+OP = '+', na.rm = FALSE
+ num [1:4, 1:4] NA 4 NA 8 NA 8 NA 12 NA 12 ...
+ num [1:4, 1:4] NA NA NA NA 7 8 9 10 NA NA ...
+OP = '+', na.rm = TRUE
+ num [1:4, 1:4] 1 4 3 8 5 8 7 12 9 12 ...
+ num [1:4, 1:4] 1 2 3 4 7 8 9 10 9 10 ...
+OP = '-', na.rm = FALSE
+ num [1:4, 1:4] NA 0 NA 0 NA 4 NA 4 NA 8 ...
+ num [1:4, 1:4] NA NA NA NA 3 4 5 6 NA NA ...
+OP = '-', na.rm = TRUE
+ num [1:4, 1:4] NA 0 NA 0 NA 4 NA 4 NA 8 ...
+ num [1:4, 1:4] NA NA NA NA 3 4 5 6 NA NA ...
+OP = '*', na.rm = FALSE
+ num [1:4, 1:4] NA 4 NA 16 NA 12 NA 32 NA 20 ...
+ num [1:4, 1:4] NA NA NA NA 10 12 14 16 NA NA ...
+OP = '*', na.rm = TRUE
+ num [1:4, 1:4] 1 4 3 16 5 12 7 32 9 20 ...
+ num [1:4, 1:4] 1 2 3 4 10 12 14 16 9 10 ...
+OP = '/', na.rm = FALSE
+ num [1:4, 1:4] NA 1 NA 1 NA 3 NA 2 NA 5 ...
+ num [1:4, 1:4] NA NA NA NA 2.5 3 3.5 4 NA NA ...
+OP = '/', na.rm = TRUE
+ num [1:4, 1:4] NA 1 NA 1 NA 3 NA 2 NA 5 ...
+ num [1:4, 1:4] NA NA NA NA 2.5 3 3.5 4 NA NA ...
+OP = '+', na.rm = FALSE
+ num [1:4, 1:4] NA 4 NA NA NA NA NA 12 NA 12 ...
+ num [1:4, 1:4] NA NA NA NA NA NA 9 10 NA NA ...
+OP = '+', na.rm = TRUE
+ num [1:4, 1:4] 1 4 NA 4 NA 2 7 12 9 12 ...
+ num [1:4, 1:4] 1 2 NA NA 2 2 9 10 9 10 ...
+OP = '-', na.rm = FALSE
+ num [1:4, 1:4] NA 0 NA NA NA NA NA 4 NA 8 ...
+ num [1:4, 1:4] NA NA NA NA NA NA 5 6 NA NA ...
+OP = '-', na.rm = TRUE
+ num [1:4, 1:4] NA 0 NA NA NA NA NA 4 NA 8 ...
+ num [1:4, 1:4] NA NA NA NA NA NA 5 6 NA NA ...
+OP = '*', na.rm = FALSE
+ num [1:4, 1:4] NA 4 NA NA NA NA NA 32 NA 20 ...
+ num [1:4, 1:4] NA NA NA NA NA NA 14 16 NA NA ...
+OP = '*', na.rm = TRUE
+ num [1:4, 1:4] 1 4 NA 4 NA 2 7 32 9 20 ...
+ num [1:4, 1:4] 1 2 NA NA 2 2 14 16 9 10 ...
+OP = '/', na.rm = FALSE
+ num [1:4, 1:4] NA 1 NA NA NA NA NA 2 NA 5 ...
+ num [1:4, 1:4] NA NA NA NA NA NA 3.5 4 NA NA ...
+OP = '/', na.rm = TRUE
+ num [1:4, 1:4] NA 1 NA NA NA NA NA 2 NA 5 ...
+ num [1:4, 1:4] NA NA NA NA NA NA 3.5 4 NA NA ...
+> 
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Length differences
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> x <- matrix(1:8, nrow = 2, ncol = 4)
+> y <- 1:ncol(x)
+> storage.mode(y) <- storage.mode(x)
+> 
+> for (OP in c("+", "-", "*", "/")) {
++   for (na.rm in c(FALSE, TRUE)) {
++     cat(sprintf("OP = '%s', na.rm = %s\n", OP, na.rm))
++ 
++     a0 <- x_OP_y_R(x, y, OP, na.rm = na.rm)
++     a1 <- x_OP_y(x, y, OP, na.rm = na.rm)
++     str(a1)
++     stopifnot(all.equal(a1, a0))
++ 
++     b0 <- t_tx_OP_y_R(x, y, OP, na.rm = na.rm)
++     b1 <- t_tx_OP_y(x, y, OP, na.rm = na.rm)
++     str(b1)
++     stopifnot(all.equal(b1, b0))
++   }
++ }
+OP = '+', na.rm = FALSE
+ int [1:2, 1:4] 2 4 6 8 6 8 10 12
+ int [1:2, 1:4] 2 3 5 6 8 9 11 12
+OP = '+', na.rm = TRUE
+ int [1:2, 1:4] 2 4 6 8 6 8 10 12
+ int [1:2, 1:4] 2 3 5 6 8 9 11 12
+OP = '-', na.rm = FALSE
+ int [1:2, 1:4] 0 0 0 0 4 4 4 4
+ int [1:2, 1:4] 0 1 1 2 2 3 3 4
+OP = '-', na.rm = TRUE
+ int [1:2, 1:4] 0 0 0 0 4 4 4 4
+ int [1:2, 1:4] 0 1 1 2 2 3 3 4
+OP = '*', na.rm = FALSE
+ int [1:2, 1:4] 1 4 9 16 5 12 21 32
+ int [1:2, 1:4] 1 2 6 8 15 18 28 32
+OP = '*', na.rm = TRUE
+ int [1:2, 1:4] 1 4 9 16 5 12 21 32
+ int [1:2, 1:4] 1 2 6 8 15 18 28 32
+OP = '/', na.rm = FALSE
+ num [1:2, 1:4] 1 1 1 1 5 ...
+ num [1:2, 1:4] 1 2 1.5 2 1.67 ...
+OP = '/', na.rm = TRUE
+ num [1:2, 1:4] 1 1 1 1 5 ...
+ num [1:2, 1:4] 1 2 1.5 2 1.67 ...
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # All missing values
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> xs <- list(
++   A = matrix(1:2, nrow = 2, ncol = 2),
++   B = matrix(NA_integer_, nrow = 2, ncol = 2)
++ )
+> ys <- list(
++   A = 1L,
++   B = NA_integer_
++ )
+> 
+> for (x in xs) {
++   for (y in ys) {
++     for (mode in c("logical", "integer", "double")) {
++       storage.mode(x) <- mode
++       storage.mode(y) <- mode
++       str(list(x = x, y = y))
++ 
++       for (OP in c("+", "-", "*", "/")) {
++         for (na.rm in c(FALSE, TRUE)) {
++           cat(sprintf("mode = '%s', OP = '%s', na.rm = %s\n", mode, OP, na.rm))
++           suppressWarnings({
++             z0 <- x_OP_y_R(x, y, OP, na.rm = na.rm)
++             z <- x_OP_y(x, y, OP, na.rm = na.rm)
++           })
++           str(z)
++           stopifnot(all.equal(z, z0))
++         }
++       }
++     } # for (mode ...)
++   } # for (y ...)
++ } # for (x ...)
+List of 2
+ $ x: logi [1:2, 1:2] TRUE TRUE TRUE TRUE
+ $ y: logi TRUE
+mode = 'logical', OP = '+', na.rm = FALSE
+ int [1:2, 1:2] 2 2 2 2
+mode = 'logical', OP = '+', na.rm = TRUE
+ int [1:2, 1:2] 2 2 2 2
+mode = 'logical', OP = '-', na.rm = FALSE
+ int [1:2, 1:2] 0 0 0 0
+mode = 'logical', OP = '-', na.rm = TRUE
+ int [1:2, 1:2] 0 0 0 0
+mode = 'logical', OP = '*', na.rm = FALSE
+ int [1:2, 1:2] 1 1 1 1
+mode = 'logical', OP = '*', na.rm = TRUE
+ int [1:2, 1:2] 1 1 1 1
+mode = 'logical', OP = '/', na.rm = FALSE
+ num [1:2, 1:2] 1 1 1 1
+mode = 'logical', OP = '/', na.rm = TRUE
+ num [1:2, 1:2] 1 1 1 1
+List of 2
+ $ x: int [1:2, 1:2] 1 1 1 1
+ $ y: int 1
+mode = 'integer', OP = '+', na.rm = FALSE
+ int [1:2, 1:2] 2 2 2 2
+mode = 'integer', OP = '+', na.rm = TRUE
+ int [1:2, 1:2] 2 2 2 2
+mode = 'integer', OP = '-', na.rm = FALSE
+ int [1:2, 1:2] 0 0 0 0
+mode = 'integer', OP = '-', na.rm = TRUE
+ int [1:2, 1:2] 0 0 0 0
+mode = 'integer', OP = '*', na.rm = FALSE
+ int [1:2, 1:2] 1 1 1 1
+mode = 'integer', OP = '*', na.rm = TRUE
+ int [1:2, 1:2] 1 1 1 1
+mode = 'integer', OP = '/', na.rm = FALSE
+ num [1:2, 1:2] 1 1 1 1
+mode = 'integer', OP = '/', na.rm = TRUE
+ num [1:2, 1:2] 1 1 1 1
+List of 2
+ $ x: num [1:2, 1:2] 1 1 1 1
+ $ y: num 1
+mode = 'double', OP = '+', na.rm = FALSE
+ num [1:2, 1:2] 2 2 2 2
+mode = 'double', OP = '+', na.rm = TRUE
+ num [1:2, 1:2] 2 2 2 2
+mode = 'double', OP = '-', na.rm = FALSE
+ num [1:2, 1:2] 0 0 0 0
+mode = 'double', OP = '-', na.rm = TRUE
+ num [1:2, 1:2] 0 0 0 0
+mode = 'double', OP = '*', na.rm = FALSE
+ num [1:2, 1:2] 1 1 1 1
+mode = 'double', OP = '*', na.rm = TRUE
+ num [1:2, 1:2] 1 1 1 1
+mode = 'double', OP = '/', na.rm = FALSE
+ num [1:2, 1:2] 1 1 1 1
+mode = 'double', OP = '/', na.rm = TRUE
+ num [1:2, 1:2] 1 1 1 1
+List of 2
+ $ x: logi [1:2, 1:2] TRUE TRUE TRUE TRUE
+ $ y: logi NA
+mode = 'logical', OP = '+', na.rm = FALSE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'logical', OP = '+', na.rm = TRUE
+ int [1:2, 1:2] 1 1 1 1
+mode = 'logical', OP = '-', na.rm = FALSE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'logical', OP = '-', na.rm = TRUE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'logical', OP = '*', na.rm = FALSE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'logical', OP = '*', na.rm = TRUE
+ int [1:2, 1:2] 1 1 1 1
+mode = 'logical', OP = '/', na.rm = FALSE
+ num [1:2, 1:2] NA NA NA NA
+mode = 'logical', OP = '/', na.rm = TRUE
+ num [1:2, 1:2] NA NA NA NA
+List of 2
+ $ x: int [1:2, 1:2] 1 1 1 1
+ $ y: int NA
+mode = 'integer', OP = '+', na.rm = FALSE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'integer', OP = '+', na.rm = TRUE
+ int [1:2, 1:2] 1 1 1 1
+mode = 'integer', OP = '-', na.rm = FALSE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'integer', OP = '-', na.rm = TRUE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'integer', OP = '*', na.rm = FALSE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'integer', OP = '*', na.rm = TRUE
+ int [1:2, 1:2] 1 1 1 1
+mode = 'integer', OP = '/', na.rm = FALSE
+ num [1:2, 1:2] NA NA NA NA
+mode = 'integer', OP = '/', na.rm = TRUE
+ num [1:2, 1:2] NA NA NA NA
+List of 2
+ $ x: num [1:2, 1:2] 1 1 1 1
+ $ y: num NA
+mode = 'double', OP = '+', na.rm = FALSE
+ num [1:2, 1:2] NA NA NA NA
+mode = 'double', OP = '+', na.rm = TRUE
+ num [1:2, 1:2] 1 1 1 1
+mode = 'double', OP = '-', na.rm = FALSE
+ num [1:2, 1:2] NA NA NA NA
+mode = 'double', OP = '-', na.rm = TRUE
+ num [1:2, 1:2] NA NA NA NA
+mode = 'double', OP = '*', na.rm = FALSE
+ num [1:2, 1:2] NA NA NA NA
+mode = 'double', OP = '*', na.rm = TRUE
+ num [1:2, 1:2] 1 1 1 1
+mode = 'double', OP = '/', na.rm = FALSE
+ num [1:2, 1:2] NA NA NA NA
+mode = 'double', OP = '/', na.rm = TRUE
+ num [1:2, 1:2] NA NA NA NA
+List of 2
+ $ x: logi [1:2, 1:2] NA NA NA NA
+ $ y: logi TRUE
+mode = 'logical', OP = '+', na.rm = FALSE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'logical', OP = '+', na.rm = TRUE
+ int [1:2, 1:2] 1 1 1 1
+mode = 'logical', OP = '-', na.rm = FALSE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'logical', OP = '-', na.rm = TRUE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'logical', OP = '*', na.rm = FALSE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'logical', OP = '*', na.rm = TRUE
+ int [1:2, 1:2] 1 1 1 1
+mode = 'logical', OP = '/', na.rm = FALSE
+ num [1:2, 1:2] NA NA NA NA
+mode = 'logical', OP = '/', na.rm = TRUE
+ num [1:2, 1:2] NA NA NA NA
+List of 2
+ $ x: int [1:2, 1:2] NA NA NA NA
+ $ y: int 1
+mode = 'integer', OP = '+', na.rm = FALSE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'integer', OP = '+', na.rm = TRUE
+ int [1:2, 1:2] 1 1 1 1
+mode = 'integer', OP = '-', na.rm = FALSE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'integer', OP = '-', na.rm = TRUE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'integer', OP = '*', na.rm = FALSE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'integer', OP = '*', na.rm = TRUE
+ int [1:2, 1:2] 1 1 1 1
+mode = 'integer', OP = '/', na.rm = FALSE
+ num [1:2, 1:2] NA NA NA NA
+mode = 'integer', OP = '/', na.rm = TRUE
+ num [1:2, 1:2] NA NA NA NA
+List of 2
+ $ x: num [1:2, 1:2] NA NA NA NA
+ $ y: num 1
+mode = 'double', OP = '+', na.rm = FALSE
+ num [1:2, 1:2] NA NA NA NA
+mode = 'double', OP = '+', na.rm = TRUE
+ num [1:2, 1:2] 1 1 1 1
+mode = 'double', OP = '-', na.rm = FALSE
+ num [1:2, 1:2] NA NA NA NA
+mode = 'double', OP = '-', na.rm = TRUE
+ num [1:2, 1:2] NA NA NA NA
+mode = 'double', OP = '*', na.rm = FALSE
+ num [1:2, 1:2] NA NA NA NA
+mode = 'double', OP = '*', na.rm = TRUE
+ num [1:2, 1:2] 1 1 1 1
+mode = 'double', OP = '/', na.rm = FALSE
+ num [1:2, 1:2] NA NA NA NA
+mode = 'double', OP = '/', na.rm = TRUE
+ num [1:2, 1:2] NA NA NA NA
+List of 2
+ $ x: logi [1:2, 1:2] NA NA NA NA
+ $ y: logi NA
+mode = 'logical', OP = '+', na.rm = FALSE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'logical', OP = '+', na.rm = TRUE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'logical', OP = '-', na.rm = FALSE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'logical', OP = '-', na.rm = TRUE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'logical', OP = '*', na.rm = FALSE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'logical', OP = '*', na.rm = TRUE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'logical', OP = '/', na.rm = FALSE
+ num [1:2, 1:2] NA NA NA NA
+mode = 'logical', OP = '/', na.rm = TRUE
+ num [1:2, 1:2] NA NA NA NA
+List of 2
+ $ x: int [1:2, 1:2] NA NA NA NA
+ $ y: int NA
+mode = 'integer', OP = '+', na.rm = FALSE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'integer', OP = '+', na.rm = TRUE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'integer', OP = '-', na.rm = FALSE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'integer', OP = '-', na.rm = TRUE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'integer', OP = '*', na.rm = FALSE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'integer', OP = '*', na.rm = TRUE
+ int [1:2, 1:2] NA NA NA NA
+mode = 'integer', OP = '/', na.rm = FALSE
+ num [1:2, 1:2] NA NA NA NA
+mode = 'integer', OP = '/', na.rm = TRUE
+ num [1:2, 1:2] NA NA NA NA
+List of 2
+ $ x: num [1:2, 1:2] NA NA NA NA
+ $ y: num NA
+mode = 'double', OP = '+', na.rm = FALSE
+ num [1:2, 1:2] NA NA NA NA
+mode = 'double', OP = '+', na.rm = TRUE
+ num [1:2, 1:2] NA NA NA NA
+mode = 'double', OP = '-', na.rm = FALSE
+ num [1:2, 1:2] NA NA NA NA
+mode = 'double', OP = '-', na.rm = TRUE
+ num [1:2, 1:2] NA NA NA NA
+mode = 'double', OP = '*', na.rm = FALSE
+ num [1:2, 1:2] NA NA NA NA
+mode = 'double', OP = '*', na.rm = TRUE
+ num [1:2, 1:2] NA NA NA NA
+mode = 'double', OP = '/', na.rm = FALSE
+ num [1:2, 1:2] NA NA NA NA
+mode = 'double', OP = '/', na.rm = TRUE
+ num [1:2, 1:2] NA NA NA NA
+> 

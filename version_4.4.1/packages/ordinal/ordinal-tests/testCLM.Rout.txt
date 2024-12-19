@@ -1,0 +1,992 @@
+
+R version 4.4.1 (2024-06-14) -- "Race for Your Life"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(ordinal)
+> options(contrasts = c("contr.treatment", "contr.poly"))
+> ## library(devtools)
+> ## r2path <- "/Users/rhbc/Documents/Rpackages/ordinal/pkg/ordinal"
+> ## clean_dll(pkg = r2path)
+> ## load_all(r2path)
+> 
+> ## More manageable data set:
+> data(soup, package="ordinal")
+> (tab26 <- with(soup, table("Product" = PROD, "Response" = SURENESS)))
+       Response
+Product   1   2   3   4   5   6
+   Ref  132 161  65  41 121 219
+   Test  96  99  50  57 156 650
+> dimnames(tab26)[[2]] <- c("Sure", "Not Sure", "Guess", "Guess", "Not Sure", "Sure")
+> dat26 <- expand.grid(sureness = as.factor(1:6), prod = c("Ref", "Test"))
+> dat26$wghts <- c(t(tab26))
+> m1 <- clm(sureness ~ prod, scale = ~prod, data = dat26,
++           weights = wghts, link = "logit")
+> ## print, summary, vcov, logLik, AIC:
+> m1
+formula: sureness ~ prod
+scale:   ~prod
+data:    dat26
+
+ link  threshold nobs logLik   AIC     niter max.grad cond.H 
+ logit flexible  1847 -2687.74 5389.49 8(1)  5.09e-07 1.0e+02
+
+Coefficients:
+prodTest 
+   1.296 
+
+log-scale coefficients:
+prodTest 
+   0.148 
+
+Threshold coefficients:
+    1|2     2|3     3|4     4|5     5|6 
+-1.4913 -0.4522 -0.1072  0.1634  0.8829 
+> summary(m1)
+formula: sureness ~ prod
+scale:   ~prod
+data:    dat26
+
+ link  threshold nobs logLik   AIC     niter max.grad cond.H 
+ logit flexible  1847 -2687.74 5389.49 8(1)  5.09e-07 1.0e+02
+
+Coefficients:
+         Estimate Std. Error z value Pr(>|z|)    
+prodTest    1.296      0.119   10.89   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+log-scale coefficients:
+         Estimate Std. Error z value Pr(>|z|)  
+prodTest   0.1480     0.0651   2.273    0.023 *
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+    Estimate Std. Error z value
+1|2 -1.49126    0.09215 -16.183
+2|3 -0.45218    0.07182  -6.296
+3|4 -0.10721    0.06995  -1.533
+4|5  0.16337    0.07025   2.325
+5|6  0.88291    0.07957  11.096
+> vcov(m1)
+                   1|2           2|3           3|4         4|5         5|6
+1|2       0.0084917417  0.0046258673  0.0038492096 0.003316006 0.002036170
+2|3       0.0046258673  0.0051586967  0.0044974099 0.004099300 0.003352323
+3|4       0.0038492096  0.0044974099  0.0048935739 0.004528181 0.003948048
+4|5       0.0033160059  0.0040993002  0.0045281811 0.004935721 0.004489054
+5|6       0.0020361699  0.0033523229  0.0039480481 0.004489054 0.006331523
+prodTest  0.0009111749  0.0031074167  0.0039832831 0.004738959 0.007064828
+prodTest -0.0024312129 -0.0007825923 -0.0001820514 0.000338977 0.001989991
+             prodTest      prodTest
+1|2      0.0009111749 -0.0024312129
+2|3      0.0031074167 -0.0007825923
+3|4      0.0039832831 -0.0001820514
+4|5      0.0047389591  0.0003389770
+5|6      0.0070648284  0.0019899912
+prodTest 0.0141687135  0.0045752922
+prodTest 0.0045752922  0.0042385585
+> 
+> logLik(m1)
+'log Lik.' -2687.745 (df=7)
+> ll.m1 <- structure(-2687.74456343981, df = 7L, nobs = 1847,
++                    class = "logLik")
+> stopifnot(all.equal(logLik(m1), ll.m1))
+> 
+> AIC(m1)
+[1] 5389.489
+> 
+> coef(m1)
+       1|2        2|3        3|4        4|5        5|6   prodTest   prodTest 
+-1.4912570 -0.4521846 -0.1072083  0.1633653  0.8829135  1.2958776  0.1479862 
+> cm1 <- c(-1.49125702755587, -0.45218462707814, -0.107208315524318, 0.163365282774162,
++          0.88291347877514, 1.29587762626394, 0.147986162902775)
+> stopifnot(all.equal(as.vector(coef(m1)), cm1))
+> 
+> coef(summary(m1))
+           Estimate Std. Error    z value     Pr(>|z|)
+1|2      -1.4912570 0.09215065 -16.182817 6.667319e-59
+2|3      -0.4521846 0.07182407  -6.295726 3.059652e-10
+3|4      -0.1072083 0.06995408  -1.532553 1.253861e-01
+4|5       0.1633653 0.07025469   2.325329 2.005437e-02
+5|6       0.8829135 0.07957087  11.095938 1.312749e-28
+prodTest  1.2958776 0.11903241  10.886763 1.332938e-27
+prodTest  0.1479862 0.06510421   2.273066 2.302222e-02
+> csm1 <- structure(c(-1.49125702755587, -0.45218462707814, -0.107208315524318,
++ 0.163365282774162, 0.88291347877514, 1.29587762626394, 0.147986162902775,
++ 0.0921506468161812, 0.0718240681909781, 0.069954084652323, 0.0702546879687391,
++ 0.0795708692869622, 0.119032405993894, 0.065104213008022, -16.1828167145758,
++ -6.2957256316336, -1.53255261729392, 2.32532927691394, 11.0959385851501,
++ 10.8867632762999, 2.27306584421104, 6.66732036748908e-59, 3.05965144996025e-10,
++ 0.125386123756898, 0.0200543599621069, 1.31274723412040e-28,
++ 1.33293711602276e-27, 0.0230222123418036), .Dim = c(7L, 4L), .Dimnames = list(
++     c("1|2", "2|3", "3|4", "4|5", "5|6", "prodTest", "prodTest"
++     ), c("Estimate", "Std. Error", "z value", "Pr(>|z|)")))
+> stopifnot(all.equal(coef(summary(m1)), csm1))
+> 
+> ## link functions:
+> m2 <- update(m1, link = "probit")
+> m3 <- update(m1, link = "cloglog")
+> 
+> m4 <- update(m1, link = "loglog")
+> m5 <- update(m1, link = "cauchit", start = coef(m1))
+> ## m6 <- update(m1, link = "Aranda-Ordaz", lambda = 1)
+> ## m7 <- update(m1, link = "Aranda-Ordaz")
+> ## m8 <- update(m1, link = "log-gamma", lambda = 1)
+> ## m9 <- update(m1, link = "log-gamma")
+> ## nominal effects:
+> mN1 <- clm(sureness ~ 1, nominal = ~ prod, data = dat26,
++            weights = wghts)
+> anova(m1, mN1)
+Likelihood ratio tests of cumulative link models:
+ 
+    formula:        nominal: scale: link: threshold:
+m1  sureness ~ prod ~1       ~prod  logit flexible  
+mN1 sureness ~ 1    ~prod    ~1     logit flexible  
+
+    no.par    AIC  logLik LR.stat df Pr(>Chisq)
+m1       7 5389.5 -2687.7                      
+mN1     10 5390.1 -2685.1  5.3755  3     0.1463
+> ## optimizer / method:
+> update(m1, scale = ~ 1, method = "Newton")
+formula: sureness ~ prod
+scale:   ~1
+data:    dat26
+
+ link  threshold nobs logLik   AIC     niter max.grad cond.H 
+ logit flexible  1847 -2690.33 5392.66 6(1)  3.52e-12 1.1e+02
+
+Coefficients:
+prodTest 
+   1.144 
+
+Threshold coefficients:
+    1|2     2|3     3|4     4|5     5|6 
+-1.4050 -0.4247 -0.1013  0.1508  0.8126 
+> update(m1, scale = ~ 1, method = "ucminf")
+formula: sureness ~ prod
+scale:   ~1
+data:    dat26
+
+ link  threshold nobs logLik   AIC     niter max.grad cond.H 
+ logit flexible  1847 -2690.33 5392.66 19(0) 1.26e-08 1.1e+02
+
+Coefficients:
+prodTest 
+   1.144 
+
+Threshold coefficients:
+    1|2     2|3     3|4     4|5     5|6 
+-1.4050 -0.4247 -0.1013  0.1508  0.8126 
+> update(m1, scale = ~ 1, method = "nlminb")
+formula: sureness ~ prod
+scale:   ~1
+data:    dat26
+
+ link  threshold nobs logLik   AIC     niter  max.grad cond.H 
+ logit flexible  1847 -2690.33 5392.66 56(43) 4.13e-03 1.1e+02
+
+Coefficients:
+prodTest 
+   1.144 
+
+Threshold coefficients:
+    1|2     2|3     3|4     4|5     5|6 
+-1.4050 -0.4247 -0.1013  0.1508  0.8126 
+Warning message:
+(-1) Model failed to converge with max|grad| = 0.00413248 (tol = 1e-06) 
+> update(m1, scale = ~ 1, method = "optim")
+formula: sureness ~ prod
+scale:   ~1
+data:    dat26
+
+ link  threshold nobs logLik   AIC     niter  max.grad cond.H 
+ logit flexible  1847 -2690.33 5392.66 44(12) 4.73e-03 1.1e+02
+
+Coefficients:
+prodTest 
+   1.144 
+
+Threshold coefficients:
+    1|2     2|3     3|4     4|5     5|6 
+-1.4050 -0.4247 -0.1013  0.1508  0.8126 
+Warning message:
+(-1) Model failed to converge with max|grad| = 0.00472568 (tol = 1e-06) 
+> update(m1, scale = ~ 1, method = "model.frame")
+   sureness prod (weights)
+1         1  Ref       132
+2         2  Ref       161
+3         3  Ref        65
+4         4  Ref        41
+5         5  Ref       121
+6         6  Ref       219
+7         1 Test        96
+8         2 Test        99
+9         3 Test        50
+10        4 Test        57
+11        5 Test       156
+12        6 Test       650
+> update(m1, ~.-prod, scale = ~ 1,
++        nominal = ~ prod, method = "model.frame")
+   sureness prod (weights)
+1         1  Ref       132
+2         2  Ref       161
+3         3  Ref        65
+4         4  Ref        41
+5         5  Ref       121
+6         6  Ref       219
+7         1 Test        96
+8         2 Test        99
+9         3 Test        50
+10        4 Test        57
+11        5 Test       156
+12        6 Test       650
+> ## threshold functions
+> mT1 <- update(m1, threshold = "symmetric")
+> mT2 <- update(m1, threshold = "equidistant")
+> anova(m1, mT1, mT2)
+Likelihood ratio tests of cumulative link models:
+ 
+    formula:        scale: link: threshold: 
+mT2 sureness ~ prod ~prod  logit equidistant
+mT1 sureness ~ prod ~prod  logit symmetric  
+m1  sureness ~ prod ~prod  logit flexible   
+
+    no.par    AIC  logLik LR.stat df Pr(>Chisq)    
+mT2      4 5585.6 -2788.8                          
+mT1      5 5407.8 -2698.9 179.806  1  < 2.2e-16 ***
+m1       7 5389.5 -2687.7  22.271  2  1.459e-05 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> 
+> ## Extend example from polr in package MASS:
+> ## Fit model from polr example:
+> if(require(MASS)) {
++     fm1 <- clm(Sat ~ Infl + Type + Cont, weights = Freq, data = housing)
++     fm1
++     summary(fm1)
++     ## With probit link:
++     summary(update(fm1, link = "probit"))
++     ## Allow scale to depend on Cont-variable
++     summary(fm2 <- update(fm1, scale =~ Cont))
++     summary(fm3 <- update(fm1, location =~.-Cont, nominal =~ Cont))
++     summary(fm4 <- update(fm2, location =~.-Cont, nominal =~ Cont))
++     anova(fm1, fm2, fm3, fm4)
++     ## which seems to improve the fit
++ }
+Loading required package: MASS
+Likelihood ratio tests of cumulative link models:
+ 
+    formula:                 nominal: scale: link: threshold:
+fm1 Sat ~ Infl + Type + Cont ~1       ~1     logit flexible  
+fm2 Sat ~ Infl + Type + Cont ~1       ~Cont  logit flexible  
+fm3 Sat ~ Infl + Type + Cont ~Cont    ~1     logit flexible  
+fm4 Sat ~ Infl + Type + Cont ~Cont    ~Cont  logit flexible  
+
+    no.par    AIC  logLik LR.stat df Pr(>Chisq)  
+fm1      8 3495.1 -1739.6                        
+fm2      9 3491.5 -1736.7  5.6559  1    0.01740 *
+fm3      9 3494.7 -1738.4 -3.2113  0             
+fm4     10 3492.5 -1736.2  4.2190  1    0.03997 *
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> 
+> #################################
+> ## Better handling of ill-defined variance-covariance matrix of the
+> ## parameters in summary methods for clm and clmm objects:
+> dat26.2 <- data.frame(sureness = as.factor(1:12),
++                       prod = rep(c("One", "Two", "Three"),each=4))
+> fm1 <- clm(sureness ~ prod, ~prod, data = dat26.2)
+Warning message:
+(1) Hessian is numerically singular: parameters are not uniquely determined 
+In addition: Absolute convergence criterion was met, but relative criterion was not met 
+> fm1
+formula: sureness ~ prod
+scale:   ~prod
+data:    dat26.2
+
+ link  threshold nobs logLik AIC   niter  max.grad cond.H 
+ logit flexible  12   -16.64 63.27 33(14) 6.18e-07 2.0e+12
+
+Coefficients:
+prodThree   prodTwo 
+    90.72     46.65 
+
+log-scale coefficients:
+prodThree   prodTwo 
+ -0.11719  -0.09167 
+
+Threshold coefficients:
+       1|2        2|3        3|4        4|5        5|6        6|7        7|8 
+-1.099e+00 -3.482e-16  1.099e+00  2.441e+01  4.564e+01  4.665e+01  4.765e+01 
+       8|9       9|10      10|11      11|12 
+ 6.888e+01  8.975e+01  9.072e+01  9.170e+01 
+> summary(fm1)
+formula: sureness ~ prod
+scale:   ~prod
+data:    dat26.2
+
+ link  threshold nobs logLik AIC   niter  max.grad cond.H 
+ logit flexible  12   -16.64 63.27 33(14) 6.18e-07 2.0e+12
+
+Coefficients:
+          Estimate Std. Error z value Pr(>|z|)
+prodThree    90.72         NA      NA       NA
+prodTwo      46.65         NA      NA       NA
+
+log-scale coefficients:
+          Estimate Std. Error z value Pr(>|z|)
+prodThree -0.11719         NA      NA       NA
+prodTwo   -0.09167         NA      NA       NA
+
+Threshold coefficients:
+        Estimate Std. Error z value
+1|2   -1.099e+00         NA      NA
+2|3   -3.482e-16         NA      NA
+3|4    1.099e+00         NA      NA
+4|5    2.441e+01         NA      NA
+5|6    4.564e+01         NA      NA
+6|7    4.665e+01         NA      NA
+7|8    4.765e+01         NA      NA
+8|9    6.888e+01         NA      NA
+9|10   8.975e+01         NA      NA
+10|11  9.072e+01         NA      NA
+11|12  9.170e+01         NA      NA
+> summary(fm1, corr = 1)
+formula: sureness ~ prod
+scale:   ~prod
+data:    dat26.2
+
+ link  threshold nobs logLik AIC   niter  max.grad cond.H 
+ logit flexible  12   -16.64 63.27 33(14) 6.18e-07 2.0e+12
+
+Coefficients:
+          Estimate Std. Error z value Pr(>|z|)
+prodThree    90.72         NA      NA       NA
+prodTwo      46.65         NA      NA       NA
+
+log-scale coefficients:
+          Estimate Std. Error z value Pr(>|z|)
+prodThree -0.11719         NA      NA       NA
+prodTwo   -0.09167         NA      NA       NA
+
+Threshold coefficients:
+        Estimate Std. Error z value
+1|2   -1.099e+00         NA      NA
+2|3   -3.482e-16         NA      NA
+3|4    1.099e+00         NA      NA
+4|5    2.441e+01         NA      NA
+5|6    4.564e+01         NA      NA
+6|7    4.665e+01         NA      NA
+7|8    4.765e+01         NA      NA
+8|9    6.888e+01         NA      NA
+9|10   8.975e+01         NA      NA
+10|11  9.072e+01         NA      NA
+11|12  9.170e+01         NA      NA
+Warning message:
+In summary.clm(fm1, corr = 1) : Correlation matrix is unavailable
+> ## fm1$Hessian
+> ## sl1 <- slice(fm1, 13)
+> ## fitted(fm1)
+> ## convergence(fm1)
+> ## eigen(fm1$Hessian)$values
+> ## sqrt(diag(solve(fm1$Hessian)))
+> ## sqrt(diag(ginv(fm1$Hessian)))
+> 
+> #################################
+> ## Missing values:
+> ## Bug-report from Jonathan Williams
+> ## <Jonathan.Williams@dpag.ox.ac.uk>, 18 March 2010 12:42
+> data(soup, package = "ordinal")
+> soup$SURENESS[10] <- NA
+> c1a <- clm(ordered(SURENESS)~PROD, data=soup); summary(c1a)
+formula: ordered(SURENESS) ~ PROD
+data:    soup
+
+ link  threshold nobs logLik   AIC     niter max.grad cond.H 
+ logit flexible  1846 -2688.71 5389.43 6(1)  3.62e-12 1.1e+02
+
+Coefficients:
+         Estimate Std. Error z value Pr(>|z|)    
+PRODTest  1.14251    0.08931   12.79   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+    Estimate Std. Error z value
+1|2 -1.40460    0.08174 -17.184
+2|3 -0.42733    0.06965  -6.135
+3|4 -0.10357    0.06884  -1.505
+4|5  0.14862    0.06898   2.155
+5|6  0.81063    0.07185  11.282
+(1 observation deleted due to missingness)
+> c2a <- clm(ordered(SURENESS)~PROD, scale = ~PROD, data=soup)
+> summary(c2a)
+formula: ordered(SURENESS) ~ PROD
+scale:   ~PROD
+data:    soup
+
+ link  threshold nobs logLik   AIC     niter max.grad cond.H 
+ logit flexible  1846 -2686.16 5386.32 8(1)  4.81e-07 1.0e+02
+
+Coefficients:
+         Estimate Std. Error z value Pr(>|z|)    
+PRODTest    1.293      0.119   10.87   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+log-scale coefficients:
+         Estimate Std. Error z value Pr(>|z|)  
+PRODTest  0.14711    0.06514   2.258   0.0239 *
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+    Estimate Std. Error z value
+1|2 -1.49041    0.09219 -16.166
+2|3 -0.45478    0.07189  -6.326
+3|4 -0.10961    0.07000  -1.566
+4|5  0.16104    0.07029   2.291
+5|6  0.88052    0.07959  11.064
+(1 observation deleted due to missingness)
+> c3a <- clm(ordered(SURENESS)~1, scale = ~PROD, data=soup)
+> summary(c3a)
+formula: ordered(SURENESS) ~ 1
+scale:   ~PROD
+data:    soup
+
+ link  threshold nobs logLik   AIC     niter max.grad cond.H 
+ logit flexible  1846 -2769.95 5551.91 10(1) 1.01e-12 6.9e+01
+
+log-scale coefficients:
+         Estimate Std. Error z value Pr(>|z|)  
+PRODTest -0.15478    0.06683  -2.316   0.0206 *
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+    Estimate Std. Error z value
+1|2 -1.85565    0.08111 -22.878
+2|3 -0.98626    0.05260 -18.752
+3|4 -0.70743    0.04676 -15.129
+4|5 -0.49243    0.04393 -11.208
+5|6  0.06504    0.04653   1.398
+(1 observation deleted due to missingness)
+> data(soup, package = "ordinal")
+> soup$PROD[1] <- NA
+> c1a <- clm(ordered(SURENESS)~PROD, data=soup)
+> summary(c1a)
+formula: ordered(SURENESS) ~ PROD
+data:    soup
+
+ link  threshold nobs logLik   AIC     niter max.grad cond.H 
+ logit flexible  1846 -2689.15 5390.30 6(1)  2.56e-12 1.1e+02
+
+Coefficients:
+         Estimate Std. Error z value Pr(>|z|)    
+PRODTest  1.14774    0.08932   12.85   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+    Estimate Std. Error z value
+1|2 -1.40278    0.08171 -17.167
+2|3 -0.42216    0.06962  -6.064
+3|4 -0.09849    0.06882  -1.431
+4|5  0.15373    0.06898   2.229
+5|6  0.81613    0.07188  11.353
+(1 observation deleted due to missingness)
+> c2a <- clm(ordered(SURENESS)~PROD, scale = ~PROD, data=soup)
+> summary(c2a)
+formula: ordered(SURENESS) ~ PROD
+scale:   ~PROD
+data:    soup
+
+ link  threshold nobs logLik   AIC     niter max.grad cond.H 
+ logit flexible  1846 -2686.51 5387.03 8(1)  5.41e-07 1.0e+02
+
+Coefficients:
+         Estimate Std. Error z value Pr(>|z|)    
+PRODTest   1.3009     0.1192   10.91   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+log-scale coefficients:
+         Estimate Std. Error z value Pr(>|z|)  
+PRODTest   0.1494     0.0651   2.295   0.0217 *
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+    Estimate Std. Error z value
+1|2 -1.48982    0.09217 -16.163
+2|3 -0.44981    0.07186  -6.260
+3|4 -0.10441    0.07000  -1.492
+4|5  0.16655    0.07031   2.369
+5|6  0.88740    0.07969  11.136
+(1 observation deleted due to missingness)
+> c3a <- clm(ordered(SURENESS)~1, scale = ~PROD, data=soup)
+> summary(c3a)
+formula: ordered(SURENESS) ~ 1
+scale:   ~PROD
+data:    soup
+
+ link  threshold nobs logLik   AIC     niter max.grad cond.H 
+ logit flexible  1846 -2771.22 5554.43 10(1) 6.68e-13 6.9e+01
+
+log-scale coefficients:
+         Estimate Std. Error z value Pr(>|z|)  
+PRODTest -0.15330    0.06689  -2.292   0.0219 *
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+    Estimate Std. Error z value
+1|2 -1.85700    0.08108 -22.903
+2|3 -0.98437    0.05252 -18.742
+3|4 -0.70562    0.04673 -15.100
+4|5 -0.49061    0.04395 -11.163
+5|6  0.06723    0.04667   1.441
+(1 observation deleted due to missingness)
+> soup$SURENESS[10] <- NA
+> c1a <- clm(ordered(SURENESS)~PROD, data=soup)
+> summary(c1a)
+formula: ordered(SURENESS) ~ PROD
+data:    soup
+
+ link  threshold nobs logLik   AIC     niter max.grad cond.H 
+ logit flexible  1845 -2687.53 5387.07 6(1)  2.55e-12 1.1e+02
+
+Coefficients:
+         Estimate Std. Error z value Pr(>|z|)    
+PRODTest  1.14581    0.08934   12.82   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+    Estimate Std. Error z value
+1|2 -1.40237    0.08175 -17.155
+2|3 -0.42475    0.06968  -6.096
+3|4 -0.10080    0.06887  -1.464
+4|5  0.15158    0.06902   2.196
+5|6  0.81421    0.07191  11.322
+(2 observations deleted due to missingness)
+> c2a <- clm(ordered(SURENESS)~PROD, scale = ~PROD, data=soup)
+> summary(c2a)
+formula: ordered(SURENESS) ~ PROD
+scale:   ~PROD
+data:    soup
+
+ link  threshold nobs logLik   AIC     niter max.grad cond.H 
+ logit flexible  1845 -2684.93 5383.86 8(1)  5.12e-07 1.0e+02
+
+Coefficients:
+         Estimate Std. Error z value Pr(>|z|)    
+PRODTest   1.2979     0.1192   10.89   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+log-scale coefficients:
+         Estimate Std. Error z value Pr(>|z|)  
+PRODTest  0.14853    0.06514    2.28   0.0226 *
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+    Estimate Std. Error z value
+1|2 -1.48896    0.09222 -16.147
+2|3 -0.45241    0.07192  -6.290
+3|4 -0.10681    0.07004  -1.525
+4|5  0.16422    0.07034   2.335
+5|6  0.88500    0.07970  11.104
+(2 observations deleted due to missingness)
+> c3a <- clm(ordered(SURENESS)~1, scale = ~PROD, data=soup)
+> summary(c3a)
+formula: ordered(SURENESS) ~ 1
+scale:   ~PROD
+data:    soup
+
+ link  threshold nobs logLik   AIC     niter max.grad cond.H 
+ logit flexible  1845 -2769.23 5550.46 10(1) 1.12e-12 6.9e+01
+
+log-scale coefficients:
+         Estimate Std. Error z value Pr(>|z|)  
+PRODTest -0.15410    0.06688  -2.304   0.0212 *
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+    Estimate Std. Error z value
+1|2 -1.85563    0.08111 -22.877
+2|3 -0.98586    0.05259 -18.745
+3|4 -0.70689    0.04676 -15.116
+4|5 -0.49176    0.04395 -11.188
+5|6  0.06616    0.04661   1.419
+(2 observations deleted due to missingness)
+> 
+> ## na.actions:
+> c4a <- clm(ordered(SURENESS)~PROD, scale = ~PROD, data=soup,
++            na.action=na.omit)
+> summary(c4a)
+formula: ordered(SURENESS) ~ PROD
+scale:   ~PROD
+data:    soup
+
+ link  threshold nobs logLik   AIC     niter max.grad cond.H 
+ logit flexible  1845 -2684.93 5383.86 8(1)  5.12e-07 1.0e+02
+
+Coefficients:
+         Estimate Std. Error z value Pr(>|z|)    
+PRODTest   1.2979     0.1192   10.89   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+log-scale coefficients:
+         Estimate Std. Error z value Pr(>|z|)  
+PRODTest  0.14853    0.06514    2.28   0.0226 *
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+    Estimate Std. Error z value
+1|2 -1.48896    0.09222 -16.147
+2|3 -0.45241    0.07192  -6.290
+3|4 -0.10681    0.07004  -1.525
+4|5  0.16422    0.07034   2.335
+5|6  0.88500    0.07970  11.104
+(2 observations deleted due to missingness)
+> 
+> tC1 <- try(clm(ordered(SURENESS)~PROD, scale = ~PROD, data=soup,
++                na.action=na.fail), silent = TRUE)
+> stopifnot(inherits(tC1, "try-error"))
+> 
+> c4a <- clm(ordered(SURENESS)~PROD, scale = ~PROD, data=soup,
++            na.action=na.exclude)
+> summary(c4a)
+formula: ordered(SURENESS) ~ PROD
+scale:   ~PROD
+data:    soup
+
+ link  threshold nobs logLik   AIC     niter max.grad cond.H 
+ logit flexible  1845 -2684.93 5383.86 8(1)  5.12e-07 1.0e+02
+
+Coefficients:
+         Estimate Std. Error z value Pr(>|z|)    
+PRODTest   1.2979     0.1192   10.89   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+log-scale coefficients:
+         Estimate Std. Error z value Pr(>|z|)  
+PRODTest  0.14853    0.06514    2.28   0.0226 *
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+    Estimate Std. Error z value
+1|2 -1.48896    0.09222 -16.147
+2|3 -0.45241    0.07192  -6.290
+3|4 -0.10681    0.07004  -1.525
+4|5  0.16422    0.07034   2.335
+5|6  0.88500    0.07970  11.104
+(2 observations deleted due to missingness)
+> 
+> tC2 <- try(clm(ordered(SURENESS)~PROD, scale = ~PROD, data=soup,
++                 na.action=na.pass), silent = TRUE)
+> stopifnot(inherits(tC2, "try-error"))
+> 
+> ## Subset:
+> data(soup, package="ordinal")
+> c4a <- clm(ordered(SURENESS)~PROD, scale = ~PROD, data=soup,
++            subset = 1:100)
+> c4a <- clm(ordered(SURENESS)~1, scale = ~PROD, data=soup,
++            subset = 1:100)
+> c4a <- clm(ordered(SURENESS)~PROD, data=soup,
++            subset = 1:100)
+> c4a <- clm(ordered(SURENESS)~1, data=soup,
++            subset = 1:100)
+> 
+> ## Offset:
+> data(soup, package = "ordinal")
+> set.seed(290980)
+> offs <- runif(nrow(soup))
+> c4a <- clm(ordered(SURENESS)~PROD + offset(offs),
++            scale = ~PROD, data=soup, subset = 1:100)
+> summary(c4a)
+formula: ordered(SURENESS) ~ PROD + offset(offs)
+scale:   ~PROD
+data:    soup
+subset:  1:100
+
+ link  threshold nobs logLik  AIC    niter max.grad cond.H 
+ logit flexible  100  -139.58 293.17 9(2)  1.41e-07 2.0e+02
+
+Coefficients:
+         Estimate Std. Error z value Pr(>|z|)    
+PRODTest   2.4410     0.7091   3.443 0.000576 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+log-scale coefficients:
+         Estimate Std. Error z value Pr(>|z|)  
+PRODTest   0.5105     0.2671   1.911    0.056 .
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+    Estimate Std. Error z value
+1|2  -1.0470     0.4019  -2.605
+2|3   0.4213     0.3106   1.356
+3|4   0.5488     0.3106   1.767
+4|5   0.9217     0.3162   2.915
+5|6   2.0775     0.4062   5.114
+> 
+> c4a <- clm(ordered(SURENESS)~PROD + offset(offs),
++            scale = ~PROD + offset(offs), data=soup, subset = 1:100)
+> summary(c4a)
+formula: ordered(SURENESS) ~ PROD + offset(offs)
+scale:   ~PROD + offset(offs)
+data:    soup
+subset:  1:100
+
+ link  threshold nobs logLik  AIC    niter max.grad cond.H 
+ logit flexible  100  -143.12 300.24 9(2)  5.32e-09 1.9e+02
+
+Coefficients:
+         Estimate Std. Error z value Pr(>|z|)   
+PRODTest    3.344      1.020   3.277  0.00105 **
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+log-scale coefficients:
+         Estimate Std. Error z value Pr(>|z|)
+PRODTest   0.4412     0.2753   1.603    0.109
+
+Threshold coefficients:
+    Estimate Std. Error z value
+1|2 -2.09797    0.62565  -3.353
+2|3  0.06671    0.46874   0.142
+3|4  0.25559    0.46525   0.549
+4|5  0.80178    0.46743   1.715
+5|6  2.46041    0.59193   4.157
+> 
+> off2 <- offs
+> c4a <- clm(ordered(SURENESS)~PROD + offset(offs),
++            scale = ~PROD + offset(off2), data=soup, subset = 1:100)
+> summary(c4a)
+formula: ordered(SURENESS) ~ PROD + offset(offs)
+scale:   ~PROD + offset(off2)
+data:    soup
+subset:  1:100
+
+ link  threshold nobs logLik  AIC    niter max.grad cond.H 
+ logit flexible  100  -143.12 300.24 9(2)  5.32e-09 1.9e+02
+
+Coefficients:
+         Estimate Std. Error z value Pr(>|z|)   
+PRODTest    3.344      1.020   3.277  0.00105 **
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+log-scale coefficients:
+         Estimate Std. Error z value Pr(>|z|)
+PRODTest   0.4412     0.2753   1.603    0.109
+
+Threshold coefficients:
+    Estimate Std. Error z value
+1|2 -2.09797    0.62565  -3.353
+2|3  0.06671    0.46874   0.142
+3|4  0.25559    0.46525   0.549
+4|5  0.80178    0.46743   1.715
+5|6  2.46041    0.59193   4.157
+> 
+> c4a <- clm(ordered(SURENESS)~PROD,
++            scale = ~PROD + offset(offs), data=soup, subset = 1:100)
+> summary(c4a)
+formula: ordered(SURENESS) ~ PROD
+scale:   ~PROD + offset(offs)
+data:    soup
+subset:  1:100
+
+ link  threshold nobs logLik  AIC    niter max.grad cond.H 
+ logit flexible  100  -142.15 298.31 10(2) 7.69e-10 1.8e+02
+
+Coefficients:
+         Estimate Std. Error z value Pr(>|z|)   
+PRODTest    3.283      1.016   3.231  0.00123 **
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+log-scale coefficients:
+         Estimate Std. Error z value Pr(>|z|)
+PRODTest   0.4263     0.2801   1.522    0.128
+
+Threshold coefficients:
+    Estimate Std. Error z value
+1|2  -2.4698     0.6308  -3.915
+2|3  -0.2916     0.4668  -0.625
+3|4  -0.1005     0.4628  -0.217
+4|5   0.4484     0.4638   0.967
+5|6   2.1036     0.5864   3.587
+> 
+> ## data as matrix:
+> dat26M <- as.matrix(dat26)
+> m1 <- clm(sureness ~ prod, scale = ~prod, data = dat26,
++           weights = wghts, link = "logit")
+> summary(m1)
+formula: sureness ~ prod
+scale:   ~prod
+data:    dat26
+
+ link  threshold nobs logLik   AIC     niter max.grad cond.H 
+ logit flexible  1847 -2687.74 5389.49 8(1)  5.09e-07 1.0e+02
+
+Coefficients:
+         Estimate Std. Error z value Pr(>|z|)    
+prodTest    1.296      0.119   10.89   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+log-scale coefficients:
+         Estimate Std. Error z value Pr(>|z|)  
+prodTest   0.1480     0.0651   2.273    0.023 *
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+    Estimate Std. Error z value
+1|2 -1.49126    0.09215 -16.183
+2|3 -0.45218    0.07182  -6.296
+3|4 -0.10721    0.06995  -1.533
+4|5  0.16337    0.07025   2.325
+5|6  0.88291    0.07957  11.096
+> 
+> ## data in enclosing environment:
+> attach(soup)
+> m1 <- clm(SURENESS ~ PROD, scale = ~PROD)
+> summary(m1)
+formula: SURENESS ~ PROD
+scale:   ~PROD
+
+ link  threshold nobs logLik   AIC     niter max.grad cond.H 
+ logit flexible  1847 -2687.74 5389.49 8(1)  5.09e-07 1.0e+02
+
+Coefficients:
+         Estimate Std. Error z value Pr(>|z|)    
+PRODTest    1.296      0.119   10.89   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+log-scale coefficients:
+         Estimate Std. Error z value Pr(>|z|)  
+PRODTest   0.1480     0.0651   2.273    0.023 *
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+    Estimate Std. Error z value
+1|2 -1.49126    0.09215 -16.183
+2|3 -0.45218    0.07182  -6.296
+3|4 -0.10721    0.06995  -1.533
+4|5  0.16337    0.07025   2.325
+5|6  0.88291    0.07957  11.096
+> detach(soup)
+> 
+> ##################################################################
+> ### Parameter estimates were not correct with large scale effects due
+> ### to end cut-points being \pm 100. This is not enough for
+> ### location-scale model, but seems to be for location only models.
+> ### Bug report from Ioannis Kosmidis <ioannis@stats.ucl.ac.uk>:
+> 
+> ### A 2x3 contigency table that will give a large estimated value of
+> ### zeta
+> x <- rep(0:1, each = 3)
+> response <- factor(rep(c(1, 2, 3), times = 2))
+> freq <- c(1, 11, 1, 13, 1, 14)
+> totals <- rep(tapply(freq, x, sum), each = 3)
+> Dat <- data.frame(response, x, freq)
+> 
+> ### Fitting a cumulative link model with dispersion effects
+> modClm <- clm(response ~ x, scale = ~ x, weights = freq, data = Dat,
++              control = clm.control(grtol = 1e-10, convTol = 1e-10))
+> summary(modClm)
+formula: response ~ x
+scale:   ~x
+data:    Dat
+
+ link  threshold nobs logLik AIC   niter max.grad cond.H 
+ logit flexible  41   -29.98 67.96 10(3) 9.23e-10 2.4e+02
+
+Coefficients:
+  Estimate Std. Error z value Pr(>|z|)
+x    2.485     13.168   0.189     0.85
+
+log-scale coefficients:
+  Estimate Std. Error z value Pr(>|z|)    
+x    3.548      1.023   3.468 0.000524 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+    Estimate Std. Error z value
+1|2   -2.485      1.041  -2.387
+2|3    2.485      1.041   2.387
+> ### The maximized log-likelihood for this saturated model should be
+> sum(freq*log(freq/totals))
+[1] -29.97808
+> # > sum(freq*log(freq/totals))
+> # [1] -29.97808
+> ### but apparently clm fails to maximixe the log-likelihood
+> modClm$logLik
+[1] -29.97808
+> # > modClm$logLik
+> # [1] -30.44452
+> stopifnot(isTRUE(all.equal(sum(freq*log(freq/totals)), modClm$logLik)))
+> 
+> ### The estimates reported by clm are
+> coef(modClm)
+      1|2       2|3         x         x 
+-2.484907  2.484907  2.484907  3.547588 
+> coef.res <- structure(c(-2.48490664104217, 2.48490665578163,
++                         2.48490659188594,
++                         3.54758796387530), .Names = c("1|2", "2|3",
++                                              "x", "x"))
+> stopifnot(isTRUE(all.equal(coef.res, coef(modClm))))
+> # > modClm$coefficients
+> #      1|2       2|3         x         x
+> # -2.297718  2.297038  1.239023  2.834285
+> ### while they should be (from my own software)
+> #      1|2       2|3         x    disp.x
+> #-2.484907  2.484907  2.484907  3.547588
+> convergence(modClm)
+ nobs logLik niter max.grad cond.H  logLik.Error
+ 41   -29.98 10(3) 9.23e-10 2.4e+02 <1e-10      
+
+    Estimate Std.Err  Gradient     Error Cor.Dec Sig.Dig
+1|2   -2.485   1.041  3.50e-10  5.32e-10       8       9
+2|3    2.485   1.041 -1.60e-10 -5.32e-10       8       9
+x      2.485  13.168 -1.90e-10 -3.54e-08       7       8
+x      3.548   1.023 -9.23e-10 -1.55e-09       8       9
+
+Eigen values of Hessian:
+1.374792 0.855786 0.785151 0.005766 
+
+Convergence message from clm:
+(0) successful convergence 
+In addition: Absolute and relative convergence criteria were met 
+
+> 
+> ##################################################################
+> 
