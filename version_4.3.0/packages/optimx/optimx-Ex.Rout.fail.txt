@@ -1,0 +1,1781 @@
+
+R version 4.3.0 (2023-04-21) -- "Already Tomorrow"
+Copyright (C) 2023 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "optimx"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('optimx')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("Rcgmin")
+> ### * Rcgmin
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rcgmin
+> ### Title: An R implementation of a nonlinear conjugate gradient algorithm
+> ###   with the Dai / Yuan update and restart. Based on Nash (1979)
+> ###   Algorithm 22 for its main structure.
+> ### Aliases: Rcgmin
+> ### Keywords: nonlinear optimize
+> 
+> ### ** Examples
+> 
+> #####################
+> require(numDeriv)
+Loading required package: numDeriv
+> ## Rosenbrock Banana function
+> fr <- function(x) {
++     x1 <- x[1]
++     x2 <- x[2]
++     100 * (x2 - x1 * x1)^2 + (1 - x1)^2
++ }
+> grr <- function(x) { ## Gradient of 'fr'
++     x1 <- x[1]
++     x2 <- x[2]
++     c(-400 * x1 * (x2 - x1 * x1) - 2 * (1 - x1),
++        200 *      (x2 - x1 * x1))
++ }
+> grn<-function(x){
++     gg<-grad(fr, x)
++ }  
+> ansrosenbrock0 <- Rcgmin(fn=fr,gr=grn, par=c(1,2))
+> print(ansrosenbrock0) # use print to allow copy to separate file that 
+$par
+[1] 0.9999999 0.9999999
+
+$value
+[1] 2.769504e-15
+
+$counts
+[1] 68 30
+
+$convergence
+[1] 0
+
+$message
+[1] "Rcgmin seems to have converged"
+
+> #    can be called using source()
+> #####################
+> # Simple bounds and masks test
+> bt.f<-function(x){
++  sum(x*x)
++ }
+> 
+> bt.g<-function(x){
++   gg<-2.0*x
++ }
+> n<-10
+> xx<-rep(0,n)
+> lower<-rep(0,n)
+> upper<-lower # to get arrays set
+> bdmsk<-rep(1,n)
+> bdmsk[(trunc(n/2)+1)]<-0
+> for (i in 1:n) { 
++    lower[i]<-1.0*(i-1)*(n-1)/n
++    upper[i]<-1.0*i*(n+1)/n
++ }
+> xx<-0.5*(lower+upper)
+> ansbt<-Rcgmin(xx, bt.f, bt.g, lower, upper, bdmsk, control=list(trace=1))
+admissible =  TRUE 
+maskadded =  FALSE 
+parchanged =  FALSE 
+Rcgmin -- J C Nash 2009 - bounds constraint version of new CG
+an R implementation of Alg 22 with Yuan/Dai modification
+Initial function value= 337.525 
+Initial fn= 337.525 
+1   0   1   337.525   last decrease= NA 
+3   1   2   251.455   last decrease= 86.06996 
+Yuan/Dai cycle reset
+3   2   1   251.455   last decrease= NA 
+5   3   2   249.2466   last decrease= 2.208412 
+Yuan/Dai cycle reset
+5   4   1   249.2466   last decrease= NA 
+7   5   2   247.4157   last decrease= 1.830923 
+Yuan/Dai cycle reset
+7   6   1   247.4157   last decrease= NA 
+9   7   2   245.9974   last decrease= 1.41828 
+Yuan/Dai cycle reset
+9   8   1   245.9974   last decrease= NA 
+11   9   2   243.7158   last decrease= 2.281617 
+Yuan/Dai cycle reset
+11   10   1   243.7158   last decrease= NA 
+13   11   2   242.6786   last decrease= 1.037168 
+Yuan/Dai cycle reset
+13   12   1   242.6786   last decrease= NA 
+15   13   2   241.9403   last decrease= 0.7383196 
+Yuan/Dai cycle reset
+15   14   1   241.9403   last decrease= NA 
+17   15   2   241.5045   last decrease= 0.4358326 
+Yuan/Dai cycle reset
+17   16   1   241.5045   last decrease= NA 
+19   17   2   241.4025   last decrease= 0.1019875 
+Very small gradient -- gradsqr = 0 
+Rcgmin seems to have converged 
+> print(ansbt)
+$par
+ [1] 0.00 0.90 1.80 2.70 3.60 5.55 5.40 6.30 7.20 8.10
+
+$value
+[1] 241.4025
+
+$counts
+[1] 19 18
+
+$convergence
+[1] 0
+
+$message
+[1] "Rcgmin seems to have converged"
+
+$bdmsk
+ [1]  1 -3 -3 -3 -3  0 -3 -3 -3 -3
+
+> #####################
+> genrose.f<- function(x, gs=NULL){ # objective function
++ ## One generalization of the Rosenbrock banana valley function (n parameters)
++ 	n <- length(x)
++         if(is.null(gs)) { gs=100.0 }
++ 	fval<-1.0 + sum (gs*(x[1:(n-1)]^2 - x[2:n])^2 + (x[2:n] - 1)^2)
++         return(fval)
++ }
+> genrose.g <- function(x, gs=NULL){
++ # vectorized gradient for genrose.f
++ # Ravi Varadhan 2009-04-03
++ 	n <- length(x)
++         if(is.null(gs)) { gs=100.0 }
++ 	gg <- as.vector(rep(0, n))
++ 	tn <- 2:n
++ 	tn1 <- tn - 1
++ 	z1 <- x[tn] - x[tn1]^2
++ 	z2 <- 1 - x[tn]
++ 	gg[tn] <- 2 * (gs * z1 - z2)
++ 	gg[tn1] <- gg[tn1] - 4 * gs * x[tn1] * z1
++ 	gg
++ }
+> 
+> # analytic gradient test
+> xx<-rep(pi,10)
+> lower<-NULL
+> upper<-NULL
+> bdmsk<-NULL
+> genrosea<-Rcgmin(xx,genrose.f, genrose.g, gs=10)
+> genrosenn<-Rcgmin(xx,genrose.f, gs=10) # use local numerical gradient
+> cat("genrosea uses analytic gradient\n")
+genrosea uses analytic gradient
+> print(genrosea)
+$par
+ [1] 1 1 1 1 1 1 1 1 1 1
+
+$value
+[1] 1
+
+$counts
+[1] 87 39
+
+$convergence
+[1] 0
+
+$message
+[1] "Rcgmin seems to have converged"
+
+> cat("genrosenn uses default gradient approximation\n")
+genrosenn uses default gradient approximation
+> print(genrosenn)
+$par
+ [1] 1 1 1 1 1 1 1 1 1 1
+
+$value
+[1] 1
+
+$counts
+[1] 104  48
+
+$convergence
+[1] 0
+
+$message
+[1] "Rcgmin seems to have converged"
+
+> cat("timings B vs U\n")
+timings B vs U
+> lo<-rep(-100,10)
+> up<-rep(100,10)
+> bdmsk<-rep(1,10)
+> tb<-system.time(ab<-Rcgminb(xx,genrose.f, genrose.g, lower=lo, upper=up, bdmsk=bdmsk))[1]
+> tu<-system.time(au<-Rcgminu(xx,genrose.f, genrose.g))[1]
+> cat("times U=",tu,"   B=",tb,"\n")
+times U= 0.002    B= 0.002 
+> cat("solution Rcgminu\n")
+solution Rcgminu
+> print(au)
+$par
+ [1] 1 1 1 1 1 1 1 1 1 1
+
+$value
+[1] 1
+
+$counts
+[1] 146  69
+
+$convergence
+[1] 0
+
+$message
+[1] "Rcgmin seems to have converged"
+
+> cat("solution Rcgminb\n")
+solution Rcgminb
+> print(ab)
+$par
+ [1] 1.0000000 1.0000000 1.0000000 1.0000000 1.0000000 1.0000000 1.0000000
+ [8] 1.0000000 1.0000000 0.9999999
+
+$value
+[1] 1
+
+$counts
+[1] 120  58
+
+$convergence
+[1] 0
+
+$message
+[1] "Rcgmin seems to have converged"
+
+$bdmsk
+ [1] 1 1 1 1 1 1 1 1 1 1
+
+> cat("diff fu-fb=",au$value-ab$value,"\n")
+diff fu-fb= -1.110223e-14 
+> cat("max abs parameter diff = ", max(abs(au$par-ab$par)),"\n")
+max abs parameter diff =  8.590758e-08 
+> maxfn<-function(x) {
++       	n<-length(x)
++ 	ss<-seq(1,n)
++ 	f<-10-(crossprod(x-ss))^2
++ 	f<-as.numeric(f)
++ 	return(f)
++ }
+> 
+> gmaxfn<-function(x) {
++      gg<-grad(maxfn, x) 
++ }
+> negmaxfn<-function(x) {
++ 	f<-(-1)*maxfn(x)
++ 	return(f)
++ }
+> cat("test that maximize=TRUE works correctly\n")
+test that maximize=TRUE works correctly
+> n<-6
+> xx<-rep(1,n)
+> ansmax<-Rcgmin(xx,maxfn, control=list(maximize=TRUE,trace=1))
+WARNING: forward gradient approximation being used
+Warning in Rcgminu(par, fn, gr, control = control, ...) :
+  Rcgmin no longer supports maximize 111121 -- see documentation
+> print(ansmax)
+[[1]]
+[1] 1 1 1 1 1 1
+
+[[2]]
+[1] NA
+
+[[3]]
+[1] 0 0
+
+[[4]]
+[1] 9999
+
+[[5]]
+[1] "Rcgmin no longer supports maximize 111121"
+
+> cat("using the negmax function should give same parameters\n")
+using the negmax function should give same parameters
+> ansnegmax<-Rcgmin(xx,negmaxfn, control=list(trace=1))
+WARNING: forward gradient approximation being used
+Rcgminu -- J C Nash 2009 - unconstrained version CG min
+an R implementation of Alg 22 with Yuan/Dai modification
+Initial function value= 3015 
+Initial fn= 3015 
+1   0   1   3015   last decrease= NA 
+***6   1   2   -9.572997   last decrease= 3024.573 
+Yuan/Dai cycle reset
+6   2   1   -9.572997   last decrease= NA 
+8   3   2   -9.917438   last decrease= 0.3444411 
+Yuan/Dai cycle reset
+8   4   1   -9.917438   last decrease= NA 
+10   5   2   -9.988384   last decrease= 0.07094646 
+Yuan/Dai cycle reset
+10   6   1   -9.988384   last decrease= NA 
+12   7   2   -9.998354   last decrease= 0.009969734 
+Yuan/Dai cycle reset
+12   8   1   -9.998354   last decrease= NA 
+14   9   2   -9.999767   last decrease= 0.00141289 
+Yuan/Dai cycle reset
+14   10   1   -9.999767   last decrease= NA 
+16   11   2   -9.99996   last decrease= 0.0001927177 
+Yuan/Dai cycle reset
+16   12   1   -9.99996   last decrease= NA 
+18   13   2   -9.999992   last decrease= 3.289017e-05 
+Yuan/Dai cycle reset
+18   14   1   -9.999992   last decrease= NA 
+20   15   2   -9.999999   last decrease= 6.118517e-06 
+Yuan/Dai cycle reset
+20   16   1   -9.999999   last decrease= NA 
+22   17   2   -10   last decrease= 1.20202e-06 
+Yuan/Dai cycle reset
+22   18   1   -10   last decrease= NA 
+24   19   2   -10   last decrease= 2.163939e-07 
+Yuan/Dai cycle reset
+24   20   1   -10   last decrease= NA 
+25   21   2   -10   last decrease= 3.329639e-10 
+27   22   3   -10   last decrease= 3.857762e-08 
+Yuan/Dai cycle reset
+27   23   1   -10   last decrease= NA 
+28   24   2   -10   last decrease= 6.269296e-11 
+Yuan/Dai cycle reset
+28   25   1   -10   last decrease= NA 
+30   26   2   -10   last decrease= 1.204713e-08 
+Yuan/Dai cycle reset
+30   27   1   -10   last decrease= NA 
+31   28   2   -10   last decrease= 1.369571e-11 
+Yuan/Dai cycle reset
+31   29   1   -10   last decrease= NA 
+32   30   2   -10   last decrease= 1.342393e-11 
+34   31   3   -10   last decrease= 1.554561e-09 
+Yuan/Dai cycle reset
+34   32   1   -10   last decrease= NA 
+36   33   2   -10   last decrease= 3.498997e-10 
+Yuan/Dai cycle reset
+36   34   1   -10   last decrease= NA 
+37   35   2   -10   last decrease= 8.308021e-12 
+39   36   3   -10   last decrease= 9.363053e-10 
+Yuan/Dai cycle reset
+39   37   1   -10   last decrease= NA 
+40   38   2   -10   last decrease= 6.048495e-12 
+42   39   3   -10   last decrease= 3.349106e-09 
+Very small gradient -- gradsqr = 2.96061751753889e-13 
+Rcgmin seems to have converged 
+> print(ansnegmax)
+$par
+[1] 1.000000 1.999315 2.998611 3.997933 4.997264 5.996588
+
+$value
+[1] -10
+
+$counts
+[1] 42 40
+
+$convergence
+[1] 0
+
+$message
+[1] "Rcgmin seems to have converged"
+
+> #####################  From Rvmmin.Rd
+> cat("test bounds and masks\n")
+test bounds and masks
+> nn<-4
+> startx<-rep(pi,nn)
+> lo<-rep(2,nn)
+> up<-rep(10,nn)
+> grbds1<-Rcgmin(startx,genrose.f, gr=genrose.g,lower=lo,upper=up) 
+> print(grbds1)
+$par
+[1]  2.000000  2.000000  3.181997 10.000000
+
+$value
+[1] 556.2391
+
+$counts
+[1] 34 24
+
+$convergence
+[1] 0
+
+$message
+[1] "Rcgmin seems to have converged"
+
+$bdmsk
+[1] -3 -3  1 -1
+
+> cat("test lower bound only\n")
+test lower bound only
+> nn<-4
+> startx<-rep(pi,nn)
+> lo<-rep(2,nn)
+> grbds2<-Rcgmin(startx,genrose.f, gr=genrose.g,lower=lo) 
+> print(grbds2)
+$par
+[1]  2.000000  2.000000  3.318724 10.914782
+
+$value
+[1] 553.0761
+
+$counts
+[1] 1125  156
+
+$convergence
+[1] 1
+
+$message
+[1] "Too many function evaluations (> 1118) "
+
+$bdmsk
+[1] -3 -3  1  1
+
+> cat("test lower bound single value only\n")
+test lower bound single value only
+> nn<-4
+> startx<-rep(pi,nn)
+> lo<-2
+> up<-rep(10,nn)
+> grbds3<-Rcgmin(startx,genrose.f, gr=genrose.g,lower=lo) 
+> print(grbds3)
+$par
+[1]  2.000000  2.000000  3.318724 10.914782
+
+$value
+[1] 553.0761
+
+$counts
+[1] 1125  156
+
+$convergence
+[1] 1
+
+$message
+[1] "Too many function evaluations (> 1118) "
+
+$bdmsk
+[1] -3 -3  1  1
+
+> cat("test upper bound only\n")
+test upper bound only
+> nn<-4
+> startx<-rep(pi,nn)
+> lo<-rep(2,nn)
+> up<-rep(10,nn)
+> grbds4<-Rcgmin(startx,genrose.f, gr=genrose.g,upper=up) 
+> print(grbds4)
+$par
+[1] 1 1 1 1
+
+$value
+[1] 1
+
+$counts
+[1] 92 43
+
+$convergence
+[1] 0
+
+$message
+[1] "Rcgmin seems to have converged"
+
+$bdmsk
+[1] 1 1 1 1
+
+> cat("test upper bound single value only\n")
+test upper bound single value only
+> nn<-4
+> startx<-rep(pi,nn)
+> grbds5<-Rcgmin(startx,genrose.f, gr=genrose.g,upper=10) 
+> print(grbds5)
+$par
+[1] 1 1 1 1
+
+$value
+[1] 1
+
+$counts
+[1] 92 43
+
+$convergence
+[1] 0
+
+$message
+[1] "Rcgmin seems to have converged"
+
+$bdmsk
+[1] 1 1 1 1
+
+> cat("test masks only\n")
+test masks only
+> nn<-6
+> bd<-c(1,1,0,0,1,1)
+> startx<-rep(pi,nn)
+> grbds6<-Rcgmin(startx,genrose.f, gr=genrose.g,bdmsk=bd) 
+> print(grbds6)
+$par
+[1]  1.331105  1.771839  3.141593  3.141593  5.890350 34.362593
+
+$value
+[1] 7268.939
+
+$counts
+[1] 1332  179
+
+$convergence
+[1] 1
+
+$message
+[1] "Too many function evaluations (> 1323) "
+
+$bdmsk
+[1] 1 1 0 0 1 1
+
+> cat("test upper bound on first two elements only\n")
+test upper bound on first two elements only
+> nn<-4
+> startx<-rep(pi,nn)
+> upper<-c(10,8, Inf, Inf)
+> grbds7<-Rcgmin(startx,genrose.f, gr=genrose.g,upper=upper) 
+> print(grbds7)
+$par
+[1] 1 1 1 1
+
+$value
+[1] 1
+
+$counts
+[1] 91 43
+
+$convergence
+[1] 0
+
+$message
+[1] "Rcgmin seems to have converged"
+
+$bdmsk
+[1] 1 1 1 1
+
+> cat("test lower bound on first two elements only\n")
+test lower bound on first two elements only
+> nn<-4
+> startx<-rep(0,nn)
+> lower<-c(0,1.1, -Inf, -Inf)
+> grbds8<-Rcgmin(startx,genrose.f,genrose.g,lower=lower, control=list(maxit=2000)) 
+Warning in Rcgmin(startx, genrose.f, genrose.g, lower = lower, control = list(maxit = 2000)) :
+  Parameter out of bounds has been moved to nearest bound
+Warning in Rcgminb(par, fn, gr, lower = lower, upper = upper, bdmsk = bdmsk,  :
+  x[2], set 0 to lower bound = 1.1
+> print(grbds8)
+$par
+[1] 0.000000 1.100000 1.197717 1.430224
+
+$value
+[1] 122.2511
+
+$counts
+[1] 57 23
+
+$convergence
+[1] 0
+
+$message
+[1] "Rcgmin seems to have converged"
+
+$bdmsk
+[1]  1 -3  1  1
+
+> cat("test n=1 problem using simple squares of parameter\n")
+test n=1 problem using simple squares of parameter
+> sqtst<-function(xx) {
++    res<-sum((xx-2)*(xx-2))
++ }
+> gsqtst<-function(xx) {
++     gg<-2*(xx-2)
++ }
+> ######### One dimension test
+> nn<-1
+> startx<-rep(0,nn)
+> onepar<-Rcgmin(startx,sqtst,  gr=gsqtst,control=list(trace=1)) 
+Rcgminu -- J C Nash 2009 - unconstrained version CG min
+an R implementation of Alg 22 with Yuan/Dai modification
+Initial function value= 4 
+Initial fn= 4 
+1   0   1   4   last decrease= NA 
+*4   1   2   1.774937e-30   last decrease= 4 
+Very small gradient -- gradsqr = 7.09974814698911e-30 
+Rcgmin seems to have converged 
+> print(onepar)
+$par
+[1] 2
+
+$value
+[1] 1.774937e-30
+
+$counts
+[1] 4 2
+
+$convergence
+[1] 0
+
+$message
+[1] "Rcgmin seems to have converged"
+
+> cat("Suppress warnings\n")
+Suppress warnings
+> oneparnw<-Rcgmin(startx,sqtst,  gr=gsqtst,control=list(dowarn=FALSE,trace=1)) 
+Rcgminu -- J C Nash 2009 - unconstrained version CG min
+an R implementation of Alg 22 with Yuan/Dai modification
+Initial function value= 4 
+Initial fn= 4 
+1   0   1   4   last decrease= NA 
+*4   1   2   1.774937e-30   last decrease= 4 
+Very small gradient -- gradsqr = 7.09974814698911e-30 
+Rcgmin seems to have converged 
+> print(oneparnw)
+$par
+[1] 2
+
+$value
+[1] 1.774937e-30
+
+$counts
+[1] 4 2
+
+$convergence
+[1] 0
+
+$message
+[1] "Rcgmin seems to have converged"
+
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:numDeriv’
+
+> nameEx("Rvmmin")
+> ### * Rvmmin
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rvmmin
+> ### Title: Variable metric nonlinear function minimization, driver.
+> ### Aliases: Rvmmin
+> ### Keywords: nonlinear optimize
+> 
+> ### ** Examples
+> 
+> #####################
+> ## All examples for the Rvmmin package are in this .Rd file
+> ##
+> 
+> ## Rosenbrock Banana function
+> fr <- function(x) {
++   x1 <- x[1]
++   x2 <- x[2]
++   100 * (x2 - x1 * x1)^2 + (1 - x1)^2
++ }
+> 
+> ansrosenbrock <- Rvmmin(fn=fr,gr="grfwd", par=c(1,2))
+> print(ansrosenbrock) 
+$par
+[1] 0.9999998 0.9999996
+
+$value
+[1] 4.153593e-14
+
+$counts
+function gradient 
+     178       42 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> cat("\n")
+
+> cat("No gr specified as a test\n")
+No gr specified as a test
+> ansrosenbrock0 <- Rvmmin(fn=fr, par=c(1,2))
+> print(ansrosenbrock0) 
+$par
+[1] 0.9999998 0.9999996
+
+$value
+[1] 4.153593e-14
+
+$counts
+function gradient 
+     178       42 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> # use print to allow copy to separate file that can be called using source()
+> 
+> #####################
+> # Simple bounds and masks test
+> #
+> # The function is a sum of squares, but we impose the 
+> # constraints so that there are lower and upper bounds
+> # away from zero, and parameter 6 is fixed at the initial
+> # value
+> 
+> bt.f<-function(x){
++   sum(x*x)
++ }
+> 
+> bt.g<-function(x){
++   gg<-2.0*x
++ }
+> 
+> n<-10
+> xx<-rep(0,n)
+> lower<-rep(0,n)
+> upper<-lower # to get arrays set
+> bdmsk<-rep(1,n)
+> bdmsk[(trunc(n/2)+1)]<-0
+> for (i in 1:n) { 
++   lower[i]<-1.0*(i-1)*(n-1)/n
++   upper[i]<-1.0*i*(n+1)/n
++ }
+> xx<-0.5*(lower+upper)
+> cat("Initial parameters:")
+Initial parameters:> print(xx)
+ [1] 0.55 1.55 2.55 3.55 4.55 5.55 6.55 7.55 8.55 9.55
+> cat("Lower bounds:")
+Lower bounds:> print(lower)
+ [1] 0.0 0.9 1.8 2.7 3.6 4.5 5.4 6.3 7.2 8.1
+> cat("upper bounds:")
+upper bounds:> print(upper)
+ [1]  1.1  2.2  3.3  4.4  5.5  6.6  7.7  8.8  9.9 11.0
+> cat("Masked (fixed) parameters:")
+Masked (fixed) parameters:> print(which(bdmsk == 0))
+[1] 6
+> 
+> ansbt<-Rvmmin(xx, bt.f, bt.g, lower, upper, bdmsk, control=list(trace=1))
+gradient test tolerance =  6.055454e-06   fval= 337.525 
+ compare to max(abs(gn-ga))/(1+abs(fval)) =  3.500929e-12 
+admissible =  TRUE 
+maskadded =  FALSE 
+parchanged =  FALSE 
+trace= 1 
+Rvmminb -- J C Nash 2009-2015 - an R implementation of Alg 21
+Problem of size n= 10   Dot arguments:
+list()
+Initial fn= 337.525 
+ig= 1   gnorm= 36.74371     1   1   337.525 
+ig= 2   gnorm= 24.90322     2   2   251.455 
+ig= 3   gnorm= 25.81776     3   3   249.2817 
+No acceptable point
+Reset to gradient search
+  3   3   249.2817 
+ig= 4   gnorm= 20.09379     4   4   249.1926 
+ig= 5   gnorm= 22.36815     5   5   247.4161 
+ig= 6   gnorm= 23.16942     6   6   246.008 
+ig= 7   gnorm= 19.65361     7   7   244.8186 
+No acceptable point
+Reset to gradient search
+  7   7   244.8186 
+ig= 8   gnorm= 15.07981     8   8   244.7926 
+ig= 9   gnorm= 16.41624     9   9   244.7858 
+ig= 10   gnorm= 18.16627     10   10   243.7159 
+ig= 11   gnorm= 14.9308     11   11   243.6747 
+No acceptable point
+Reset to gradient search
+  11   11   243.6747 
+ig= 12   gnorm= 10.30963     12   12   243.6746 
+ig= 13   gnorm= 13.07989     13   13   243.6734 
+ig= 14   gnorm= 10.30889     14   14   243.6708 
+No acceptable point
+Reset to gradient search
+  14   14   243.6708 
+ig= 15   gnorm= 7.377883     15   15   243.6708 
+ig= 16   gnorm= 8.552459     16   16   242.6786 
+ig= 17   gnorm= 9.298963     17   17   241.9602 
+No acceptable point
+Reset to gradient search
+  17   17   241.9602 
+ig= 18   gnorm= 5.884787     18   18   241.9602 
+ig= 19   gnorm= 2.318757     19   19   241.9367 
+ig= 20   gnorm= 9.022718     20   20   241.5049 
+ig= 21   gnorm= 5.726068     21   21   241.4995 
+No acceptable point
+Reset to gradient search
+  21   21   241.4995 
+ig= 22   gnorm= 1.904567     22   22   241.4993 
+ig= 23   gnorm= 5.435626     23   23   241.499 
+No acceptable point
+Reset to gradient search
+  23   23   241.499 
+ig= 24   gnorm= 0.6213116     24   24   241.499 
+ig= 25   gnorm= 5.4     25   25   241.4025 
+No acceptable point
+Reset to gradient search
+  25   25   241.4025 
+ig= 26   gnorm= 0   Seem to be done Rvmminb
+> 
+> print(ansbt)
+$par
+ [1] 0.00 0.90 1.80 2.70 3.60 5.55 5.40 6.30 7.20 8.10
+
+$value
+[1] 241.4025
+
+$counts
+function gradient 
+      26       26 
+
+$convergence
+[1] 2
+
+$message
+[1] "Rvmminb appears to have converged"
+
+$bdmsk
+ [1] -3 -3 -3 -3 -3  0 -3 -3 -3 -3
+
+> 
+> #####################
+> # A version of a generalized Rosenbrock problem
+> genrose.f<- function(x, gs=NULL){ # objective function
++   ## One generalization of the Rosenbrock banana valley function (n parameters)
++   n <- length(x)
++   if(is.null(gs)) { gs=100.0 }
++   fval<-1.0 + sum (gs*(x[1:(n-1)]^2 - x[2:n])^2 + (x[2:n] - 1)^2)
++   return(fval)
++ }
+> genrose.g <- function(x, gs=NULL){
++   # vectorized gradient for genrose.f
++   # Ravi Varadhan 2009-04-03
++   n <- length(x)
++   if(is.null(gs)) { gs=100.0 }
++   gg <- as.vector(rep(0, n))
++   tn <- 2:n
++   tn1 <- tn - 1
++   z1 <- x[tn] - x[tn1]^2
++   z2 <- 1 - x[tn]
++   gg[tn] <- 2 * (gs * z1 - z2)
++   gg[tn1] <- gg[tn1] - 4 * gs * x[tn1] * z1
++   gg
++ }
+> 
+> # analytic gradient test
+> xx<-rep(pi,10)
+> lower<-NULL
+> upper<-NULL
+> bdmsk<-NULL
+> genrosea<-Rvmmin(xx,genrose.f, genrose.g, gs=10)
+> genrosenf<-Rvmmin(xx,genrose.f, gr="grfwd", gs=10) # use local numerical gradient
+> genrosenullgr<-Rvmmin(xx,genrose.f, gs=10) # no gradient specified
+> cat("genrosea uses analytic gradient\n")
+genrosea uses analytic gradient
+> print(genrosea)
+$par
+ [1] 1 1 1 1 1 1 1 1 1 1
+
+$value
+[1] 1
+
+$counts
+function gradient 
+      84       44 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> cat("genrosenf uses grfwd standard numerical gradient\n")
+genrosenf uses grfwd standard numerical gradient
+> print(genrosenf)
+$par
+ [1] 1.0000000 1.0000000 1.0000000 1.0000000 1.0000000 1.0000000 1.0000000
+ [8] 0.9999999 0.9999999 0.9999998
+
+$value
+[1] 1
+
+$counts
+function gradient 
+      86       43 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> cat("genrosenullgr has no gradient specified\n")
+genrosenullgr has no gradient specified
+> print(genrosenullgr)
+$par
+ [1] 1.0000000 1.0000000 1.0000000 1.0000000 1.0000000 1.0000000 1.0000000
+ [8] 0.9999999 0.9999999 0.9999998
+
+$value
+[1] 1
+
+$counts
+function gradient 
+      86       43 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> cat("Other numerical gradients can be used.\n")
+Other numerical gradients can be used.
+> 
+> cat("timings B vs U\n")
+timings B vs U
+> lo<-rep(-100,10)
+> up<-rep(100,10)
+> bdmsk<-rep(1,10)
+> tb<-system.time(ab<-Rvmminb(xx,genrose.f, genrose.g, lower=lo, upper=up, bdmsk=bdmsk))[1]
+trace= 0 
+> tu<-system.time(au<-Rvmminu(xx,genrose.f, genrose.g))[1]
+> cat("times U=",tu,"   B=",tb,"\n")
+times U= 0.003    B= 0.006 
+> cat("solution Rvmminu\n")
+solution Rvmminu
+> print(au)
+$par
+ [1] 1 1 1 1 1 1 1 1 1 1
+
+$value
+[1] 1
+
+$counts
+function gradient 
+     105       52 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> cat("solution Rvmminb\n")
+solution Rvmminb
+> print(ab)
+$par
+ [1] -1  1  1  1  1  1  1  1  1  1
+
+$value
+[1] 1
+
+$counts
+function gradient 
+     124       75 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminb appears to have converged"
+
+$bdmsk
+ [1] 1 1 1 1 1 1 1 1 1 1
+
+> cat("diff fu-fb=",au$value-ab$value,"\n")
+diff fu-fb= 0 
+> cat("max abs parameter diff = ", max(abs(au$par-ab$par)),"\n")
+max abs parameter diff =  2 
+> 
+> # Test that Rvmmin will maximize as well as minimize
+> 
+> maxfn<-function(x) {
++   n<-length(x)
++   ss<-seq(1,n)
++   f<-10-(crossprod(x-ss))^2
++   f<-as.numeric(f)
++   return(f)
++ }
+> 
+> 
+> negmaxfn<-function(x) {
++   f<-(-1)*maxfn(x)
++   return(f)
++ }
+> 
+> cat("test that maximize=TRUE works correctly\n")
+test that maximize=TRUE works correctly
+> 
+> n<-6
+> xx<-rep(1,n)
+> ansmax<-Rvmmin(xx,maxfn, gr="grfwd", control=list(maximize=TRUE,trace=1))
+WARNING: using gradient approximation ' grfwd '
+Rvmminu -- J C Nash 2009-2015 - an R implementation of Alg 21
+Problem of size n= 6   Dot arguments:
+list()
+WARNING: using gradient approximation ' grfwd '
+Initial fn= 3015 
+ig= 1   gnorm= 1631.564     1   1   3015 
+***ig= 2   gnorm= 716.2173     5   2   999.2058 
+ig= 3   gnorm= 18.11573     6   3   -2.506907 
+ig= 4   gnorm= 14.92915     7   4   -4.210603 
+ig= 5   gnorm= 4.860729     8   5   -8.703253 
+ig= 6   gnorm= 2.329472     9   6   -9.513671 
+ig= 7   gnorm= 1.044422     10   7   -9.833113 
+ig= 8   gnorm= 0.2672533     11   8   -9.972889 
+ig= 9   gnorm= 0.1602688     12   9   -9.98629 
+ig= 10   gnorm= 0.06052755     13   10   -9.996257 
+ig= 11   gnorm= 0.02744979     14   11   -9.998696 
+ig= 12   gnorm= 0.0116193     15   12   -9.999586 
+ig= 13   gnorm= 0.005059795     16   13   -9.999863 
+ig= 14   gnorm= 0.002186666     17   14   -9.999955 
+ig= 15   gnorm= 0.0009533998     18   15   -9.999985 
+ig= 16   gnorm= 0.0004185269     19   16   -9.999995 
+ig= 17   gnorm= 0.0001866078     20   17   -9.999998 
+ig= 18   gnorm= 8.530205e-05     21   18   -9.999999 
+ig= 19   gnorm= 4.077379e-05     22   19   -10 
+ig= 20   gnorm= 2.096351e-05     23   20   -10 
+ig= 21   gnorm= 1.213078e-05     24   21   -10 
+ig= 22   gnorm= 8.335791e-06     25   22   -10 
+ig= 23   gnorm= 7.028541e-06     26   23   -10 
+ig= 24   gnorm= 6.819888e-06     27   24   -10 
+ig= 25   gnorm= 6.794959e-06     28   25   -10 
+ig= 26   gnorm= 6.71864e-06     29   26   -10 
+ig= 27   gnorm= 6.60629e-06     30   27   -10 
+ig= 28   gnorm= 6.007044e-06     31   28   -10 
+ig= 29   gnorm= 5.604687e-06     32   29   -10 
+ig= 30   gnorm= 2.322784e-06     33   30   -10 
+ig= 31   gnorm= 1.155325e-06     34   31   -10 
+ig= 32   gnorm= 4.628348e-07     35   32   -10 
+ig= 33   gnorm= 2.36925e-07     36   33   -10 
+ig= 34   gnorm= 1.1932e-07     37   34   -10 
+ig= 35   gnorm= 6.413042e-08     38   35   -10 
+ig= 36   gnorm= 0   Seem to be done Rvmminu
+> print(ansmax)
+$par
+[1] 1.000000 1.999988 2.999775 3.999419 4.999384 5.999090
+
+$value
+[1] 10
+
+$counts
+function gradient 
+      39       36 
+
+$convergence
+[1] 2
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> 
+> cat("using the negmax function should give same parameters\n")
+using the negmax function should give same parameters
+> ansnegmax<-Rvmmin(xx,negmaxfn, gr="grfwd", control=list(trace=1))
+WARNING: using gradient approximation ' grfwd '
+Rvmminu -- J C Nash 2009-2015 - an R implementation of Alg 21
+Problem of size n= 6   Dot arguments:
+list()
+WARNING: using gradient approximation ' grfwd '
+Initial fn= 3015 
+ig= 1   gnorm= 1631.564     1   1   3015 
+***ig= 2   gnorm= 716.2173     5   2   999.2058 
+ig= 3   gnorm= 18.11573     6   3   -2.506907 
+ig= 4   gnorm= 14.92915     7   4   -4.210603 
+ig= 5   gnorm= 4.860729     8   5   -8.703253 
+ig= 6   gnorm= 2.329472     9   6   -9.513671 
+ig= 7   gnorm= 1.044422     10   7   -9.833113 
+ig= 8   gnorm= 0.2672533     11   8   -9.972889 
+ig= 9   gnorm= 0.1602688     12   9   -9.98629 
+ig= 10   gnorm= 0.06052755     13   10   -9.996257 
+ig= 11   gnorm= 0.02744979     14   11   -9.998696 
+ig= 12   gnorm= 0.0116193     15   12   -9.999586 
+ig= 13   gnorm= 0.005059795     16   13   -9.999863 
+ig= 14   gnorm= 0.002186666     17   14   -9.999955 
+ig= 15   gnorm= 0.0009533998     18   15   -9.999985 
+ig= 16   gnorm= 0.0004185269     19   16   -9.999995 
+ig= 17   gnorm= 0.0001866078     20   17   -9.999998 
+ig= 18   gnorm= 8.530205e-05     21   18   -9.999999 
+ig= 19   gnorm= 4.077379e-05     22   19   -10 
+ig= 20   gnorm= 2.096351e-05     23   20   -10 
+ig= 21   gnorm= 1.213078e-05     24   21   -10 
+ig= 22   gnorm= 8.335791e-06     25   22   -10 
+ig= 23   gnorm= 7.028541e-06     26   23   -10 
+ig= 24   gnorm= 6.819888e-06     27   24   -10 
+ig= 25   gnorm= 6.794959e-06     28   25   -10 
+ig= 26   gnorm= 6.71864e-06     29   26   -10 
+ig= 27   gnorm= 6.60629e-06     30   27   -10 
+ig= 28   gnorm= 6.007044e-06     31   28   -10 
+ig= 29   gnorm= 5.604687e-06     32   29   -10 
+ig= 30   gnorm= 2.322784e-06     33   30   -10 
+ig= 31   gnorm= 1.155325e-06     34   31   -10 
+ig= 32   gnorm= 4.628348e-07     35   32   -10 
+ig= 33   gnorm= 2.36925e-07     36   33   -10 
+ig= 34   gnorm= 1.1932e-07     37   34   -10 
+ig= 35   gnorm= 6.413042e-08     38   35   -10 
+ig= 36   gnorm= 0   Seem to be done Rvmminu
+> print(ansnegmax)
+$par
+[1] 1.000000 1.999988 2.999775 3.999419 4.999384 5.999090
+
+$value
+[1] -10
+
+$counts
+function gradient 
+      39       36 
+
+$convergence
+[1] 2
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> 
+> 
+> #####################
+> cat("test bounds and masks\n")
+test bounds and masks
+> nn<-4
+> startx<-rep(pi,nn)
+> lo<-rep(2,nn)
+> up<-rep(10,nn)
+> grbds1<-Rvmmin(startx,genrose.f, genrose.g, lower=lo,upper=up) 
+trace= 0 
+> print(grbds1)
+$par
+[1]  2.000000  2.000000  3.181997 10.000000
+
+$value
+[1] 556.2391
+
+$counts
+function gradient 
+      29       12 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminb appears to have converged"
+
+$bdmsk
+[1] 1 1 1 1
+
+> 
+> cat("test lower bound only\n")
+test lower bound only
+> nn<-4
+> startx<-rep(pi,nn)
+> lo<-rep(2,nn)
+> grbds2<-Rvmmin(startx,genrose.f, genrose.g, lower=lo) 
+trace= 0 
+> print(grbds2)
+$par
+[1]  2.000000  2.000000  3.318724 10.914782
+
+$value
+[1] 553.0761
+
+$counts
+function gradient 
+      33       16 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminb appears to have converged"
+
+$bdmsk
+[1] 1 1 1 1
+
+> 
+> cat("test lower bound single value only\n")
+test lower bound single value only
+> nn<-4
+> startx<-rep(pi,nn)
+> lo<-2
+> up<-rep(10,nn)
+> grbds3<-Rvmmin(startx,genrose.f, genrose.g, lower=lo) 
+trace= 0 
+> print(grbds3)
+$par
+[1]  2.000000  2.000000  3.318724 10.914782
+
+$value
+[1] 553.0761
+
+$counts
+function gradient 
+      33       16 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminb appears to have converged"
+
+$bdmsk
+[1] 1 1 1 1
+
+> 
+> cat("test upper bound only\n")
+test upper bound only
+> nn<-4
+> startx<-rep(pi,nn)
+> lo<-rep(2,nn)
+> up<-rep(10,nn)
+> grbds4<-Rvmmin(startx,genrose.f, genrose.g, upper=up) 
+trace= 0 
+> print(grbds4)
+$par
+[1] 1 1 1 1
+
+$value
+[1] 1
+
+$counts
+function gradient 
+      51       30 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminb appears to have converged"
+
+$bdmsk
+[1] 1 1 1 1
+
+> 
+> cat("test upper bound single value only\n")
+test upper bound single value only
+> nn<-4
+> startx<-rep(pi,nn)
+> grbds5<-Rvmmin(startx,genrose.f, genrose.g, upper=10) 
+trace= 0 
+> print(grbds5)
+$par
+[1] 1 1 1 1
+
+$value
+[1] 1
+
+$counts
+function gradient 
+      51       30 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminb appears to have converged"
+
+$bdmsk
+[1] 1 1 1 1
+
+> 
+> 
+> 
+> cat("test masks only\n")
+test masks only
+> nn<-6
+> bd<-c(1,1,0,0,1,1)
+> startx<-rep(pi,nn)
+> grbds6<-Rvmmin(startx,genrose.f, genrose.g, bdmsk=bd) 
+trace= 0 
+> print(grbds6)
+$par
+[1] -1.331105  1.771839  3.141593  3.141593  5.890351 34.362610
+
+$value
+[1] 7268.939
+
+$counts
+function gradient 
+      76       23 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminb appears to have converged"
+
+$bdmsk
+[1] 1 1 0 0 1 1
+
+> 
+> cat("test upper bound on first two elements only\n")
+test upper bound on first two elements only
+> nn<-4
+> startx<-rep(pi,nn)
+> upper<-c(10,8, Inf, Inf)
+> grbds7<-Rvmmin(startx,genrose.f, genrose.g, upper=upper) 
+trace= 0 
+> print(grbds7)
+$par
+[1] 1 1 1 1
+
+$value
+[1] 1
+
+$counts
+function gradient 
+      75       37 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminb appears to have converged"
+
+$bdmsk
+[1] 1 1 1 1
+
+> 
+> 
+> cat("test lower bound on first two elements only\n")
+test lower bound on first two elements only
+> nn<-4
+> startx<-rep(0,nn)
+> lower<-c(0,1.1, -Inf, -Inf)
+> grbds8<-Rvmmin(startx,genrose.f,genrose.g,lower=lower, control=list(maxit=2000)) 
+Warning in Rvmmin(startx, genrose.f, genrose.g, lower = lower, control = list(maxit = 2000)) :
+  Parameter out of bounds has been moved to nearest bound
+trace= 0 
+> print(grbds8)
+$par
+[1] 0.000000 1.100000 1.197717 1.430224
+
+$value
+[1] 122.2511
+
+$counts
+function gradient 
+      42       16 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminb appears to have converged"
+
+$bdmsk
+[1] 1 1 1 1
+
+> 
+> cat("test n=1 problem using simple squares of parameter\n")
+test n=1 problem using simple squares of parameter
+> 
+> sqtst<-function(xx) {
++   res<-sum((xx-2)*(xx-2))
++ }
+> 
+> nn<-1
+> startx<-rep(0,nn)
+> onepar<-Rvmmin(startx,sqtst, gr="grfwd", control=list(trace=1)) 
+WARNING: using gradient approximation ' grfwd '
+Rvmminu -- J C Nash 2009-2015 - an R implementation of Alg 21
+Problem of size n= 1   Dot arguments:
+list()
+WARNING: using gradient approximation ' grfwd '
+Initial fn= 4 
+ig= 1   gnorm= 0   Seem to be done Rvmminu
+> print(onepar)
+$par
+[1] 0
+
+$value
+[1] 4
+
+$counts
+function gradient 
+       1        1 
+
+$convergence
+[1] 2
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> 
+> cat("Suppress warnings\n")
+Suppress warnings
+> oneparnw<-Rvmmin(startx,sqtst, gr="grfwd", control=list(dowarn=FALSE,trace=1)) 
+WARNING: using gradient approximation ' grfwd '
+Rvmminu -- J C Nash 2009-2015 - an R implementation of Alg 21
+Problem of size n= 1   Dot arguments:
+list()
+WARNING: using gradient approximation ' grfwd '
+Initial fn= 4 
+ig= 1   gnorm= 0   Seem to be done Rvmminu
+> print(oneparnw)
+$par
+[1] 0
+
+$value
+[1] 4
+
+$counts
+function gradient 
+       1        1 
+
+$convergence
+[1] 2
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Rvmminb")
+> ### * Rvmminb
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rvmminb
+> ### Title: Variable metric nonlinear function minimization with bounds
+> ###   constraints
+> ### Aliases: Rvmminb
+> ### Keywords: nonlinear optimize
+> 
+> ### ** Examples
+> 
+> ## See Rvmmin.Rd
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Rvmminu")
+> ### * Rvmminu
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rvmminu
+> ### Title: Variable metric nonlinear function minimization, unconstrained
+> ### Aliases: Rvmminu
+> ### Keywords: nonlinear optimize
+> 
+> ### ** Examples
+> 
+> ####in Rvmmin.Rd ####
+> 
+> 
+> 
+> cleanEx()
+> nameEx("axsearch")
+> ### * axsearch
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: axsearch
+> ### Title: Perform axial search around a supposed minimum and provide
+> ###   diagnostics
+> ### Aliases: axsearch
+> ### Keywords: nonlinear optimize axial search
+> 
+> ### ** Examples
+> 
+> #####################
+> # require(optimx)
+> # Simple bounds test for n=4
+> bt.f<-function(x){
++   sum(x*x)
++ }
+> 
+> bt.g<-function(x){
++   gg<-2.0*x
++ }
+> 
+> n<-4
+> lower<-rep(0,n)
+> upper<-lower # to get arrays set
+> bdmsk<-rep(1,n)
+> # bdmsk[(trunc(n/2)+1)]<-0
+> for (i in 1:n) { 
++   lower[i]<-1.0*(i-1)*(n-1)/n
++   upper[i]<-1.0*i*(n+1)/n
++ }
+> xx<-0.5*(lower+upper)
+> 
+> cat("lower bounds:")
+lower bounds:> print(lower)
+[1] 0.00 0.75 1.50 2.25
+> cat("start:       ")
+start:       > print(xx)
+[1] 0.625 1.625 2.625 3.625
+> cat("upper bounds:")
+upper bounds:> print(upper)
+[1] 1.25 2.50 3.75 5.00
+> 
+> abtrvm <- list() # ensure we have the structure
+> 
+> cat("Rvmmin \n\n")
+Rvmmin 
+
+> # Note: trace set to 0 below. Change as needed to view progress. 
+> 
+> # Following can be executed if package optimx available
+> # abtrvm <- optimr(xx, bt.f, bt.g, lower=lower, upper=upper, method="Rvmmin", 
+> #                 control=list(trace=0))
+> # Note: use lower=lower etc. because there is a missing hess= argument
+> # print(abtrvm)
+> 
+> abtrvm$par <- c(0.00, 0.75, 1.50, 2.25)
+> abtrvm$value <- 7.875
+> cat("Axial search")
+Axial search> axabtrvm <- axsearch(abtrvm$par, fn=bt.f, fmin=abtrvm$value, lower, upper, bdmsk=NULL, 
++                      trace=0)
+> print(axabtrvm)
+$bestfn
+[1] 7.875
+
+$par
+[1] 0.00 0.75 1.50 2.25
+
+$details
+  par0 fback fmin0     ffwd      parstep tilt roc
+1 0.00    NA 7.875 7.875000 3.666853e-07   90 Inf
+2 0.75    NA 7.875 7.875682 4.545258e-04   90 Inf
+3 1.50    NA 7.875 7.877727 9.086849e-04   90 Inf
+4 2.25    NA 7.875 7.881135 1.362844e-03   90 Inf
+
+> 
+> abtrvm1 <- list() # set up structure
+> # Following can be executed if package optimx available
+> # cat("Now force an early stop\n")
+> # abtrvm1 <- optimr(xx, bt.f, bt.g, lower=lower, upper=upper, method="Rvmmin", 
+> #                   control=list(maxit=1, trace=0))
+> # print(abtrvm1)
+> 
+> abtrvm1$value <- 8.884958
+> abtrvm1$par <- c(0.625, 1.625, 2.625, 3.625)
+> 
+> cat("Axial search")
+Axial search> axabtrvm1 <- axsearch(abtrvm1$par, fn=bt.f, fmin=abtrvm1$value, lower, upper, bdmsk=NULL, 
++                       trace=0)
+> print(axabtrvm1)
+$bestfn
+[1] 8.884958
+
+$par
+[1] 0.625 1.625 2.625 3.625
+
+$details
+   par0    fback    fmin0     ffwd      parstep      tilt          roc
+1 0.625 23.06203 8.884958 23.06297 0.0003788326 -51.34019 4.152308e-08
+2 1.625 23.05930 8.884958 23.06570 0.0009843780 -72.89727 2.687203e-06
+3 2.625 23.05416 8.884958 23.07085 0.0015899235 -79.21570 2.721734e-05
+4 3.625 23.04659 8.884958 23.07842 0.0021954689 -82.14669 1.332738e-04
+
+> 
+> cat("Do NOT try axsearch() with maximize\n")
+Do NOT try axsearch() with maximize
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("bmchk")
+> ### * bmchk
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: bmchk
+> ### Title: Check bounds and masks for parameter constraints used in
+> ###   nonlinear optimization
+> ### Aliases: bmchk
+> ### Keywords: nonlinear optimize upper lower bound mask
+> 
+> ### ** Examples
+> 
+> #####################
+> 
+> cat("25-dimensional box constrained function\n")
+25-dimensional box constrained function
+> flb <- function(x)
++     { p <- length(x); sum(c(1, rep(4, p-1)) * (x - c(1, x[-p])^2)^2) }
+> 
+> start<-rep(2, 25)
+> cat("\n start:")
+
+ start:> print(start)
+ [1] 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+> lo<-rep(2,25)
+> cat("\n lo:")
+
+ lo:> print(lo)
+ [1] 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+> hi<-rep(4,25)
+> cat("\n hi:")
+
+ hi:> print(hi)
+ [1] 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4
+> bt<-bmchk(start, lower=lo, upper=hi, trace=1)
+admissible =  TRUE 
+maskadded =  FALSE 
+parchanged =  FALSE 
+At least one parameter is on a bound
+> print(bt)
+$bvec
+ [1] 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+
+$bdmsk
+ [1] -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3
+
+$bchar
+ [1] "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L" "L"
+[20] "L" "L" "L" "L" "L" "L"
+
+$lower
+ [1] 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+
+$upper
+ [1] 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4
+
+$nolower
+[1] FALSE
+
+$noupper
+[1] FALSE
+
+$bounds
+[1] TRUE
+
+$admissible
+[1] TRUE
+
+$maskadded
+[1] FALSE
+
+$parchanged
+[1] FALSE
+
+$feasible
+[1] TRUE
+
+$onbound
+[1] TRUE
+
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("bmstep")
+> ### * bmstep
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: bmstep
+> ### Title: Compute the maximum step along a search direction.
+> ### Aliases: bmstep
+> ### Keywords: nonlinear optimize upper lower bound mask
+> 
+> ### ** Examples
+> 
+> #####################
+> xx <- c(1, 1)
+> lo <- c(0, 0)
+> up <- c(100, 40)
+> sdir <- c(4,1)
+> bm <- c(1,1) # both free
+> ans <- bmstep(xx, sdir, lo, up, bm, trace=1)
+Distances to bounds, lower then upper
+[1] 1 1
+[1] 99 39
+steplengths, lower then upper
+[1] 0 0
+[1] 24.75 39.00
+steplengths, truncated, lower then upper
+sslo NULL
+[1] 24.75 39.00
+> # stepsize
+> print(ans)
+[1] 24.75
+> # distance
+> print(ans*sdir)
+[1] 99.00 24.75
+> # New parameters
+> print(xx+ans*sdir)
+[1] 100.00  25.75
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("checksolver")
+> ### * checksolver
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: checksolver
+> ### Title: Test if requested solver is present
+> ### Aliases: checksolver
+> ### Keywords: nonlinear optimize
+> 
+> ### ** Examples
+> 
+>    allmeth <- c("Rvmmin", "nlminb","ipopttest")
+>    allpkg <- c("Rvmmin", "stats","ipoptr")
+>    
+>    print(checksolver("nlminb", allmeth, allpkg))
+[1] "nlminb"
+>    # If Rvmmin NOT available, get msg that PACKAGE not available.
+>    print(checksolver("Rvmmin", allmeth, allpkg))
+Warning in checksolver("Rvmmin", allmeth, allpkg) :
+  Package Rvmmin for method Rvmmin is not available
+NULL
+>    # Get message that SOLVER not found
+>    print(checksolver("notasolver", allmeth, allpkg))
+Warning in checksolver("notasolver", allmeth, allpkg) :
+  Package notasolver not found
+NULL
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("coef.opm")
+> ### * coef.opm
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: coef
+> ### Title: Summarize opm object
+> ### Aliases: coef<- coef.opm coef<-.opm coef.optimx coef<-.optimx
+> ### Keywords: nonlinear optimize
+> 
+> ### ** Examples
+> 
+> ans <- opm(fn = function(x) sum(x*x), par = 1:2, method="ALL", control=list(trace=0))
+Warning in checksolver(method, control$allmeth, control$allpkg) :
+  Package lbfgsb3c for method lbfgsb3c is not available
+Error in if (any(bvec == lower) || any(bvec == upper)) { : 
+  missing value where TRUE/FALSE needed
+Calls: opm -> kktchk -> bmchk
+Execution halted

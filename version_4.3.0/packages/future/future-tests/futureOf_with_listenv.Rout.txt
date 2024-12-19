@@ -1,0 +1,534 @@
+
+R version 4.3.0 (2023-04-21) -- "Already Tomorrow"
+Copyright (C) 2023 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> source("incl/start.R")
+[17:42:17.847] plan(): Setting new future strategy stack:
+[17:42:17.848] List of future strategies:
+[17:42:17.848] 1. sequential:
+[17:42:17.848]    - args: function (..., envir = parent.frame())
+[17:42:17.848]    - tweaked: FALSE
+[17:42:17.848]    - call: future::plan("sequential")
+[17:42:17.861] plan(): nbrOfWorkers() = 1
+> library("listenv")
+> 
+> message("*** futureOf() with listenv ...")
+*** futureOf() with listenv ...
+> 
+> message("*** futureOf() with listenv - future assignments ...")
+*** futureOf() with listenv - future assignments ...
+> 
+> x <- listenv()
+> x$a %<-% { 1 } %lazy% TRUE
+[17:42:17.876] getGlobalsAndPackages() ...
+[17:42:17.876] Searching for globals...
+[17:42:17.879] - globals found: [1] ‘{’
+[17:42:17.880] Searching for globals ... DONE
+[17:42:17.880] Resolving globals: FALSE
+[17:42:17.880] 
+[17:42:17.880] 
+[17:42:17.880] getGlobalsAndPackages() ... DONE
+> 
+> f1 <- futureOf("a", envir = x)
+> print(f1)
+Future:
+Label: ‘<none>’
+Expression:
+{
+    1
+}
+Lazy evaluation: TRUE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: b4eef75b-8084-3e76-3586-a9b31a0a6b57
+Class: ‘Future’, ‘environment’
+> f2 <- futureOf(a, envir = x)
+> f3 <- futureOf(1, envir = x)
+> f4 <- futureOf(x[["a"]])
+> f5 <- futureOf(x$a)
+> f6 <- futureOf(x[[1]])
+> stopifnot(identical(f2, f1), identical(f3, f2), identical(f4, f3),
++           identical(f5, f4), identical(f6, f5))
+> 
+> x[[3]] %<-% { 3 } %lazy% TRUE
+[17:42:17.883] getGlobalsAndPackages() ...
+[17:42:17.883] Searching for globals...
+[17:42:17.884] - globals found: [1] ‘{’
+[17:42:17.884] Searching for globals ... DONE
+[17:42:17.884] Resolving globals: FALSE
+[17:42:17.884] 
+[17:42:17.884] 
+[17:42:17.884] getGlobalsAndPackages() ... DONE
+> x$d %<-% { 4 } %lazy% TRUE
+[17:42:17.885] getGlobalsAndPackages() ...
+[17:42:17.885] Searching for globals...
+[17:42:17.885] - globals found: [1] ‘{’
+[17:42:17.885] Searching for globals ... DONE
+[17:42:17.885] Resolving globals: FALSE
+[17:42:17.886] 
+[17:42:17.886] 
+[17:42:17.886] getGlobalsAndPackages() ... DONE
+> x[[5]] <- 5
+> 
+> ## Identify all futures
+> fs <- futureOf(envir = x)
+> print(fs)
+$a
+Future:
+Label: ‘<none>’
+Expression:
+{
+    1
+}
+Lazy evaluation: TRUE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: b4eef75b-8084-3e76-3586-a9b31a0a6b57
+Class: ‘Future’, ‘environment’
+
+[[2]]
+[1] NA
+attr(,"reason")
+[1] "No such future variable: 2L"
+
+[[3]]
+Future:
+Label: ‘<none>’
+Expression:
+{
+    3
+}
+Lazy evaluation: TRUE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: b4eef75b-8084-3e76-3586-a9b31a0a6b57
+Class: ‘Future’, ‘environment’
+
+$d
+Future:
+Label: ‘<none>’
+Expression:
+{
+    4
+}
+Lazy evaluation: TRUE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: b4eef75b-8084-3e76-3586-a9b31a0a6b57
+Class: ‘Future’, ‘environment’
+
+[[5]]
+[1] NA
+attr(,"reason")
+[1] "Future (‘.listenv_var_2.000000’) not found in listenv ‘<noname>’: ‘5L’"
+
+> stopifnot(identical(names(fs), names(x)))
+> stopifnot(identical(fs$a, f1))
+> stopifnot(identical(fs[[3]], futureOf(3L, envir = x)))
+> stopifnot(identical(fs$d, futureOf("d", envir = x)))
+> 
+> fsD <- futureOf(envir = x, drop = TRUE)
+> print(fsD)
+$a
+Future:
+Label: ‘<none>’
+Expression:
+{
+    1
+}
+Lazy evaluation: TRUE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: b4eef75b-8084-3e76-3586-a9b31a0a6b57
+Class: ‘Future’, ‘environment’
+
+[[2]]
+Future:
+Label: ‘<none>’
+Expression:
+{
+    3
+}
+Lazy evaluation: TRUE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: b4eef75b-8084-3e76-3586-a9b31a0a6b57
+Class: ‘Future’, ‘environment’
+
+$d
+Future:
+Label: ‘<none>’
+Expression:
+{
+    4
+}
+Lazy evaluation: TRUE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: b4eef75b-8084-3e76-3586-a9b31a0a6b57
+Class: ‘Future’, ‘environment’
+
+> stopifnot(all(sapply(fsD, FUN = inherits, "Future")))
+> stopifnot(!identical(fsD, fs))
+> 
+> message("*** futureOf() with listenv - future assignments ... DONE")
+*** futureOf() with listenv - future assignments ... DONE
+> 
+> 
+> message("*** futureOf() with listenv - futures ...")
+*** futureOf() with listenv - futures ...
+> 
+> x <- listenv()
+> x$a <- future({ 1 }, lazy = TRUE)
+[17:42:17.890] getGlobalsAndPackages() ...
+[17:42:17.890] Searching for globals...
+[17:42:17.890] - globals found: [1] ‘{’
+[17:42:17.890] Searching for globals ... DONE
+[17:42:17.891] Resolving globals: FALSE
+[17:42:17.891] 
+[17:42:17.891] 
+[17:42:17.891] getGlobalsAndPackages() ... DONE
+> 
+> f1 <- futureOf("a", envir = x)
+> print(f1)
+Future:
+Label: ‘<none>’
+Expression:
+{
+    1
+}
+Lazy evaluation: TRUE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: b4eef75b-8084-3e76-3586-a9b31a0a6b57
+Class: ‘Future’, ‘environment’
+> stopifnot(identical(f1, x$a))
+> f2 <- futureOf(a, envir = x)
+> stopifnot(identical(f2, x$a))
+> f3 <- futureOf(1, envir = x)
+> stopifnot(identical(f3, x$a))
+> f4 <- futureOf(x[["a"]])
+> stopifnot(identical(f4, x$a))
+> f5 <- futureOf(x$a)
+> stopifnot(identical(f5, x$a))
+> f6 <- futureOf(x[[1]])
+> stopifnot(identical(f6, x$a))
+> 
+> x[[3]] <- future({ 3 }, lazy = TRUE)
+[17:42:17.893] getGlobalsAndPackages() ...
+[17:42:17.893] Searching for globals...
+[17:42:17.893] - globals found: [1] ‘{’
+[17:42:17.893] Searching for globals ... DONE
+[17:42:17.894] Resolving globals: FALSE
+[17:42:17.894] 
+[17:42:17.894] 
+[17:42:17.894] getGlobalsAndPackages() ... DONE
+> x$d <- future({ 4 }, lazy = TRUE)
+[17:42:17.894] getGlobalsAndPackages() ...
+[17:42:17.894] Searching for globals...
+[17:42:17.895] - globals found: [1] ‘{’
+[17:42:17.895] Searching for globals ... DONE
+[17:42:17.895] Resolving globals: FALSE
+[17:42:17.895] 
+[17:42:17.895] 
+[17:42:17.895] getGlobalsAndPackages() ... DONE
+> x[[5]] <- 5
+> 
+> ## Identify all futures
+> fs <- futureOf(envir = x)
+> print(fs)
+$a
+Future:
+Label: ‘<none>’
+Expression:
+{
+    1
+}
+Lazy evaluation: TRUE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: b4eef75b-8084-3e76-3586-a9b31a0a6b57
+Class: ‘Future’, ‘environment’
+
+[[2]]
+[1] NA
+attr(,"reason")
+[1] "No such future variable: 2L"
+
+[[3]]
+Future:
+Label: ‘<none>’
+Expression:
+{
+    3
+}
+Lazy evaluation: TRUE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: b4eef75b-8084-3e76-3586-a9b31a0a6b57
+Class: ‘Future’, ‘environment’
+
+$d
+Future:
+Label: ‘<none>’
+Expression:
+{
+    4
+}
+Lazy evaluation: TRUE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: b4eef75b-8084-3e76-3586-a9b31a0a6b57
+Class: ‘Future’, ‘environment’
+
+[[5]]
+[1] NA
+attr(,"reason")
+[1] "Future (‘.listenv_var_2.000000’) not found in listenv ‘<noname>’: ‘5L’"
+
+> stopifnot(identical(names(fs), names(x)))
+> stopifnot(identical(fs$a, f1))
+> stopifnot(identical(fs[[3]], futureOf(3L, envir = x)))
+> stopifnot(identical(fs$d, futureOf("d", envir = x)))
+> 
+> fsD <- futureOf(envir = x, drop = TRUE)
+> print(fsD)
+$a
+Future:
+Label: ‘<none>’
+Expression:
+{
+    1
+}
+Lazy evaluation: TRUE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: b4eef75b-8084-3e76-3586-a9b31a0a6b57
+Class: ‘Future’, ‘environment’
+
+[[2]]
+Future:
+Label: ‘<none>’
+Expression:
+{
+    3
+}
+Lazy evaluation: TRUE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: b4eef75b-8084-3e76-3586-a9b31a0a6b57
+Class: ‘Future’, ‘environment’
+
+$d
+Future:
+Label: ‘<none>’
+Expression:
+{
+    4
+}
+Lazy evaluation: TRUE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: b4eef75b-8084-3e76-3586-a9b31a0a6b57
+Class: ‘Future’, ‘environment’
+
+> stopifnot(all(sapply(fsD, FUN = inherits, "Future")))
+> stopifnot(!identical(fsD, fs))
+> 
+> message("*** futureOf() with listenv - futures ... DONE")
+*** futureOf() with listenv - futures ... DONE
+> 
+> 
+> message("*** futureOf() with listenv - exceptions ...")
+*** futureOf() with listenv - exceptions ...
+> 
+> ## Invalid subset
+> res <- tryCatch(futureOf(x[[0]], mustExist = FALSE), error = identity)
+> stopifnot(inherits(res, "error"))
+> 
+> res <- tryCatch(futureOf(x[[0]], mustExist = TRUE), error = identity)
+> stopifnot(inherits(res, "error"))
+> 
+> ## Out-of-bound subscript, cf lists
+> stopifnot(is.na(futureOf(x[[10]], mustExist = FALSE)))
+> res <- tryCatch(futureOf(x[[10]], mustExist = TRUE), error = identity)
+[17:42:17.902] ERROR: No such future variable: x[[10]]
+> stopifnot(inherits(res, "error"))
+> 
+> ## Invalid subscript
+> res <- tryCatch(futureOf(x[[1 + 2i]], mustExist = TRUE), error = identity)
+> stopifnot(inherits(res, "error"))
+> 
+> ## Non-existing object
+> res <- tryCatch(futureOf(z[[1]], mustExist = TRUE), error = identity)
+> stopifnot(inherits(res, "error"))
+> 
+> message("*** futureOf() with listenv - exceptions ... DONE")
+*** futureOf() with listenv - exceptions ... DONE
+> 
+> 
+> message("*** futureOf() with listenv ... DONE")
+*** futureOf() with listenv ... DONE
+> 
+> source("incl/end.R")
+[17:42:17.903] plan(): Setting new future strategy stack:
+[17:42:17.903] List of future strategies:
+[17:42:17.903] 1. FutureStrategy:
+[17:42:17.903]    - args: function (..., envir = parent.frame())
+[17:42:17.903]    - tweaked: FALSE
+[17:42:17.903]    - call: future::plan(oplan)
+[17:42:17.915] plan(): nbrOfWorkers() = 1
+> 

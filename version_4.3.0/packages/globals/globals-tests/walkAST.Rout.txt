@@ -1,0 +1,2173 @@
+
+R version 4.3.0 (2023-04-21) -- "Already Tomorrow"
+Copyright (C) 2023 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> source("incl/start.R")
+> 
+> message("*** walkAST() ...")
+*** walkAST() ...
+> 
+> exprs <- list(
++   null        = quote(NULL),
++   atomic      = quote(1),
++   atomic      = quote("a"),
++   atomic      = quote(TRUE),
++   assign      = quote(a <- 1),
++   assign      = quote(1 -> a),
++   assign      = quote(a <- b + 1),
++   assign      = quote(x <- rnorm(20, mu = 0)),
++   index       = quote(x[1, 1]),
++   index       = quote(x[1:2, 1:2]),
++   index       = quote(x[, 1:2]),
++   index       = quote(x[, 1]),
++   fcn         = quote(function(a = 1, b = 2) sum(c(a, b))),
++   fcn         = quote(function(a = 1, b) sum(c(a, b))),
++   fcn         = quote(function(a = 1, b = 2, ...) sum(c(a, b, ...))),
++   fcn         = quote(function(a = NULL) a),
++   ok          = quote(function(...) sum(x, ...)),
++   warn        = quote(sum(x, ...)),
++   null        = quote(NULL),
++   builtin     = base::length,
++   closure     = function() NULL,
++   closure     = function() a,
++   closure     = function(x = 0) a * x,
++   special     = base::log,
++   list        = substitute(FUN(a = A), list(A = list())),
++   pairlist    = substitute(FUN(a = A), list(A = pairlist(a = 1))),
++   expression  = substitute(FUN(a = A), list(A = expression()))
++ # environment = new.env()
++ )
+> if (requireNamespace("methods")) {
++   exprs$s4 <- methods::getClass("MethodDefinition")
++ }
+> 
+> nullify <- function(e) NULL
+> 
+> disp <- function(expr) {
++   cat("Expression:\n")
++   print(expr)
++   cat("str():\n")
++   str(expr)
++   cat(sprintf("typeof: %s\n", typeof(expr)))
++   if (is.recursive(expr)) {
++     cat("as.list():\n")
++     str(as.list(expr))
++   }  
++   expr
++ } ## disp()
+> 
+> for (kk in seq_along(exprs)) {
++   name <- names(exprs)[kk]
++   message(sprintf("- walkAST(<expression #%d (%s)>) ...", kk, sQuote(name)))
++   expr <- exprs[[kk]]
++   disp(expr)
++ 
++   ## Assert identity (default behavior)
++   expr_i <- walkAST(expr)
++   disp(expr_i)
++   stopifnot(length(expr_i) == length(expr), identical(expr_i, expr))
++ 
++   ## Display the AST tree
++   walkAST(expr, atomic = disp, name = disp, call = disp, pairlist = disp)
++ 
++   ## Nullify
++   expr_n <- walkAST(expr, atomic = nullify, name = nullify,
++                     call = nullify, pairlist = nullify)
++   disp(expr_n)
++ 
++   message("*** walkAST() - nullify ... DONE")
++ 
++   message(sprintf("- walkAST(<expression #%d (%s)>) ... DONE",
++                   kk, sQuote(name)))
++ } ## for (name ...)
+- walkAST(<expression #1 (‘null’)>) ...
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #1 (‘null’)>) ... DONE
+- walkAST(<expression #2 (‘atomic’)>) ...
+Expression:
+[1] 1
+str():
+ num 1
+typeof: double
+Expression:
+[1] 1
+str():
+ num 1
+typeof: double
+Expression:
+[1] 1
+str():
+ num 1
+typeof: double
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #2 (‘atomic’)>) ... DONE
+- walkAST(<expression #3 (‘atomic’)>) ...
+Expression:
+[1] "a"
+str():
+ chr "a"
+typeof: character
+Expression:
+[1] "a"
+str():
+ chr "a"
+typeof: character
+Expression:
+[1] "a"
+str():
+ chr "a"
+typeof: character
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #3 (‘atomic’)>) ... DONE
+- walkAST(<expression #4 (‘atomic’)>) ...
+Expression:
+[1] TRUE
+str():
+ logi TRUE
+typeof: logical
+Expression:
+[1] TRUE
+str():
+ logi TRUE
+typeof: logical
+Expression:
+[1] TRUE
+str():
+ logi TRUE
+typeof: logical
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #4 (‘atomic’)>) ... DONE
+- walkAST(<expression #5 (‘assign’)>) ...
+Expression:
+a <- 1
+str():
+ language a <- 1
+typeof: language
+as.list():
+List of 3
+ $ : symbol <-
+ $ : symbol a
+ $ : num 1
+Expression:
+a <- 1
+str():
+ language a <- 1
+typeof: language
+as.list():
+List of 3
+ $ : symbol <-
+ $ : symbol a
+ $ : num 1
+Expression:
+`<-`
+str():
+ symbol <-
+typeof: symbol
+Expression:
+a
+str():
+ symbol a
+typeof: symbol
+Expression:
+[1] 1
+str():
+ num 1
+typeof: double
+Expression:
+a <- 1
+str():
+ language a <- 1
+typeof: language
+as.list():
+List of 3
+ $ : symbol <-
+ $ : symbol a
+ $ : num 1
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #5 (‘assign’)>) ... DONE
+- walkAST(<expression #6 (‘assign’)>) ...
+Expression:
+a <- 1
+str():
+ language a <- 1
+typeof: language
+as.list():
+List of 3
+ $ : symbol <-
+ $ : symbol a
+ $ : num 1
+Expression:
+a <- 1
+str():
+ language a <- 1
+typeof: language
+as.list():
+List of 3
+ $ : symbol <-
+ $ : symbol a
+ $ : num 1
+Expression:
+`<-`
+str():
+ symbol <-
+typeof: symbol
+Expression:
+a
+str():
+ symbol a
+typeof: symbol
+Expression:
+[1] 1
+str():
+ num 1
+typeof: double
+Expression:
+a <- 1
+str():
+ language a <- 1
+typeof: language
+as.list():
+List of 3
+ $ : symbol <-
+ $ : symbol a
+ $ : num 1
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #6 (‘assign’)>) ... DONE
+- walkAST(<expression #7 (‘assign’)>) ...
+Expression:
+a <- b + 1
+str():
+ language a <- b + 1
+typeof: language
+as.list():
+List of 3
+ $ : symbol <-
+ $ : symbol a
+ $ : language b + 1
+Expression:
+a <- b + 1
+str():
+ language a <- b + 1
+typeof: language
+as.list():
+List of 3
+ $ : symbol <-
+ $ : symbol a
+ $ : language b + 1
+Expression:
+`<-`
+str():
+ symbol <-
+typeof: symbol
+Expression:
+a
+str():
+ symbol a
+typeof: symbol
+Expression:
+`+`
+str():
+ symbol +
+typeof: symbol
+Expression:
+b
+str():
+ symbol b
+typeof: symbol
+Expression:
+[1] 1
+str():
+ num 1
+typeof: double
+Expression:
+b + 1
+str():
+ language b + 1
+typeof: language
+as.list():
+List of 3
+ $ : symbol +
+ $ : symbol b
+ $ : num 1
+Expression:
+a <- b + 1
+str():
+ language a <- b + 1
+typeof: language
+as.list():
+List of 3
+ $ : symbol <-
+ $ : symbol a
+ $ : language b + 1
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #7 (‘assign’)>) ... DONE
+- walkAST(<expression #8 (‘assign’)>) ...
+Expression:
+x <- rnorm(20, mu = 0)
+str():
+ language x <- rnorm(20, mu = 0)
+typeof: language
+as.list():
+List of 3
+ $ : symbol <-
+ $ : symbol x
+ $ : language rnorm(20, mu = 0)
+Expression:
+x <- rnorm(20, mu = 0)
+str():
+ language x <- rnorm(20, mu = 0)
+typeof: language
+as.list():
+List of 3
+ $ : symbol <-
+ $ : symbol x
+ $ : language rnorm(20, mu = 0)
+Expression:
+`<-`
+str():
+ symbol <-
+typeof: symbol
+Expression:
+x
+str():
+ symbol x
+typeof: symbol
+Expression:
+rnorm
+str():
+ symbol rnorm
+typeof: symbol
+Expression:
+[1] 20
+str():
+ num 20
+typeof: double
+Expression:
+[1] 0
+str():
+ num 0
+typeof: double
+Expression:
+rnorm(20, mu = 0)
+str():
+ language rnorm(20, mu = 0)
+typeof: language
+as.list():
+List of 3
+ $   : symbol rnorm
+ $   : num 20
+ $ mu: num 0
+Expression:
+x <- rnorm(20, mu = 0)
+str():
+ language x <- rnorm(20, mu = 0)
+typeof: language
+as.list():
+List of 3
+ $ : symbol <-
+ $ : symbol x
+ $ : language rnorm(20, mu = 0)
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #8 (‘assign’)>) ... DONE
+- walkAST(<expression #9 (‘index’)>) ...
+Expression:
+x[1, 1]
+str():
+ language x[1, 1]
+typeof: language
+as.list():
+List of 4
+ $ : symbol [
+ $ : symbol x
+ $ : num 1
+ $ : num 1
+Expression:
+x[1, 1]
+str():
+ language x[1, 1]
+typeof: language
+as.list():
+List of 4
+ $ : symbol [
+ $ : symbol x
+ $ : num 1
+ $ : num 1
+Expression:
+`[`
+str():
+ symbol [
+typeof: symbol
+Expression:
+x
+str():
+ symbol x
+typeof: symbol
+Expression:
+[1] 1
+str():
+ num 1
+typeof: double
+Expression:
+[1] 1
+str():
+ num 1
+typeof: double
+Expression:
+x[1, 1]
+str():
+ language x[1, 1]
+typeof: language
+as.list():
+List of 4
+ $ : symbol [
+ $ : symbol x
+ $ : num 1
+ $ : num 1
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #9 (‘index’)>) ... DONE
+- walkAST(<expression #10 (‘index’)>) ...
+Expression:
+x[1:2, 1:2]
+str():
+ language x[1:2, 1:2]
+typeof: language
+as.list():
+List of 4
+ $ : symbol [
+ $ : symbol x
+ $ : language 1:2
+ $ : language 1:2
+Expression:
+x[1:2, 1:2]
+str():
+ language x[1:2, 1:2]
+typeof: language
+as.list():
+List of 4
+ $ : symbol [
+ $ : symbol x
+ $ : language 1:2
+ $ : language 1:2
+Expression:
+`[`
+str():
+ symbol [
+typeof: symbol
+Expression:
+x
+str():
+ symbol x
+typeof: symbol
+Expression:
+`:`
+str():
+ symbol :
+typeof: symbol
+Expression:
+[1] 1
+str():
+ num 1
+typeof: double
+Expression:
+[1] 2
+str():
+ num 2
+typeof: double
+Expression:
+1:2
+str():
+ language 1:2
+typeof: language
+as.list():
+List of 3
+ $ : symbol :
+ $ : num 1
+ $ : num 2
+Expression:
+`:`
+str():
+ symbol :
+typeof: symbol
+Expression:
+[1] 1
+str():
+ num 1
+typeof: double
+Expression:
+[1] 2
+str():
+ num 2
+typeof: double
+Expression:
+1:2
+str():
+ language 1:2
+typeof: language
+as.list():
+List of 3
+ $ : symbol :
+ $ : num 1
+ $ : num 2
+Expression:
+x[1:2, 1:2]
+str():
+ language x[1:2, 1:2]
+typeof: language
+as.list():
+List of 4
+ $ : symbol [
+ $ : symbol x
+ $ : language 1:2
+ $ : language 1:2
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #10 (‘index’)>) ... DONE
+- walkAST(<expression #11 (‘index’)>) ...
+Expression:
+x[, 1:2]
+str():
+ language x[, 1:2]
+typeof: language
+as.list():
+List of 4
+ $ : symbol [
+ $ : symbol x
+ $ : symbol 
+ $ : language 1:2
+Expression:
+x[, 1:2]
+str():
+ language x[, 1:2]
+typeof: language
+as.list():
+List of 4
+ $ : symbol [
+ $ : symbol x
+ $ : symbol 
+ $ : language 1:2
+Expression:
+`[`
+str():
+ symbol [
+typeof: symbol
+Expression:
+x
+str():
+ symbol x
+typeof: symbol
+Expression:
+`:`
+str():
+ symbol :
+typeof: symbol
+Expression:
+[1] 1
+str():
+ num 1
+typeof: double
+Expression:
+[1] 2
+str():
+ num 2
+typeof: double
+Expression:
+1:2
+str():
+ language 1:2
+typeof: language
+as.list():
+List of 3
+ $ : symbol :
+ $ : num 1
+ $ : num 2
+Expression:
+x[, 1:2]
+str():
+ language x[, 1:2]
+typeof: language
+as.list():
+List of 4
+ $ : symbol [
+ $ : symbol x
+ $ : symbol 
+ $ : language 1:2
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #11 (‘index’)>) ... DONE
+- walkAST(<expression #12 (‘index’)>) ...
+Expression:
+x[, 1]
+str():
+ language x[, 1]
+typeof: language
+as.list():
+List of 4
+ $ : symbol [
+ $ : symbol x
+ $ : symbol 
+ $ : num 1
+Expression:
+x[, 1]
+str():
+ language x[, 1]
+typeof: language
+as.list():
+List of 4
+ $ : symbol [
+ $ : symbol x
+ $ : symbol 
+ $ : num 1
+Expression:
+`[`
+str():
+ symbol [
+typeof: symbol
+Expression:
+x
+str():
+ symbol x
+typeof: symbol
+Expression:
+[1] 1
+str():
+ num 1
+typeof: double
+Expression:
+x[, 1]
+str():
+ language x[, 1]
+typeof: language
+as.list():
+List of 4
+ $ : symbol [
+ $ : symbol x
+ $ : symbol 
+ $ : num 1
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #12 (‘index’)>) ... DONE
+- walkAST(<expression #13 (‘fcn’)>) ...
+Expression:
+function(a = 1, b = 2) sum(c(a, b))
+str():
+ language function(a = 1, b = 2) sum(c(a, b))
+typeof: language
+as.list():
+List of 4
+ $ : symbol function
+ $ :Dotted pair list of 2
+  ..$ a: num 1
+  ..$ b: num 2
+ $ : language sum(c(a, b))
+ $ : NULL
+Expression:
+function(a = 1, b = 2) sum(c(a, b))
+str():
+ language function(a = 1, b = 2) sum(c(a, b))
+typeof: language
+as.list():
+List of 4
+ $ : symbol function
+ $ :Dotted pair list of 2
+  ..$ a: num 1
+  ..$ b: num 2
+ $ : language sum(c(a, b))
+ $ : NULL
+Expression:
+`function`
+str():
+ symbol function
+typeof: symbol
+Expression:
+[1] 1
+str():
+ num 1
+typeof: double
+Expression:
+[1] 2
+str():
+ num 2
+typeof: double
+Expression:
+sum
+str():
+ symbol sum
+typeof: symbol
+Expression:
+c
+str():
+ symbol c
+typeof: symbol
+Expression:
+a
+str():
+ symbol a
+typeof: symbol
+Expression:
+b
+str():
+ symbol b
+typeof: symbol
+Expression:
+c(a, b)
+str():
+ language c(a, b)
+typeof: language
+as.list():
+List of 3
+ $ : symbol c
+ $ : symbol a
+ $ : symbol b
+Expression:
+sum(c(a, b))
+str():
+ language sum(c(a, b))
+typeof: language
+as.list():
+List of 2
+ $ : symbol sum
+ $ : language c(a, b)
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+Expression:
+function(a = 1, b = 2) sum(c(a, b))
+str():
+ language function(a = 1, b = 2) sum(c(a, b))
+typeof: language
+as.list():
+List of 4
+ $ : symbol function
+ $ :Dotted pair list of 2
+  ..$ a: num 1
+  ..$ b: num 2
+ $ : language sum(c(a, b))
+ $ : NULL
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #13 (‘fcn’)>) ... DONE
+- walkAST(<expression #14 (‘fcn’)>) ...
+Expression:
+function(a = 1, b) sum(c(a, b))
+str():
+ language function(a = 1, b) sum(c(a, b))
+typeof: language
+as.list():
+List of 4
+ $ : symbol function
+ $ :Dotted pair list of 2
+  ..$ a: num 1
+  ..$ b: symbol 
+ $ : language sum(c(a, b))
+ $ : NULL
+Expression:
+function(a = 1, b) sum(c(a, b))
+str():
+ language function(a = 1, b) sum(c(a, b))
+typeof: language
+as.list():
+List of 4
+ $ : symbol function
+ $ :Dotted pair list of 2
+  ..$ a: num 1
+  ..$ b: symbol 
+ $ : language sum(c(a, b))
+ $ : NULL
+Expression:
+`function`
+str():
+ symbol function
+typeof: symbol
+Expression:
+[1] 1
+str():
+ num 1
+typeof: double
+Expression:
+sum
+str():
+ symbol sum
+typeof: symbol
+Expression:
+c
+str():
+ symbol c
+typeof: symbol
+Expression:
+a
+str():
+ symbol a
+typeof: symbol
+Expression:
+b
+str():
+ symbol b
+typeof: symbol
+Expression:
+c(a, b)
+str():
+ language c(a, b)
+typeof: language
+as.list():
+List of 3
+ $ : symbol c
+ $ : symbol a
+ $ : symbol b
+Expression:
+sum(c(a, b))
+str():
+ language sum(c(a, b))
+typeof: language
+as.list():
+List of 2
+ $ : symbol sum
+ $ : language c(a, b)
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+Expression:
+function(a = 1, b) sum(c(a, b))
+str():
+ language function(a = 1, b) sum(c(a, b))
+typeof: language
+as.list():
+List of 4
+ $ : symbol function
+ $ :Dotted pair list of 2
+  ..$ a: num 1
+  ..$ b: symbol 
+ $ : language sum(c(a, b))
+ $ : NULL
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #14 (‘fcn’)>) ... DONE
+- walkAST(<expression #15 (‘fcn’)>) ...
+Expression:
+function(a = 1, b = 2, ...) sum(c(a, b, ...))
+str():
+ language function(a = 1, b = 2, ...) sum(c(a, b, ...))
+typeof: language
+as.list():
+List of 4
+ $ : symbol function
+ $ :Dotted pair list of 3
+  ..$ a  : num 1
+  ..$ b  : num 2
+  ..$ ...: symbol 
+ $ : language sum(c(a, b, ...))
+ $ : NULL
+Expression:
+function(a = 1, b = 2, ...) sum(c(a, b, ...))
+str():
+ language function(a = 1, b = 2, ...) sum(c(a, b, ...))
+typeof: language
+as.list():
+List of 4
+ $ : symbol function
+ $ :Dotted pair list of 3
+  ..$ a  : num 1
+  ..$ b  : num 2
+  ..$ ...: symbol 
+ $ : language sum(c(a, b, ...))
+ $ : NULL
+Expression:
+`function`
+str():
+ symbol function
+typeof: symbol
+Expression:
+[1] 1
+str():
+ num 1
+typeof: double
+Expression:
+[1] 2
+str():
+ num 2
+typeof: double
+Expression:
+sum
+str():
+ symbol sum
+typeof: symbol
+Expression:
+c
+str():
+ symbol c
+typeof: symbol
+Expression:
+a
+str():
+ symbol a
+typeof: symbol
+Expression:
+b
+str():
+ symbol b
+typeof: symbol
+Expression:
+...
+str():
+ symbol ...
+typeof: symbol
+Expression:
+c(a, b, ...)
+str():
+ language c(a, b, ...)
+typeof: language
+as.list():
+List of 4
+ $ : symbol c
+ $ : symbol a
+ $ : symbol b
+ $ : symbol ...
+Expression:
+sum(c(a, b, ...))
+str():
+ language sum(c(a, b, ...))
+typeof: language
+as.list():
+List of 2
+ $ : symbol sum
+ $ : language c(a, b, ...)
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+Expression:
+function(a = 1, b = 2, ...) sum(c(a, b, ...))
+str():
+ language function(a = 1, b = 2, ...) sum(c(a, b, ...))
+typeof: language
+as.list():
+List of 4
+ $ : symbol function
+ $ :Dotted pair list of 3
+  ..$ a  : num 1
+  ..$ b  : num 2
+  ..$ ...: symbol 
+ $ : language sum(c(a, b, ...))
+ $ : NULL
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #15 (‘fcn’)>) ... DONE
+- walkAST(<expression #16 (‘fcn’)>) ...
+Expression:
+function(a = NULL) a
+str():
+ language function(a = NULL) a
+typeof: language
+as.list():
+List of 4
+ $ : symbol function
+ $ :Dotted pair list of 1
+  ..$ a: NULL
+ $ : symbol a
+ $ : NULL
+Expression:
+function(a = NULL) a
+str():
+ language function(a = NULL) a
+typeof: language
+as.list():
+List of 4
+ $ : symbol function
+ $ :Dotted pair list of 1
+  ..$ a: NULL
+ $ : symbol a
+ $ : NULL
+Expression:
+`function`
+str():
+ symbol function
+typeof: symbol
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+Expression:
+a
+str():
+ symbol a
+typeof: symbol
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+Expression:
+function(a = NULL) a
+str():
+ language function(a = NULL) a
+typeof: language
+as.list():
+List of 4
+ $ : symbol function
+ $ :Dotted pair list of 1
+  ..$ a: NULL
+ $ : symbol a
+ $ : NULL
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #16 (‘fcn’)>) ... DONE
+- walkAST(<expression #17 (‘ok’)>) ...
+Expression:
+function(...) sum(x, ...)
+str():
+ language function(...) sum(x, ...)
+typeof: language
+as.list():
+List of 4
+ $ : symbol function
+ $ :Dotted pair list of 1
+  ..$ ...: symbol 
+ $ : language sum(x, ...)
+ $ : NULL
+Expression:
+function(...) sum(x, ...)
+str():
+ language function(...) sum(x, ...)
+typeof: language
+as.list():
+List of 4
+ $ : symbol function
+ $ :Dotted pair list of 1
+  ..$ ...: symbol 
+ $ : language sum(x, ...)
+ $ : NULL
+Expression:
+`function`
+str():
+ symbol function
+typeof: symbol
+Expression:
+sum
+str():
+ symbol sum
+typeof: symbol
+Expression:
+x
+str():
+ symbol x
+typeof: symbol
+Expression:
+...
+str():
+ symbol ...
+typeof: symbol
+Expression:
+sum(x, ...)
+str():
+ language sum(x, ...)
+typeof: language
+as.list():
+List of 3
+ $ : symbol sum
+ $ : symbol x
+ $ : symbol ...
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+Expression:
+function(...) sum(x, ...)
+str():
+ language function(...) sum(x, ...)
+typeof: language
+as.list():
+List of 4
+ $ : symbol function
+ $ :Dotted pair list of 1
+  ..$ ...: symbol 
+ $ : language sum(x, ...)
+ $ : NULL
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #17 (‘ok’)>) ... DONE
+- walkAST(<expression #18 (‘warn’)>) ...
+Expression:
+sum(x, ...)
+str():
+ language sum(x, ...)
+typeof: language
+as.list():
+List of 3
+ $ : symbol sum
+ $ : symbol x
+ $ : symbol ...
+Expression:
+sum(x, ...)
+str():
+ language sum(x, ...)
+typeof: language
+as.list():
+List of 3
+ $ : symbol sum
+ $ : symbol x
+ $ : symbol ...
+Expression:
+sum
+str():
+ symbol sum
+typeof: symbol
+Expression:
+x
+str():
+ symbol x
+typeof: symbol
+Expression:
+...
+str():
+ symbol ...
+typeof: symbol
+Expression:
+sum(x, ...)
+str():
+ language sum(x, ...)
+typeof: language
+as.list():
+List of 3
+ $ : symbol sum
+ $ : symbol x
+ $ : symbol ...
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #18 (‘warn’)>) ... DONE
+- walkAST(<expression #19 (‘null’)>) ...
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #19 (‘null’)>) ... DONE
+- walkAST(<expression #20 (‘builtin’)>) ...
+Expression:
+function (x)  .Primitive("length")
+str():
+function (x)  
+typeof: builtin
+as.list():
+List of 1
+ $ : NULL
+Expression:
+function (x)  .Primitive("length")
+str():
+function (x)  
+typeof: builtin
+as.list():
+List of 1
+ $ : NULL
+Expression:
+function (x)  .Primitive("length")
+str():
+function (x)  
+typeof: builtin
+as.list():
+List of 1
+ $ : NULL
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #20 (‘builtin’)>) ... DONE
+- walkAST(<expression #21 (‘closure’)>) ...
+Expression:
+function () 
+NULL
+str():
+function ()  
+typeof: closure
+as.list():
+List of 1
+ $ : NULL
+Expression:
+function () 
+NULL
+str():
+function ()  
+typeof: closure
+as.list():
+List of 1
+ $ : NULL
+Expression:
+function () 
+NULL
+str():
+function ()  
+typeof: closure
+as.list():
+List of 1
+ $ : NULL
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #21 (‘closure’)>) ... DONE
+- walkAST(<expression #22 (‘closure’)>) ...
+Expression:
+function () 
+a
+str():
+function ()  
+typeof: closure
+as.list():
+List of 1
+ $ : symbol a
+Expression:
+function () 
+a
+str():
+function ()  
+typeof: closure
+as.list():
+List of 1
+ $ : symbol a
+Expression:
+function () 
+a
+str():
+function ()  
+typeof: closure
+as.list():
+List of 1
+ $ : symbol a
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #22 (‘closure’)>) ... DONE
+- walkAST(<expression #23 (‘closure’)>) ...
+Expression:
+function (x = 0) 
+a * x
+str():
+function (x = 0)  
+typeof: closure
+as.list():
+List of 2
+ $ x: num 0
+ $  : language a * x
+Expression:
+function (x = 0) 
+a * x
+str():
+function (x = 0)  
+typeof: closure
+as.list():
+List of 2
+ $ x: num 0
+ $  : language a * x
+Expression:
+function (x = 0) 
+a * x
+str():
+function (x = 0)  
+typeof: closure
+as.list():
+List of 2
+ $ x: num 0
+ $  : language a * x
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #23 (‘closure’)>) ... DONE
+- walkAST(<expression #24 (‘special’)>) ...
+Expression:
+function (x, base = exp(1))  .Primitive("log")
+str():
+function (x, base = exp(1))  
+typeof: special
+as.list():
+List of 1
+ $ : NULL
+Expression:
+function (x, base = exp(1))  .Primitive("log")
+str():
+function (x, base = exp(1))  
+typeof: special
+as.list():
+List of 1
+ $ : NULL
+Expression:
+function (x, base = exp(1))  .Primitive("log")
+str():
+function (x, base = exp(1))  
+typeof: special
+as.list():
+List of 1
+ $ : NULL
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #24 (‘special’)>) ... DONE
+- walkAST(<expression #25 (‘list’)>) ...
+Expression:
+FUN(a = list())
+str():
+ language FUN(a = list())
+typeof: language
+as.list():
+List of 2
+ $  : symbol FUN
+ $ a: list()
+Expression:
+FUN(a = list())
+str():
+ language FUN(a = list())
+typeof: language
+as.list():
+List of 2
+ $  : symbol FUN
+ $ a: list()
+Expression:
+FUN
+str():
+ symbol FUN
+typeof: symbol
+Expression:
+list()
+str():
+ list()
+typeof: list
+as.list():
+ list()
+Expression:
+FUN(a = list())
+str():
+ language FUN(a = list())
+typeof: language
+as.list():
+List of 2
+ $  : symbol FUN
+ $ a: list()
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #25 (‘list’)>) ... DONE
+- walkAST(<expression #26 (‘pairlist’)>) ...
+Expression:
+FUN(a = pairlist(a = 1))
+str():
+ language FUN(a = pairlist(a = 1))
+typeof: language
+as.list():
+List of 2
+ $  : symbol FUN
+ $ a:Dotted pair list of 1
+  ..$ a: num 1
+Expression:
+FUN(a = pairlist(a = 1))
+str():
+ language FUN(a = pairlist(a = 1))
+typeof: language
+as.list():
+List of 2
+ $  : symbol FUN
+ $ a:Dotted pair list of 1
+  ..$ a: num 1
+Expression:
+FUN
+str():
+ symbol FUN
+typeof: symbol
+Expression:
+[1] 1
+str():
+ num 1
+typeof: double
+Expression:
+FUN(a = pairlist(a = 1))
+str():
+ language FUN(a = pairlist(a = 1))
+typeof: language
+as.list():
+List of 2
+ $  : symbol FUN
+ $ a:Dotted pair list of 1
+  ..$ a: num 1
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #26 (‘pairlist’)>) ... DONE
+- walkAST(<expression #27 (‘expression’)>) ...
+Expression:
+FUN(a = expression())
+str():
+ language FUN(a = expression())
+typeof: language
+as.list():
+List of 2
+ $  : symbol FUN
+ $ a:  expression()
+Expression:
+FUN(a = expression())
+str():
+ language FUN(a = expression())
+typeof: language
+as.list():
+List of 2
+ $  : symbol FUN
+ $ a:  expression()
+Expression:
+FUN
+str():
+ symbol FUN
+typeof: symbol
+Expression:
+FUN(a = expression())
+str():
+ language FUN(a = expression())
+typeof: language
+as.list():
+List of 2
+ $  : symbol FUN
+ $ a:  expression()
+Expression:
+NULL
+str():
+ NULL
+typeof: NULL
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #27 (‘expression’)>) ... DONE
+- walkAST(<expression #28 (‘s4’)>) ...
+Expression:
+Class "MethodDefinition" [package "methods"]
+
+Slots:
+                                              
+Name:      .Data    target   defined   generic
+Class:  function signature signature character
+
+Extends: 
+Class "function", from data part
+Class "PossibleMethod", directly
+Class "OptionalFunction", by class "function", distance 2
+
+Known Subclasses: 
+Class "derivedDefaultMethod", directly
+Class "MethodWithNext", directly
+Class "SealedMethodDefinition", directly
+Class "MethodDefinitionWithTrace", directly
+Class "internalDispatchMethod", by class "derivedDefaultMethod", distance 2
+Class "MethodWithNextWithTrace", by class "MethodWithNext", distance 2
+Class "derivedDefaultMethodWithTrace", by class "derivedDefaultMethod", distance 2
+str():
+Formal class 'classRepresentation' [package "methods"] with 11 slots
+  ..@ slots     :List of 4
+  .. ..$ .Data  : chr "function"
+  .. .. ..- attr(*, "package")= chr "methods"
+  .. ..$ target : chr "signature"
+  .. .. ..- attr(*, "package")= chr "methods"
+  .. ..$ defined: chr "signature"
+  .. .. ..- attr(*, "package")= chr "methods"
+  .. ..$ generic: chr "character"
+  .. .. ..- attr(*, "package")= chr "methods"
+  ..@ contains  :List of 3
+  .. ..$ function        :Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "function"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr(0) 
+  .. .. .. ..@ dataPart  : logi TRUE
+  .. .. .. ..@ distance  : num 1
+  .. ..$ PossibleMethod  :Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "PossibleMethod"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr(0) 
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 1
+  .. ..$ OptionalFunction:Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "OptionalFunction"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr "function"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 2
+  ..@ virtual   : logi FALSE
+  ..@ prototype :Formal class 'function' [package ""] with 0 slots
+ list()
+  .. .. ..$ target :Formal class 'signature' [package "methods"] with 3 slots
+  .. .. .. .. ..@ .Data  : chr(0) 
+  .. .. .. .. ..@ names  : chr(0) 
+  .. .. .. .. ..@ package: chr(0) 
+  .. .. ..$ defined:Formal class 'signature' [package "methods"] with 3 slots
+  .. .. .. .. ..@ .Data  : chr(0) 
+  .. .. .. .. ..@ names  : chr(0) 
+  .. .. .. .. ..@ package: chr(0) 
+  .. .. ..$ generic: chr(0) 
+  ..@ validity  : NULL
+  ..@ access    : list()
+  ..@ className : chr "MethodDefinition"
+  .. ..- attr(*, "package")= chr "methods"
+  ..@ package   : chr "methods"
+  ..@ subclasses:List of 7
+  .. ..$ derivedDefaultMethod         :Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "derivedDefaultMethod"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr(0) 
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 1
+  .. ..$ MethodWithNext               :Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "MethodWithNext"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr(0) 
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 1
+  .. ..$ SealedMethodDefinition       :Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "SealedMethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr(0) 
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 1
+  .. ..$ MethodDefinitionWithTrace    :Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "MethodDefinitionWithTrace"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr(0) 
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 1
+  .. ..$ internalDispatchMethod       :Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "internalDispatchMethod"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr "derivedDefaultMethod"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 2
+  .. ..$ MethodWithNextWithTrace      :Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "MethodWithNextWithTrace"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr "MethodWithNext"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 2
+  .. ..$ derivedDefaultMethodWithTrace:Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "derivedDefaultMethodWithTrace"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr "derivedDefaultMethod"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 2
+  ..@ versionKey:<externalptr> 
+  ..@ sealed    : logi TRUE
+typeof: S4
+Expression:
+Class "MethodDefinition" [package "methods"]
+
+Slots:
+                                              
+Name:      .Data    target   defined   generic
+Class:  function signature signature character
+
+Extends: 
+Class "function", from data part
+Class "PossibleMethod", directly
+Class "OptionalFunction", by class "function", distance 2
+
+Known Subclasses: 
+Class "derivedDefaultMethod", directly
+Class "MethodWithNext", directly
+Class "SealedMethodDefinition", directly
+Class "MethodDefinitionWithTrace", directly
+Class "internalDispatchMethod", by class "derivedDefaultMethod", distance 2
+Class "MethodWithNextWithTrace", by class "MethodWithNext", distance 2
+Class "derivedDefaultMethodWithTrace", by class "derivedDefaultMethod", distance 2
+str():
+Formal class 'classRepresentation' [package "methods"] with 11 slots
+  ..@ slots     :List of 4
+  .. ..$ .Data  : chr "function"
+  .. .. ..- attr(*, "package")= chr "methods"
+  .. ..$ target : chr "signature"
+  .. .. ..- attr(*, "package")= chr "methods"
+  .. ..$ defined: chr "signature"
+  .. .. ..- attr(*, "package")= chr "methods"
+  .. ..$ generic: chr "character"
+  .. .. ..- attr(*, "package")= chr "methods"
+  ..@ contains  :List of 3
+  .. ..$ function        :Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "function"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr(0) 
+  .. .. .. ..@ dataPart  : logi TRUE
+  .. .. .. ..@ distance  : num 1
+  .. ..$ PossibleMethod  :Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "PossibleMethod"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr(0) 
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 1
+  .. ..$ OptionalFunction:Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "OptionalFunction"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr "function"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 2
+  ..@ virtual   : logi FALSE
+  ..@ prototype :Formal class 'function' [package ""] with 0 slots
+ list()
+  .. .. ..$ target :Formal class 'signature' [package "methods"] with 3 slots
+  .. .. .. .. ..@ .Data  : chr(0) 
+  .. .. .. .. ..@ names  : chr(0) 
+  .. .. .. .. ..@ package: chr(0) 
+  .. .. ..$ defined:Formal class 'signature' [package "methods"] with 3 slots
+  .. .. .. .. ..@ .Data  : chr(0) 
+  .. .. .. .. ..@ names  : chr(0) 
+  .. .. .. .. ..@ package: chr(0) 
+  .. .. ..$ generic: chr(0) 
+  ..@ validity  : NULL
+  ..@ access    : list()
+  ..@ className : chr "MethodDefinition"
+  .. ..- attr(*, "package")= chr "methods"
+  ..@ package   : chr "methods"
+  ..@ subclasses:List of 7
+  .. ..$ derivedDefaultMethod         :Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "derivedDefaultMethod"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr(0) 
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 1
+  .. ..$ MethodWithNext               :Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "MethodWithNext"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr(0) 
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 1
+  .. ..$ SealedMethodDefinition       :Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "SealedMethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr(0) 
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 1
+  .. ..$ MethodDefinitionWithTrace    :Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "MethodDefinitionWithTrace"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr(0) 
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 1
+  .. ..$ internalDispatchMethod       :Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "internalDispatchMethod"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr "derivedDefaultMethod"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 2
+  .. ..$ MethodWithNextWithTrace      :Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "MethodWithNextWithTrace"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr "MethodWithNext"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 2
+  .. ..$ derivedDefaultMethodWithTrace:Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "derivedDefaultMethodWithTrace"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr "derivedDefaultMethod"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 2
+  ..@ versionKey:<externalptr> 
+  ..@ sealed    : logi TRUE
+typeof: S4
+Expression:
+Class "MethodDefinition" [package "methods"]
+
+Slots:
+                                              
+Name:      .Data    target   defined   generic
+Class:  function signature signature character
+
+Extends: 
+Class "function", from data part
+Class "PossibleMethod", directly
+Class "OptionalFunction", by class "function", distance 2
+
+Known Subclasses: 
+Class "derivedDefaultMethod", directly
+Class "MethodWithNext", directly
+Class "SealedMethodDefinition", directly
+Class "MethodDefinitionWithTrace", directly
+Class "internalDispatchMethod", by class "derivedDefaultMethod", distance 2
+Class "MethodWithNextWithTrace", by class "MethodWithNext", distance 2
+Class "derivedDefaultMethodWithTrace", by class "derivedDefaultMethod", distance 2
+str():
+Formal class 'classRepresentation' [package "methods"] with 11 slots
+  ..@ slots     :List of 4
+  .. ..$ .Data  : chr "function"
+  .. .. ..- attr(*, "package")= chr "methods"
+  .. ..$ target : chr "signature"
+  .. .. ..- attr(*, "package")= chr "methods"
+  .. ..$ defined: chr "signature"
+  .. .. ..- attr(*, "package")= chr "methods"
+  .. ..$ generic: chr "character"
+  .. .. ..- attr(*, "package")= chr "methods"
+  ..@ contains  :List of 3
+  .. ..$ function        :Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "function"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr(0) 
+  .. .. .. ..@ dataPart  : logi TRUE
+  .. .. .. ..@ distance  : num 1
+  .. ..$ PossibleMethod  :Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "PossibleMethod"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr(0) 
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 1
+  .. ..$ OptionalFunction:Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "OptionalFunction"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr "function"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 2
+  ..@ virtual   : logi FALSE
+  ..@ prototype :Formal class 'function' [package ""] with 0 slots
+ list()
+  .. .. ..$ target :Formal class 'signature' [package "methods"] with 3 slots
+  .. .. .. .. ..@ .Data  : chr(0) 
+  .. .. .. .. ..@ names  : chr(0) 
+  .. .. .. .. ..@ package: chr(0) 
+  .. .. ..$ defined:Formal class 'signature' [package "methods"] with 3 slots
+  .. .. .. .. ..@ .Data  : chr(0) 
+  .. .. .. .. ..@ names  : chr(0) 
+  .. .. .. .. ..@ package: chr(0) 
+  .. .. ..$ generic: chr(0) 
+  ..@ validity  : NULL
+  ..@ access    : list()
+  ..@ className : chr "MethodDefinition"
+  .. ..- attr(*, "package")= chr "methods"
+  ..@ package   : chr "methods"
+  ..@ subclasses:List of 7
+  .. ..$ derivedDefaultMethod         :Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "derivedDefaultMethod"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr(0) 
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 1
+  .. ..$ MethodWithNext               :Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "MethodWithNext"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr(0) 
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 1
+  .. ..$ SealedMethodDefinition       :Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "SealedMethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr(0) 
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 1
+  .. ..$ MethodDefinitionWithTrace    :Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "MethodDefinitionWithTrace"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr(0) 
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 1
+  .. ..$ internalDispatchMethod       :Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "internalDispatchMethod"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr "derivedDefaultMethod"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 2
+  .. ..$ MethodWithNextWithTrace      :Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "MethodWithNextWithTrace"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr "MethodWithNext"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 2
+  .. ..$ derivedDefaultMethodWithTrace:Formal class 'SClassExtension' [package "methods"] with 10 slots
+  .. .. .. ..@ subClass  : chr "derivedDefaultMethodWithTrace"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ superClass: chr "MethodDefinition"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ package   : chr "methods"
+  .. .. .. ..@ coerce    :function (from, strict = TRUE)  
+  .. .. .. ..@ test      :function (object)  
+  .. .. .. ..@ replace   :function (from, to, value)  
+  .. .. .. ..@ simple    : logi TRUE
+  .. .. .. ..@ by        : chr "derivedDefaultMethod"
+  .. .. .. .. ..- attr(*, "package")= chr "methods"
+  .. .. .. ..@ dataPart  : logi FALSE
+  .. .. .. ..@ distance  : num 2
+  ..@ versionKey:<externalptr> 
+  ..@ sealed    : logi TRUE
+typeof: S4
+*** walkAST() - nullify ... DONE
+- walkAST(<expression #28 (‘s4’)>) ... DONE
+> 
+> 
+> 
+> message("*** walkAST() - substitute = TRUE ...")
+*** walkAST() - substitute = TRUE ...
+> 
+> expr <- walkAST(a <- 1, substitute = TRUE)
+> print(expr)
+a <- 1
+> 
+> message("*** walkAST() - substitute = TRUE ... DONE")
+*** walkAST() - substitute = TRUE ... DONE
+> 
+> 
+> message("*** walkAST() - exceptions ...")
+*** walkAST() - exceptions ...
+> 
+> f <- function(...) get("...")
+> expr <- f(NULL)
+>   
+> options(globals.walkAST.onUnknownType = "error")
+> res <- tryCatch({
++   walkAST(expr)
++ }, error = identity)
+> print(res)
+<simpleError: Cannot walk expression. Unknown object type ‘...’>
+> stopifnot(inherits(res, "simpleError"))
+> 
+> options(globals.walkAST.onUnknownType = "warning")
+> foo <- walkAST(expr)
+Warning message:
+Cannot walk expression. Unknown object type ‘...’ 
+> 
+> res <- tryCatch({
++   walkAST(expr)
++ }, warning = identity)
+> print(res)
+<simpleWarning: Cannot walk expression. Unknown object type ‘...’>
+> stopifnot(inherits(res, "simpleWarning"))
+> 
+> options(globals.walkAST.onUnknownType = "error")
+> 
+> message("*** walkAST() - exceptions ... DONE")
+*** walkAST() - exceptions ... DONE
+> 
+> message("*** walkAST() ... DONE")
+*** walkAST() ... DONE
+> 
+> source("incl/end.R")
+> 

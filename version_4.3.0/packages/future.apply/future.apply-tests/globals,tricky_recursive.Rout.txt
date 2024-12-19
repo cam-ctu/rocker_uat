@@ -1,0 +1,157 @@
+
+R version 4.3.0 (2023-04-21) -- "Already Tomorrow"
+Copyright (C) 2023 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> source("incl/start.R")
+Loading required package: future
+[17:41:04.013] plan(): Setting new future strategy stack:
+[17:41:04.013] List of future strategies:
+[17:41:04.013] 1. sequential:
+[17:41:04.013]    - args: function (..., envir = parent.frame())
+[17:41:04.013]    - tweaked: FALSE
+[17:41:04.013]    - call: future::plan("sequential")
+[17:41:04.023] plan(): nbrOfWorkers() = 1
+> 
+> ## Test adopted from http://stackoverflow.com/questions/42561088/nested-do-call-within-a-foreach-dopar-environment-cant-find-function-passed-w
+> 
+> options(future.debug = FALSE)
+> 
+> message("*** Tricky globals requiring recursive search ...")
+*** Tricky globals requiring recursive search ...
+> 
+> my_add <- function(a, b) a + b
+> 
+> call_my_add <- function(a, b) {
++   do.call(my_add, args = list(a = a, b = b))
++ }
+> 
+> call_my_add_caller <- function(a, b, FUN = call_my_add) {
++   do.call(FUN, args = list(a = a, b = b))
++ }
+> 
+> main_lapply <- function(x = 1:2, caller = call_my_add_caller,
++                                args = list(FUN = call_my_add)) {
++   lapply(x, FUN = function(i) {
++     do.call(caller, args = c(list(a = i, b = i+1L), args))
++   })
++ }
+> 
+> main_lapply_no_FUN <- function(x = 1:2, caller = call_my_add_caller,
++                                args = list(FUN = call_my_add)) {
++   lapply(x, FUN = function(i) {
++     do.call(caller, args = list(a = i, b = i+1L))
++   })
++ }
+> 
+> main_future_lapply <- function(x = 1:2, caller = call_my_add_caller,
++                                args = list(FUN = call_my_add)) {
++   future_lapply(x, FUN = function(i) {
++     do.call(caller, args = c(list(a = i, b = i + 1L), args))
++   })
++ }
+> 
+> main_future_lapply_no_FUN <- function(x = 1:2, caller = call_my_add_caller,
++                                args = list(FUN = call_my_add)) {
++   future_lapply(x, FUN = function(i) {
++     do.call(caller, args = list(a = i, b = i + 1L))
++   })
++ }
+> 
+> x0 <- y0 <- z0 <- NULL
+> for (strategy in supportedStrategies()) {
++   message(sprintf("*** strategy = %s ...", sQuote(strategy)))
++   
++   plan(strategy)
++ 
++   z <- main_lapply()
++   str(list(z = z))
++   if (is.null(z0)) z0 <- z
++   stopifnot(identical(z, z0))
++ 
++   z2 <- main_lapply_no_FUN()
++   str(list(z2 = z2))
++   stopifnot(identical(z2, z0))
++   
++   z3 <- main_future_lapply()
++   str(list(z3 = z3))
++   stopifnot(identical(z3, z0))
++ 
++   z4 <- main_future_lapply_no_FUN()
++   str(list(z4 = z4))
++   stopifnot(identical(z4, z0))
++   
++   message(sprintf("*** strategy = %s ... DONE", sQuote(strategy)))
++ }
+*** strategy = ‘sequential’ ...
+List of 1
+ $ z:List of 2
+  ..$ : int 3
+  ..$ : int 5
+List of 1
+ $ z2:List of 2
+  ..$ : int 3
+  ..$ : int 5
+List of 1
+ $ z3:List of 2
+  ..$ : int 3
+  ..$ : int 5
+List of 1
+ $ z4:List of 2
+  ..$ : int 3
+  ..$ : int 5
+*** strategy = ‘sequential’ ... DONE
+*** strategy = ‘multicore’ ...
+List of 1
+ $ z:List of 2
+  ..$ : int 3
+  ..$ : int 5
+List of 1
+ $ z2:List of 2
+  ..$ : int 3
+  ..$ : int 5
+List of 1
+ $ z3:List of 2
+  ..$ : int 3
+  ..$ : int 5
+List of 1
+ $ z4:List of 2
+  ..$ : int 3
+  ..$ : int 5
+*** strategy = ‘multicore’ ... DONE
+*** strategy = ‘multisession’ ...
+List of 1
+ $ z:List of 2
+  ..$ : int 3
+  ..$ : int 5
+List of 1
+ $ z2:List of 2
+  ..$ : int 3
+  ..$ : int 5
+List of 1
+ $ z3:List of 2
+  ..$ : int 3
+  ..$ : int 5
+List of 1
+ $ z4:List of 2
+  ..$ : int 3
+  ..$ : int 5
+*** strategy = ‘multisession’ ... DONE
+> 
+> message("*** Tricky globals requiring recursive search ... DONE")
+*** Tricky globals requiring recursive search ... DONE
+> 
+> source("incl/end.R")
+> 

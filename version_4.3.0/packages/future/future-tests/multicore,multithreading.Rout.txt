@@ -1,0 +1,115 @@
+
+R version 4.3.0 (2023-04-21) -- "Already Tomorrow"
+Copyright (C) 2023 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> source("incl/start.R")
+[17:42:56.574] plan(): Setting new future strategy stack:
+[17:42:56.575] List of future strategies:
+[17:42:56.575] 1. sequential:
+[17:42:56.575]    - args: function (..., envir = parent.frame())
+[17:42:56.575]    - tweaked: FALSE
+[17:42:56.575]    - call: future::plan("sequential")
+[17:42:56.589] plan(): nbrOfWorkers() = 1
+> library("listenv")
+> plan(multicore)
+[17:42:56.602] plan(): Setting new future strategy stack:
+[17:42:56.602] List of future strategies:
+[17:42:56.602] 1. multicore:
+[17:42:56.602]    - args: function (..., workers = availableCores(constraints = "multicore"), envir = parent.frame())
+[17:42:56.602]    - tweaked: FALSE
+[17:42:56.602]    - call: plan(multicore)
+[17:42:56.618] plan(): nbrOfWorkers() = 2
+> 
+> message("*** multicore() and multi-threading ...")
+*** multicore() and multi-threading ...
+> 
+> message("supportsMulticore(): ", sQuote(supportsMulticore()))
+supportsMulticore(): ‘TRUE’
+> message("availableCores('multicore'): ", sQuote(availableCores("multicore")))
+availableCores('multicore'): ‘2’
+> message("supports_omp_threads(): ", sQuote(supports_omp_threads()))
+supports_omp_threads(): ‘FALSE’
+> 
+> if (requireNamespace("RhpcBLASctl", quietly = TRUE)) {
++   message("Checking RhpcBLASctl capabilities ...")
++   nthreads_0 <- RhpcBLASctl::omp_get_max_threads()
++   utils::str(list(nthreads_0 = nthreads_0))
++   message("- Number of OpenMP threads: ", sQuote(nthreads_0))
++   
++   message("- Trying to set number of OpenMP threads to one")
++   try(RhpcBLASctl::omp_set_num_threads(1L))
++   nthreads_1 <- RhpcBLASctl::omp_get_max_threads()
++   utils::str(list(nthreads_1 = nthreads_1))
++   message("  - Number of OpenMP threads: ", sQuote(nthreads_1))
++   try(RhpcBLASctl::omp_set_num_threads(nthreads_0))
++ 
++   f <- future(RhpcBLASctl::omp_get_max_threads())
++   nthreads_child <- value(f)
++   utils::str(list(nthreads_child = nthreads_child))
++   message(sprintf("  - Number of OpenMP threads in %s future: %s", sQuote(class(f)[1]), sQuote(nthreads_child)))
++ 
++   nthreads_children <- parallel::mclapply(1:2, FUN = function(x) {
++     RhpcBLASctl::omp_get_max_threads()
++   })
++   utils::str(list(nthreads_children = nthreads_children))
++   message("  - Number of OpenMP threads in mclapply(): ", sQuote(nthreads_children[[1]]))
++ 
++   message("- Trying to reset number of OpenMP threads")
++   nthreads_2 <- RhpcBLASctl::omp_get_max_threads()
++   utils::str(list(nthreads_2 = nthreads_2))
++   message("  - Number of OpenMP threads: ", sQuote(nthreads_2))
++   stopifnot(identical(nthreads_2, nthreads_0))
++   message("Checking RhpcBLASctl capabilities ... done")
++ }
+> 
+> if (supportsMulticore() && availableCores("multicore") >= 2L && supports_omp_threads()) {
++   nthreads_0 <- RhpcBLASctl::omp_get_max_threads()
++   
++   for (enable in c(TRUE, FALSE)) {
++     options(future.fork.multithreading.enable = enable)
++ 
++     message(sprintf("'future.fork.multithreading.enable' = %s ...", enable))
++ 
++     f <- future(list(nthreads = RhpcBLASctl::omp_get_max_threads()))
++     nthreads <- value(f)$nthreads
++     cat(sprintf("Number of OpenMP threads in %s future: %d\n", sQuote(class(f)[1]), nthreads))
++ 
++     ## Assert that single-threading was set?
++     if (enable) {
++       stopifnot(enable && nthreads >= nthreads_0)
++     } else {
++       ## FIXME: On CRAN r-devel-linux-x86_64-fedora-clang (2020-01-17):
++       ## Number of OpenMP threads in 'MulticoreFuture' future: 24
++       ## Error: !enable && nthreads == 1L is not TRUE
++       stopifnot(!enable && nthreads == 1L)
++     }
++       
++     message(sprintf("'future.fork.multithreading.enable' = %s ... DONE", enable))
++   } ## for (enable ...)
++ } ## if (requireNamespace("RhpcBLASctl", ...)) {
+> 
+> message("*** multicore() and multi-threading ... DONE")
+*** multicore() and multi-threading ... DONE
+> 
+> source("incl/end.R")
+[17:42:56.627] plan(): Setting new future strategy stack:
+[17:42:56.627] List of future strategies:
+[17:42:56.627] 1. FutureStrategy:
+[17:42:56.627]    - args: function (..., envir = parent.frame())
+[17:42:56.627]    - tweaked: FALSE
+[17:42:56.627]    - call: future::plan(oplan)
+[17:42:56.627] plan(): nbrOfWorkers() = 1
+> 

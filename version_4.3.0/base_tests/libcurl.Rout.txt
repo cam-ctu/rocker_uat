@@ -1,0 +1,189 @@
+
+R version 4.3.0 (2023-04-21) -- "Already Tomorrow"
+Copyright (C) 2023 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> ## These are tests that require libcurl functionality and a working
+> ## Internet connection.
+> 
+> ## As from R 3.4.0 method = "libcurl" is the default on a Unix-alike
+> ## so this is in small part duplication -- but not on Windows.
+> 
+> if(!capabilities("libcurl")) {
++     warning("no libcurl support")
++     q()
++ }
+> 
+> ## check basic Internet access
+> if(.Platform$OS.type == "unix" &&
++    is.null(nsl("cran.r-project.org"))) q()
+> 
+> tf <- tempfile()
+> download.file("http://cran.r-project.org/", tf,  method = "libcurl")
+trying URL 'http://cran.r-project.org/'
+Content type 'text/html' length 866 bytes
+==================================================
+downloaded 866 bytes
+
+> file.size(tf)
+[1] 866
+> unlink(tf)
+> 
+> 
+> ## test url connections on http
+> str(readLines(zz <- url("http://cran.r-project.org/", method = "libcurl")))
+ chr [1:24] "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Frameset//EN\" \"http://www.w3.org/TR/html4/frameset.dtd\">" ...
+> zz
+A connection with                                        
+description "http://cran.r-project.org/"
+class       "url-libcurl"               
+mode        "r"                         
+text        "text"                      
+opened      "closed"                    
+can read    "yes"                       
+can write   "no"                        
+> stopifnot(identical(summary(zz)$class, "url-libcurl"))
+> close(zz)
+> 
+> tf <- tempfile()
+> testDownloadFile404 <- tryCatch(suppressWarnings({
++     download.file("http://httpbin.org/status/404", tf, method = "libcurl")
++ }), error=function(e) {
++     conditionMessage(e) == "cannot open URL 'http://httpbin.org/status/404'"
++ })
+trying URL 'http://httpbin.org/status/404'
+> stopifnot(testDownloadFile404, !file.exists(tf))
+> 
+> test404.1 <- tryCatch({
++     open(zz <- url("http://httpbin.org/status/404", method = "libcurl"))
++ }, warning=function(w) {
++     grepl("404 Not Found", conditionMessage(w))
++ })
+> close(zz)
+> stopifnot(test404.1)
+> 
+> ##  via read.table (which closes the connection)
+> tail(read.table(url("http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat",
++                     method = "libcurl")))
+     V1  V2  V3    V4 V5
+95   95 308 110 37.76  1
+96   96 308 120 37.73  1
+97   97 308 130 37.77  1
+98   98 308 140 38.01  1
+99   99 308 150 38.04  1
+100 100 308 200 38.07  1
+> 
+> ## check option works
+> options(url.method = "libcurl")
+> zz <- url("http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")
+> stopifnot(identical(summary(zz)$class, "url-libcurl"))
+> close(zz)
+> 
+> test404.2 <- tryCatch({
++     open(zz <- url("http://httpbin.org/status/404"))
++ }, warning = function(w) {
++     grepl("404 Not Found", conditionMessage(w))
++ })
+> close(zz)
+> stopifnot(test404.2)
+> 
+> showConnections(all = TRUE)
+  description class      mode text   isopen   can read can write
+0 "stdin"     "terminal" "r"  "text" "opened" "yes"    "no"     
+1 "stdout"    "terminal" "w"  "text" "opened" "no"     "yes"    
+2 "stderr"    "terminal" "w"  "text" "opened" "no"     "yes"    
+> 
+> ## --------------------------------------------------------------
+> ## Some platforms have problems with certificates,
+> ## so allow them to skip the https tests
+> junk <- tryCatch(curlGetHeaders("http://bugs.r-project.org"),
++                  error = function(e) {
++ 			 message("Check for working https failed:\n\t",
++ 				 conditionMessage(e),
++ 				 "skipping https tests\n")
++ 			 q()
++ 		 })
+> 
+> example(curlGetHeaders, run.donttest = TRUE)
+
+crlGtH> ## No test: 
+crlGtH> ## needs Internet access, results vary
+crlGtH> curlGetHeaders("http://bugs.r-project.org")   ## this redirects to https://
+ [1] "HTTP/1.1 301 Moved Permanently\r\n"                                                                                                  
+ [2] "Server: nginx\r\n"                                                                                                                   
+ [3] "Date: Thu, 19 Dec 2024 18:32:57 GMT\r\n"                                                                                             
+ [4] "Content-Type: text/html\r\n"                                                                                                         
+ [5] "Content-Length: 162\r\n"                                                                                                             
+ [6] "Connection: keep-alive\r\n"                                                                                                          
+ [7] "Location: https://bugs.R-project.org/\r\n"                                                                                           
+ [8] "\r\n"                                                                                                                                
+ [9] "HTTP/2 200 \r\n"                                                                                                                     
+[10] "server: nginx\r\n"                                                                                                                   
+[11] "date: Thu, 19 Dec 2024 18:32:57 GMT\r\n"                                                                                             
+[12] "content-type: text/html; charset=UTF-8\r\n"                                                                                          
+[13] "content-length: 13127\r\n"                                                                                                           
+[14] "content-security-policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'\r\n"  
+[15] "set-cookie: Bugzilla_login_request_cookie=ZwHuFn4Mou; domain=bugs.r-project.org; path=/; secure; HttpOnly\r\n"                       
+[16] "x-content-security-policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'\r\n"
+[17] "x-content-type-options: nosniff\r\n"                                                                                                 
+[18] "x-frame-options: SAMEORIGIN\r\n"                                                                                                     
+[19] "x-webkit-csp: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'\r\n"             
+[20] "x-xss-protection: 1; mode=block\r\n"                                                                                                 
+[21] "\r\n"                                                                                                                                
+attr(,"status")
+[1] 200
+
+crlGtH> curlGetHeaders("https://httpbin.org/status/404")  ## returns status
+[1] "HTTP/2 404 \r\n"                           
+[2] "date: Thu, 19 Dec 2024 18:32:57 GMT\r\n"   
+[3] "content-type: text/html; charset=utf-8\r\n"
+[4] "content-length: 0\r\n"                     
+[5] "server: gunicorn/19.9.0\r\n"               
+[6] "access-control-allow-origin: *\r\n"        
+[7] "access-control-allow-credentials: true\r\n"
+[8] "\r\n"                                      
+attr(,"status")
+[1] 404
+
+crlGtH> ## curlGetHeaders("ftp://cran.r-project.org") ## ftp::// support is vanishing
+crlGtH> ## End(No test)
+crlGtH> 
+crlGtH> 
+> 
+> ## https URL
+> head(readLines(zz <- url("https://httpbin.org", method = "libcurl"),
++                warn = FALSE))
+[1] "<!DOCTYPE html>"                "<html lang=\"en\">"            
+[3] ""                               "<head>"                        
+[5] "    <meta charset=\"UTF-8\">"   "    <title>httpbin.org</title>"
+> close(zz)
+> 
+> ## redirection (to a https:// URL)
+> head(readLines(zz <- url("http://bugs.r-project.org", method = "libcurl"),
++                warn = FALSE))
+[1] "<!DOCTYPE html>"                                                            
+[2] "<html lang=\"en\">"                                                         
+[3] "  <head>"                                                                   
+[4] "    <title>R bug tracking system - Main Page</title>"                       
+[5] "    <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">"
+[6] ""                                                                           
+> close(zz)
+> 
+> options(url.method = "libcurl")
+> head(readLines("https://httpbin.org", warn = FALSE))
+[1] "<!DOCTYPE html>"                "<html lang=\"en\">"            
+[3] ""                               "<head>"                        
+[5] "    <meta charset=\"UTF-8\">"   "    <title>httpbin.org</title>"
+> 

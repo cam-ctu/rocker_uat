@@ -1,0 +1,369 @@
+
+R version 4.3.0 (2023-04-21) -- "Already Tomorrow"
+Copyright (C) 2023 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library("matrixStats")
+> 
+> ## Create isFALSE() if running on an old version of R
+> if (!exists("isFALSE", mode="function")) {
++   isFALSE <- function(x) is.logical(x) && length(x) == 1L && !is.na(x) && !x
++ }
+> 
+> rowWeightedMeans_R <- function(x, w, na.rm = FALSE, ..., useNames = NA) {
++   res <- apply(x, MARGIN = 1L, FUN = weighted.mean, w = w, na.rm = na.rm, ...)
++   
++   # Keep naming support consistency same as rowWeightedMeans()
++   idxs <- which(is.na(w) | w != 0)
++   nw <- length(idxs)
++   if (na.rm) na.rm <- anyMissing(x)
++   if ((!is.null(w) && nw == 0L) || isFALSE(na.rm)) {
++     if (is.na(useNames) || !useNames) names(res) <- NULL
++   }
++   else if (isFALSE(useNames)) names(res) <- NULL
++   
++   res
++ }
+> 
+> colWeightedMeans_R <- function(x, w, na.rm = FALSE, ..., useNames = NA) {
++   res <- apply(x, MARGIN = 2L, FUN = weighted.mean, w = w, na.rm = na.rm, ...)
++   
++   # Keep naming support consistency same as colWeightedMeans()
++   idxs <- which(is.na(w) | w != 0)
++   nw <- length(idxs)
++   if (!is.null(w) && nw == 0L) {
++     if (is.na(useNames) || !useNames) names(res) <- NULL
++   }
++   else if (isFALSE(useNames)) names(res) <- NULL
++   
++   res
++ }
+> 
+> set.seed(1)
+> 
+> x <- matrix(rnorm(20), nrow = 5, ncol = 4)
+> print(x)
+           [,1]       [,2]       [,3]        [,4]
+[1,] -0.6264538 -0.8204684  1.5117812 -0.04493361
+[2,]  0.1836433  0.4874291  0.3898432 -0.01619026
+[3,] -0.8356286  0.7383247 -0.6212406  0.94383621
+[4,]  1.5952808  0.5757814 -2.2146999  0.82122120
+[5,]  0.3295078 -0.3053884  1.1249309  0.59390132
+> 
+> # To check names attribute
+> dimnames <- list(letters[1:5], LETTERS[1:4])
+> 
+> # Non-weighted row averages
+> x_est0 <- rowMeans(x)
+> x_est1 <- rowWeightedMeans(x)
+> print(x_est1)
+[1] 0.004981341 0.261181337 0.056322931 0.194395865 0.435737906
+> stopifnot(all.equal(x_est1, x_est0))
+> x_est2 <- colWeightedMeans(t(x))
+> stopifnot(all.equal(x_est2, x_est0))
+> # Check names attribute
+> dimnames(x) <- dimnames
+> x_est1 <- rowWeightedMeans(x, useNames = FALSE)
+> x_est2 <- colWeightedMeans(t(x), useNames = FALSE)
+> stopifnot(all.equal(x_est1, x_est0))
+> stopifnot(all.equal(x_est2, x_est0))
+> x_est0 <- rowMeans(x)
+> x_est1 <- rowWeightedMeans(x, useNames = TRUE)
+> x_est2 <- colWeightedMeans(t(x), useNames = TRUE)
+> stopifnot(all.equal(x_est1, x_est0))
+> stopifnot(all.equal(x_est2, x_est0))
+> dimnames(x) <- NULL
+> 
+> 
+> # Weighted row averages (uniform weights)
+> w <- rep(2.5, times = ncol(x))
+> x_est0 <- rowMeans(x)
+> x_est1 <- rowWeightedMeans(x, w = w)
+> print(x_est1)
+[1] 0.004981341 0.261181337 0.056322931 0.194395865 0.435737906
+> stopifnot(all.equal(x_est1, x_est0))
+> x_est2 <- colWeightedMeans(t(x), w = w)
+> stopifnot(all.equal(x_est2, x_est0))
+> # Test with and without dimnames on x
+> for (setDimnames in c(TRUE, FALSE)) {
++   if (setDimnames) dimnames(x) <- dimnames
++   else dimnames(x) <- NULL    
++   # Check names attribute
++   for (useNames in c(NA, TRUE, FALSE)) {
++     x_est0 <- rowWeightedMeans_R(x, w = w, useNames = useNames)
++     x_est1 <- rowWeightedMeans(x, w = w, useNames = useNames)
++     stopifnot(all.equal(x_est1, x_est0))
++     x_est0 <- colWeightedMeans_R(t(x), w = w, useNames = useNames)
++     x_est1 <- colWeightedMeans(t(x), w = w, useNames = useNames)
++     stopifnot(all.equal(x_est1, x_est0))
++   }
++ }
+Warning messages:
+1: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+2: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+3: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+4: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+> 
+> 
+> # Weighted row averages (excluding some columns)
+> w <- c(1, 1, 0, 1)
+> x_est0 <- rowMeans(x[, (w == 1), drop = FALSE])
+> x_est1 <- rowWeightedMeans(x, w = w)
+> print(x_est1)
+[1] -0.4972853  0.2182940  0.2821774  0.9974278  0.2060069
+> stopifnot(all.equal(x_est1, x_est0))
+> x_est2 <- colWeightedMeans(t(x), w = w)
+> stopifnot(all.equal(x_est2, x_est0))
+> # Test with and without dimnames on x
+> for (setDimnames in c(TRUE, FALSE)) {
++   if (setDimnames) dimnames(x) <- dimnames
++   else dimnames(x) <- NULL    
++   # Check names attribute
++   for (useNames in c(NA, TRUE, FALSE)) {
++     x_est0 <- rowWeightedMeans_R(x, w = w, useNames = useNames)
++     x_est1 <- rowWeightedMeans(x, w = w, useNames = useNames)
++     stopifnot(all.equal(x_est1, x_est0))
++     x_est0 <- colWeightedMeans_R(t(x), w = w, useNames = useNames)
++     x_est1 <- colWeightedMeans(t(x), w = w, useNames = useNames)
++     stopifnot(all.equal(x_est1, x_est0))
++   }
++ }
+Warning messages:
+1: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+2: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+3: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+4: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+> 
+> 
+> # Weighted row averages (excluding some columns)
+> w <- c(0, 1, 0, 0)
+> x_est0 <- rowMeans(x[, (w == 1), drop = FALSE])
+> x_est1 <- rowWeightedMeans(x, w = w)
+> stopifnot(all.equal(x_est1, x_est0))
+> x_est2 <- colWeightedMeans(t(x), w = w)
+> stopifnot(all.equal(x_est2, x_est0))
+> # Test with and without dimnames on x
+> for (setDimnames in c(TRUE, FALSE)) {
++   if (setDimnames) dimnames(x) <- dimnames
++   else dimnames(x) <- NULL    
++   # Check names attribute
++   for (useNames in c(NA, TRUE, FALSE)) {
++     x_est0 <- rowWeightedMeans_R(x, w = w, useNames = useNames)
++     x_est1 <- rowWeightedMeans(x, w = w, useNames = useNames)
++     stopifnot(all.equal(x_est1, x_est0))
++     x_est0 <- colWeightedMeans_R(t(x), w = w, useNames = useNames)
++     x_est1 <- colWeightedMeans(t(x), w = w, useNames = useNames)
++     stopifnot(all.equal(x_est1, x_est0))
++   }
++ }
+Warning messages:
+1: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+2: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+3: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+4: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+> 
+> 
+> # Weighted row averages (all zero weights)
+> w <- c(0, 0, 0, 0)
+> x_est0 <- rowMeans(x[, (w == 1), drop = FALSE])
+> x_est1 <- rowWeightedMeans(x, w = w)
+> stopifnot(all.equal(x_est1, x_est0))
+> x_est2 <- colWeightedMeans(t(x), w = w)
+> stopifnot(all.equal(x_est2, x_est0))
+> # Test with and without dimnames on x
+> for (setDimnames in c(TRUE, FALSE)) {
++   if (setDimnames) dimnames(x) <- dimnames
++   else dimnames(x) <- NULL    
++   # Check names attribute
++   for (useNames in c(NA, TRUE, FALSE)) {
++     x_est0 <- rowWeightedMeans_R(x, w = w, useNames = useNames)
++     x_est1 <- rowWeightedMeans(x, w = w, useNames = useNames)
++     stopifnot(all.equal(x_est1, x_est0))
++     x_est0 <- colWeightedMeans_R(t(x), w = w, useNames = useNames)
++     x_est1 <- colWeightedMeans(t(x), w = w, useNames = useNames)
++     stopifnot(all.equal(x_est1, x_est0))
++   }
++ }
+Warning messages:
+1: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+2: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+3: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+4: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+> 
+> 
+> # Weighted averages by rows and columns
+> w <- 1:4
+> x_est1 <- rowWeightedMeans(x, w = w)
+> print(x_est1)
+[1]  0.20882185  0.22632701  0.25526439 -0.06123714  0.54691290
+> x_est2 <- colWeightedMeans(t(x), w = w)
+> stopifnot(all.equal(x_est2, x_est1))
+> # Test with and without dimnames on x
+> for (setDimnames in c(TRUE, FALSE)) {
++   if (setDimnames) dimnames(x) <- dimnames
++   else dimnames(x) <- NULL    
++   # Check names attribute
++   for (useNames in c(NA, TRUE, FALSE)) {
++     x_est0 <- rowWeightedMeans_R(x, w = w, useNames = useNames)
++     x_est1 <- rowWeightedMeans(x, w = w, useNames = useNames)
++     stopifnot(all.equal(x_est1, x_est0))
++     x_est0 <- colWeightedMeans_R(t(x), w = w, useNames = useNames)
++     x_est1 <- colWeightedMeans(t(x), w = w, useNames = useNames)
++     stopifnot(all.equal(x_est1, x_est0))
++   }
++ }
+Warning messages:
+1: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+2: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+3: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+4: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+> 
+> 
+> x[sample(length(x), size = 0.3 * length(x))] <- NA
+> print(x)
+           [,1]      [,2]       [,3]        [,4]
+[1,] -0.6264538        NA  1.5117812 -0.04493361
+[2,]  0.1836433        NA         NA -0.01619026
+[3,] -0.8356286 0.7383247 -0.6212406  0.94383621
+[4,]  1.5952808        NA -2.2146999  0.82122120
+[5,]  0.3295078        NA         NA  0.59390132
+> 
+> # Non-weighted row averages with missing values
+> x_est0 <- rowMeans(x, na.rm = TRUE)
+> x_est1 <- rowWeightedMeans(x, na.rm = TRUE)
+> print(x_est1)
+[1] 0.28013125 0.08372653 0.05632293 0.06726737 0.46170455
+> stopifnot(all.equal(x_est1, x_est0))
+> x_est2 <- colWeightedMeans(t(x), na.rm = TRUE)
+> stopifnot(all.equal(x_est2, x_est0))
+> # Check names attribute
+> dimnames(x) <- dimnames
+> x_est1 <- rowWeightedMeans(x, na.rm = TRUE, useNames = FALSE)
+> x_est2 <- colWeightedMeans(t(x), na.rm = TRUE, useNames = FALSE)
+> stopifnot(all.equal(x_est1, x_est0))
+> stopifnot(all.equal(x_est2, x_est0))
+> x_est0 <- rowMeans(x, na.rm = TRUE)
+> x_est1 <- rowWeightedMeans(x, na.rm = TRUE, useNames = TRUE)
+> x_est2 <- colWeightedMeans(t(x), na.rm = TRUE, useNames = TRUE)
+> stopifnot(all.equal(x_est1, x_est0))
+> stopifnot(all.equal(x_est2, x_est0))
+> dimnames(x) <- NULL
+> 
+> 
+> # Weighted row averages with missing values
+> x_est0 <- apply(x, MARGIN = 1L, FUN = weighted.mean, w = w, na.rm = TRUE)
+> print(x_est0)
+[1]  0.46614441  0.02377645  0.25526439 -0.22049176  0.54102261
+> x_est1 <- rowWeightedMeans(x, w = w, na.rm = TRUE)
+> print(x_est1)
+[1]  0.46614441  0.02377645  0.25526439 -0.22049176  0.54102261
+> stopifnot(all.equal(x_est1, x_est0))
+> x_est2 <- colWeightedMeans(t(x), w = w, na.rm = TRUE)
+> stopifnot(all.equal(x_est2, x_est0))
+> # Test with and without dimnames on x
+> for (setDimnames in c(TRUE, FALSE)) {
++   if (setDimnames) dimnames(x) <- dimnames
++   else dimnames(x) <- NULL    
++   # Check names attribute
++   for (useNames in c(NA, TRUE, FALSE)) {
++     x_est0 <- rowWeightedMeans_R(x, w = w, na.rm = TRUE, useNames = useNames)
++     x_est1 <- rowWeightedMeans(x, w = w, na.rm = TRUE, useNames = useNames)
++     stopifnot(all.equal(x_est1, x_est0))
++     x_est0 <- colWeightedMeans_R(t(x), w = w, na.rm = TRUE, useNames = useNames)
++     x_est1 <- colWeightedMeans(t(x), w = w, na.rm = TRUE, useNames = useNames)
++     stopifnot(all.equal(x_est1, x_est0))
++   }
++ }
+Warning messages:
+1: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+2: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+3: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+4: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+> 
+> 
+> # Weighted averages by rows and columns
+> w <- 1:4
+> x_est1 <- rowWeightedMeans(x, w = w, na.rm = TRUE)
+> x_est2 <- colWeightedMeans(t(x), w = w, na.rm = TRUE)
+> stopifnot(all.equal(x_est2, x_est1))
+> # Test with and without dimnames on x
+> for (setDimnames in c(TRUE, FALSE)) {
++   if (setDimnames) dimnames(x) <- dimnames
++   else dimnames(x) <- NULL    
++   # Check names attribute
++   for (useNames in c(NA, TRUE, FALSE)) {
++     x_est0 <- rowWeightedMeans_R(x, w = w, na.rm = TRUE, useNames = useNames)
++     x_est1 <- rowWeightedMeans(x, w = w, na.rm = TRUE, useNames = useNames)
++     stopifnot(all.equal(x_est1, x_est0))
++     x_est0 <- colWeightedMeans_R(t(x), w = w, na.rm = TRUE, useNames = useNames)
++     x_est1 <- colWeightedMeans(t(x), w = w, na.rm = TRUE, useNames = useNames)
++     stopifnot(all.equal(x_est1, x_est0))
++   }
++ }
+Warning messages:
+1: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+2: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+3: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+4: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+> 
+> 
+> # w contains missing value
+> w[1] <- NA_integer_
+> x_est1 <- rowWeightedMeans(x, w = w, na.rm = TRUE)
+> x_est2 <- colWeightedMeans(t(x), w = w, na.rm = TRUE)
+> stopifnot(all.equal(x_est2, x_est1))
+> # Test with and without dimnames on x
+> for (setDimnames in c(TRUE, FALSE)) {
++   if (setDimnames) dimnames(x) <- dimnames
++   else dimnames(x) <- NULL    
++   # Check names attribute
++   for (useNames in c(NA, TRUE, FALSE)) {
++     x_est0 <- rowWeightedMeans_R(x, w = w, na.rm = TRUE, useNames = useNames)
++     x_est1 <- rowWeightedMeans(x, w = w, na.rm = TRUE, useNames = useNames)
++     stopifnot(all.equal(x_est1, x_est0))
++     x_est0 <- colWeightedMeans_R(t(x), w = w, na.rm = TRUE, useNames = useNames)
++     x_est1 <- colWeightedMeans(t(x), w = w, na.rm = TRUE, useNames = useNames)
++     stopifnot(all.equal(x_est1, x_est0))
++   }
++ }
+Warning messages:
+1: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+2: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+3: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+4: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+> 
+> x_est1 <- rowWeightedMeans(x, w = w, na.rm = FALSE)
+> x_est2 <- colWeightedMeans(t(x), w = w, na.rm = FALSE)
+> stopifnot(all.equal(x_est2, x_est1))
+> # Test with and without dimnames on x
+> for (setDimnames in c(TRUE, FALSE)) {
++   if (setDimnames) dimnames(x) <- dimnames
++   else dimnames(x) <- NULL    
++   # Check names attribute
++   for (useNames in c(NA, TRUE, FALSE)) {
++     x_est0 <- rowWeightedMeans_R(x, w = w, na.rm = FALSE, useNames = useNames)
++     x_est1 <- rowWeightedMeans(x, w = w, na.rm = FALSE, useNames = useNames)
++     stopifnot(all.equal(x_est1, x_est0))
++     x_est0 <- colWeightedMeans_R(t(x), w = w, na.rm = FALSE, useNames = useNames)
++     x_est1 <- colWeightedMeans(t(x), w = w, na.rm = FALSE, useNames = useNames)
++     stopifnot(all.equal(x_est1, x_est0))
++   }
++ }
+Warning messages:
+1: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+2: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+3: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+4: useNames = NA is deprecated. Instead, specify either useNames = TRUE or useNames = TRUE. 
+> 

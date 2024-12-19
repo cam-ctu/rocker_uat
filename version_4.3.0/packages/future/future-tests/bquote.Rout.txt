@@ -1,0 +1,842 @@
+
+R version 4.3.0 (2023-04-21) -- "Already Tomorrow"
+Copyright (C) 2023 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> source("incl/start.R")
+[17:41:36.331] plan(): Setting new future strategy stack:
+[17:41:36.331] List of future strategies:
+[17:41:36.331] 1. sequential:
+[17:41:36.331]    - args: function (..., envir = parent.frame())
+[17:41:36.331]    - tweaked: FALSE
+[17:41:36.331]    - call: future::plan("sequential")
+[17:41:36.346] plan(): nbrOfWorkers() = 1
+> 
+> bquote_compile <- future:::bquote_compile
+> bquote_apply <- future:::bquote_apply
+> 
+> message("*** bquote_compile() & bquote_apply() ...")
+*** bquote_compile() & bquote_apply() ...
+> 
+> exprs <- list(
++   A = quote(.(a)),
++   B = quote(1 + .(a)),
++   C = quote(.(a) + 2),
++   D = quote({ .(a) }),
++   E = quote({ 1 + .(a) }),
++   F = quote(function(x = 42) { x + .(a) }),
++   G = quote({ 1 + .(a + 2) * c(1, 2, .(b)) }),
++   H = quote(.(a + 1)),
++   I = quote(.(a + 1) + .(a)),
++   J = quote(function(a=.(a)) NULL)
++ )
+> 
+> 
+> for (kk in seq_along(exprs)) {
++   name <- names(exprs)[kk]
++   message(sprintf("Expression #%d (%s) of %d:",
++                   kk, sQuote(name), length(exprs)))
++   expr <- exprs[[kk]]
++   print(expr)
++       
++   for (a in list(1, quote(A), quote(c()), NULL)) {
++     for (b in list(1, quote(B), quote(c()), NULL)) {
++       str(list(a = a, b = b))
++ 
++       truth <- tryCatch({
++         eval(as.call(list(quote(base::bquote), expr)))
++       }, error = identity)
++       if (inherits(truth, "error")) next
++       
++       tmpl <- bquote_compile(expr, substitute = FALSE)
++       expr2 <- bquote_apply(tmpl)
++       print(expr2)
++ 
++       if (!isTRUE(all.equal(expr2, truth))) {
++         str(list(name = name, a = a, b = b, truth = truth, expr2 = expr2))  
++         stopifnot(all.equal(expr2, truth))
++       }
++     }
++   }
++ }
+Expression #1 (‘A’) of 10:
+.(a)
+List of 2
+ $ a: num 1
+ $ b: num 1
+[1] 1
+List of 2
+ $ a: num 1
+ $ b: symbol B
+[1] 1
+List of 2
+ $ a: num 1
+ $ b: language c()
+[1] 1
+List of 2
+ $ a: num 1
+ $ b: NULL
+[1] 1
+List of 2
+ $ a: symbol A
+ $ b: num 1
+A
+List of 2
+ $ a: symbol A
+ $ b: symbol B
+A
+List of 2
+ $ a: symbol A
+ $ b: language c()
+A
+List of 2
+ $ a: symbol A
+ $ b: NULL
+A
+List of 2
+ $ a: language c()
+ $ b: num 1
+c()
+List of 2
+ $ a: language c()
+ $ b: symbol B
+c()
+List of 2
+ $ a: language c()
+ $ b: language c()
+c()
+List of 2
+ $ a: language c()
+ $ b: NULL
+c()
+List of 2
+ $ a: NULL
+ $ b: num 1
+NULL
+List of 2
+ $ a: NULL
+ $ b: symbol B
+NULL
+List of 2
+ $ a: NULL
+ $ b: language c()
+NULL
+List of 2
+ $ a: NULL
+ $ b: NULL
+NULL
+Expression #2 (‘B’) of 10:
+1 + .(a)
+List of 2
+ $ a: num 1
+ $ b: num 1
+1 + 1
+List of 2
+ $ a: num 1
+ $ b: symbol B
+1 + 1
+List of 2
+ $ a: num 1
+ $ b: language c()
+1 + 1
+List of 2
+ $ a: num 1
+ $ b: NULL
+1 + 1
+List of 2
+ $ a: symbol A
+ $ b: num 1
+1 + A
+List of 2
+ $ a: symbol A
+ $ b: symbol B
+1 + A
+List of 2
+ $ a: symbol A
+ $ b: language c()
+1 + A
+List of 2
+ $ a: symbol A
+ $ b: NULL
+1 + A
+List of 2
+ $ a: language c()
+ $ b: num 1
+1 + c()
+List of 2
+ $ a: language c()
+ $ b: symbol B
+1 + c()
+List of 2
+ $ a: language c()
+ $ b: language c()
+1 + c()
+List of 2
+ $ a: language c()
+ $ b: NULL
+1 + c()
+List of 2
+ $ a: NULL
+ $ b: num 1
+1 + NULL
+List of 2
+ $ a: NULL
+ $ b: symbol B
+1 + NULL
+List of 2
+ $ a: NULL
+ $ b: language c()
+1 + NULL
+List of 2
+ $ a: NULL
+ $ b: NULL
+1 + NULL
+Expression #3 (‘C’) of 10:
+.(a) + 2
+List of 2
+ $ a: num 1
+ $ b: num 1
+1 + 2
+List of 2
+ $ a: num 1
+ $ b: symbol B
+1 + 2
+List of 2
+ $ a: num 1
+ $ b: language c()
+1 + 2
+List of 2
+ $ a: num 1
+ $ b: NULL
+1 + 2
+List of 2
+ $ a: symbol A
+ $ b: num 1
+A + 2
+List of 2
+ $ a: symbol A
+ $ b: symbol B
+A + 2
+List of 2
+ $ a: symbol A
+ $ b: language c()
+A + 2
+List of 2
+ $ a: symbol A
+ $ b: NULL
+A + 2
+List of 2
+ $ a: language c()
+ $ b: num 1
+c() + 2
+List of 2
+ $ a: language c()
+ $ b: symbol B
+c() + 2
+List of 2
+ $ a: language c()
+ $ b: language c()
+c() + 2
+List of 2
+ $ a: language c()
+ $ b: NULL
+c() + 2
+List of 2
+ $ a: NULL
+ $ b: num 1
+NULL + 2
+List of 2
+ $ a: NULL
+ $ b: symbol B
+NULL + 2
+List of 2
+ $ a: NULL
+ $ b: language c()
+NULL + 2
+List of 2
+ $ a: NULL
+ $ b: NULL
+NULL + 2
+Expression #4 (‘D’) of 10:
+{
+    .(a)
+}
+List of 2
+ $ a: num 1
+ $ b: num 1
+{
+    1
+}
+List of 2
+ $ a: num 1
+ $ b: symbol B
+{
+    1
+}
+List of 2
+ $ a: num 1
+ $ b: language c()
+{
+    1
+}
+List of 2
+ $ a: num 1
+ $ b: NULL
+{
+    1
+}
+List of 2
+ $ a: symbol A
+ $ b: num 1
+{
+    A
+}
+List of 2
+ $ a: symbol A
+ $ b: symbol B
+{
+    A
+}
+List of 2
+ $ a: symbol A
+ $ b: language c()
+{
+    A
+}
+List of 2
+ $ a: symbol A
+ $ b: NULL
+{
+    A
+}
+List of 2
+ $ a: language c()
+ $ b: num 1
+{
+    c()
+}
+List of 2
+ $ a: language c()
+ $ b: symbol B
+{
+    c()
+}
+List of 2
+ $ a: language c()
+ $ b: language c()
+{
+    c()
+}
+List of 2
+ $ a: language c()
+ $ b: NULL
+{
+    c()
+}
+List of 2
+ $ a: NULL
+ $ b: num 1
+{
+    NULL
+}
+List of 2
+ $ a: NULL
+ $ b: symbol B
+{
+    NULL
+}
+List of 2
+ $ a: NULL
+ $ b: language c()
+{
+    NULL
+}
+List of 2
+ $ a: NULL
+ $ b: NULL
+{
+    NULL
+}
+Expression #5 (‘E’) of 10:
+{
+    1 + .(a)
+}
+List of 2
+ $ a: num 1
+ $ b: num 1
+{
+    1 + 1
+}
+List of 2
+ $ a: num 1
+ $ b: symbol B
+{
+    1 + 1
+}
+List of 2
+ $ a: num 1
+ $ b: language c()
+{
+    1 + 1
+}
+List of 2
+ $ a: num 1
+ $ b: NULL
+{
+    1 + 1
+}
+List of 2
+ $ a: symbol A
+ $ b: num 1
+{
+    1 + A
+}
+List of 2
+ $ a: symbol A
+ $ b: symbol B
+{
+    1 + A
+}
+List of 2
+ $ a: symbol A
+ $ b: language c()
+{
+    1 + A
+}
+List of 2
+ $ a: symbol A
+ $ b: NULL
+{
+    1 + A
+}
+List of 2
+ $ a: language c()
+ $ b: num 1
+{
+    1 + c()
+}
+List of 2
+ $ a: language c()
+ $ b: symbol B
+{
+    1 + c()
+}
+List of 2
+ $ a: language c()
+ $ b: language c()
+{
+    1 + c()
+}
+List of 2
+ $ a: language c()
+ $ b: NULL
+{
+    1 + c()
+}
+List of 2
+ $ a: NULL
+ $ b: num 1
+{
+    1 + NULL
+}
+List of 2
+ $ a: NULL
+ $ b: symbol B
+{
+    1 + NULL
+}
+List of 2
+ $ a: NULL
+ $ b: language c()
+{
+    1 + NULL
+}
+List of 2
+ $ a: NULL
+ $ b: NULL
+{
+    1 + NULL
+}
+Expression #6 (‘F’) of 10:
+function(x = 42) {
+    x + .(a)
+}
+List of 2
+ $ a: num 1
+ $ b: num 1
+function(x = 42) {
+    x + 1
+}
+List of 2
+ $ a: num 1
+ $ b: symbol B
+function(x = 42) {
+    x + 1
+}
+List of 2
+ $ a: num 1
+ $ b: language c()
+function(x = 42) {
+    x + 1
+}
+List of 2
+ $ a: num 1
+ $ b: NULL
+function(x = 42) {
+    x + 1
+}
+List of 2
+ $ a: symbol A
+ $ b: num 1
+function(x = 42) {
+    x + A
+}
+List of 2
+ $ a: symbol A
+ $ b: symbol B
+function(x = 42) {
+    x + A
+}
+List of 2
+ $ a: symbol A
+ $ b: language c()
+function(x = 42) {
+    x + A
+}
+List of 2
+ $ a: symbol A
+ $ b: NULL
+function(x = 42) {
+    x + A
+}
+List of 2
+ $ a: language c()
+ $ b: num 1
+function(x = 42) {
+    x + c()
+}
+List of 2
+ $ a: language c()
+ $ b: symbol B
+function(x = 42) {
+    x + c()
+}
+List of 2
+ $ a: language c()
+ $ b: language c()
+function(x = 42) {
+    x + c()
+}
+List of 2
+ $ a: language c()
+ $ b: NULL
+function(x = 42) {
+    x + c()
+}
+List of 2
+ $ a: NULL
+ $ b: num 1
+function(x = 42) {
+    x + NULL
+}
+List of 2
+ $ a: NULL
+ $ b: symbol B
+function(x = 42) {
+    x + NULL
+}
+List of 2
+ $ a: NULL
+ $ b: language c()
+function(x = 42) {
+    x + NULL
+}
+List of 2
+ $ a: NULL
+ $ b: NULL
+function(x = 42) {
+    x + NULL
+}
+Expression #7 (‘G’) of 10:
+{
+    1 + .(a + 2) * c(1, 2, .(b))
+}
+List of 2
+ $ a: num 1
+ $ b: num 1
+{
+    1 + 3 * c(1, 2, 1)
+}
+List of 2
+ $ a: num 1
+ $ b: symbol B
+{
+    1 + 3 * c(1, 2, B)
+}
+List of 2
+ $ a: num 1
+ $ b: language c()
+{
+    1 + 3 * c(1, 2, c())
+}
+List of 2
+ $ a: num 1
+ $ b: NULL
+{
+    1 + 3 * c(1, 2, NULL)
+}
+List of 2
+ $ a: symbol A
+ $ b: num 1
+List of 2
+ $ a: symbol A
+ $ b: symbol B
+List of 2
+ $ a: symbol A
+ $ b: language c()
+List of 2
+ $ a: symbol A
+ $ b: NULL
+List of 2
+ $ a: language c()
+ $ b: num 1
+List of 2
+ $ a: language c()
+ $ b: symbol B
+List of 2
+ $ a: language c()
+ $ b: language c()
+List of 2
+ $ a: language c()
+ $ b: NULL
+List of 2
+ $ a: NULL
+ $ b: num 1
+{
+    1 + numeric(0) * c(1, 2, 1)
+}
+List of 2
+ $ a: NULL
+ $ b: symbol B
+{
+    1 + numeric(0) * c(1, 2, B)
+}
+List of 2
+ $ a: NULL
+ $ b: language c()
+{
+    1 + numeric(0) * c(1, 2, c())
+}
+List of 2
+ $ a: NULL
+ $ b: NULL
+{
+    1 + numeric(0) * c(1, 2, NULL)
+}
+Expression #8 (‘H’) of 10:
+.(a + 1)
+List of 2
+ $ a: num 1
+ $ b: num 1
+[1] 2
+List of 2
+ $ a: num 1
+ $ b: symbol B
+[1] 2
+List of 2
+ $ a: num 1
+ $ b: language c()
+[1] 2
+List of 2
+ $ a: num 1
+ $ b: NULL
+[1] 2
+List of 2
+ $ a: symbol A
+ $ b: num 1
+List of 2
+ $ a: symbol A
+ $ b: symbol B
+List of 2
+ $ a: symbol A
+ $ b: language c()
+List of 2
+ $ a: symbol A
+ $ b: NULL
+List of 2
+ $ a: language c()
+ $ b: num 1
+List of 2
+ $ a: language c()
+ $ b: symbol B
+List of 2
+ $ a: language c()
+ $ b: language c()
+List of 2
+ $ a: language c()
+ $ b: NULL
+List of 2
+ $ a: NULL
+ $ b: num 1
+numeric(0)
+List of 2
+ $ a: NULL
+ $ b: symbol B
+numeric(0)
+List of 2
+ $ a: NULL
+ $ b: language c()
+numeric(0)
+List of 2
+ $ a: NULL
+ $ b: NULL
+numeric(0)
+Expression #9 (‘I’) of 10:
+.(a + 1) + .(a)
+List of 2
+ $ a: num 1
+ $ b: num 1
+2 + 1
+List of 2
+ $ a: num 1
+ $ b: symbol B
+2 + 1
+List of 2
+ $ a: num 1
+ $ b: language c()
+2 + 1
+List of 2
+ $ a: num 1
+ $ b: NULL
+2 + 1
+List of 2
+ $ a: symbol A
+ $ b: num 1
+List of 2
+ $ a: symbol A
+ $ b: symbol B
+List of 2
+ $ a: symbol A
+ $ b: language c()
+List of 2
+ $ a: symbol A
+ $ b: NULL
+List of 2
+ $ a: language c()
+ $ b: num 1
+List of 2
+ $ a: language c()
+ $ b: symbol B
+List of 2
+ $ a: language c()
+ $ b: language c()
+List of 2
+ $ a: language c()
+ $ b: NULL
+List of 2
+ $ a: NULL
+ $ b: num 1
+numeric(0) + NULL
+List of 2
+ $ a: NULL
+ $ b: symbol B
+numeric(0) + NULL
+List of 2
+ $ a: NULL
+ $ b: language c()
+numeric(0) + NULL
+List of 2
+ $ a: NULL
+ $ b: NULL
+numeric(0) + NULL
+Expression #10 (‘J’) of 10:
+function(a = .(a)) NULL
+List of 2
+ $ a: num 1
+ $ b: num 1
+function(a = 1) NULL
+List of 2
+ $ a: num 1
+ $ b: symbol B
+function(a = 1) NULL
+List of 2
+ $ a: num 1
+ $ b: language c()
+function(a = 1) NULL
+List of 2
+ $ a: num 1
+ $ b: NULL
+function(a = 1) NULL
+List of 2
+ $ a: symbol A
+ $ b: num 1
+function(a = A) NULL
+List of 2
+ $ a: symbol A
+ $ b: symbol B
+function(a = A) NULL
+List of 2
+ $ a: symbol A
+ $ b: language c()
+function(a = A) NULL
+List of 2
+ $ a: symbol A
+ $ b: NULL
+function(a = A) NULL
+List of 2
+ $ a: language c()
+ $ b: num 1
+function(a = c()) NULL
+List of 2
+ $ a: language c()
+ $ b: symbol B
+function(a = c()) NULL
+List of 2
+ $ a: language c()
+ $ b: language c()
+function(a = c()) NULL
+List of 2
+ $ a: language c()
+ $ b: NULL
+function(a = c()) NULL
+List of 2
+ $ a: NULL
+ $ b: num 1
+function(a = NULL) NULL
+List of 2
+ $ a: NULL
+ $ b: symbol B
+function(a = NULL) NULL
+List of 2
+ $ a: NULL
+ $ b: language c()
+function(a = NULL) NULL
+List of 2
+ $ a: NULL
+ $ b: NULL
+function(a = NULL) NULL
+> 
+> message("*** bquote_compile() & bquote_apply() ... DONE")
+*** bquote_compile() & bquote_apply() ... DONE
+> 
+> source("incl/end.R")
+[17:41:36.508] plan(): Setting new future strategy stack:
+[17:41:36.508] List of future strategies:
+[17:41:36.508] 1. FutureStrategy:
+[17:41:36.508]    - args: function (..., envir = parent.frame())
+[17:41:36.508]    - tweaked: FALSE
+[17:41:36.508]    - call: future::plan(oplan)
+[17:41:36.520] plan(): nbrOfWorkers() = 1
+> 
