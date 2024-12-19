@@ -1,0 +1,90 @@
+
+R version 4.4.2 (2024-10-31) -- "Pile of Leaves"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> # Example rqss vs rq.fit.panel vs rq.fit.lasso  
+> # Slightly modified version of a test problem of Stefan Bache and co.
+> require(quantreg)
+Loading required package: quantreg
+Loading required package: SparseM
+> source("rq.fit.panel.R")
+> set.seed(1917)
+> 
+> tt <- 3   # time periods
+> nn <- 3  # individuals
+> 
+> #  Generate some data:
+> some.data <- data.frame(
++     id=rep(1:nn, each=tt)             #ids
++    ,ic=1                              #intercept
++    ,x1=rnorm(nn*tt)                   #regressors
++    ,x2=runif(nn*tt)
++    ,alpha=rep(runif(nn)*2 ,each=tt)   #fixed effects
++ )
+> 
+> # response:
+> some.data$y <- some.data$x1 + some.data$x2 + some.data$alpha + rnorm(nn*tt)
+> 
+> lambda <- .2
+> tau <- 0.25
+> 
+> 
+> # Fit with rq.fit.panel
+> fit1 <- rq.fit.panel(cbind(1, some.data$x1, some.data$x2), some.data$y
++             ,rep(1:nn, each=tt)
++             ,tau=tau
++             ,w=1
++             ,lambda=lambda)
+Warning message:
+In rq.fit.sfn(D, y, rhs = a) :
+  tiny diagonals replaced with Inf when calling blkfct
+
+> 
+> # fit with rqss (using the global debug variable from the panel function
+> # so remember to run that too! :-) :
+> fit2 <- rqss(y ~ ic + x1 + x2 + as.factor(id) - 1 
++             ,data=some.data
++             ,method="lasso"
++             ,tau=tau
++             ,lambda=c(0, 0, 0, rep(lambda, nn)))
+Warning message:
+In rq.fit.sfn(x, y, tau = tau, rhs = rhs, control = control, ...) :
+  tiny diagonals replaced with Inf when calling blkfct
+
+> 
+> # fit with rq.lasso
+> fit3 <- rq(y ~ ic + x1 + x2 + as.factor(id) - 1 
++             ,data=some.data
++             ,tau=tau
++             ,method="lasso"
++             ,lambda=c(0, 0, 0, rep(lambda, nn)))
+> 
+> # Print coefficients for comaparison.
+> comparefit <- function()
++ {
++   compmat <- cbind(fit1$coef,fit2$coef, fit3$coef)
++   colnames(compmat) <- c("rq.fit.panel", "rqss", "rq.fit.lasso")
++   noquote(formatC(compmat, format="f", digits=8, width=12))
++ }
+> 
+> cat("all(rq.fit.panel$coef==rq$coef): ", all.equal(fit1$coef,fit3$coef), "\n")
+all(rq.fit.panel$coef==rq$coef):  names for current but not for target Mean relative difference: 0.6671916 
+> cat("all(rq.fit.$coef==rqss$coef): ", all.equal(fit2$coef,fit3$coef), "\n")
+all(rq.fit.$coef==rqss$coef):  Mean relative difference: 0.6671916 
+> cat("all(rqss$coef==rq.fit.panel$coef): ", all.equal(fit2$coef,fit1$coef), "\n")
+all(rqss$coef==rq.fit.panel$coef):  names for target but not for current 
+> 
+> 

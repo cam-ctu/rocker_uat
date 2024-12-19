@@ -1,0 +1,266 @@
+
+R version 4.4.2 (2024-10-31) -- "Pile of Leaves"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "processx"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('processx')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("poll")
+> ### * poll
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: poll
+> ### Title: Poll for process I/O or termination
+> ### Aliases: poll
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (FALSE) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ # Different commands to run for windows and unix
++ cmd1 <- switch(
++   .Platform$OS.type,
++   "unix" = c("sh", "-c", "sleep 1; ls"),
++   c("cmd", "/c", "ping -n 2 127.0.0.1 && dir /b")
++ )
++ cmd2 <- switch(
++   .Platform$OS.type,
++   "unix" = c("sh", "-c", "sleep 2; ls 1>&2"),
++   c("cmd", "/c", "ping -n 2 127.0.0.1 && dir /b 1>&2")
++ )
++ 
++ ## Run them. p1 writes to stdout, p2 to stderr, after some sleep
++ p1 <- process$new(cmd1[1], cmd1[-1], stdout = "|")
++ p2 <- process$new(cmd2[1], cmd2[-1], stderr = "|")
++ 
++ ## Nothing to read initially
++ poll(list(p1 = p1, p2 = p2), 0)
++ 
++ ## Wait until p1 finishes. Now p1 has some output
++ p1$wait()
++ poll(list(p1 = p1, p2 = p2), -1)
++ 
++ ## Close p1's connection, p2 will have output on stderr, eventually
++ close(p1$get_output_connection())
++ poll(list(p1 = p1, p2 = p2), -1)
++ 
++ ## Close p2's connection as well, no nothing to poll
++ close(p2$get_error_connection())
++ poll(list(p1 = p1, p2 = p2), 0)
++ ## Don't show: 
++ }) # examplesIf
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("process")
+> ### * process
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: process
+> ### Title: External process
+> ### Aliases: process
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (identical(Sys.getenv("IN_PKGDOWN"), "true")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ p <- process$new("sleep", "2")
++ p$is_alive()
++ p
++ p$kill()
++ p$is_alive()
++ 
++ p <- process$new("sleep", "1")
++ p$is_alive()
++ Sys.sleep(2)
++ p$is_alive()
++ ## Don't show: 
++ }) # examplesIf
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("processx_connections")
+> ### * processx_connections
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: conn_create_fd
+> ### Title: Processx connections
+> ### Aliases: conn_create_fd conn_file_name conn_create_pipepair
+> ###   conn_read_chars conn_read_chars.processx_connection
+> ###   processx_conn_read_chars conn_read_lines
+> ###   conn_read_lines.processx_connection processx_conn_read_lines
+> ###   conn_is_incomplete conn_is_incomplete.processx_connection
+> ###   processx_conn_is_incomplete conn_write conn_write.processx_connection
+> ###   processx_conn_write conn_create_file conn_set_stdout conn_set_stderr
+> ###   conn_get_fileno conn_disable_inheritance close.processx_connection
+> ###   processx_conn_close is_valid_fd
+> 
+> ### ** Examples
+> 
+> is_valid_fd(0L)      # stdin
+[1] TRUE
+> is_valid_fd(1L)      # stdout
+[1] TRUE
+> is_valid_fd(2L)      # stderr
+[1] TRUE
+> 
+> 
+> 
+> cleanEx()
+> nameEx("processx_fifos")
+> ### * processx_fifos
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: conn_create_fifo
+> ### Title: Processx FIFOs
+> ### Aliases: conn_create_fifo conn_connect_fifo
+> 
+> ### ** Examples
+> 
+> # Example for a non-blocking FIFO
+> 
+> # Need to open the reading end first, otherwise Unix fails
+> reader <- conn_create_fifo()
+> 
+> # Always use poll() before you read, with a timeout if you like.
+> # If you read before the other end of the FIFO is connected, then
+> # the OS (or processx?) assumes that the FIFO is done, and you cannot
+> # read anything.
+> # Now poll() tells us that there is no data yet.
+> poll(list(reader), 0)
+[[1]]
+[1] "timeout"
+
+> 
+> writer <- conn_connect_fifo(conn_file_name(reader), write = TRUE)
+> conn_write(writer, "hello\nthere!\n")
+> 
+> poll(list(reader), 1000)
+[[1]]
+[1] "ready"
+
+> conn_read_lines(reader, 1)
+[1] "hello"
+> conn_read_chars(reader)
+[1] "there!\n"
+> 
+> conn_is_incomplete(reader)
+[1] TRUE
+> 
+> close(writer)
+NULL
+> conn_read_chars(reader)
+[1] ""
+> conn_is_incomplete(reader)
+[1] FALSE
+> 
+> close(reader)
+NULL
+> 
+> 
+> 
+> cleanEx()
+> nameEx("run")
+> ### * run
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: run
+> ### Title: Run external command, and wait until finishes
+> ### Aliases: run
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (.Platform$OS.type == "unix") (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ # This works on Unix systems
++ run("ls")
++ system.time(run("sleep", "10", timeout = 1, error_on_status = FALSE))
++ system.time(
++   run(
++     "sh", c("-c", "for i in 1 2 3 4 5; do echo $i; sleep 1; done"),
++     timeout = 2, error_on_status = FALSE
++   )
++ )
++ ## Don't show: 
++ }) # examplesIf
+> run("ls")
+$status
+[1] 0
+
+$stdout
+[1] "DESCRIPTION\nempty_output.Rout\ninst\nLICENSE\nman\nMD5\nNAMESPACE\nNEWS.md\nprocessx-Ex.pdf\nprocessx-Ex.R\nprocessx-Ex.Rout.fail\nR\nREADME.md\nsrc\ntests\n"
+
+$stderr
+[1] ""
+
+$timeout
+[1] FALSE
+
+> system.time(run("sleep", "10", timeout = 1, error_on_status = FALSE))
+   user  system elapsed 
+  0.003   0.006   0.643 
+> system.time(run("sh", c("-c", "for i in 1 2 3 4 5; do echo $i; sleep 1; done"), 
++     timeout = 2, error_on_status = FALSE))
+   user  system elapsed 
+  0.005   0.005   1.649 
+> ## End(Don't show)
+> ## Don't show: 
+> if (FALSE) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ # This works on Windows systems, if the ping command is available
++ run("ping", c("-n", "1", "127.0.0.1"))
++ run("ping", c("-n", "6", "127.0.0.1"), timeout = 1,
++     error_on_status = FALSE)
++ ## Don't show: 
++ }) # examplesIf
+> ## End(Don't show)
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  0.132 0.026 2.44 0.006 0.003 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

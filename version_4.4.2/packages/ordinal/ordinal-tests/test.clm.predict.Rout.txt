@@ -1,0 +1,455 @@
+
+R version 4.4.2 (2024-10-31) -- "Pile of Leaves"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(ordinal)
+> ## source("test.clm.predict.R")
+> 
+> ## library(devtools)
+> ## r2path <- "/Users/rhbc/Documents/Rpackages/ordinal/pkg/ordinal"
+> ## clean_dll(pkg = r2path)
+> ## load_all(r2path)
+> 
+> cy <- with(wine, which(temp == "cold" & contact == "yes"))
+> options("contrasts" = c("contr.treatment", "contr.poly"))
+> getOption("contrasts")
+[1] "contr.treatment" "contr.poly"     
+> 
+> ## Example model
+> 
+> wine1.clm <- clm(rating ~ temp*contact, subset = -cy, data = wine)
+> summary(wine1.clm)
+formula: rating ~ temp * contact
+data:    wine
+subset:  -cy
+
+ link  threshold nobs logLik AIC    niter max.grad cond.H 
+ logit flexible  54   -65.47 142.93 6(0)  2.80e-12 2.9e+01
+
+Coefficients: (1 not defined because of singularities)
+                    Estimate Std. Error z value Pr(>|z|)   
+tempwarm              2.2892     0.7192   3.183  0.00146 **
+contactyes            1.6505     0.6698   2.464  0.01374 * 
+tempwarm:contactyes       NA         NA      NA       NA   
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+    Estimate Std. Error z value
+1|2  -1.3971     0.5728  -2.439
+2|3   1.1349     0.5262   2.157
+3|4   3.3351     0.6987   4.774
+4|5   4.7924     0.7996   5.994
+> names(wine1.clm)
+ [1] "aliased"       "alpha"         "beta"          "call"         
+ [5] "coefficients"  "cond.H"        "contrasts"     "control"      
+ [9] "convergence"   "df.residual"   "edf"           "fitted.values"
+[13] "formula"       "formulas"      "gradient"      "Hessian"      
+[17] "info"          "link"          "logLik"        "maxGradient"  
+[21] "message"       "model"         "n"             "niter"        
+[25] "nobs"          "start"         "terms"         "Theta"        
+[29] "threshold"     "tJac"          "vcov"          "xlevels"      
+[33] "y"             "y.levels"     
+> 
+> wine.clm <- clm(rating~temp*contact, data=wine)
+> summary(wine.clm)
+formula: rating ~ temp * contact
+data:    wine
+
+ link  threshold nobs logLik AIC    niter max.grad cond.H 
+ logit flexible  72   -86.42 186.83 6(0)  5.22e-12 5.1e+01
+
+Coefficients:
+                    Estimate Std. Error z value Pr(>|z|)    
+tempwarm              2.3212     0.7009   3.311 0.000928 ***
+contactyes            1.3475     0.6604   2.041 0.041300 *  
+tempwarm:contactyes   0.3595     0.9238   0.389 0.697129    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+    Estimate Std. Error z value
+1|2  -1.4113     0.5454  -2.588
+2|3   1.1436     0.5097   2.244
+3|4   3.3771     0.6382   5.292
+4|5   4.9420     0.7509   6.581
+> names(wine.clm)
+ [1] "aliased"       "alpha"         "beta"          "call"         
+ [5] "coefficients"  "cond.H"        "contrasts"     "control"      
+ [9] "convergence"   "df.residual"   "edf"           "fitted.values"
+[13] "formula"       "formulas"      "gradient"      "Hessian"      
+[17] "info"          "link"          "logLik"        "maxGradient"  
+[21] "message"       "model"         "n"             "niter"        
+[25] "nobs"          "start"         "terms"         "Theta"        
+[29] "threshold"     "tJac"          "vcov"          "xlevels"      
+[33] "y"             "y.levels"     
+> ## Make sure the same elements are present with a rank deficient model
+> ## fit:
+> stopifnot(all(names(wine1.clm) == names(wine.clm)))
+> 
+> ## With treatment contrasts:
+> options("contrasts" = c("contr.treatment", "contr.poly"))
+> wine.clm <- clm(rating~temp*contact, data=wine)
+> coef(summary(wine.clm))
+                      Estimate Std. Error    z value     Pr(>|z|)
+1|2                 -1.4112620  0.5453532 -2.5877943 9.659266e-03
+2|3                  1.1435537  0.5096555  2.2437776 2.484671e-02
+3|4                  3.3770825  0.6381617  5.2918913 1.210578e-07
+4|5                  4.9419823  0.7509113  6.5813133 4.663108e-11
+tempwarm             2.3211843  0.7009479  3.3114931 9.279953e-04
+contactyes           1.3474604  0.6603557  2.0405072 4.129984e-02
+tempwarm:contactyes  0.3595489  0.9238188  0.3891985 6.971293e-01
+> head(model.matrix(wine.clm)$X)
+  (Intercept) tempwarm contactyes tempwarm:contactyes
+1           1        0          0                   0
+2           1        0          0                   0
+3           1        0          1                   0
+4           1        0          1                   0
+5           1        1          0                   0
+6           1        1          0                   0
+> wine.clm$contrasts
+$temp
+[1] "contr.treatment"
+
+$contact
+[1] "contr.treatment"
+
+> head(pred1 <- predict(wine.clm)$fit)
+[1] 0.56229641 0.20864908 0.43467309 0.08938852 0.19028226 0.19028226
+> 
+> ## With sum contrasts:
+> options("contrasts" = c("contr.sum", "contr.poly"))
+> wine.clm <- clm(rating~temp*contact, data=wine)
+> coef(summary(wine.clm))
+                  Estimate Std. Error    z value     Pr(>|z|)
+1|2            -3.33547153  0.5253364 -6.3492103 2.164231e-10
+2|3            -0.78065590  0.2945538 -2.6503003 8.042025e-03
+3|4             1.45287292  0.3367529  4.3143590 1.600667e-05
+4|5             3.01777269  0.4813097  6.2699186 3.612370e-10
+temp1          -1.25047935  0.2641023 -4.7348292 2.192396e-06
+contact1       -0.76361743  0.2380971 -3.2071683 1.340485e-03
+temp1:contact1  0.08988722  0.2309547  0.3891985 6.971293e-01
+> head(model.matrix(wine.clm)$X)
+  (Intercept) temp1 contact1 temp1:contact1
+1           1     1        1              1
+2           1     1        1              1
+3           1     1       -1             -1
+4           1     1       -1             -1
+5           1    -1        1             -1
+6           1    -1        1             -1
+> wine.clm$contrasts
+$temp
+[1] "contr.sum"
+
+$contact
+[1] "contr.sum"
+
+> head(pred2 <- predict(wine.clm)$fit)
+[1] 0.56229641 0.20864908 0.43467309 0.08938852 0.19028226 0.19028226
+> 
+> ## Mixture of sum and treatment contrasts:
+> options("contrasts" = c("contr.treatment", "contr.poly"))
+> wine.clm <- clm(rating~temp*contact, data=wine,
++                 contrasts=list(temp="contr.sum"))
+> coef(summary(wine.clm))
+                    Estimate Std. Error     z value     Pr(>|z|)
+1|2              -2.57185410  0.5227165 -4.92016984 8.646915e-07
+2|3              -0.01703847  0.3611634 -0.04717662 9.623725e-01
+3|4               2.21649036  0.4529312  4.89365773 9.897892e-07
+4|5               3.78139013  0.5957919  6.34683010 2.197966e-10
+temp1            -1.16059213  0.3504740 -3.31149309 9.279953e-04
+contactyes        1.52723487  0.4761942  3.20716830 1.340485e-03
+temp1:contactyes -0.17977444  0.4619094 -0.38919847 6.971293e-01
+> head(model.matrix(wine.clm)$X)
+  (Intercept) temp1 contactyes temp1:contactyes
+1           1     1          0                0
+2           1     1          0                0
+3           1     1          1                1
+4           1     1          1                1
+5           1    -1          0                0
+6           1    -1          0                0
+> wine.clm$contrasts
+$temp
+[1] "contr.sum"
+
+$contact
+[1] "contr.treatment"
+
+> head(pred3 <- predict(wine.clm)$fit)
+[1] 0.56229641 0.20864908 0.43467309 0.08938852 0.19028226 0.19028226
+> 
+> stopifnot(isTRUE(all.equal(pred1, pred2)))
+> stopifnot(isTRUE(all.equal(pred1, pred3)))
+> 
+> #################################
+> ### Now for a rank deficient fit:
+> #################################
+> 
+> cy <- with(wine, which(temp == "cold" & contact == "yes"))
+> options("contrasts" = c("contr.treatment", "contr.poly"))
+> wine1.clm <- clm(rating ~ temp*contact, subset = -cy, data = wine)
+> coef(summary(wine1.clm))
+                     Estimate Std. Error   z value     Pr(>|z|)
+1|2                 -1.397134  0.5727918 -2.439164 1.472127e-02
+2|3                  1.134907  0.5261653  2.156940 3.101038e-02
+3|4                  3.335090  0.6986647  4.773521 1.810331e-06
+4|5                  4.792428  0.7995580  5.993846 2.049352e-09
+tempwarm             2.289221  0.7191705  3.183140 1.456870e-03
+contactyes           1.650538  0.6698484  2.464047 1.373782e-02
+tempwarm:contactyes        NA         NA        NA           NA
+> attributes(model.matrix(wine1.clm)$X)$contrasts
+$temp
+[1] "contr.treatment"
+
+$contact
+[1] "contr.treatment"
+
+> wine1.clm$contrasts
+$temp
+[1] "contr.treatment"
+
+$contact
+[1] "contr.treatment"
+
+> head(pred4 <- predict(wine1.clm)$fit)
+[1] 0.5584719 0.2088699 0.1843854 0.1843854 0.2988733 0.2988733
+> 
+> options("contrasts" = c("contr.sum", "contr.poly"))
+> wine1.clm <- clm(rating ~ temp*contact, subset = -cy, data = wine)
+> attributes(model.matrix(wine1.clm)$X)$contrasts
+$temp
+[1] "contr.sum"
+
+$contact
+[1] "contr.sum"
+
+> options("contrasts" = c("contr.treatment", "contr.poly"))
+> attributes(model.matrix(wine1.clm)$X)$contrasts
+$temp
+[1] "contr.sum"
+
+$contact
+[1] "contr.sum"
+
+> ## Notice that the contrasts change in the attributes of the fit!!!
+> coef(summary(wine1.clm))
+                 Estimate Std. Error   z value     Pr(>|z|)
+1|2            -3.3670128  0.6149672 -5.475110 4.372411e-08
+2|3            -0.8349725  0.4231096 -1.973419 4.844787e-02
+3|4             1.3652108  0.4310181  3.167409 1.538037e-03
+4|5             2.8225483  0.5190089  5.438343 5.377826e-08
+temp1          -1.1446104  0.3595853 -3.183140 1.456870e-03
+contact1       -0.8252689  0.3349242 -2.464047 1.373782e-02
+temp1:contact1         NA         NA        NA           NA
+> wine1.clm$contrasts
+$temp
+[1] "contr.sum"
+
+$contact
+[1] "contr.sum"
+
+> head(pred5 <- predict(wine1.clm)$fit)
+[1] 0.5584719 0.2088699 0.1843854 0.1843854 0.2988733 0.2988733
+> 
+> head(cbind(pred4, pred5))
+         pred4     pred5
+[1,] 0.5584719 0.5584719
+[2,] 0.2088699 0.2088699
+[3,] 0.1843854 0.1843854
+[4,] 0.1843854 0.1843854
+[5,] 0.2988733 0.2988733
+[6,] 0.2988733 0.2988733
+> stopifnot(isTRUE(all.equal(pred4, pred5)))
+> 
+> options("contrasts" = c("contr.treatment", "contr.poly"))
+> wine1.clm <- clm(rating ~ temp*contact, subset = -cy, data = wine,
++                  contrasts=list(temp="contr.sum"))
+> coef(summary(wine1.clm))
+                    Estimate Std. Error     z value     Pr(>|z|)
+1|2              -2.54174387  0.5792622 -4.38789851 1.144512e-05
+2|3              -0.00970353  0.3737929 -0.02595964 9.792895e-01
+3|4               2.19047975  0.4965589  4.41131906 1.027428e-05
+4|5               3.64781729  0.6257007  5.82997171 5.543677e-09
+temp1            -1.14461036  0.3595853 -3.18314035 1.456870e-03
+contactyes        1.65053789  0.6698484  2.46404685 1.373782e-02
+temp1:contactyes          NA         NA          NA           NA
+> head(model.matrix(wine1.clm)$X)
+  (Intercept) temp1 contactyes temp1:contactyes
+1           1     1          0                0
+2           1     1          0                0
+5           1    -1          0                0
+6           1    -1          0                0
+7           1    -1          1               -1
+8           1    -1          1               -1
+> attributes(model.matrix(wine1.clm)$X)$contrasts
+$temp
+[1] "contr.sum"
+
+$contact
+[1] "contr.treatment"
+
+> wine1.clm$contrasts
+$temp
+[1] "contr.sum"
+
+$contact
+[1] "contr.treatment"
+
+> head(pred6 <- predict(wine1.clm)$fit)
+[1] 0.5584719 0.2088699 0.1843854 0.1843854 0.2988733 0.2988733
+> 
+> head(cbind(pred4, pred5, pred6))
+         pred4     pred5     pred6
+[1,] 0.5584719 0.5584719 0.5584719
+[2,] 0.2088699 0.2088699 0.2088699
+[3,] 0.1843854 0.1843854 0.1843854
+[4,] 0.1843854 0.1843854 0.1843854
+[5,] 0.2988733 0.2988733 0.2988733
+[6,] 0.2988733 0.2988733 0.2988733
+> stopifnot(isTRUE(all.equal(pred4, pred6)))
+> ##################################################################
+> 
+> ## Compare equality of fitted values for models with different contrasts:
+> options("contrasts" = c("contr.treatment", "contr.poly"))
+> fm1 <- clm(rating ~ temp + contact, data=wine)
+> fitted(fm1)
+ [1] 0.57064970 0.19229094 0.44305990 0.09582084 0.20049402 0.20049402
+ [7] 0.27378469 0.27378469 0.20679013 0.57064970 0.05354601 0.44305990
+[13] 0.20141572 0.50157554 0.27378469 0.36359581 0.57064970 0.19229094
+[19] 0.44305990 0.37764614 0.07562701 0.07562701 0.36359581 0.36359581
+[25] 0.19229094 0.57064970 0.44305990 0.37764614 0.50157554 0.20141572
+[31] 0.27378469 0.30420994 0.57064970 0.19229094 0.09582084 0.44305990
+[37] 0.50157554 0.50157554 0.30420994 0.30420994 0.19229094 0.57064970
+[43] 0.44305990 0.37764614 0.20141572 0.20049402 0.27378469 0.36359581
+[49] 0.20679013 0.20679013 0.37764614 0.37764614 0.20141572 0.50157554
+[55] 0.05380128 0.30420994 0.57064970 0.57064970 0.37764614 0.44305990
+[61] 0.50157554 0.50157554 0.30420994 0.36359581 0.20679013 0.57064970
+[67] 0.44305990 0.37764614 0.50157554 0.20141572 0.36359581 0.36359581
+> options("contrasts" = c("contr.sum", "contr.poly"))
+> fm2 <- clm(rating ~ temp + contact, data=wine)
+> fitted(fm2)
+ [1] 0.57064970 0.19229094 0.44305990 0.09582084 0.20049402 0.20049402
+ [7] 0.27378469 0.27378469 0.20679013 0.57064970 0.05354601 0.44305990
+[13] 0.20141572 0.50157554 0.27378469 0.36359581 0.57064970 0.19229094
+[19] 0.44305990 0.37764614 0.07562701 0.07562701 0.36359581 0.36359581
+[25] 0.19229094 0.57064970 0.44305990 0.37764614 0.50157554 0.20141572
+[31] 0.27378469 0.30420994 0.57064970 0.19229094 0.09582084 0.44305990
+[37] 0.50157554 0.50157554 0.30420994 0.30420994 0.19229094 0.57064970
+[43] 0.44305990 0.37764614 0.20141572 0.20049402 0.27378469 0.36359581
+[49] 0.20679013 0.20679013 0.37764614 0.37764614 0.20141572 0.50157554
+[55] 0.05380128 0.30420994 0.57064970 0.57064970 0.37764614 0.44305990
+[61] 0.50157554 0.50157554 0.30420994 0.36359581 0.20679013 0.57064970
+[67] 0.44305990 0.37764614 0.50157554 0.20141572 0.36359581 0.36359581
+> options("contrasts" = c("contr.treatment", "contr.poly"))
+> fm3 <- clm(rating ~ temp + contact, data=wine,
++            contrasts=list(contact="contr.sum"))
+> fitted(fm3)
+ [1] 0.57064970 0.19229094 0.44305990 0.09582084 0.20049402 0.20049402
+ [7] 0.27378469 0.27378469 0.20679013 0.57064970 0.05354601 0.44305990
+[13] 0.20141572 0.50157554 0.27378469 0.36359581 0.57064970 0.19229094
+[19] 0.44305990 0.37764614 0.07562701 0.07562701 0.36359581 0.36359581
+[25] 0.19229094 0.57064970 0.44305990 0.37764614 0.50157554 0.20141572
+[31] 0.27378469 0.30420994 0.57064970 0.19229094 0.09582084 0.44305990
+[37] 0.50157554 0.50157554 0.30420994 0.30420994 0.19229094 0.57064970
+[43] 0.44305990 0.37764614 0.20141572 0.20049402 0.27378469 0.36359581
+[49] 0.20679013 0.20679013 0.37764614 0.37764614 0.20141572 0.50157554
+[55] 0.05380128 0.30420994 0.57064970 0.57064970 0.37764614 0.44305990
+[61] 0.50157554 0.50157554 0.30420994 0.36359581 0.20679013 0.57064970
+[67] 0.44305990 0.37764614 0.50157554 0.20141572 0.36359581 0.36359581
+> stopifnot(isTRUE(all.equal(fitted(fm1), fitted(fm2))))
+> stopifnot(isTRUE(all.equal(fitted(fm1), fitted(fm3))))
+> 
+> ##################################################################
+> ## Compare equality of fitted values for models with different
+> ## contrasts in face of aliased coefficients:
+> options("contrasts" = c("contr.treatment", "contr.poly"))
+> cy <- with(wine, which(temp == "cold" & contact == "yes"))
+> Wine <- subset(wine, subset=!(temp == "cold" & contact == "yes"))
+> fm1 <- clm(rating ~ temp + contact, data=Wine)
+> options("contrasts" = c("contr.sum", "contr.poly"))
+> fm2 <- clm(rating ~ temp + contact, data=Wine)
+> options("contrasts" = c("contr.treatment", "contr.poly"))
+> fm3 <- clm(rating ~ temp + contact, data=Wine,
++            contrasts=list(contact="contr.sum"))
+> 
+> stopifnot(isTRUE(all.equal(fitted(fm1), fitted(fm2))))
+> stopifnot(isTRUE(all.equal(fitted(fm1), fitted(fm3))))
+> stopifnot(isTRUE(all.equal(predict(fm1)$fit, predict(fm2)$fit)))
+> stopifnot(isTRUE(all.equal(predict(fm1)$fit, predict(fm3)$fit)))
+> 
+> #################################
+> ## Does this also happen if the wine data has changed?
+> options("contrasts" = c("contr.treatment", "contr.poly"))
+> Wine <- subset(wine, subset=!(temp == "cold" & contact == "yes"))
+> fm1 <- clm(rating ~ temp + contact, data=Wine)
+> fit1 <- fitted(fm1)
+> pred1 <- predict(fm1)$fit
+> Wine <- wine
+> pred2 <- predict(fm1)$fit
+> stopifnot(isTRUE(all.equal(fit1, pred1)))
+> stopifnot(isTRUE(all.equal(fit1, pred2)))
+> 
+> ## What if weights, say, is an expression?
+> ## Notice that updating the model object changes it:
+> set.seed(123)
+> fm1 <- clm(rating ~ temp + contact, data=wine,
++            weights=runif(nrow(wine), .5, 1.5))
+> fm2 <- update(fm1)
+> stopifnot(isTRUE(all.equal(fitted(fm1), predict(fm1)$fit)))
+> stopifnot(!isTRUE(all.equal(fitted(fm1), fitted(fm2))))
+> 
+> #################################
+> ## Test equality of fits and predictions of models with:
+> ##   'x + I(x^2)' and 'poly(x, 2)':
+> ## December 25th 2014, RHBC.
+> data(wine)
+> set.seed(1)
+> x <- rnorm(nrow(wine), sd=2) + as.numeric(wine$rating)
+> range(x)
+[1] -1.429400  7.803236
+> 
+> ## Comparison of 'x + I(x^2)' and 'poly(x, 2)':
+> fm3 <- clm(rating ~ temp + x + I(x^2), data=wine)
+> fm4 <- clm(rating ~ temp + poly(x, 2), data=wine)
+> ## Same model fits, but different parameterizations:
+> stopifnot(
++     !isTRUE(all.equal(coef(fm3), coef(fm4), check.names=FALSE))
++     )
+> stopifnot(isTRUE(all.equal(logLik(fm3), logLik(fm4))))
+> newData <- expand.grid(temp = levels(wine$temp),
++                        x=seq(-1, 7, 3))
+> predict(fm3, newdata=newData)$fit
+            1          2         3         4           5
+1 0.206057293 0.56152859 0.2029812 0.0245885 0.004844463
+2 0.036289668 0.28766182 0.5031703 0.1404155 0.032462707
+3 0.147105364 0.53988789 0.2693657 0.0363691 0.007271946
+4 0.024413857 0.21711772 0.5192073 0.1912002 0.048060899
+5 0.035397238 0.28292433 0.5050762 0.1433185 0.033283705
+6 0.005296054 0.05815716 0.3400568 0.4047024 0.191787585
+> predict(fm4, newdata=newData)$fit
+            1          2         3         4           5
+1 0.206057293 0.56152859 0.2029812 0.0245885 0.004844463
+2 0.036289668 0.28766182 0.5031703 0.1404155 0.032462707
+3 0.147105364 0.53988789 0.2693657 0.0363691 0.007271946
+4 0.024413857 0.21711772 0.5192073 0.1912002 0.048060899
+5 0.035397238 0.28292433 0.5050762 0.1433185 0.033283705
+6 0.005296054 0.05815716 0.3400568 0.4047024 0.191787585
+> stopifnot(isTRUE(all.equal(fitted(fm3), fitted(fm4))))
+> stopifnot(isTRUE(
++     all.equal(predict(fm3, newdata=newData)$fit,
++               predict(fm4, newdata=newData)$fit)))
+> #################################
+> 
