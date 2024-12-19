@@ -1,0 +1,4009 @@
+
+R version 4.4.2 (2024-10-31) -- "Pile of Leaves"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "purrr"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('purrr')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("accumulate")
+> ### * accumulate
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: accumulate
+> ### Title: Accumulate intermediate results of a vector reduction
+> ### Aliases: accumulate accumulate2
+> 
+> ### ** Examples
+> 
+> # With an associative operation, the final value is always the
+> # same, no matter the direction. You'll find it in the first element for a
+> # backward (left) accumulation, and in the last element for forward
+> # (right) one:
+> 1:5 |> accumulate(`+`)
+[1]  1  3  6 10 15
+> 1:5 |> accumulate(`+`, .dir = "backward")
+[1] 15 14 12  9  5
+> 
+> # The final value is always equal to the equivalent reduction:
+> 1:5 |> reduce(`+`)
+[1] 15
+> 
+> # It is easier to understand the details of the reduction with
+> # `paste()`.
+> accumulate(letters[1:5], paste, sep = ".")
+[1] "a"         "a.b"       "a.b.c"     "a.b.c.d"   "a.b.c.d.e"
+> 
+> # Note how the intermediary reduced values are passed to the left
+> # with a left reduction, and to the right otherwise:
+> accumulate(letters[1:5], paste, sep = ".", .dir = "backward")
+[1] "a.b.c.d.e" "b.c.d.e"   "c.d.e"     "d.e"       "e"        
+> 
+> # By ignoring the input vector (nxt), you can turn output of one step into
+> # the input for the next. This code takes 10 steps of a random walk:
+> accumulate(1:10, \(acc, nxt) acc + rnorm(1), .init = 0)
+ [1]  0.0000000 -0.6264538 -0.4428105 -1.2784391  0.3168417  0.6463495
+ [7] -0.1741189  0.3133101  1.0516348  1.6274162  1.3220278
+> 
+> # `accumulate2()` is a version of `accumulate()` that works with
+> # 3-argument functions and one additional vector:
+> paste2 <- function(acc, nxt, sep = ".") paste(acc, nxt, sep = sep)
+> letters[1:4] |> accumulate(paste2)
+[1] "a"       "a.b"     "a.b.c"   "a.b.c.d"
+> letters[1:4] |> accumulate2(c("-", ".", "-"), paste2)
+[1] "a"       "a-b"     "a-b.c"   "a-b.c-d"
+> 
+> # You can shortcircuit an accumulation and terminate it early by
+> # returning a value wrapped in a done(). In the following example
+> # we return early if the result-so-far, which is passed on the LHS,
+> # meets a condition:
+> paste3 <- function(out, input, sep = ".") {
++   if (nchar(out) > 4) {
++     return(done(out))
++   }
++   paste(out, input, sep = sep)
++ }
+> letters |> accumulate(paste3)
+[1] "a"     "a.b"   "a.b.c" "a.b.c"
+> 
+> # Note how we get twice the same value in the accumulation. That's
+> # because we have returned it twice. To prevent this, return an empty
+> # done box to signal to accumulate() that it should terminate with the
+> # value of the last iteration:
+> paste3 <- function(out, input, sep = ".") {
++   if (nchar(out) > 4) {
++     return(done())
++   }
++   paste(out, input, sep = sep)
++ }
+> letters |> accumulate(paste3)
+[1] "a"     "a.b"   "a.b.c"
+> 
+> # Here the early return branch checks the incoming inputs passed on
+> # the RHS:
+> paste4 <- function(out, input, sep = ".") {
++   if (input == "f") {
++     return(done())
++   }
++   paste(out, input, sep = sep)
++ }
+> letters |> accumulate(paste4)
+[1] "a"         "a.b"       "a.b.c"     "a.b.c.d"   "a.b.c.d.e"
+> 
+> 
+> # Simulating stochastic processes with drift
+> ## Not run: 
+> ##D library(dplyr)
+> ##D library(ggplot2)
+> ##D 
+> ##D map(1:5, \(i) rnorm(100)) |>
+> ##D   set_names(paste0("sim", 1:5)) |>
+> ##D   map(\(l) accumulate(l, \(acc, nxt) .05 + acc + nxt)) |>
+> ##D   map(\(x) tibble(value = x, step = 1:100)) |>
+> ##D   list_rbind(id = "simulation") |>
+> ##D   ggplot(aes(x = step, y = value)) +
+> ##D     geom_line(aes(color = simulation)) +
+> ##D     ggtitle("Simulations of a random walk with drift")
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("along")
+> ### * along
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: along
+> ### Title: Create a list of given length
+> ### Aliases: along list_along
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> x <- 1:5
+> seq_along(x)
+[1] 1 2 3 4 5
+> list_along(x)
+Warning: `list_along()` was deprecated in purrr 1.0.0.
+ℹ Please use rep_along(x, list()) instead.
+[[1]]
+NULL
+
+[[2]]
+NULL
+
+[[3]]
+NULL
+
+[[4]]
+NULL
+
+[[5]]
+NULL
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("array-coercion")
+> ### * array-coercion
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: array-coercion
+> ### Title: Coerce array to list
+> ### Aliases: array-coercion array_branch array_tree
+> 
+> ### ** Examples
+> 
+> # We create an array with 3 dimensions
+> x <- array(1:12, c(2, 2, 3))
+> 
+> # A full margin for such an array would be the vector 1:3. This is
+> # the default if you don't specify a margin
+> 
+> # Creating a branch along the full margin is equivalent to
+> # as.list(array) and produces a list of size length(x):
+> array_branch(x) |> str()
+List of 12
+ $ : int 1
+ $ : int 2
+ $ : int 3
+ $ : int 4
+ $ : int 5
+ $ : int 6
+ $ : int 7
+ $ : int 8
+ $ : int 9
+ $ : int 10
+ $ : int 11
+ $ : int 12
+> 
+> # A branch along the first dimension yields a list of length 2
+> # with each element containing a 2x3 array:
+> array_branch(x, 1) |> str()
+List of 2
+ $ : int [1:2, 1:3] 1 3 5 7 9 11
+ $ : int [1:2, 1:3] 2 4 6 8 10 12
+> 
+> # A branch along the first and third dimensions yields a list of
+> # length 2x3 whose elements contain a vector of length 2:
+> array_branch(x, c(1, 3)) |> str()
+List of 6
+ $ : int [1:2] 1 3
+ $ : int [1:2] 2 4
+ $ : int [1:2] 5 7
+ $ : int [1:2] 6 8
+ $ : int [1:2] 9 11
+ $ : int [1:2] 10 12
+> 
+> # Creating a tree from the full margin creates a list of lists of
+> # lists:
+> array_tree(x) |> str()
+List of 2
+ $ :List of 2
+  ..$ :List of 3
+  .. ..$ : int 1
+  .. ..$ : int 5
+  .. ..$ : int 9
+  ..$ :List of 3
+  .. ..$ : int 3
+  .. ..$ : int 7
+  .. ..$ : int 11
+ $ :List of 2
+  ..$ :List of 3
+  .. ..$ : int 2
+  .. ..$ : int 6
+  .. ..$ : int 10
+  ..$ :List of 3
+  .. ..$ : int 4
+  .. ..$ : int 8
+  .. ..$ : int 12
+> 
+> # The ordering and the depth of the tree are controlled by the
+> # margin argument:
+> array_tree(x, c(3, 1)) |> str()
+List of 3
+ $ :List of 2
+  ..$ : int [1:2] 1 3
+  ..$ : int [1:2] 2 4
+ $ :List of 2
+  ..$ : int [1:2] 5 7
+  ..$ : int [1:2] 6 8
+ $ :List of 2
+  ..$ : int [1:2] 9 11
+  ..$ : int [1:2] 10 12
+> 
+> 
+> 
+> cleanEx()
+> nameEx("as_mapper")
+> ### * as_mapper
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: as_mapper
+> ### Title: Convert an object into a mapper function
+> ### Aliases: as_mapper as_mapper.character as_mapper.numeric as_mapper.list
+> 
+> ### ** Examples
+> 
+> as_mapper(\(x) x + 1)
+function (x) 
+x + 1
+> as_mapper(1)
+function (x, ...) 
+pluck_raw(x, list(1), .default = NULL)
+<environment: 0x55e2a74b9d00>
+> 
+> as_mapper(c("a", "b", "c"))
+function (x, ...) 
+pluck_raw(x, list("a", "b", "c"), .default = NULL)
+<environment: 0x55e2a74e4b98>
+> # Equivalent to function(x) x[["a"]][["b"]][["c"]]
+> 
+> as_mapper(list(1, "a", 2))
+function (x, ...) 
+pluck_raw(x, list(1, "a", 2), .default = NULL)
+<environment: 0x55e2a7520fd8>
+> # Equivalent to function(x) x[[1]][["a"]][[2]]
+> 
+> as_mapper(list(1, attr_getter("a")))
+function (x, ...) 
+pluck_raw(x, list(1, function (x) 
+attr(x, attr, exact = TRUE)), .default = NULL)
+<environment: 0x55e2a756cf70>
+> # Equivalent to function(x) attr(x[[1]], "a")
+> 
+> as_mapper(c("a", "b", "c"), .default = NA)
+function (x, ...) 
+pluck_raw(x, list("a", "b", "c"), .default = NA)
+<environment: 0x55e2a75f65b0>
+> 
+> 
+> 
+> cleanEx()
+> nameEx("as_vector")
+> ### * as_vector
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: as_vector
+> ### Title: Coerce a list to a vector
+> ### Aliases: as_vector simplify simplify_all
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> # was
+> as.list(letters) |> as_vector("character")
+ [1] "a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s"
+[20] "t" "u" "v" "w" "x" "y" "z"
+> # now
+> as.list(letters) |> list_simplify(ptype = character())
+ [1] "a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s"
+[20] "t" "u" "v" "w" "x" "y" "z"
+> 
+> # was:
+> list(1:2, 3:4, 5:6) |> as_vector(integer(2))
+[1] 1 2 3 4 5 6
+> # now:
+> list(1:2, 3:4, 5:6) |> list_c(ptype = integer())
+[1] 1 2 3 4 5 6
+> 
+> 
+> 
+> cleanEx()
+> nameEx("attr_getter")
+> ### * attr_getter
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: attr_getter
+> ### Title: Create an attribute getter function
+> ### Aliases: attr_getter
+> 
+> ### ** Examples
+> 
+> # attr_getter() takes an attribute name and returns a function to
+> # access the attribute:
+> get_rownames <- attr_getter("row.names")
+> get_rownames(mtcars)
+ [1] "Mazda RX4"           "Mazda RX4 Wag"       "Datsun 710"         
+ [4] "Hornet 4 Drive"      "Hornet Sportabout"   "Valiant"            
+ [7] "Duster 360"          "Merc 240D"           "Merc 230"           
+[10] "Merc 280"            "Merc 280C"           "Merc 450SE"         
+[13] "Merc 450SL"          "Merc 450SLC"         "Cadillac Fleetwood" 
+[16] "Lincoln Continental" "Chrysler Imperial"   "Fiat 128"           
+[19] "Honda Civic"         "Toyota Corolla"      "Toyota Corona"      
+[22] "Dodge Challenger"    "AMC Javelin"         "Camaro Z28"         
+[25] "Pontiac Firebird"    "Fiat X1-9"           "Porsche 914-2"      
+[28] "Lotus Europa"        "Ford Pantera L"      "Ferrari Dino"       
+[31] "Maserati Bora"       "Volvo 142E"         
+> 
+> # These getter functions are handy in conjunction with pluck() for
+> # extracting deeply into a data structure. Here we'll first
+> # extract by position, then by attribute:
+> obj1 <- structure("obj", obj_attr = "foo")
+> obj2 <- structure("obj", obj_attr = "bar")
+> x <- list(obj1, obj2)
+> 
+> pluck(x, 1, attr_getter("obj_attr"))  # From first object
+[1] "foo"
+> pluck(x, 2, attr_getter("obj_attr"))  # From second object
+[1] "bar"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("auto_browse")
+> ### * auto_browse
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: auto_browse
+> ### Title: Wrap a function so it will automatically 'browse()' on error
+> ### Aliases: auto_browse
+> 
+> ### ** Examples
+> 
+> # For interactive usage, auto_browse() is useful because it automatically
+> # starts a browser() in the right place.
+> f <- function(x) {
++   y <- 20
++   if (x > 5) {
++     stop("!")
++   } else {
++     x
++   }
++ }
+> if (interactive()) {
++   map(1:6, auto_browse(f))
++ }
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("chuck")
+> ### * chuck
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: chuck
+> ### Title: Get an element deep within a nested data structure, failing if
+> ###   it doesn't exist
+> ### Aliases: chuck
+> 
+> ### ** Examples
+> 
+> x <- list(a = 1, b = 2)
+> 
+> # When indexing an element that doesn't exist `[[` sometimes returns NULL:
+> x[["y"]]
+NULL
+> # and sometimes errors:
+> try(x[[3]])
+Error in x[[3]] : subscript out of bounds
+> 
+> # chuck() consistently errors:
+> try(chuck(x, "y"))
+Error in chuck(x, "y") : Can't find name `y` in vector.
+> try(chuck(x, 3))
+Error in chuck(x, 3) : 
+  Index 1 exceeds the length of plucked object (3 > 2).
+> 
+> 
+> 
+> cleanEx()
+> nameEx("compose")
+> ### * compose
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: compose
+> ### Title: Compose multiple functions together to create a new function
+> ### Aliases: compose
+> 
+> ### ** Examples
+> 
+> not_null <- compose(`!`, is.null)
+> not_null(4)
+[1] TRUE
+> not_null(NULL)
+[1] FALSE
+> 
+> add1 <- function(x) x + 1
+> compose(add1, add1)(8)
+[1] 10
+> 
+> fn <- compose(\(x) paste(x, "foo"), \(x) paste(x, "bar"))
+> fn("input")
+[1] "input bar foo"
+> 
+> # Lists of functions can be spliced with !!!
+> fns <- list(
++   function(x) paste(x, "foo"),
++   \(x) paste(x, "bar")
++ )
+> fn <- compose(!!!fns)
+> fn("input")
+[1] "input bar foo"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("cross")
+> ### * cross
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: cross
+> ### Title: Produce all combinations of list elements
+> ### Aliases: cross cross2 cross3 cross_df cross_n cross_d
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> # We build all combinations of names, greetings and separators from our
+> # list of data and pass each one to paste()
+> data <- list(
++   id = c("John", "Jane"),
++   greeting = c("Hello.", "Bonjour."),
++   sep = c("! ", "... ")
++ )
+> 
+> data |>
++   cross() |>
++   map(lift(paste))
+Warning: `cross()` was deprecated in purrr 1.0.0.
+ℹ Please use `tidyr::expand_grid()` instead.
+ℹ See <https://github.com/tidyverse/purrr/issues/768>.
+Warning: `lift()` was deprecated in purrr 1.0.0.
+[[1]]
+[1] "John! Hello."
+
+[[2]]
+[1] "Jane! Hello."
+
+[[3]]
+[1] "John! Bonjour."
+
+[[4]]
+[1] "Jane! Bonjour."
+
+[[5]]
+[1] "John... Hello."
+
+[[6]]
+[1] "Jane... Hello."
+
+[[7]]
+[1] "John... Bonjour."
+
+[[8]]
+[1] "Jane... Bonjour."
+
+> 
+> # cross() returns the combinations in long format: many elements,
+> # each representing one combination. With cross_df() we'll get a
+> # data frame in long format: crossing three objects produces a data
+> # frame of three columns with each row being a particular
+> # combination. This is the same format that expand.grid() returns.
+> args <- data |> cross_df()
+Warning: `cross_df()` was deprecated in purrr 1.0.0.
+ℹ Please use `tidyr::expand_grid()` instead.
+ℹ See <https://github.com/tidyverse/purrr/issues/768>.
+> 
+> # In case you need a list in long format (and not a data frame)
+> # just run as.list() after cross_df()
+> args |> as.list()
+$id
+[1] "John" "Jane" "John" "Jane" "John" "Jane" "John" "Jane"
+
+$greeting
+[1] "Hello."   "Hello."   "Bonjour." "Bonjour." "Hello."   "Hello."   "Bonjour."
+[8] "Bonjour."
+
+$sep
+[1] "! "   "! "   "! "   "! "   "... " "... " "... " "... "
+
+> 
+> # This format is often less practical for functional programming
+> # because applying a function to the combinations requires a loop
+> out <- vector("character", length = nrow(args))
+> for (i in seq_along(out))
++   out[[i]] <- invoke("paste", map(args, i))
+Warning: `invoke()` was deprecated in purrr 1.0.0.
+ℹ Please use `exec()` instead.
+> out
+[1] "John! Hello."     "Jane! Hello."     "John! Bonjour."   "Jane! Bonjour."  
+[5] "John... Hello."   "Jane... Hello."   "John... Bonjour." "Jane... Bonjour."
+> 
+> # It's easier to transpose and then use invoke_map()
+> args |> transpose() |> map_chr(\(x) exec(paste, !!!x))
+[1] "John! Hello."     "Jane! Hello."     "John! Bonjour."   "Jane! Bonjour."  
+[5] "John... Hello."   "Jane... Hello."   "John... Bonjour." "Jane... Bonjour."
+> 
+> # Unwanted combinations can be filtered out with a predicate function
+> filter <- function(x, y) x >= y
+> cross2(1:5, 1:5, .filter = filter) |> str()
+Warning: `cross2()` was deprecated in purrr 1.0.0.
+ℹ Please use `tidyr::expand_grid()` instead.
+ℹ See <https://github.com/tidyverse/purrr/issues/768>.
+List of 10
+ $ :List of 2
+  ..$ : int 1
+  ..$ : int 2
+ $ :List of 2
+  ..$ : int 1
+  ..$ : int 3
+ $ :List of 2
+  ..$ : int 2
+  ..$ : int 3
+ $ :List of 2
+  ..$ : int 1
+  ..$ : int 4
+ $ :List of 2
+  ..$ : int 2
+  ..$ : int 4
+ $ :List of 2
+  ..$ : int 3
+  ..$ : int 4
+ $ :List of 2
+  ..$ : int 1
+  ..$ : int 5
+ $ :List of 2
+  ..$ : int 2
+  ..$ : int 5
+ $ :List of 2
+  ..$ : int 3
+  ..$ : int 5
+ $ :List of 2
+  ..$ : int 4
+  ..$ : int 5
+> 
+> # To give names to the components of the combinations, we map
+> # setNames() on the product:
+> x <- seq_len(3)
+> cross2(x, x, .filter = `==`) |>
++   map(setNames, c("x", "y"))
+[[1]]
+[[1]]$x
+[1] 2
+
+[[1]]$y
+[1] 1
+
+
+[[2]]
+[[2]]$x
+[1] 3
+
+[[2]]$y
+[1] 1
+
+
+[[3]]
+[[3]]$x
+[1] 1
+
+[[3]]$y
+[1] 2
+
+
+[[4]]
+[[4]]$x
+[1] 3
+
+[[4]]$y
+[1] 2
+
+
+[[5]]
+[[5]]$x
+[1] 1
+
+[[5]]$y
+[1] 3
+
+
+[[6]]
+[[6]]$x
+[1] 2
+
+[[6]]$y
+[1] 3
+
+
+> 
+> # Alternatively we can encapsulate the arguments in a named list
+> # before crossing to get named components:
+> list(x = x, y = x) |>
++   cross(.filter = `==`)
+[[1]]
+[[1]]$x
+[1] 2
+
+[[1]]$y
+[1] 1
+
+
+[[2]]
+[[2]]$x
+[1] 3
+
+[[2]]$y
+[1] 1
+
+
+[[3]]
+[[3]]$x
+[1] 1
+
+[[3]]$y
+[1] 2
+
+
+[[4]]
+[[4]]$x
+[1] 3
+
+[[4]]$y
+[1] 2
+
+
+[[5]]
+[[5]]$x
+[1] 1
+
+[[5]]$y
+[1] 3
+
+
+[[6]]
+[[6]]$x
+[1] 2
+
+[[6]]$y
+[1] 3
+
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("detect")
+> ### * detect
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: detect
+> ### Title: Find the value or position of the first match
+> ### Aliases: detect detect_index
+> 
+> ### ** Examples
+> 
+> is_even <- function(x) x %% 2 == 0
+> 
+> 3:10 |> detect(is_even)
+[1] 4
+> 3:10 |> detect_index(is_even)
+[1] 2
+> 
+> 3:10 |> detect(is_even, .dir = "backward")
+[1] 10
+> 3:10 |> detect_index(is_even, .dir = "backward")
+[1] 8
+> 
+> 
+> # Since `.f` is passed to as_mapper(), you can supply a
+> # lambda-formula or a pluck object:
+> x <- list(
++   list(1, foo = FALSE),
++   list(2, foo = TRUE),
++   list(3, foo = TRUE)
++ )
+> 
+> detect(x, "foo")
+[[1]]
+[1] 2
+
+$foo
+[1] TRUE
+
+> detect_index(x, "foo")
+[1] 2
+> 
+> 
+> # If you need to find all values, use keep():
+> keep(x, "foo")
+[[1]]
+[[1]][[1]]
+[1] 2
+
+[[1]]$foo
+[1] TRUE
+
+
+[[2]]
+[[2]][[1]]
+[1] 3
+
+[[2]]$foo
+[1] TRUE
+
+
+> 
+> # If you need to find all positions, use map_lgl():
+> which(map_lgl(x, "foo"))
+[1] 2 3
+> 
+> 
+> 
+> cleanEx()
+> nameEx("every")
+> ### * every
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: every
+> ### Title: Do every, some, or none of the elements of a list satisfy a
+> ###   predicate?
+> ### Aliases: every some none
+> 
+> ### ** Examples
+> 
+> x <- list(0:10, 5.5)
+> x |> every(is.numeric)
+[1] TRUE
+> x |> every(is.integer)
+[1] FALSE
+> x |> some(is.integer)
+[1] TRUE
+> x |> none(is.character)
+[1] TRUE
+> 
+> # Missing values are propagated:
+> some(list(NA, FALSE), identity)
+[1] NA
+> 
+> # If you need to use these functions in a context where missing values are
+> # unsafe (e.g. in `if ()` conditions), make sure to use safe predicates:
+> if (some(list(NA, FALSE), rlang::is_true)) "foo" else "bar"
+[1] "bar"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("flatten")
+> ### * flatten
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: flatten
+> ### Title: Flatten a list of lists into a simple vector
+> ### Aliases: flatten flatten_lgl flatten_int flatten_dbl flatten_chr
+> ###   flatten_dfr flatten_dfc flatten_df
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> x <- map(1:3, \(i) sample(4))
+> x
+[[1]]
+[1] 1 3 4 2
+
+[[2]]
+[1] 1 3 4 2
+
+[[3]]
+[1] 2 3 1 4
+
+> 
+> # was
+> x |> flatten_int() |> str()
+ int [1:12] 1 3 4 2 1 3 4 2 2 3 ...
+> # now
+> x |> list_c() |> str()
+ int [1:12] 1 3 4 2 1 3 4 2 2 3 ...
+> 
+> x <- list(list(1, 2), list(3, 4))
+> # was
+> x |> flatten() |> str()
+List of 4
+ $ : num 1
+ $ : num 2
+ $ : num 3
+ $ : num 4
+> # now
+> x |> list_flatten() |> str()
+List of 4
+ $ : num 1
+ $ : num 2
+ $ : num 3
+ $ : num 4
+> 
+> 
+> 
+> cleanEx()
+> nameEx("has_element")
+> ### * has_element
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: has_element
+> ### Title: Does a list contain an object?
+> ### Aliases: has_element
+> 
+> ### ** Examples
+> 
+> x <- list(1:10, 5, 9.9)
+> x |> has_element(1:10)
+[1] TRUE
+> x |> has_element(3)
+[1] FALSE
+> 
+> 
+> 
+> cleanEx()
+> nameEx("head_while")
+> ### * head_while
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: head_while
+> ### Title: Find head/tail that all satisfies a predicate.
+> ### Aliases: head_while tail_while
+> 
+> ### ** Examples
+> 
+> pos <- function(x) x >= 0
+> head_while(5:-5, pos)
+[1] 5 4 3 2 1 0
+> tail_while(5:-5, negate(pos))
+[1] -1 -2 -3 -4 -5
+> 
+> big <- function(x) x > 100
+> head_while(0:10, big)
+integer(0)
+> tail_while(0:10, big)
+integer(0)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("imap")
+> ### * imap
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: imap
+> ### Title: Apply a function to each element of a vector, and its index
+> ### Aliases: imap imap_lgl imap_chr imap_int imap_dbl iwalk
+> 
+> ### ** Examples
+> 
+> imap_chr(sample(10), paste)
+ [1] "9 1"  "4 2"  "7 3"  "1 4"  "2 5"  "5 6"  "3 7"  "10 8" "6 9"  "8 10"
+> 
+> imap_chr(sample(10), \(x, idx) paste0(idx, ": ", x))
+ [1] "1: 3"  "2: 1"  "3: 5"  "4: 8"  "5: 2"  "6: 6"  "7: 10" "8: 9"  "9: 4" 
+[10] "10: 7"
+> 
+> iwalk(mtcars, \(x, idx) cat(idx, ": ", median(x), "\n", sep = ""))
+mpg: 19.2
+cyl: 6
+disp: 196.3
+hp: 123
+drat: 3.695
+wt: 3.325
+qsec: 17.71
+vs: 0
+am: 0
+gear: 4
+carb: 2
+> 
+> 
+> 
+> cleanEx()
+> nameEx("insistently")
+> ### * insistently
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: insistently
+> ### Title: Transform a function to wait then retry after an error
+> ### Aliases: insistently
+> 
+> ### ** Examples
+> 
+> # For the purpose of this example, we first create a custom rate
+> # object with a low waiting time between attempts:
+> rate <- rate_delay(0.1)
+> 
+> # insistently() makes a function repeatedly try to work
+> risky_runif <- function(lo = 0, hi = 1) {
++   y <- runif(1, lo, hi)
++   if(y < 0.9) {
++     stop(y, " is too small")
++   }
++   y
++ }
+> 
+> # Let's now create an exponential backoff rate with a low waiting
+> # time between attempts:
+> rate <- rate_backoff(pause_base = 0.1, pause_min = 0.005, max_times = 4)
+> 
+> # Modify your function to run insistently.
+> insistent_risky_runif <- insistently(risky_runif, rate, quiet = FALSE)
+> 
+> set.seed(6) # Succeeding seed
+> insistent_risky_runif()
+Error: 0.606268297648057 is too small
+Retrying in 0.19 seconds.
+Error: 0.264352067606524 is too small
+Retrying in 0.15 seconds.
+Error: 0.807483389042318 is too small
+Retrying in 0.78 seconds.
+[1] 0.9579337
+> 
+> set.seed(3) # Failing seed
+> try(insistent_risky_runif())
+Error: 0.168041526339948 is too small
+Retrying in 0.16 seconds.
+Error: 0.384942351374775 is too small
+Retrying in 0.13 seconds.
+Error: 0.602100674761459 is too small
+Retrying in 0.48 seconds.
+Error: 0.124633444240317 is too small
+Error in rate_sleep(rate, quiet = quiet) : 
+  Request failed after 4 attempts.
+> 
+> # You can also use other types of rate settings, like a delay rate
+> # that waits for a fixed amount of time. Be aware that a delay rate
+> # has an infinite amount of attempts by default:
+> rate <- rate_delay(0.2, max_times = 3)
+> insistent_risky_runif <- insistently(risky_runif, rate = rate, quiet = FALSE)
+> try(insistent_risky_runif())
+Error: 0.294600924244151 is too small
+Retrying in 0.2 seconds.
+Error: 0.577609919011593 is too small
+Retrying in 0.2 seconds.
+Error: 0.630979274399579 is too small
+Error in rate_sleep(rate, quiet = quiet) : 
+  Request failed after 3 attempts.
+> 
+> # insistently() and possibly() are a useful combination
+> rate <- rate_backoff(pause_base = 0.1, pause_min = 0.005)
+> possibly_insistent_risky_runif <- possibly(insistent_risky_runif, otherwise = -99)
+> 
+> set.seed(6)
+> possibly_insistent_risky_runif()
+Error: 0.606268297648057 is too small
+Retrying in 0.2 seconds.
+[1] 0.937642
+> 
+> set.seed(3)
+> possibly_insistent_risky_runif()
+Error: 0.168041526339948 is too small
+Retrying in 0.2 seconds.
+Error: 0.807516399072483 is too small
+Retrying in 0.2 seconds.
+Error: 0.384942351374775 is too small
+[1] -99
+> 
+> 
+> 
+> cleanEx()
+> nameEx("invoke")
+> ### * invoke
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: invoke
+> ### Title: Invoke functions.
+> ### Aliases: invoke invoke_map invoke_map_lgl invoke_map_int invoke_map_dbl
+> ###   invoke_map_chr invoke_map_raw invoke_map_dfr invoke_map_dfc
+> ###   invoke_map_df
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> # was
+> invoke(runif, list(n = 10))
+ [1] 0.26550866 0.37212390 0.57285336 0.90820779 0.20168193 0.89838968
+ [7] 0.94467527 0.66079779 0.62911404 0.06178627
+> invoke(runif, n = 10)
+ [1] 0.2059746 0.1765568 0.6870228 0.3841037 0.7698414 0.4976992 0.7176185
+ [8] 0.9919061 0.3800352 0.7774452
+> # now
+> exec(runif, n = 10)
+ [1] 0.93470523 0.21214252 0.65167377 0.12555510 0.26722067 0.38611409
+ [7] 0.01339033 0.38238796 0.86969085 0.34034900
+> 
+> # was
+> args <- list("01a", "01b")
+> invoke(paste, args, sep = "-")
+[1] "01a-01b"
+> # now
+> exec(paste, !!!args, sep = "-")
+[1] "01a-01b"
+> 
+> # was
+> funs <- list(runif, rnorm)
+> funs |> invoke_map(n = 5)
+Warning: `invoke_map()` was deprecated in purrr 1.0.0.
+ℹ Please use map() + exec() instead.
+[[1]]
+[1] 0.4820801 0.5995658 0.4935413 0.1862176 0.8273733
+
+[[2]]
+[1]  0.4356833 -1.2375384 -0.2242679  0.3773956  0.1333364
+
+> funs |> invoke_map(list(list(n = 10), list(n = 5)))
+[[1]]
+ [1] 0.78935623 0.02333120 0.47723007 0.73231374 0.69273156 0.47761962
+ [7] 0.86120948 0.43809711 0.24479728 0.07067905
+
+[[2]]
+[1] -1.28459935  0.04672617 -0.23570656 -0.54288826 -0.43331032
+
+> 
+> # now
+> funs |> map(exec, n = 5)
+[[1]]
+[1] 0.25801678 0.47854525 0.76631067 0.08424691 0.87532133
+
+[[2]]
+[1] -0.4149946 -0.3942900 -0.0593134  1.1000254  0.7631757
+
+> funs |> map2(list(list(n = 10), list(n = 5)), function(f, args) exec(f, !!!args))
+[[1]]
+ [1] 0.4346595 0.7125147 0.3999944 0.3253522 0.7570871 0.2026923 0.7111212
+ [8] 0.1216919 0.2454885 0.1433044
+
+[[2]]
+[1] -0.7074952  0.3645820  0.7685329 -0.1123462  0.8811077
+
+> 
+> # or use pmap + a tibble
+> df <- tibble::tibble(
++   fun = list(runif, rnorm),
++   args = list(list(n = 10), list(n = 5))
++ )
+> df |> pmap(function(fun, args) exec(fun, !!!args))
+[[1]]
+ [1] 0.6547239 0.3531973 0.2702601 0.9926841 0.6334933 0.2132081 0.1293723
+ [8] 0.4781180 0.9240745 0.5987610
+
+[[2]]
+[1]  1.9803999 -0.3672215 -1.0441346  0.5697196 -0.1350546
+
+> 
+> 
+> # was
+> list(m1 = mean, m2 = median) |> invoke_map(x = rcauchy(100))
+$m1
+[1] -8.593797
+
+$m2
+[1] -0.1717996
+
+> # now
+> list(m1 = mean, m2 = median) |> map(function(f) f(rcauchy(100)))
+$m1
+[1] 2.910145
+
+$m2
+[1] 0.1191056
+
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("keep")
+> ### * keep
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: keep
+> ### Title: Keep/discard elements based on their values
+> ### Aliases: keep discard compact
+> 
+> ### ** Examples
+> 
+> rep(10, 10) |>
++   map(sample, 5) |>
++   keep(function(x) mean(x) > 6)
+[[1]]
+[1] 10  7  1  9  5
+
+[[2]]
+[1]  5  9  1  6 10
+
+[[3]]
+[1] 10  6  7  4  8
+
+[[4]]
+[1] 8 9 7 6 2
+
+> 
+> # Or use a formula
+> rep(10, 10) |>
++   map(sample, 5) |>
++   keep(\(x) mean(x) > 6)
+[[1]]
+[1]  2 10  6  8  7
+
+[[2]]
+[1]  4  7  5  8 10
+
+> 
+> # Using a string instead of a function will select all list elements
+> # where that subelement is TRUE
+> x <- rerun(5, a = rbernoulli(1), b = sample(10))
+Warning: `rerun()` was deprecated in purrr 1.0.0.
+ℹ Please use `map()` instead.
+  # Previously
+  rerun(5, a = rbernoulli(1), b = sample(10))
+
+  # Now
+  map(1:5, ~ list(a = rbernoulli(1), b = sample(10)))
+Warning: `rbernoulli()` was deprecated in purrr 1.0.0.
+> x
+[[1]]
+[[1]]$a
+[1] FALSE
+
+[[1]]$b
+ [1] 10  1  3  8  2  6  9  5  7  4
+
+
+[[2]]
+[[2]]$a
+[1] TRUE
+
+[[2]]$b
+ [1]  7  8  5  4  6  1  3  2  9 10
+
+
+[[3]]
+[[3]]$a
+[1] FALSE
+
+[[3]]$b
+ [1]  6 10  4  8  1  5  9  2  7  3
+
+
+[[4]]
+[[4]]$a
+[1] FALSE
+
+[[4]]$b
+ [1]  3  7  6 10  9  4  1  5  2  8
+
+
+[[5]]
+[[5]]$a
+[1] TRUE
+
+[[5]]$b
+ [1]  6  1  2  7  3  4  9 10  5  8
+
+
+> x |> keep("a")
+[[1]]
+[[1]]$a
+[1] TRUE
+
+[[1]]$b
+ [1]  7  8  5  4  6  1  3  2  9 10
+
+
+[[2]]
+[[2]]$a
+[1] TRUE
+
+[[2]]$b
+ [1]  6  1  2  7  3  4  9 10  5  8
+
+
+> x |> discard("a")
+[[1]]
+[[1]]$a
+[1] FALSE
+
+[[1]]$b
+ [1] 10  1  3  8  2  6  9  5  7  4
+
+
+[[2]]
+[[2]]$a
+[1] FALSE
+
+[[2]]$b
+ [1]  6 10  4  8  1  5  9  2  7  3
+
+
+[[3]]
+[[3]]$a
+[1] FALSE
+
+[[3]]$b
+ [1]  3  7  6 10  9  4  1  5  2  8
+
+
+> 
+> # compact() discards elements that are NULL or that have length zero
+> list(a = "a", b = NULL, c = integer(0), d = NA, e = list()) |>
++   compact()
+$a
+[1] "a"
+
+$d
+[1] NA
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("keep_at")
+> ### * keep_at
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: keep_at
+> ### Title: Keep/discard elements based on their name/position
+> ### Aliases: keep_at discard_at
+> 
+> ### ** Examples
+> 
+> x <- c(a = 1, b = 2, cat = 10, dog = 15, elephant = 5, e = 10)
+> x %>% keep_at(letters)
+ a  b  e 
+ 1  2 10 
+> x %>% discard_at(letters)
+     cat      dog elephant 
+      10       15        5 
+> 
+> # Can also use a function
+> x %>% keep_at(~ nchar(.x) == 3)
+cat dog 
+ 10  15 
+> x %>% discard_at(~ nchar(.x) == 3)
+       a        b elephant        e 
+       1        2        5       10 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("lift")
+> ### * lift
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: lift
+> ### Title: Lift the domain of a function
+> ### Aliases: lift lift_dl lift_dv lift_vl lift_vd lift_ld lift_lv
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> ### Lifting from ... to list(...) or c(...)
+> 
+> x <- list(x = c(1:100, NA, 1000), na.rm = TRUE, trim = 0.9)
+> lift_dl(mean)(x)
+[1] 51
+> # You can also use the lift() alias for this common operation:
+> lift(mean)(x)
+[1] 51
+> # now:
+> exec(mean, !!!x)
+[1] 51
+> 
+> # Default arguments can also be specified directly in lift_dl()
+> list(c(1:100, NA, 1000)) |> lift_dl(mean, na.rm = TRUE)()
+[1] 59.90099
+> # now:
+> mean(c(1:100, NA, 1000), na.rm = TRUE)
+[1] 59.90099
+> 
+> # lift_dl() and lift_ld() are inverse of each other.
+> # Here we transform sum() so that it takes a list
+> fun <- sum |> lift_dl()
+> fun(list(3, NA, 4, na.rm = TRUE))
+[1] 7
+> # now:
+> fun <- function(x) exec("sum", !!!x)
+> exec(sum, 3, NA, 4, na.rm = TRUE)
+[1] 7
+> ### Lifting from c(...) to list(...) or ...
+> 
+> # In other situations we need the vector-valued function to take a
+> # variable number of arguments as with pmap(). This is a job for
+> # lift_vd():
+> pmap_dbl(mtcars, lift_vd(mean))
+Warning: `lift_vd()` was deprecated in purrr 1.0.0.
+ [1] 29.90727 29.98136 23.59818 38.73955 53.66455 35.04909 59.72000 24.63455
+ [9] 27.23364 31.86000 31.78727 46.43091 46.50000 46.35000 66.23273 66.05855
+[17] 65.97227 19.44091 17.74227 18.81409 24.88864 47.24091 46.00773 58.75273
+[25] 57.37955 18.92864 24.77909 24.88027 60.97182 34.50818 63.15545 26.26273
+> # now
+> pmap_dbl(mtcars, \(...) mean(c(...)))
+ [1] 29.90727 29.98136 23.59818 38.73955 53.66455 35.04909 59.72000 24.63455
+ [9] 27.23364 31.86000 31.78727 46.43091 46.50000 46.35000 66.23273 66.05855
+[17] 65.97227 19.44091 17.74227 18.81409 24.88864 47.24091 46.00773 58.75273
+[25] 57.37955 18.92864 24.77909 24.88027 60.97182 34.50818 63.15545 26.26273
+> ### Lifting from list(...) to c(...) or ...
+> 
+> # This kind of lifting is sometimes needed for function
+> # composition. An example would be to use pmap() with a function
+> # that takes a list. In the following, we use some() on each row of
+> # a data frame to check they each contain at least one element
+> # satisfying a condition:
+> mtcars |> pmap_lgl(lift_ld(some, partial(`<`, 200)))
+Warning: `lift_ld()` was deprecated in purrr 1.0.0.
+ [1] FALSE FALSE FALSE  TRUE  TRUE  TRUE  TRUE FALSE FALSE FALSE FALSE  TRUE
+[13]  TRUE  TRUE  TRUE  TRUE  TRUE FALSE FALSE FALSE FALSE  TRUE  TRUE  TRUE
+[25]  TRUE FALSE FALSE FALSE  TRUE FALSE  TRUE FALSE
+> # now
+> mtcars |> pmap_lgl(\(...) any(c(...) > 200))
+ [1] FALSE FALSE FALSE  TRUE  TRUE  TRUE  TRUE FALSE FALSE FALSE FALSE  TRUE
+[13]  TRUE  TRUE  TRUE  TRUE  TRUE FALSE FALSE FALSE FALSE  TRUE  TRUE  TRUE
+[25]  TRUE FALSE FALSE FALSE  TRUE FALSE  TRUE FALSE
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("list_assign")
+> ### * list_assign
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: list_assign
+> ### Title: Modify a list
+> ### Aliases: list_assign list_modify list_merge
+> 
+> ### ** Examples
+> 
+> x <- list(x = 1:10, y = 4, z = list(a = 1, b = 2))
+> str(x)
+List of 3
+ $ x: int [1:10] 1 2 3 4 5 6 7 8 9 10
+ $ y: num 4
+ $ z:List of 2
+  ..$ a: num 1
+  ..$ b: num 2
+> 
+> # Update values
+> str(list_assign(x, a = 1))
+List of 4
+ $ x: int [1:10] 1 2 3 4 5 6 7 8 9 10
+ $ y: num 4
+ $ z:List of 2
+  ..$ a: num 1
+  ..$ b: num 2
+ $ a: num 1
+> # Replace values
+> str(list_assign(x, z = 5))
+List of 3
+ $ x: int [1:10] 1 2 3 4 5 6 7 8 9 10
+ $ y: num 4
+ $ z: num 5
+> str(list_assign(x, z = NULL))
+List of 3
+ $ x: int [1:10] 1 2 3 4 5 6 7 8 9 10
+ $ y: num 4
+ $ z: NULL
+> 
+> str(list_assign(x, z = list(a = 1:5)))
+List of 3
+ $ x: int [1:10] 1 2 3 4 5 6 7 8 9 10
+ $ y: num 4
+ $ z:List of 1
+  ..$ a: int [1:5] 1 2 3 4 5
+> # replace recursively, leaving the other elements of z alone
+> str(list_modify(x, z = list(a = 1:5)))
+List of 3
+ $ x: int [1:10] 1 2 3 4 5 6 7 8 9 10
+ $ y: num 4
+ $ z:List of 2
+  ..$ a: int [1:5] 1 2 3 4 5
+  ..$ b: num 2
+> 
+> # Remove values
+> str(list_assign(x, z = zap()))
+List of 2
+ $ x: int [1:10] 1 2 3 4 5 6 7 8 9 10
+ $ y: num 4
+> 
+> # Combine values with list_merge()
+> str(list_merge(x, x = 11, z = list(a = 2:5, c = 3)))
+List of 3
+ $ x: num [1:11] 1 2 3 4 5 6 7 8 9 10 ...
+ $ y: num 4
+ $ z:List of 3
+  ..$ a: num [1:5] 1 2 3 4 5
+  ..$ b: num 2
+  ..$ c: num 3
+> 
+> # All these functions support dynamic dots features. Use !!! to splice
+> # a list of arguments:
+> l <- list(new = 1, y = zap(), z = 5)
+> str(list_assign(x, !!!l))
+List of 3
+ $ x  : int [1:10] 1 2 3 4 5 6 7 8 9 10
+ $ z  : num 5
+ $ new: num 1
+> 
+> 
+> 
+> cleanEx()
+> nameEx("list_c")
+> ### * list_c
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: list_c
+> ### Title: Combine list elements into a single data structure
+> ### Aliases: list_c list_cbind list_rbind
+> 
+> ### ** Examples
+> 
+> x1 <- list(a = 1, b = 2, c = 3)
+> list_c(x1)
+[1] 1 2 3
+> 
+> x2 <- list(
++   a = data.frame(x = 1:2),
++   b = data.frame(y = "a")
++ )
+> list_rbind(x2)
+   x    y
+1  1 <NA>
+2  2 <NA>
+3 NA    a
+> list_rbind(x2, names_to = "id")
+  id  x    y
+1  a  1 <NA>
+2  a  2 <NA>
+3  b NA    a
+> list_rbind(unname(x2), names_to = "id")
+  id  x    y
+1  1  1 <NA>
+2  1  2 <NA>
+3  2 NA    a
+> 
+> list_cbind(x2)
+  x y
+1 1 a
+2 2 a
+> 
+> 
+> 
+> cleanEx()
+> nameEx("list_flatten")
+> ### * list_flatten
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: list_flatten
+> ### Title: Flatten a list
+> ### Aliases: list_flatten
+> 
+> ### ** Examples
+> 
+> x <- list(1, list(2, 3), list(4, list(5)))
+> x |> list_flatten() |> str()
+List of 5
+ $ : num 1
+ $ : num 2
+ $ : num 3
+ $ : num 4
+ $ :List of 1
+  ..$ : num 5
+> x |> list_flatten() |> list_flatten() |> str()
+List of 5
+ $ : num 1
+ $ : num 2
+ $ : num 3
+ $ : num 4
+ $ : num 5
+> 
+> # Flat lists are left as is
+> list(1, 2, 3, 4, 5) |> list_flatten() |> str()
+List of 5
+ $ : num 1
+ $ : num 2
+ $ : num 3
+ $ : num 4
+ $ : num 5
+> 
+> # Empty lists will disappear
+> list(1, list(), 2, list(3)) |> list_flatten() |> str()
+List of 3
+ $ : num 1
+ $ : num 2
+ $ : num 3
+> 
+> # Another way to see this is that it reduces the depth of the list
+> x <- list(
++   list(),
++   list(list())
++ )
+> x |> pluck_depth()
+[1] 3
+> x |> list_flatten() |> pluck_depth()
+[1] 2
+> 
+> # Use name_spec to control how inner and outer names are combined
+> x <- list(x = list(a = 1, b = 2), y = list(c = 1, d = 2))
+> x |> list_flatten() |> names()
+[1] "x_a" "x_b" "y_c" "y_d"
+> x |> list_flatten(name_spec = "{outer}") |> names()
+[1] "x" "x" "y" "y"
+> x |> list_flatten(name_spec = "{inner}") |> names()
+[1] "a" "b" "c" "d"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("list_simplify")
+> ### * list_simplify
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: list_simplify
+> ### Title: Simplify a list to an atomic or S3 vector
+> ### Aliases: list_simplify
+> 
+> ### ** Examples
+> 
+> list_simplify(list(1, 2, 3))
+[1] 1 2 3
+> 
+> # Only works when vectors are length one and have compatible types:
+> try(list_simplify(list(1, 2, 1:3)))
+Error in list_simplify(list(1, 2, 1:3)) : 
+  `x[[3]]` must have size 1, not size 3.
+> try(list_simplify(list(1, 2, "x")))
+Error in list_simplify(list(1, 2, "x")) : 
+  Can't combine `<list>[[1]]` <double> and `<list>[[3]]` <character>.
+> 
+> # Unless you strict = FALSE, in which case you get the input back:
+> list_simplify(list(1, 2, 1:3), strict = FALSE)
+[[1]]
+[1] 1
+
+[[2]]
+[1] 2
+
+[[3]]
+[1] 1 2 3
+
+> list_simplify(list(1, 2, "x"), strict = FALSE)
+[[1]]
+[1] 1
+
+[[2]]
+[1] 2
+
+[[3]]
+[1] "x"
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("list_transpose")
+> ### * list_transpose
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: list_transpose
+> ### Title: Transpose a list
+> ### Aliases: list_transpose
+> 
+> ### ** Examples
+> 
+> # list_transpose() is useful in conjunction with safely()
+> x <- list("a", 1, 2)
+> y <- x |> map(safely(log))
+> y |> str()
+List of 3
+ $ :List of 2
+  ..$ result: NULL
+  ..$ error :List of 2
+  .. ..$ message: chr "non-numeric argument to mathematical function"
+  .. ..$ call   : language .Primitive("log")(x, base)
+  .. ..- attr(*, "class")= chr [1:3] "simpleError" "error" "condition"
+ $ :List of 2
+  ..$ result: num 0
+  ..$ error : NULL
+ $ :List of 2
+  ..$ result: num 0.693
+  ..$ error : NULL
+> # Put all the errors and results together
+> y |> list_transpose() |> str()
+List of 2
+ $ result:List of 3
+  ..$ : NULL
+  ..$ : num 0
+  ..$ : num 0.693
+ $ error :List of 3
+  ..$ :List of 2
+  .. ..$ message: chr "non-numeric argument to mathematical function"
+  .. ..$ call   : language .Primitive("log")(x, base)
+  .. ..- attr(*, "class")= chr [1:3] "simpleError" "error" "condition"
+  ..$ : NULL
+  ..$ : NULL
+> # Supply a default result to further simplify
+> y |> list_transpose(default = list(result = NA)) |> str()
+List of 2
+ $ result: num [1:3] NA 0 0.693
+ $ error :List of 3
+  ..$ :List of 2
+  .. ..$ message: chr "non-numeric argument to mathematical function"
+  .. ..$ call   : language .Primitive("log")(x, base)
+  .. ..- attr(*, "class")= chr [1:3] "simpleError" "error" "condition"
+  ..$ : NULL
+  ..$ : NULL
+> 
+> # list_transpose() will try to simplify by default:
+> x <- list(list(a = 1, b = 2), list(a = 3, b = 4), list(a = 5, b = 6))
+> x |> list_transpose()
+$a
+[1] 1 3 5
+
+$b
+[1] 2 4 6
+
+> # this makes list_tranpose() not completely symmetric
+> x |> list_transpose() |> list_transpose()
+[[1]]
+a b 
+1 2 
+
+[[2]]
+a b 
+3 4 
+
+[[3]]
+a b 
+5 6 
+
+> 
+> # use simplify = FALSE to always return lists:
+> x |> list_transpose(simplify = FALSE) |> str()
+List of 2
+ $ a:List of 3
+  ..$ : num 1
+  ..$ : num 3
+  ..$ : num 5
+ $ b:List of 3
+  ..$ : num 2
+  ..$ : num 4
+  ..$ : num 6
+> x |>
++   list_transpose(simplify = FALSE) |>
++   list_transpose(simplify = FALSE) |> str()
+List of 3
+ $ :List of 2
+  ..$ a: num 1
+  ..$ b: num 2
+ $ :List of 2
+  ..$ a: num 3
+  ..$ b: num 4
+ $ :List of 2
+  ..$ a: num 5
+  ..$ b: num 6
+> 
+> # Provide an explicit template if you know which elements you want to extract
+> ll <- list(
++   list(x = 1, y = "one"),
++   list(z = "deux", x = 2)
++ )
+> ll |> list_transpose()
+$x
+[1] 1 2
+
+$y
+$y[[1]]
+[1] "one"
+
+$y[[2]]
+NULL
+
+
+> ll |> list_transpose(template = c("x", "y", "z"))
+$x
+[1] 1 2
+
+$y
+$y[[1]]
+[1] "one"
+
+$y[[2]]
+NULL
+
+
+$z
+$z[[1]]
+NULL
+
+$z[[2]]
+[1] "deux"
+
+
+> ll |> list_transpose(template = 1)
+[[1]]
+[[1]][[1]]
+[1] 1
+
+[[1]][[2]]
+[1] "deux"
+
+
+> 
+> # And specify a default if you want to simplify
+> ll |> list_transpose(template = c("x", "y", "z"), default = NA)
+$x
+[1] 1 2
+
+$y
+[1] "one" NA   
+
+$z
+[1] NA     "deux"
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("lmap")
+> ### * lmap
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: lmap
+> ### Title: Apply a function to list-elements of a list
+> ### Aliases: lmap lmap_if lmap_at
+> 
+> ### ** Examples
+> 
+> set.seed(1014)
+> 
+> # Let's write a function that returns a larger list or an empty list
+> # depending on some condition. It also uses the input name to name the
+> # output
+> maybe_rep <- function(x) {
++   n <- rpois(1, 2)
++   set_names(rep_len(x, n), paste0(names(x), seq_len(n)))
++ }
+> 
+> # The output size varies each time we map f()
+> x <- list(a = 1:4, b = letters[5:7], c = 8:9, d = letters[10])
+> x |> lmap(maybe_rep) |> str()
+List of 6
+ $ b1: chr [1:3] "e" "f" "g"
+ $ b2: chr [1:3] "e" "f" "g"
+ $ b3: chr [1:3] "e" "f" "g"
+ $ c1: int [1:2] 8 9
+ $ c2: int [1:2] 8 9
+ $ d1: chr "j"
+> 
+> # We can apply f() on a selected subset of x
+> x |> lmap_at(c("a", "d"), maybe_rep) |> str()
+List of 4
+ $ b : chr [1:3] "e" "f" "g"
+ $ c : int [1:2] 8 9
+ $ d1: chr "j"
+ $ d2: chr "j"
+> 
+> # Or only where a condition is satisfied
+> x |> lmap_if(is.character, maybe_rep) |> str()
+List of 5
+ $ a : int [1:4] 1 2 3 4
+ $ b1: chr [1:3] "e" "f" "g"
+ $ b2: chr [1:3] "e" "f" "g"
+ $ c : int [1:2] 8 9
+ $ d1: chr "j"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("map")
+> ### * map
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: map
+> ### Title: Apply a function to each element of a vector
+> ### Aliases: map map_lgl map_int map_dbl map_chr map_vec walk
+> 
+> ### ** Examples
+> 
+> # Compute normal distributions from an atomic vector
+> 1:10 |>
++   map(rnorm, n = 10)
+[[1]]
+ [1] 0.3735462 1.1836433 0.1643714 2.5952808 1.3295078 0.1795316 1.4874291
+ [8] 1.7383247 1.5757814 0.6946116
+
+[[2]]
+ [1]  3.5117812  2.3898432  1.3787594 -0.2146999  3.1249309  1.9550664
+ [7]  1.9838097  2.9438362  2.8212212  2.5939013
+
+[[3]]
+ [1] 3.918977 3.782136 3.074565 1.010648 3.619826 2.943871 2.844204 1.529248
+ [9] 2.521850 3.417942
+
+[[4]]
+ [1] 5.358680 3.897212 4.387672 3.946195 2.622940 3.585005 3.605710 3.940687
+ [9] 5.100025 4.763176
+
+[[5]]
+ [1] 4.835476 4.746638 5.696963 5.556663 4.311244 4.292505 5.364582 5.768533
+ [9] 4.887654 5.881108
+
+[[6]]
+ [1] 6.398106 5.387974 6.341120 4.870637 7.433024 7.980400 5.632779 4.955865
+ [9] 6.569720 5.864945
+
+[[7]]
+ [1] 9.401618 6.960760 7.689739 7.028002 6.256727 7.188792 5.195041 8.465555
+ [9] 7.153253 9.172612
+
+[[8]]
+ [1] 8.475510 7.290054 8.610726 7.065902 6.746367 8.291446 7.556708 8.001105
+ [9] 8.074341 7.410479
+
+[[9]]
+ [1]  8.431331  8.864821 10.178087  7.476433  9.593946  9.332950 10.063100
+ [8]  8.695816  9.370019  9.267099
+
+[[10]]
+ [1]  9.457480 11.207868 11.160403 10.700214 11.586833 10.558486  8.723408
+ [8]  9.426735  8.775387  9.526599
+
+> 
+> # You can also use an anonymous function
+> 1:10 |>
++   map(\(x) rnorm(10, x))
+[[1]]
+ [1] 0.37963332 1.04211587 0.08907835 1.15802877 0.34541536 2.76728727
+ [7] 1.71670748 1.91017423 1.38418536 2.68217608
+
+[[2]]
+ [1] 1.364264 1.538355 3.432282 1.349304 1.792619 1.607192 1.680007 1.720887
+ [9] 2.494188 1.822670
+
+[[3]]
+ [1] 2.494043 4.343039 2.785421 2.820443 2.899809 3.712666 2.926436 2.962366
+ [9] 2.318340 2.675730
+
+[[4]]
+ [1] 4.060160 3.411106 4.531496 2.481606 4.306558 2.463550 3.699024 3.471720
+ [9] 3.347905 3.943103
+
+[[5]]
+ [1] 3.085641 6.176583 3.335028 4.536470 3.884080 4.249181 7.087167 5.017396
+ [9] 3.713699 3.359394
+
+[[6]]
+ [1] 6.450187 5.981440 5.681932 5.070638 4.512540 4.924808 7.000029 5.378733
+ [9] 4.615573 7.869291
+
+[[7]]
+ [1] 7.425100 6.761353 8.058483 7.886423 6.380757 9.206102 6.744973 5.575505
+ [9] 6.855600 7.207538
+
+[[8]]
+ [1] 10.307978  8.105802  8.456999  7.922847  7.665999  7.965274  8.787640
+ [8] 10.075245  9.027392  9.207908
+
+[[9]]
+ [1]  7.768677  9.983896  9.219925  7.532750  9.521023  8.841245 10.464587
+ [8]  8.233918  8.569788  8.073891
+
+[[10]]
+ [1]  9.822896 10.402012  9.268252 10.830373  8.791917  8.952016 11.441158
+ [8]  8.984153 10.411975  9.618924
+
+> 
+> # Simplify output to a vector instead of a list by computing the mean of the distributions
+> 1:10 |>
++   map(rnorm, n = 10) |>  # output a list
++   map_dbl(mean)           # output an atomic vector
+ [1]  1.527148  2.002895  2.646794  3.636317  5.030287  6.018695  7.024238
+ [8]  8.127441  9.074781 10.208139
+> 
+> # Using set_names() with character vectors is handy to keep track
+> # of the original inputs:
+> set_names(c("foo", "bar")) |> map_chr(paste0, ":suffix")
+         foo          bar 
+"foo:suffix" "bar:suffix" 
+> 
+> # Working with lists
+> favorite_desserts <- list(Sophia = "banana bread", Eliott = "pancakes", Karina = "chocolate cake")
+> favorite_desserts |> map_chr(\(food) paste(food, "rocks!"))
+                 Sophia                  Eliott                  Karina 
+  "banana bread rocks!"       "pancakes rocks!" "chocolate cake rocks!" 
+> 
+> # Extract by name or position
+> # .default specifies value for elements that are missing or NULL
+> l1 <- list(list(a = 1L), list(a = NULL, b = 2L), list(b = 3L))
+> l1 |> map("a", .default = "???")
+[[1]]
+[1] 1
+
+[[2]]
+[1] "???"
+
+[[3]]
+[1] "???"
+
+> l1 |> map_int("b", .default = NA)
+[1] NA  2  3
+> l1 |> map_int(2, .default = NA)
+[1] NA  2 NA
+> 
+> # Supply multiple values to index deeply into a list
+> l2 <- list(
++   list(num = 1:3,     letters[1:3]),
++   list(num = 101:103, letters[4:6]),
++   list()
++ )
+> l2 |> map(c(2, 2))
+[[1]]
+[1] "b"
+
+[[2]]
+[1] "e"
+
+[[3]]
+NULL
+
+> 
+> # Use a list to build an extractor that mixes numeric indices and names,
+> # and .default to provide a default value if the element does not exist
+> l2 |> map(list("num", 3))
+[[1]]
+[1] 3
+
+[[2]]
+[1] 103
+
+[[3]]
+NULL
+
+> l2 |> map_int(list("num", 3), .default = NA)
+[1]   3 103  NA
+> 
+> # Working with data frames
+> # Use map_lgl(), map_dbl(), etc to return a vector instead of a list:
+> mtcars |> map_dbl(sum)
+     mpg      cyl     disp       hp     drat       wt     qsec       vs 
+ 642.900  198.000 7383.100 4694.000  115.090  102.952  571.160   14.000 
+      am     gear     carb 
+  13.000  118.000   90.000 
+> 
+> # A more realistic example: split a data frame into pieces, fit a
+> # model to each piece, summarise and extract R^2
+> mtcars |>
++   split(mtcars$cyl) |>
++   map(\(df) lm(mpg ~ wt, data = df)) |>
++   map(summary) |>
++   map_dbl("r.squared")
+        4         6         8 
+0.5086326 0.4645102 0.4229655 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("map2")
+> ### * map2
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: map2
+> ### Title: Map over two inputs
+> ### Aliases: map2 map2_lgl map2_int map2_dbl map2_chr map2_vec walk2
+> 
+> ### ** Examples
+> 
+> x <- list(1, 1, 1)
+> y <- list(10, 20, 30)
+> 
+> map2(x, y, \(x, y) x + y)
+[[1]]
+[1] 11
+
+[[2]]
+[1] 21
+
+[[3]]
+[1] 31
+
+> # Or just
+> map2(x, y, `+`)
+[[1]]
+[1] 11
+
+[[2]]
+[1] 21
+
+[[3]]
+[1] 31
+
+> 
+> # Split into pieces, fit model to each piece, then predict
+> by_cyl <- mtcars |> split(mtcars$cyl)
+> mods <- by_cyl |> map(\(df) lm(mpg ~ wt, data = df))
+> map2(mods, by_cyl, predict)
+$`4`
+    Datsun 710      Merc 240D       Merc 230       Fiat 128    Honda Civic 
+      26.47010       21.55719       21.78307       27.14774       30.45125 
+Toyota Corolla  Toyota Corona      Fiat X1-9  Porsche 914-2   Lotus Europa 
+      29.20890       25.65128       28.64420       27.48656       31.02725 
+    Volvo 142E 
+      23.87247 
+
+$`6`
+     Mazda RX4  Mazda RX4 Wag Hornet 4 Drive        Valiant       Merc 280 
+      21.12497       20.41604       19.47080       18.78968       18.84528 
+     Merc 280C   Ferrari Dino 
+      18.84528       20.70795 
+
+$`8`
+  Hornet Sportabout          Duster 360          Merc 450SE          Merc 450SL 
+           16.32604            16.04103            14.94481            15.69024 
+        Merc 450SLC  Cadillac Fleetwood Lincoln Continental   Chrysler Imperial 
+           15.58061            12.35773            11.97625            12.14945 
+   Dodge Challenger         AMC Javelin          Camaro Z28    Pontiac Firebird 
+           16.15065            16.33700            15.44907            15.43811 
+     Ford Pantera L       Maserati Bora 
+           16.91800            16.04103 
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("map_depth")
+> ### * map_depth
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: map_depth
+> ### Title: Map/modify elements at given depth
+> ### Aliases: map_depth modify_depth
+> 
+> ### ** Examples
+> 
+> # map_depth() -------------------------------------------------
+> # Use `map_depth()` to recursively traverse nested vectors and map
+> # a function at a certain depth:
+> x <- list(a = list(foo = 1:2, bar = 3:4), b = list(baz = 5:6))
+> x |> str()
+List of 2
+ $ a:List of 2
+  ..$ foo: int [1:2] 1 2
+  ..$ bar: int [1:2] 3 4
+ $ b:List of 1
+  ..$ baz: int [1:2] 5 6
+> x |> map_depth(2, \(y) paste(y, collapse = "/")) |> str()
+List of 2
+ $ a:List of 2
+  ..$ foo: chr "1/2"
+  ..$ bar: chr "3/4"
+ $ b:List of 1
+  ..$ baz: chr "5/6"
+> 
+> # Equivalent to:
+> x |> map(\(y) map(y, \(z) paste(z, collapse = "/"))) |> str()
+List of 2
+ $ a:List of 2
+  ..$ foo: chr "1/2"
+  ..$ bar: chr "3/4"
+ $ b:List of 1
+  ..$ baz: chr "5/6"
+> 
+> # When ragged is TRUE, `.f()` will also be passed leaves at depth < `.depth`
+> x <- list(1, list(1, list(1, list(1, 1))))
+> x |> str()
+List of 2
+ $ : num 1
+ $ :List of 2
+  ..$ : num 1
+  ..$ :List of 2
+  .. ..$ : num 1
+  .. ..$ :List of 2
+  .. .. ..$ : num 1
+  .. .. ..$ : num 1
+> x |> map_depth(4, \(x) length(unlist(x)), .ragged = TRUE) |> str()
+List of 2
+ $ :List of 1
+  ..$ : int 1
+ $ :List of 2
+  ..$ :List of 1
+  .. ..$ : int 1
+  ..$ :List of 2
+  .. ..$ :List of 1
+  .. .. ..$ : int 1
+  .. ..$ :List of 2
+  .. .. ..$ : int 1
+  .. .. ..$ : int 1
+> x |> map_depth(3, \(x) length(unlist(x)), .ragged = TRUE) |> str()
+List of 2
+ $ :List of 1
+  ..$ : int 1
+ $ :List of 2
+  ..$ :List of 1
+  .. ..$ : int 1
+  ..$ :List of 2
+  .. ..$ : int 1
+  .. ..$ : int 2
+> x |> map_depth(2, \(x) length(unlist(x)), .ragged = TRUE) |> str()
+List of 2
+ $ :List of 1
+  ..$ : int 1
+ $ :List of 2
+  ..$ : int 1
+  ..$ : int 3
+> x |> map_depth(1, \(x) length(unlist(x)), .ragged = TRUE) |> str()
+List of 2
+ $ : int 1
+ $ : int 4
+> x |> map_depth(0, \(x) length(unlist(x)), .ragged = TRUE) |> str()
+ int 5
+> 
+> # modify_depth() -------------------------------------------------
+> l1 <- list(
++   obj1 = list(
++     prop1 = list(param1 = 1:2, param2 = 3:4),
++     prop2 = list(param1 = 5:6, param2 = 7:8)
++   ),
++   obj2 = list(
++     prop1 = list(param1 = 9:10, param2 = 11:12),
++     prop2 = list(param1 = 12:14, param2 = 15:17)
++   )
++ )
+> 
+> # In the above list, "obj" is level 1, "prop" is level 2 and "param"
+> # is level 3. To apply sum() on all params, we map it at depth 3:
+> l1 |> modify_depth(3, sum) |> str()
+List of 2
+ $ obj1:List of 2
+  ..$ prop1:List of 2
+  .. ..$ param1: int 3
+  .. ..$ param2: int 7
+  ..$ prop2:List of 2
+  .. ..$ param1: int 11
+  .. ..$ param2: int 15
+ $ obj2:List of 2
+  ..$ prop1:List of 2
+  .. ..$ param1: int 19
+  .. ..$ param2: int 23
+  ..$ prop2:List of 2
+  .. ..$ param1: int 39
+  .. ..$ param2: int 48
+> 
+> # modify() lets us pluck the elements prop1/param2 in obj1 and obj2:
+> l1 |> modify(c("prop1", "param2")) |> str()
+List of 2
+ $ obj1: int [1:2] 3 4
+ $ obj2: int [1:2] 11 12
+> 
+> # But what if we want to pluck all param2 elements? Then we need to
+> # act at a lower level:
+> l1 |> modify_depth(2, "param2") |> str()
+List of 2
+ $ obj1:List of 2
+  ..$ prop1: int [1:2] 3 4
+  ..$ prop2: int [1:2] 7 8
+ $ obj2:List of 2
+  ..$ prop1: int [1:2] 11 12
+  ..$ prop2: int [1:3] 15 16 17
+> 
+> # modify_depth() can be with other purrr functions to make them operate at
+> # a lower level. Here we ask pmap() to map paste() simultaneously over all
+> # elements of the objects at the second level. paste() is effectively
+> # mapped at level 3.
+> l1 |> modify_depth(2, \(x) pmap(x, paste, sep = " / ")) |> str()
+List of 2
+ $ obj1:List of 2
+  ..$ prop1:List of 2
+  .. ..$ : chr "1 / 3"
+  .. ..$ : chr "2 / 4"
+  ..$ prop2:List of 2
+  .. ..$ : chr "5 / 7"
+  .. ..$ : chr "6 / 8"
+ $ obj2:List of 2
+  ..$ prop1:List of 2
+  .. ..$ : chr "9 / 11"
+  .. ..$ : chr "10 / 12"
+  ..$ prop2:List of 3
+  .. ..$ : chr "12 / 15"
+  .. ..$ : chr "13 / 16"
+  .. ..$ : chr "14 / 17"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("map_dfr")
+> ### * map_dfr
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: map_dfr
+> ### Title: Functions that return data frames
+> ### Aliases: map_dfr map_df map_dfc imap_dfr imap_dfc map2_dfr map2_dfc
+> ###   map2_df pmap_dfr pmap_dfc pmap_df
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> # map ---------------------------------------------
+> # Was:
+> mtcars |>
++   split(mtcars$cyl) |>
++   map(\(df) lm(mpg ~ wt, data = df)) |>
++   map_dfr(\(mod) as.data.frame(t(as.matrix(coef(mod)))))
+  (Intercept)        wt
+1    39.57120 -5.647025
+2    28.40884 -2.780106
+3    23.86803 -2.192438
+> 
+> # Now:
+> mtcars |>
++   split(mtcars$cyl) |>
++   map(\(df) lm(mpg ~ wt, data = df)) |>
++   map(\(mod) as.data.frame(t(as.matrix(coef(mod))))) |>
++   list_rbind()
+  (Intercept)        wt
+1    39.57120 -5.647025
+2    28.40884 -2.780106
+3    23.86803 -2.192438
+> 
+> # map2 ---------------------------------------------
+> 
+> ex_fun <- function(arg1, arg2){
++   col <- arg1 + arg2
++   x <- as.data.frame(col)
++ }
+> arg1 <- 1:4
+> arg2 <- 10:13
+> 
+> # was
+> map2_dfr(arg1, arg2, ex_fun)
+  col
+1  11
+2  13
+3  15
+4  17
+> # now
+> map2(arg1, arg2, ex_fun) |> list_rbind()
+  col
+1  11
+2  13
+3  15
+4  17
+> 
+> # was
+> map2_dfc(arg1, arg2, ex_fun)
+New names:
+• `col` -> `col...1`
+• `col` -> `col...2`
+• `col` -> `col...3`
+• `col` -> `col...4`
+  col...1 col...2 col...3 col...4
+1      11      13      15      17
+> # now
+> map2(arg1, arg2, ex_fun) |> list_cbind()
+New names:
+• `col` -> `col...1`
+• `col` -> `col...2`
+• `col` -> `col...3`
+• `col` -> `col...4`
+  col...1 col...2 col...3 col...4
+1      11      13      15      17
+> 
+> 
+> 
+> cleanEx()
+> nameEx("map_if")
+> ### * map_if
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: map_if
+> ### Title: Apply a function to each element of a vector conditionally
+> ### Aliases: map_if map_at
+> 
+> ### ** Examples
+> 
+> # Use a predicate function to decide whether to map a function:
+> iris |> map_if(is.factor, as.character) |> str()
+List of 5
+ $ Sepal.Length: num [1:150] 5.1 4.9 4.7 4.6 5 5.4 4.6 5 4.4 4.9 ...
+ $ Sepal.Width : num [1:150] 3.5 3 3.2 3.1 3.6 3.9 3.4 3.4 2.9 3.1 ...
+ $ Petal.Length: num [1:150] 1.4 1.4 1.3 1.5 1.4 1.7 1.4 1.5 1.4 1.5 ...
+ $ Petal.Width : num [1:150] 0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
+ $ Species     : chr [1:150] "setosa" "setosa" "setosa" "setosa" ...
+> 
+> # Specify an alternative with the `.else` argument:
+> iris |> map_if(is.factor, as.character, .else = as.integer) |> str()
+List of 5
+ $ Sepal.Length: int [1:150] 5 4 4 4 5 5 4 5 4 4 ...
+ $ Sepal.Width : int [1:150] 3 3 3 3 3 3 3 3 2 3 ...
+ $ Petal.Length: int [1:150] 1 1 1 1 1 1 1 1 1 1 ...
+ $ Petal.Width : int [1:150] 0 0 0 0 0 0 0 0 0 0 ...
+ $ Species     : chr [1:150] "setosa" "setosa" "setosa" "setosa" ...
+> 
+> # Use numeric vector of positions select elements to change:
+> iris |> map_at(c(4, 5), is.numeric) |> str()
+List of 5
+ $ Sepal.Length: num [1:150] 5.1 4.9 4.7 4.6 5 5.4 4.6 5 4.4 4.9 ...
+ $ Sepal.Width : num [1:150] 3.5 3 3.2 3.1 3.6 3.9 3.4 3.4 2.9 3.1 ...
+ $ Petal.Length: num [1:150] 1.4 1.4 1.3 1.5 1.4 1.7 1.4 1.5 1.4 1.5 ...
+ $ Petal.Width : logi TRUE
+ $ Species     : logi FALSE
+> 
+> # Use vector of names to specify which elements to change:
+> iris |> map_at("Species", toupper) |> str()
+List of 5
+ $ Sepal.Length: num [1:150] 5.1 4.9 4.7 4.6 5 5.4 4.6 5 4.4 4.9 ...
+ $ Sepal.Width : num [1:150] 3.5 3 3.2 3.1 3.6 3.9 3.4 3.4 2.9 3.1 ...
+ $ Petal.Length: num [1:150] 1.4 1.4 1.3 1.5 1.4 1.7 1.4 1.5 1.4 1.5 ...
+ $ Petal.Width : num [1:150] 0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
+ $ Species     : chr [1:150] "SETOSA" "SETOSA" "SETOSA" "SETOSA" ...
+> 
+> 
+> 
+> cleanEx()
+> nameEx("modify")
+> ### * modify
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: modify
+> ### Title: Modify elements selectively
+> ### Aliases: modify modify_if modify_at modify2 imodify
+> 
+> ### ** Examples
+> 
+> # Convert factors to characters
+> iris |>
++   modify_if(is.factor, as.character) |>
++   str()
+'data.frame':	150 obs. of  5 variables:
+ $ Sepal.Length: num  5.1 4.9 4.7 4.6 5 5.4 4.6 5 4.4 4.9 ...
+ $ Sepal.Width : num  3.5 3 3.2 3.1 3.6 3.9 3.4 3.4 2.9 3.1 ...
+ $ Petal.Length: num  1.4 1.4 1.3 1.5 1.4 1.7 1.4 1.5 1.4 1.5 ...
+ $ Petal.Width : num  0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
+ $ Species     : chr  "setosa" "setosa" "setosa" "setosa" ...
+> 
+> # Specify which columns to map with a numeric vector of positions:
+> mtcars |> modify_at(c(1, 4, 5), as.character) |> str()
+'data.frame':	32 obs. of  11 variables:
+ $ mpg : chr  "21" "21" "22.8" "21.4" ...
+ $ cyl : num  6 6 4 6 8 6 8 4 4 6 ...
+ $ disp: num  160 160 108 258 360 ...
+ $ hp  : chr  "110" "110" "93" "110" ...
+ $ drat: chr  "3.9" "3.9" "3.85" "3.08" ...
+ $ wt  : num  2.62 2.88 2.32 3.21 3.44 ...
+ $ qsec: num  16.5 17 18.6 19.4 17 ...
+ $ vs  : num  0 0 1 1 0 1 0 1 1 1 ...
+ $ am  : num  1 1 1 0 0 0 0 0 0 0 ...
+ $ gear: num  4 4 4 3 3 3 3 4 4 4 ...
+ $ carb: num  4 4 1 1 2 1 4 2 2 4 ...
+> 
+> # Or with a vector of names:
+> mtcars |> modify_at(c("cyl", "am"), as.character) |> str()
+'data.frame':	32 obs. of  11 variables:
+ $ mpg : num  21 21 22.8 21.4 18.7 18.1 14.3 24.4 22.8 19.2 ...
+ $ cyl : chr  "6" "6" "4" "6" ...
+ $ disp: num  160 160 108 258 360 ...
+ $ hp  : num  110 110 93 110 175 105 245 62 95 123 ...
+ $ drat: num  3.9 3.9 3.85 3.08 3.15 2.76 3.21 3.69 3.92 3.92 ...
+ $ wt  : num  2.62 2.88 2.32 3.21 3.44 ...
+ $ qsec: num  16.5 17 18.6 19.4 17 ...
+ $ vs  : num  0 0 1 1 0 1 0 1 1 1 ...
+ $ am  : chr  "1" "1" "1" "0" ...
+ $ gear: num  4 4 4 3 3 3 3 4 4 4 ...
+ $ carb: num  4 4 1 1 2 1 4 2 2 4 ...
+> 
+> list(x = sample(c(TRUE, FALSE), 100, replace = TRUE), y = 1:100) |>
++   list_transpose(simplify = FALSE) |>
++   modify_if("x", \(l) list(x = l$x, y = l$y * 100)) |>
++   list_transpose()
+$x
+  [1]  TRUE FALSE  TRUE  TRUE FALSE  TRUE  TRUE  TRUE FALSE FALSE  TRUE  TRUE
+ [13]  TRUE  TRUE  TRUE FALSE FALSE FALSE FALSE  TRUE  TRUE  TRUE  TRUE  TRUE
+ [25]  TRUE  TRUE FALSE  TRUE  TRUE FALSE FALSE FALSE  TRUE FALSE  TRUE  TRUE
+ [37] FALSE  TRUE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE
+ [49]  TRUE  TRUE FALSE  TRUE FALSE FALSE  TRUE  TRUE FALSE FALSE FALSE  TRUE
+ [61]  TRUE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE
+ [73]  TRUE  TRUE  TRUE FALSE FALSE  TRUE  TRUE FALSE FALSE FALSE  TRUE  TRUE
+ [85]  TRUE FALSE  TRUE FALSE  TRUE FALSE  TRUE  TRUE FALSE FALSE  TRUE  TRUE
+ [97]  TRUE FALSE FALSE  TRUE
+
+$y
+  [1]   100     2   300   400     5   600   700   800     9    10  1100  1200
+ [13]  1300  1400  1500    16    17    18    19  2000  2100  2200  2300  2400
+ [25]  2500  2600    27  2800  2900    30    31    32  3300    34  3500  3600
+ [37]    37  3800    39    40    41    42  4300    44    45    46    47    48
+ [49]  4900  5000    51  5200    53    54  5500  5600    57    58    59  6000
+ [61]  6100    62    63    64    65    66    67  6800    69    70    71    72
+ [73]  7300  7400  7500    76    77  7800  7900    80    81    82  8300  8400
+ [85]  8500    86  8700    88  8900    90  9100  9200    93    94  9500  9600
+ [97]  9700    98    99 10000
+
+> 
+> # Use modify2() to map over two vectors and preserve the type of
+> # the first one:
+> x <- c(foo = 1L, bar = 2L)
+> y <- c(TRUE, FALSE)
+> modify2(x, y, \(x, cond) if (cond) x else 0L)
+foo bar 
+  1   0 
+> 
+> # Use a predicate function to decide whether to map a function:
+> modify_if(iris, is.factor, as.character)
+    Sepal.Length Sepal.Width Petal.Length Petal.Width    Species
+1            5.1         3.5          1.4         0.2     setosa
+2            4.9         3.0          1.4         0.2     setosa
+3            4.7         3.2          1.3         0.2     setosa
+4            4.6         3.1          1.5         0.2     setosa
+5            5.0         3.6          1.4         0.2     setosa
+6            5.4         3.9          1.7         0.4     setosa
+7            4.6         3.4          1.4         0.3     setosa
+8            5.0         3.4          1.5         0.2     setosa
+9            4.4         2.9          1.4         0.2     setosa
+10           4.9         3.1          1.5         0.1     setosa
+11           5.4         3.7          1.5         0.2     setosa
+12           4.8         3.4          1.6         0.2     setosa
+13           4.8         3.0          1.4         0.1     setosa
+14           4.3         3.0          1.1         0.1     setosa
+15           5.8         4.0          1.2         0.2     setosa
+16           5.7         4.4          1.5         0.4     setosa
+17           5.4         3.9          1.3         0.4     setosa
+18           5.1         3.5          1.4         0.3     setosa
+19           5.7         3.8          1.7         0.3     setosa
+20           5.1         3.8          1.5         0.3     setosa
+21           5.4         3.4          1.7         0.2     setosa
+22           5.1         3.7          1.5         0.4     setosa
+23           4.6         3.6          1.0         0.2     setosa
+24           5.1         3.3          1.7         0.5     setosa
+25           4.8         3.4          1.9         0.2     setosa
+26           5.0         3.0          1.6         0.2     setosa
+27           5.0         3.4          1.6         0.4     setosa
+28           5.2         3.5          1.5         0.2     setosa
+29           5.2         3.4          1.4         0.2     setosa
+30           4.7         3.2          1.6         0.2     setosa
+31           4.8         3.1          1.6         0.2     setosa
+32           5.4         3.4          1.5         0.4     setosa
+33           5.2         4.1          1.5         0.1     setosa
+34           5.5         4.2          1.4         0.2     setosa
+35           4.9         3.1          1.5         0.2     setosa
+36           5.0         3.2          1.2         0.2     setosa
+37           5.5         3.5          1.3         0.2     setosa
+38           4.9         3.6          1.4         0.1     setosa
+39           4.4         3.0          1.3         0.2     setosa
+40           5.1         3.4          1.5         0.2     setosa
+41           5.0         3.5          1.3         0.3     setosa
+42           4.5         2.3          1.3         0.3     setosa
+43           4.4         3.2          1.3         0.2     setosa
+44           5.0         3.5          1.6         0.6     setosa
+45           5.1         3.8          1.9         0.4     setosa
+46           4.8         3.0          1.4         0.3     setosa
+47           5.1         3.8          1.6         0.2     setosa
+48           4.6         3.2          1.4         0.2     setosa
+49           5.3         3.7          1.5         0.2     setosa
+50           5.0         3.3          1.4         0.2     setosa
+51           7.0         3.2          4.7         1.4 versicolor
+52           6.4         3.2          4.5         1.5 versicolor
+53           6.9         3.1          4.9         1.5 versicolor
+54           5.5         2.3          4.0         1.3 versicolor
+55           6.5         2.8          4.6         1.5 versicolor
+56           5.7         2.8          4.5         1.3 versicolor
+57           6.3         3.3          4.7         1.6 versicolor
+58           4.9         2.4          3.3         1.0 versicolor
+59           6.6         2.9          4.6         1.3 versicolor
+60           5.2         2.7          3.9         1.4 versicolor
+61           5.0         2.0          3.5         1.0 versicolor
+62           5.9         3.0          4.2         1.5 versicolor
+63           6.0         2.2          4.0         1.0 versicolor
+64           6.1         2.9          4.7         1.4 versicolor
+65           5.6         2.9          3.6         1.3 versicolor
+66           6.7         3.1          4.4         1.4 versicolor
+67           5.6         3.0          4.5         1.5 versicolor
+68           5.8         2.7          4.1         1.0 versicolor
+69           6.2         2.2          4.5         1.5 versicolor
+70           5.6         2.5          3.9         1.1 versicolor
+71           5.9         3.2          4.8         1.8 versicolor
+72           6.1         2.8          4.0         1.3 versicolor
+73           6.3         2.5          4.9         1.5 versicolor
+74           6.1         2.8          4.7         1.2 versicolor
+75           6.4         2.9          4.3         1.3 versicolor
+76           6.6         3.0          4.4         1.4 versicolor
+77           6.8         2.8          4.8         1.4 versicolor
+78           6.7         3.0          5.0         1.7 versicolor
+79           6.0         2.9          4.5         1.5 versicolor
+80           5.7         2.6          3.5         1.0 versicolor
+81           5.5         2.4          3.8         1.1 versicolor
+82           5.5         2.4          3.7         1.0 versicolor
+83           5.8         2.7          3.9         1.2 versicolor
+84           6.0         2.7          5.1         1.6 versicolor
+85           5.4         3.0          4.5         1.5 versicolor
+86           6.0         3.4          4.5         1.6 versicolor
+87           6.7         3.1          4.7         1.5 versicolor
+88           6.3         2.3          4.4         1.3 versicolor
+89           5.6         3.0          4.1         1.3 versicolor
+90           5.5         2.5          4.0         1.3 versicolor
+91           5.5         2.6          4.4         1.2 versicolor
+92           6.1         3.0          4.6         1.4 versicolor
+93           5.8         2.6          4.0         1.2 versicolor
+94           5.0         2.3          3.3         1.0 versicolor
+95           5.6         2.7          4.2         1.3 versicolor
+96           5.7         3.0          4.2         1.2 versicolor
+97           5.7         2.9          4.2         1.3 versicolor
+98           6.2         2.9          4.3         1.3 versicolor
+99           5.1         2.5          3.0         1.1 versicolor
+100          5.7         2.8          4.1         1.3 versicolor
+101          6.3         3.3          6.0         2.5  virginica
+102          5.8         2.7          5.1         1.9  virginica
+103          7.1         3.0          5.9         2.1  virginica
+104          6.3         2.9          5.6         1.8  virginica
+105          6.5         3.0          5.8         2.2  virginica
+106          7.6         3.0          6.6         2.1  virginica
+107          4.9         2.5          4.5         1.7  virginica
+108          7.3         2.9          6.3         1.8  virginica
+109          6.7         2.5          5.8         1.8  virginica
+110          7.2         3.6          6.1         2.5  virginica
+111          6.5         3.2          5.1         2.0  virginica
+112          6.4         2.7          5.3         1.9  virginica
+113          6.8         3.0          5.5         2.1  virginica
+114          5.7         2.5          5.0         2.0  virginica
+115          5.8         2.8          5.1         2.4  virginica
+116          6.4         3.2          5.3         2.3  virginica
+117          6.5         3.0          5.5         1.8  virginica
+118          7.7         3.8          6.7         2.2  virginica
+119          7.7         2.6          6.9         2.3  virginica
+120          6.0         2.2          5.0         1.5  virginica
+121          6.9         3.2          5.7         2.3  virginica
+122          5.6         2.8          4.9         2.0  virginica
+123          7.7         2.8          6.7         2.0  virginica
+124          6.3         2.7          4.9         1.8  virginica
+125          6.7         3.3          5.7         2.1  virginica
+126          7.2         3.2          6.0         1.8  virginica
+127          6.2         2.8          4.8         1.8  virginica
+128          6.1         3.0          4.9         1.8  virginica
+129          6.4         2.8          5.6         2.1  virginica
+130          7.2         3.0          5.8         1.6  virginica
+131          7.4         2.8          6.1         1.9  virginica
+132          7.9         3.8          6.4         2.0  virginica
+133          6.4         2.8          5.6         2.2  virginica
+134          6.3         2.8          5.1         1.5  virginica
+135          6.1         2.6          5.6         1.4  virginica
+136          7.7         3.0          6.1         2.3  virginica
+137          6.3         3.4          5.6         2.4  virginica
+138          6.4         3.1          5.5         1.8  virginica
+139          6.0         3.0          4.8         1.8  virginica
+140          6.9         3.1          5.4         2.1  virginica
+141          6.7         3.1          5.6         2.4  virginica
+142          6.9         3.1          5.1         2.3  virginica
+143          5.8         2.7          5.1         1.9  virginica
+144          6.8         3.2          5.9         2.3  virginica
+145          6.7         3.3          5.7         2.5  virginica
+146          6.7         3.0          5.2         2.3  virginica
+147          6.3         2.5          5.0         1.9  virginica
+148          6.5         3.0          5.2         2.0  virginica
+149          6.2         3.4          5.4         2.3  virginica
+150          5.9         3.0          5.1         1.8  virginica
+> 
+> # Specify an alternative with the `.else` argument:
+> modify_if(iris, is.factor, as.character, .else = as.integer)
+    Sepal.Length Sepal.Width Petal.Length Petal.Width    Species
+1              5           3            1           0     setosa
+2              4           3            1           0     setosa
+3              4           3            1           0     setosa
+4              4           3            1           0     setosa
+5              5           3            1           0     setosa
+6              5           3            1           0     setosa
+7              4           3            1           0     setosa
+8              5           3            1           0     setosa
+9              4           2            1           0     setosa
+10             4           3            1           0     setosa
+11             5           3            1           0     setosa
+12             4           3            1           0     setosa
+13             4           3            1           0     setosa
+14             4           3            1           0     setosa
+15             5           4            1           0     setosa
+16             5           4            1           0     setosa
+17             5           3            1           0     setosa
+18             5           3            1           0     setosa
+19             5           3            1           0     setosa
+20             5           3            1           0     setosa
+21             5           3            1           0     setosa
+22             5           3            1           0     setosa
+23             4           3            1           0     setosa
+24             5           3            1           0     setosa
+25             4           3            1           0     setosa
+26             5           3            1           0     setosa
+27             5           3            1           0     setosa
+28             5           3            1           0     setosa
+29             5           3            1           0     setosa
+30             4           3            1           0     setosa
+31             4           3            1           0     setosa
+32             5           3            1           0     setosa
+33             5           4            1           0     setosa
+34             5           4            1           0     setosa
+35             4           3            1           0     setosa
+36             5           3            1           0     setosa
+37             5           3            1           0     setosa
+38             4           3            1           0     setosa
+39             4           3            1           0     setosa
+40             5           3            1           0     setosa
+41             5           3            1           0     setosa
+42             4           2            1           0     setosa
+43             4           3            1           0     setosa
+44             5           3            1           0     setosa
+45             5           3            1           0     setosa
+46             4           3            1           0     setosa
+47             5           3            1           0     setosa
+48             4           3            1           0     setosa
+49             5           3            1           0     setosa
+50             5           3            1           0     setosa
+51             7           3            4           1 versicolor
+52             6           3            4           1 versicolor
+53             6           3            4           1 versicolor
+54             5           2            4           1 versicolor
+55             6           2            4           1 versicolor
+56             5           2            4           1 versicolor
+57             6           3            4           1 versicolor
+58             4           2            3           1 versicolor
+59             6           2            4           1 versicolor
+60             5           2            3           1 versicolor
+61             5           2            3           1 versicolor
+62             5           3            4           1 versicolor
+63             6           2            4           1 versicolor
+64             6           2            4           1 versicolor
+65             5           2            3           1 versicolor
+66             6           3            4           1 versicolor
+67             5           3            4           1 versicolor
+68             5           2            4           1 versicolor
+69             6           2            4           1 versicolor
+70             5           2            3           1 versicolor
+71             5           3            4           1 versicolor
+72             6           2            4           1 versicolor
+73             6           2            4           1 versicolor
+74             6           2            4           1 versicolor
+75             6           2            4           1 versicolor
+76             6           3            4           1 versicolor
+77             6           2            4           1 versicolor
+78             6           3            5           1 versicolor
+79             6           2            4           1 versicolor
+80             5           2            3           1 versicolor
+81             5           2            3           1 versicolor
+82             5           2            3           1 versicolor
+83             5           2            3           1 versicolor
+84             6           2            5           1 versicolor
+85             5           3            4           1 versicolor
+86             6           3            4           1 versicolor
+87             6           3            4           1 versicolor
+88             6           2            4           1 versicolor
+89             5           3            4           1 versicolor
+90             5           2            4           1 versicolor
+91             5           2            4           1 versicolor
+92             6           3            4           1 versicolor
+93             5           2            4           1 versicolor
+94             5           2            3           1 versicolor
+95             5           2            4           1 versicolor
+96             5           3            4           1 versicolor
+97             5           2            4           1 versicolor
+98             6           2            4           1 versicolor
+99             5           2            3           1 versicolor
+100            5           2            4           1 versicolor
+101            6           3            6           2  virginica
+102            5           2            5           1  virginica
+103            7           3            5           2  virginica
+104            6           2            5           1  virginica
+105            6           3            5           2  virginica
+106            7           3            6           2  virginica
+107            4           2            4           1  virginica
+108            7           2            6           1  virginica
+109            6           2            5           1  virginica
+110            7           3            6           2  virginica
+111            6           3            5           2  virginica
+112            6           2            5           1  virginica
+113            6           3            5           2  virginica
+114            5           2            5           2  virginica
+115            5           2            5           2  virginica
+116            6           3            5           2  virginica
+117            6           3            5           1  virginica
+118            7           3            6           2  virginica
+119            7           2            6           2  virginica
+120            6           2            5           1  virginica
+121            6           3            5           2  virginica
+122            5           2            4           2  virginica
+123            7           2            6           2  virginica
+124            6           2            4           1  virginica
+125            6           3            5           2  virginica
+126            7           3            6           1  virginica
+127            6           2            4           1  virginica
+128            6           3            4           1  virginica
+129            6           2            5           2  virginica
+130            7           3            5           1  virginica
+131            7           2            6           1  virginica
+132            7           3            6           2  virginica
+133            6           2            5           2  virginica
+134            6           2            5           1  virginica
+135            6           2            5           1  virginica
+136            7           3            6           2  virginica
+137            6           3            5           2  virginica
+138            6           3            5           1  virginica
+139            6           3            4           1  virginica
+140            6           3            5           2  virginica
+141            6           3            5           2  virginica
+142            6           3            5           2  virginica
+143            5           2            5           1  virginica
+144            6           3            5           2  virginica
+145            6           3            5           2  virginica
+146            6           3            5           2  virginica
+147            6           2            5           1  virginica
+148            6           3            5           2  virginica
+149            6           3            5           2  virginica
+150            5           3            5           1  virginica
+> 
+> 
+> 
+> cleanEx()
+> nameEx("modify_in")
+> ### * modify_in
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: modify_in
+> ### Title: Modify a pluck location
+> ### Aliases: modify_in assign_in
+> 
+> ### ** Examples
+> 
+> # Recall that pluck() returns a component of a data structure that
+> # might be arbitrarily deep
+> x <- list(list(bar = 1, foo = 2))
+> pluck(x, 1, "foo")
+[1] 2
+> 
+> # Use assign_in() to modify the pluck location:
+> str(assign_in(x, list(1, "foo"), 100))
+List of 1
+ $ :List of 2
+  ..$ bar: num 1
+  ..$ foo: num 100
+> # Or zap to remove it
+> str(assign_in(x, list(1, "foo"), zap()))
+List of 1
+ $ :List of 1
+  ..$ bar: num 1
+> 
+> # Like pluck(), this works even when the element (or its parents) don't exist
+> pluck(x, 1, "baz")
+NULL
+> str(assign_in(x, list(2, "baz"), 100))
+List of 2
+ $ :List of 2
+  ..$ bar: num 1
+  ..$ foo: num 2
+ $ :List of 1
+  ..$ baz: num 100
+> 
+> # modify_in() applies a function to that location and update the
+> # element in place:
+> modify_in(x, list(1, "foo"), \(x) x * 200)
+[[1]]
+[[1]]$bar
+[1] 1
+
+[[1]]$foo
+[1] 400
+
+
+> 
+> # Additional arguments are passed to the function in the ordinary way:
+> modify_in(x, list(1, "foo"), `+`, 100)
+[[1]]
+[[1]]$bar
+[1] 1
+
+[[1]]$foo
+[1] 102
+
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("modify_tree")
+> ### * modify_tree
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: modify_tree
+> ### Title: Recursively modify a list
+> ### Aliases: modify_tree
+> 
+> ### ** Examples
+> 
+> x <- list(list(a = 2:1, c = list(b1 = 2), b = list(c2 = 3, c1 = 4)))
+> x |> str()
+List of 1
+ $ :List of 3
+  ..$ a: int [1:2] 2 1
+  ..$ c:List of 1
+  .. ..$ b1: num 2
+  ..$ b:List of 2
+  .. ..$ c2: num 3
+  .. ..$ c1: num 4
+> 
+> # Transform each leaf
+> x |> modify_tree(leaf = \(x) x + 100) |>  str()
+List of 1
+ $ :List of 3
+  ..$ a: num [1:2] 102 101
+  ..$ c:List of 1
+  .. ..$ b1: num 102
+  ..$ b:List of 2
+  .. ..$ c2: num 103
+  .. ..$ c1: num 104
+> 
+> # Recursively sort the nodes
+> sort_named <- function(x) {
++   nms <- names(x)
++   if (!is.null(nms)) {
++     x[order(nms)]
++   } else {
++     x
++    }
++ }
+> x |> modify_tree(post = sort_named) |> str()
+List of 1
+ $ :List of 3
+  ..$ a: int [1:2] 2 1
+  ..$ b:List of 2
+  .. ..$ c1: num 4
+  .. ..$ c2: num 3
+  ..$ c:List of 1
+  .. ..$ b1: num 2
+> 
+> 
+> 
+> cleanEx()
+> nameEx("negate")
+> ### * negate
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: negate
+> ### Title: Negate a predicate function so it selects what it previously
+> ###   rejected
+> ### Aliases: negate
+> 
+> ### ** Examples
+> 
+> x <- list(x = 1:10, y = rbernoulli(10), z = letters)
+> x |> keep(is.numeric) |> names()
+[1] "x"
+> x |> keep(negate(is.numeric)) |> names()
+[1] "y" "z"
+> # Same as
+> x |> discard(is.numeric)
+$y
+ [1] FALSE FALSE  TRUE  TRUE FALSE  TRUE  TRUE  TRUE  TRUE FALSE
+
+$z
+ [1] "a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s"
+[20] "t" "u" "v" "w" "x" "y" "z"
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("partial")
+> ### * partial
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: partial
+> ### Title: Partially apply a function, filling in some arguments
+> ### Aliases: partial
+> 
+> ### ** Examples
+> 
+> # Partial is designed to replace the use of anonymous functions for
+> # filling in function arguments. Instead of:
+> compact1 <- function(x) discard(x, is.null)
+> 
+> # we can write:
+> compact2 <- partial(discard, .p = is.null)
+> 
+> # partial() works fine with functions that do non-standard
+> # evaluation
+> my_long_variable <- 1:10
+> plot2 <- partial(plot, my_long_variable)
+> plot2()
+> plot2(runif(10), type = "l")
+> 
+> # Note that you currently can't partialise arguments multiple times:
+> my_mean <- partial(mean, na.rm = TRUE)
+> my_mean <- partial(my_mean, na.rm = FALSE)
+> try(my_mean(1:10))
+Error in mean.default(na.rm = TRUE, ...) : 
+  formal argument "na.rm" matched by multiple actual arguments
+> 
+> 
+> # The evaluation of arguments normally occurs "lazily". Concretely,
+> # this means that arguments are repeatedly evaluated across invocations:
+> f <- partial(runif, n = rpois(1, 5))
+> f
+<partialised>
+function (...) 
+runif(n = rpois(1, 5), ...)
+> f()
+[1] 0.1765568 0.6870228 0.3841037
+> f()
+[1] 0.4976992 0.7176185 0.9919061 0.3800352 0.7774452 0.9347052 0.2121425
+> 
+> # You can unquote an argument to fix it to a particular value.
+> # Unquoted arguments are evaluated only once when the function is created:
+> f <- partial(runif, n = !!rpois(1, 5))
+> f
+<partialised>
+function (...) 
+runif(n = 6L, ...)
+> f()
+[1] 0.12555510 0.26722067 0.38611409 0.01339033 0.38238796 0.86969085
+> f()
+[1] 0.3403490 0.4820801 0.5995658 0.4935413 0.1862176 0.8273733
+> 
+> 
+> # By default, partialised arguments are passed before new ones:
+> my_list <- partial(list, 1, 2)
+> my_list("foo")
+[[1]]
+[1] 1
+
+[[2]]
+[1] 2
+
+[[3]]
+[1] "foo"
+
+> 
+> # Control the position of these arguments by passing an empty
+> # `... = ` argument:
+> my_list <- partial(list, 1, ... = , 2)
+> my_list("foo")
+[[1]]
+[1] 1
+
+[[2]]
+[1] "foo"
+
+[[3]]
+[1] 2
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("pluck")
+> ### * pluck
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: pluck
+> ### Title: Safely get or set an element deep within a nested data structure
+> ### Aliases: pluck pluck<- pluck_exists
+> 
+> ### ** Examples
+> 
+> # Let's create a list of data structures:
+> obj1 <- list("a", list(1, elt = "foo"))
+> obj2 <- list("b", list(2, elt = "bar"))
+> x <- list(obj1, obj2)
+> 
+> # pluck() provides a way of retrieving objects from such data
+> # structures using a combination of numeric positions, vector or
+> # list names, and accessor functions.
+> 
+> # Numeric positions index into the list by position, just like `[[`:
+> pluck(x, 1)
+[[1]]
+[1] "a"
+
+[[2]]
+[[2]][[1]]
+[1] 1
+
+[[2]]$elt
+[1] "foo"
+
+
+> # same as x[[1]]
+> 
+> # Index from the back
+> pluck(x, -1)
+[[1]]
+[1] "b"
+
+[[2]]
+[[2]][[1]]
+[1] 2
+
+[[2]]$elt
+[1] "bar"
+
+
+> # same as x[[2]]
+> 
+> pluck(x, 1, 2)
+[[1]]
+[1] 1
+
+$elt
+[1] "foo"
+
+> # same as x[[1]][[2]]
+> 
+> # Supply names to index into named vectors:
+> pluck(x, 1, 2, "elt")
+[1] "foo"
+> # same as x[[1]][[2]][["elt"]]
+> 
+> # By default, pluck() consistently returns `NULL` when an element
+> # does not exist:
+> pluck(x, 10)
+NULL
+> try(x[[10]])
+Error in x[[10]] : subscript out of bounds
+> 
+> # You can also supply a default value for non-existing elements:
+> pluck(x, 10, .default = NA)
+[1] NA
+> 
+> # The map() functions use pluck() by default to retrieve multiple
+> # values from a list:
+> map_chr(x, 1)
+[1] "a" "b"
+> map_int(x, c(2, 1))
+[1] 1 2
+> 
+> # pluck() also supports accessor functions:
+> my_element <- function(x) x[[2]]$elt
+> pluck(x, 1, my_element)
+[1] "foo"
+> pluck(x, 2, my_element)
+[1] "bar"
+> 
+> # Even for this simple data structure, this is more readable than
+> # the alternative form because it requires you to read both from
+> # right-to-left and from left-to-right in different parts of the
+> # expression:
+> my_element(x[[1]])
+[1] "foo"
+> 
+> # If you have a list of accessors, you can splice those in with `!!!`:
+> idx <- list(1, my_element)
+> pluck(x, !!!idx)
+[1] "foo"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("pluck_depth")
+> ### * pluck_depth
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: pluck_depth
+> ### Title: Compute the depth of a vector
+> ### Aliases: pluck_depth vec_depth
+> 
+> ### ** Examples
+> 
+> x <- list(
++   list(),
++   list(list()),
++   list(list(list(1)))
++ )
+> pluck_depth(x)
+[1] 5
+> x |> map_int(pluck_depth)
+[1] 1 2 4
+> 
+> 
+> 
+> cleanEx()
+> nameEx("pmap")
+> ### * pmap
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: pmap
+> ### Title: Map over multiple input simultaneously (in "parallel")
+> ### Aliases: pmap pmap_lgl pmap_int pmap_dbl pmap_chr pmap_vec pwalk
+> 
+> ### ** Examples
+> 
+> x <- list(1, 1, 1)
+> y <- list(10, 20, 30)
+> z <- list(100, 200, 300)
+> pmap(list(x, y, z), sum)
+[[1]]
+[1] 111
+
+[[2]]
+[1] 221
+
+[[3]]
+[1] 331
+
+> 
+> # Matching arguments by position
+> pmap(list(x, y, z), function(first, second, third) (first + third) * second)
+[[1]]
+[1] 1010
+
+[[2]]
+[1] 4020
+
+[[3]]
+[1] 9030
+
+> 
+> # Matching arguments by name
+> l <- list(a = x, b = y, c = z)
+> pmap(l, function(c, b, a) (a + c) * b)
+[[1]]
+[1] 1010
+
+[[2]]
+[1] 4020
+
+[[3]]
+[1] 9030
+
+> 
+> # Vectorizing a function over multiple arguments
+> df <- data.frame(
++   x = c("apple", "banana", "cherry"),
++   pattern = c("p", "n", "h"),
++   replacement = c("P", "N", "H"),
++   stringsAsFactors = FALSE
++   )
+> pmap(df, gsub)
+[[1]]
+[1] "aPPle"
+
+[[2]]
+[1] "baNaNa"
+
+[[3]]
+[1] "cHerry"
+
+> pmap_chr(df, gsub)
+[1] "aPPle"  "baNaNa" "cHerry"
+> 
+> # Use `...` to absorb unused components of input list .l
+> df <- data.frame(
++   x = 1:3,
++   y = 10:12,
++   z = letters[1:3]
++ )
+> plus <- function(x, y) x + y
+> ## Not run: 
+> ##D # this won't work
+> ##D pmap(df, plus)
+> ## End(Not run)
+> # but this will
+> plus2 <- function(x, y, ...) x + y
+> pmap_dbl(df, plus2)
+[1] 11 13 15
+> 
+> # The "p" for "parallel" in pmap() is the same as in base::pmin()
+> # and base::pmax()
+> df <- data.frame(
++   x = c(1, 2, 5),
++   y = c(5, 4, 8)
++ )
+> # all produce the same result
+> pmin(df$x, df$y)
+[1] 1 2 5
+> map2_dbl(df$x, df$y, min)
+[1] 1 2 5
+> pmap_dbl(df, min)
+[1] 1 2 5
+> 
+> 
+> 
+> cleanEx()
+> nameEx("possibly")
+> ### * possibly
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: possibly
+> ### Title: Wrap a function to return a value instead of an error
+> ### Aliases: possibly
+> 
+> ### ** Examples
+> 
+> # To replace errors with a default value, use possibly().
+> list("a", 10, 100) |>
++   map_dbl(possibly(log, NA_real_))
+[1]       NA 2.302585 4.605170
+> 
+> # The default, NULL, will be discarded with `list_c()`
+> list("a", 10, 100) |>
++   map(possibly(log)) |>
++   list_c()
+[1] 2.302585 4.605170
+> 
+> 
+> 
+> cleanEx()
+> nameEx("prepend")
+> ### * prepend
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: prepend
+> ### Title: Prepend a vector
+> ### Aliases: prepend
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> x <- as.list(1:3)
+> 
+> x |> append("a")
+[[1]]
+[1] 1
+
+[[2]]
+[1] 2
+
+[[3]]
+[1] 3
+
+[[4]]
+[1] "a"
+
+> x |> prepend("a")
+Warning: `prepend()` was deprecated in purrr 1.0.0.
+ℹ Please use append(after = 0) instead.
+[[1]]
+[1] "a"
+
+[[2]]
+[1] 1
+
+[[3]]
+[1] 2
+
+[[4]]
+[1] 3
+
+> x |> prepend(list("a", "b"), before = 3)
+[[1]]
+[1] 1
+
+[[2]]
+[1] 2
+
+[[3]]
+[1] "a"
+
+[[4]]
+[1] "b"
+
+[[5]]
+[1] 3
+
+> prepend(list(), x)
+[[1]]
+[1] 1
+
+[[2]]
+[1] 2
+
+[[3]]
+[1] 3
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("quietly")
+> ### * quietly
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: quietly
+> ### Title: Wrap a function to capture side-effects
+> ### Aliases: quietly
+> 
+> ### ** Examples
+> 
+> f <- function() {
++   print("Hi!")
++   message("Hello")
++   warning("How are ya?")
++   "Gidday"
++ }
+> f()
+[1] "Hi!"
+Hello
+Warning in f() : How are ya?
+[1] "Gidday"
+> 
+> f_quiet <- quietly(f)
+> str(f_quiet())
+List of 4
+ $ result  : chr "Gidday"
+ $ output  : chr "[1] \"Hi!\""
+ $ warnings: chr "How are ya?"
+ $ messages: chr "Hello\n"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("rate-helpers")
+> ### * rate-helpers
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: rate-helpers
+> ### Title: Create delaying rate settings
+> ### Aliases: rate-helpers rate_delay rate_backoff is_rate
+> 
+> ### ** Examples
+> 
+> # A delay rate waits the same amount of time:
+> rate <- rate_delay(0.02)
+> for (i in 1:3) rate_sleep(rate, quiet = FALSE)
+Retrying in 0.02 seconds.
+Retrying in 0.02 seconds.
+> 
+> # A backoff rate waits exponentially longer each time, with random
+> # jitter by default:
+> rate <- rate_backoff(pause_base = 0.2, pause_min = 0.005)
+> for (i in 1:3) rate_sleep(rate, quiet = FALSE)
+Retrying in 0.11 seconds.
+Retrying in 0.3 seconds.
+> 
+> 
+> 
+> cleanEx()
+> nameEx("rbernoulli")
+> ### * rbernoulli
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: rbernoulli
+> ### Title: Generate random sample from a Bernoulli distribution
+> ### Aliases: rbernoulli
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> rbernoulli(10)
+ [1] FALSE FALSE  TRUE  TRUE FALSE  TRUE  TRUE  TRUE  TRUE FALSE
+> rbernoulli(100, 0.1)
+  [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE  TRUE FALSE
+ [13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+ [25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+ [37] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+ [49] FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+ [61] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE
+ [73] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+ [85] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE
+ [97] FALSE FALSE  TRUE FALSE
+> 
+> 
+> 
+> cleanEx()
+> nameEx("rdunif")
+> ### * rdunif
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: rdunif
+> ### Title: Generate random sample from a discrete uniform distribution
+> ### Aliases: rdunif
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> table(rdunif(1e3, 10))
+Warning: `rdunif()` was deprecated in purrr 1.0.0.
+
+  1   2   3   4   5   6   7   8   9  10 
+ 95  81  96 103 105  99 109  95 108 109 
+> table(rdunif(1e3, 10, -5))
+
+-5 -4 -3 -2 -1  0  1  2  3  4  5  6  7  8  9 10 
+40 68 61 59 64 60 60 61 75 65 61 60 63 61 79 63 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("reduce")
+> ### * reduce
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: reduce
+> ### Title: Reduce a list to a single value by iteratively applying a binary
+> ###   function
+> ### Aliases: reduce reduce2
+> 
+> ### ** Examples
+> 
+> # Reducing `+` computes the sum of a vector while reducing `*`
+> # computes the product:
+> 1:3 |> reduce(`+`)
+[1] 6
+> 1:10 |> reduce(`*`)
+[1] 3628800
+> 
+> # By ignoring the input vector (nxt), you can turn output of one step into
+> # the input for the next. This code takes 10 steps of a random walk:
+> reduce(1:10, \(acc, nxt) acc + rnorm(1), .init = 0)
+[1] 1.322028
+> 
+> # When the operation is associative, the direction of reduction
+> # does not matter:
+> reduce(1:4, `+`)
+[1] 10
+> reduce(1:4, `+`, .dir = "backward")
+[1] 10
+> 
+> # However with non-associative operations, the reduced value will
+> # be different as a function of the direction. For instance,
+> # `list()` will create left-leaning lists when reducing from the
+> # right, and right-leaning lists otherwise:
+> str(reduce(1:4, list))
+List of 2
+ $ :List of 2
+  ..$ :List of 2
+  .. ..$ : int 1
+  .. ..$ : int 2
+  ..$ : int 3
+ $ : int 4
+> str(reduce(1:4, list, .dir = "backward"))
+List of 2
+ $ : int 1
+ $ :List of 2
+  ..$ : int 2
+  ..$ :List of 2
+  .. ..$ : int 3
+  .. ..$ : int 4
+> 
+> # reduce2() takes a ternary function and a second vector that is
+> # one element smaller than the first vector:
+> paste2 <- function(x, y, sep = ".") paste(x, y, sep = sep)
+> letters[1:4] |> reduce(paste2)
+[1] "a.b.c.d"
+> letters[1:4] |> reduce2(c("-", ".", "-"), paste2)
+[1] "a-b.c-d"
+> 
+> x <- list(c(0, 1), c(2, 3), c(4, 5))
+> y <- list(c(6, 7), c(8, 9))
+> reduce2(x, y, paste)
+[1] "0 2 6 4 8" "1 3 7 5 9"
+> 
+> 
+> # You can shortcircuit a reduction and terminate it early by
+> # returning a value wrapped in a done(). In the following example
+> # we return early if the result-so-far, which is passed on the LHS,
+> # meets a condition:
+> paste3 <- function(out, input, sep = ".") {
++   if (nchar(out) > 4) {
++     return(done(out))
++   }
++   paste(out, input, sep = sep)
++ }
+> letters |> reduce(paste3)
+[1] "a.b.c"
+> 
+> # Here the early return branch checks the incoming inputs passed on
+> # the RHS:
+> paste4 <- function(out, input, sep = ".") {
++   if (input == "j") {
++     return(done(out))
++   }
++   paste(out, input, sep = sep)
++ }
+> letters |> reduce(paste4)
+[1] "a.b.c.d.e.f.g.h.i"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("rerun")
+> ### * rerun
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: rerun
+> ### Title: Re-run expressions multiple times
+> ### Aliases: rerun
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> # old
+> 5 |> rerun(rnorm(5)) |> str()
+Warning: `rerun()` was deprecated in purrr 1.0.0.
+ℹ Please use `map()` instead.
+  # Previously
+  rerun(5, rnorm(5))
+
+  # Now
+  map(1:5, ~ rnorm(5))
+List of 5
+ $ : num [1:5] -0.626 0.184 -0.836 1.595 0.33
+ $ : num [1:5] -0.82 0.487 0.738 0.576 -0.305
+ $ : num [1:5] 1.512 0.39 -0.621 -2.215 1.125
+ $ : num [1:5] -0.0449 -0.0162 0.9438 0.8212 0.5939
+ $ : num [1:5] 0.919 0.7821 0.0746 -1.9894 0.6198
+> # new
+> 1:5 |> map(\(i) rnorm(5)) |> str()
+List of 5
+ $ : num [1:5] -0.0561 -0.1558 -1.4708 -0.4782 0.4179
+ $ : num [1:5] 1.3587 -0.1028 0.3877 -0.0538 -1.3771
+ $ : num [1:5] -0.415 -0.3943 -0.0593 1.1 0.7632
+ $ : num [1:5] -0.165 -0.253 0.697 0.557 -0.689
+ $ : num [1:5] -0.707 0.365 0.769 -0.112 0.881
+> 
+> # old
+> 5 |>
++   rerun(x = rnorm(5), y = rnorm(5)) |>
++   map_dbl(\(l) cor(l$x, l$y))
+Warning: `rerun()` was deprecated in purrr 1.0.0.
+ℹ Please use `map()` instead.
+  # Previously
+  rerun(5, x = rnorm(5), y = rnorm(5))
+
+  # Now
+  map(1:5, ~ list(x = rnorm(5), y = rnorm(5)))
+[1] -0.05836575 -0.15041505  0.70238865 -0.46276730 -0.67689017
+> # new
+> 1:5 |>
++   map(\(i) list(x = rnorm(5), y = rnorm(5))) |>
++   map_dbl(\(l) cor(l$x, l$y))
+[1] -0.6718455 -0.2829054 -0.1797414  0.0178209  0.6882156
+> 
+> 
+> 
+> cleanEx()
+> nameEx("safely")
+> ### * safely
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: safely
+> ### Title: Wrap a function to capture errors
+> ### Aliases: safely
+> 
+> ### ** Examples
+> 
+> safe_log <- safely(log)
+> safe_log(10)
+$result
+[1] 2.302585
+
+$error
+NULL
+
+> safe_log("a")
+$result
+NULL
+
+$error
+<simpleError in .Primitive("log")(x, base): non-numeric argument to mathematical function>
+
+> 
+> list("a", 10, 100) |>
++   map(safe_log) |>
++   transpose()
+$result
+$result[[1]]
+NULL
+
+$result[[2]]
+[1] 2.302585
+
+$result[[3]]
+[1] 4.60517
+
+
+$error
+$error[[1]]
+<simpleError in .Primitive("log")(x, base): non-numeric argument to mathematical function>
+
+$error[[2]]
+NULL
+
+$error[[3]]
+NULL
+
+
+> 
+> # This is a bit easier to work with if you supply a default value
+> # of the same type and use the simplify argument to transpose():
+> safe_log <- safely(log, otherwise = NA_real_)
+> list("a", 10, 100) |>
++   map(safe_log) |>
++   transpose() |>
++   simplify_all()
+$result
+[1]       NA 2.302585 4.605170
+
+$error
+$error[[1]]
+<simpleError in .Primitive("log")(x, base): non-numeric argument to mathematical function>
+
+$error[[2]]
+NULL
+
+$error[[3]]
+NULL
+
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("slowly")
+> ### * slowly
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: slowly
+> ### Title: Wrap a function to wait between executions
+> ### Aliases: slowly
+> 
+> ### ** Examples
+> 
+> # For these example, we first create a custom rate
+> # with a low waiting time between attempts:
+> rate <- rate_delay(0.1)
+> 
+> # slowly() causes a function to sleep for a given time between calls:
+> slow_runif <- slowly(\(x) runif(1), rate = rate, quiet = FALSE)
+> out <- map(1:5, slow_runif)
+Retrying in 0.1 seconds.
+Retrying in 0.1 seconds.
+Retrying in 0.1 seconds.
+Retrying in 0.1 seconds.
+> 
+> 
+> 
+> cleanEx()
+> nameEx("splice")
+> ### * splice
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: splice
+> ### Title: Splice objects and lists of objects into a list
+> ### Aliases: splice
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> inputs <- list(arg1 = "a", arg2 = "b")
+> 
+> # splice() concatenates the elements of inputs with arg3
+> splice(inputs, arg3 = c("c1", "c2")) |> str()
+Warning: `splice()` was deprecated in purrr 1.0.0.
+ℹ Please use `list_flatten()` instead.
+List of 3
+ $ arg1: chr "a"
+ $ arg2: chr "b"
+ $ arg3: chr [1:2] "c1" "c2"
+> list(inputs, arg3 = c("c1", "c2")) |> str()
+List of 2
+ $     :List of 2
+  ..$ arg1: chr "a"
+  ..$ arg2: chr "b"
+ $ arg3: chr [1:2] "c1" "c2"
+> c(inputs, arg3 = c("c1", "c2")) |> str()
+List of 4
+ $ arg1 : chr "a"
+ $ arg2 : chr "b"
+ $ arg31: chr "c1"
+ $ arg32: chr "c2"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("transpose")
+> ### * transpose
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: transpose
+> ### Title: Transpose a list.
+> ### Aliases: transpose
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> x <- map(1:5, \(i) list(x = runif(1), y = runif(5)))
+> # was
+> x |> transpose() |> str()
+List of 2
+ $ x:List of 5
+  ..$ : num 0.266
+  ..$ : num 0.945
+  ..$ : num 0.687
+  ..$ : num 0.38
+  ..$ : num 0.267
+ $ y:List of 5
+  ..$ : num [1:5] 0.372 0.573 0.908 0.202 0.898
+  ..$ : num [1:5] 0.6608 0.6291 0.0618 0.206 0.1766
+  ..$ : num [1:5] 0.384 0.77 0.498 0.718 0.992
+  ..$ : num [1:5] 0.777 0.935 0.212 0.652 0.126
+  ..$ : num [1:5] 0.3861 0.0134 0.3824 0.8697 0.3403
+> # now
+> x |> list_transpose(simplify = FALSE) |> str()
+List of 2
+ $ x:List of 5
+  ..$ : num 0.266
+  ..$ : num 0.945
+  ..$ : num 0.687
+  ..$ : num 0.38
+  ..$ : num 0.267
+ $ y:List of 5
+  ..$ : num [1:5] 0.372 0.573 0.908 0.202 0.898
+  ..$ : num [1:5] 0.6608 0.6291 0.0618 0.206 0.1766
+  ..$ : num [1:5] 0.384 0.77 0.498 0.718 0.992
+  ..$ : num [1:5] 0.777 0.935 0.212 0.652 0.126
+  ..$ : num [1:5] 0.3861 0.0134 0.3824 0.8697 0.3403
+> 
+> # transpose() is useful in conjunction with safely() & quietly()
+> x <- list("a", 1, 2)
+> y <- x |> map(safely(log))
+> # was
+> y |> transpose() |> str()
+List of 2
+ $ result:List of 3
+  ..$ : NULL
+  ..$ : num 0
+  ..$ : num 0.693
+ $ error :List of 3
+  ..$ :List of 2
+  .. ..$ message: chr "non-numeric argument to mathematical function"
+  .. ..$ call   : language .Primitive("log")(x, base)
+  .. ..- attr(*, "class")= chr [1:3] "simpleError" "error" "condition"
+  ..$ : NULL
+  ..$ : NULL
+> # now:
+> y |> list_transpose() |> str()
+List of 2
+ $ result:List of 3
+  ..$ : NULL
+  ..$ : num 0
+  ..$ : num 0.693
+ $ error :List of 3
+  ..$ :List of 2
+  .. ..$ message: chr "non-numeric argument to mathematical function"
+  .. ..$ call   : language .Primitive("log")(x, base)
+  .. ..- attr(*, "class")= chr [1:3] "simpleError" "error" "condition"
+  ..$ : NULL
+  ..$ : NULL
+> 
+> # Previously, output simplification required a call to another function
+> x <- list(list(a = 1, b = 2), list(a = 3, b = 4), list(a = 5, b = 6))
+> x |> transpose() |> simplify_all()
+$a
+[1] 1 3 5
+
+$b
+[1] 2 4 6
+
+> # Now can take advantage of automatic simplification
+> x |> list_transpose()
+$a
+[1] 1 3 5
+
+$b
+[1] 2 4 6
+
+> 
+> # Provide explicit component names to prevent loss of those that don't
+> # appear in first component
+> ll <- list(
++   list(x = 1, y = "one"),
++   list(z = "deux", x = 2)
++ )
+> ll |> transpose()
+$x
+$x[[1]]
+[1] 1
+
+$x[[2]]
+[1] 2
+
+
+$y
+$y[[1]]
+[1] "one"
+
+$y[[2]]
+NULL
+
+
+> nms <- ll |> map(names) |> reduce(union)
+> # was
+> ll |> transpose(.names = nms)
+$x
+$x[[1]]
+[1] 1
+
+$x[[2]]
+[1] 2
+
+
+$y
+$y[[1]]
+[1] "one"
+
+$y[[2]]
+NULL
+
+
+$z
+$z[[1]]
+NULL
+
+$z[[2]]
+[1] "deux"
+
+
+> # now
+> ll |> list_transpose(template = nms)
+$x
+[1] 1 2
+
+$y
+$y[[1]]
+[1] "one"
+
+$y[[2]]
+NULL
+
+
+$z
+$z[[1]]
+NULL
+
+$z[[2]]
+[1] "deux"
+
+
+> # and can supply default value
+> ll |> list_transpose(template = nms, default = NA)
+$x
+[1] 1 2
+
+$y
+[1] "one" NA   
+
+$z
+[1] NA     "deux"
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("when")
+> ### * when
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: when
+> ### Title: Match/validate a set of conditions for an object and continue
+> ###   with the action associated with the first valid match.
+> ### Aliases: when
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> 1:10 %>%
++   when(
++     sum(.) <=  50 ~ sum(.),
++     sum(.) <= 100 ~ sum(.)/2,
++     ~ 0
++   )
+Warning: `when()` was deprecated in purrr 1.0.0.
+ℹ Please use `if` instead.
+[1] 27.5
+> 
+> # now
+> x <- 1:10
+> if (sum(x) < 10) {
++   sum(x)
++ } else if (sum(x) < 100) {
++   sum(x) / 2
++ } else {
++   0
++ }
+[1] 27.5
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  1.266 0.054 5.067 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

@@ -1,0 +1,292 @@
+
+R version 4.4.2 (2024-10-31) -- "Pile of Leaves"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "markdown"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('markdown')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("mark")
+> ### * mark
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: mark
+> ### Title: Render Markdown to an output format
+> ### Aliases: mark mark_html mark_latex
+> 
+> ### ** Examples
+> 
+> library(markdown)
+> mark(c("Hello _World_!", "", "Welcome to **markdown**."))
+[1] "<p>Hello <em>World</em>!</p>\n<p>Welcome to <strong>markdown</strong>.</p>\n"
+> # a few corner cases
+> mark(character(0))
+character(0)
+> mark("")
+[1] ""
+> # if input happens to be a file path but should be treated as text, use I()
+> mark(I("This is *not* a file.md"))
+[1] "<p>This is <em>not</em> a file.md</p>\n"
+> # that's equivalent to
+> mark(text = "This is *not* a file.md")
+[1] "<p>This is <em>not</em> a file.md</p>\n"
+> 
+> mark_html("Hello _World_!", template = FALSE)
+[1] "<p>Hello <em>World</em>!</p>\n"
+> # write HTML to an output file
+> mark_html("_Hello_, **World**!", output = tempfile())
+> 
+> mark_latex("Hello _World_!", template = FALSE)
+[1] "Hello \\emph{World}!\n"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("markdown_options")
+> ### * markdown_options
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: markdown_options
+> ### Title: Markdown rendering options
+> ### Aliases: markdown_options
+> 
+> ### ** Examples
+> 
+> # all available options
+> markdown::markdown_options()
+ [1] "-hardbreaks"       "-number_sections"  "-tagfilter"       
+ [4] "-toc"              "+auto_identifiers" "+autolink"        
+ [7] "+embed_resources"  "+js_highlight"     "+js_math"         
+[10] "+latex_math"       "+smart"            "+smartypants"     
+[13] "+strikethrough"    "+subscript"        "+superscript"     
+[16] "+table"            "+tasklist"        
+> 
+> library(markdown)
+> 
+> # toc example
+> mkd <- c("# Header 1", "p1", "## Header 2", "p2")
+> 
+> cat(mark(mkd, options = "+number_sections"))
+<h1 id="header-1"><span class="section-number">1.</span> Header 1</h1>
+<p>p1</p>
+<h2 id="header-2"><span class="section-number">1.1</span> Header 2</h2>
+<p>p2</p>
+> cat(mark(mkd, options = "+number_sections+toc"))
+<div id="TOC">
+<ul class="numbered">
+<li><a href="#header-1"><span class="section-number">1.</span> Header 1</a>
+<ul>
+<li><a href="#header-2"><span class="section-number">1.1</span> Header 2</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<h1 id="header-1"><span class="section-number">1.</span> Header 1</h1>
+<p>p1</p>
+<h2 id="header-2"><span class="section-number">1.1</span> Header 2</h2>
+<p>p2</p>
+> 
+> # hard_wrap example
+> cat(mark("foo\nbar\n"))
+<p>foo
+bar</p>
+> cat(mark("foo\nbar\n", options = "hard_wrap"))
+<p>foo<br />
+bar</p>
+> 
+> # latex math example
+> mkd <- c(
++   "`$x$` is inline math $x$!", "", "Display style:", "", "$$x + y$$", "",
++   "\\begin{eqnarray}
++ a^{2}+b^{2} & = & c^{2}\\\\
++ \\sin^{2}(x)+\\cos^{2}(x) & = & 1
++ \\end{eqnarray}"
++ )
+> 
+> cat(mark(mkd))
+<p><code>$x$</code> is inline math \(x\)!</p>
+<p>Display style:</p>
+<p>$$x + y$$</p>
+<p>\begin{eqnarray} a^{2}+b^{2} &amp; = &amp; c^{2}\\ \sin^{2}(x)+\cos^{2}(x) &amp; = &amp; 1 \end{eqnarray}</p>
+> cat(mark(mkd, options = "-latex_math"))
+<p><code>$x$</code> is inline math $x$!</p>
+<p>Display style:</p>
+<p>$$x + y$$</p>
+<p>\begin{eqnarray}
+a^{2}+b^{2} &amp; = &amp; c^{2}\
+\sin^{2}(x)+\cos^{2}(x) &amp; = &amp; 1
+\end{eqnarray}</p>
+> 
+> # tables example (need 4 spaces at beginning of line here)
+> cat(mark("
++ First Header  | Second Header
++ ------------- | -------------
++ Content Cell  | Content Cell
++ Content Cell  | Content Cell
++ "))
+<table>
+<thead>
+<tr>
+<th>First Header</th>
+<th>Second Header</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Content Cell</td>
+<td>Content Cell</td>
+</tr>
+<tr>
+<td>Content Cell</td>
+<td>Content Cell</td>
+</tr>
+</tbody>
+</table>
+> 
+> # but not here
+> cat(mark("
++ First Header  | Second Header
++ ------------- | -------------
++ Content Cell  | Content Cell
++ Content Cell  | Content Cell
++ ", options = '-table'))
+<p>First Header  | Second Header
+———–– | ———––
+Content Cell  | Content Cell
+Content Cell  | Content Cell</p>
+> 
+> # autolink example
+> cat(mark("https://www.r-project.org/"))
+<p><a href="https://www.r-project.org/">https://www.r-project.org/</a></p>
+> cat(mark("https://www.r-project.org/", options = "-autolink"))
+<p>https://www.r-project.org/</p>
+> 
+> # strikethrough example
+> cat(mark("~~awesome~~"))
+<p><del>awesome</del></p>
+> cat(mark("~~awesome~~", options = "-strikethrough"))
+<p>~~awesome~~</p>
+> 
+> # superscript and subscript examples
+> cat(mark("2^10^"))
+<p>2<sup>10</sup></p>
+> cat(mark("2^10^", options = "-superscript"))
+<p>2^10^</p>
+> cat(mark("H~2~O"))
+<p>H<sub>2</sub>O</p>
+> cat(mark("H~2~O", options = "-subscript"))
+<p>H~2~O</p>
+> 
+> # code blocks
+> cat(mark('```r\n1 + 1;\n```'))
+<pre><code class="language-r">1 + 1;
+</code></pre>
+> cat(mark('```{.r}\n1 + 1;\n```'))
+<pre><code class="language-r">1 + 1;
+</code></pre>
+> cat(mark('```{.r .js}\n1 + 1;\n```'))
+<pre><code class="language-r js">1 + 1;
+</code></pre>
+> cat(mark('```{.r .js #foo}\n1 + 1;\n```'))
+<pre><code class="language-r js" id="foo">1 + 1;
+</code></pre>
+> cat(mark('```{.r .js #foo style="color:red;"}\n1 + 1;\n```'))
+<pre><code class="language-r js" id="foo" style="color:red;">1 + 1;
+</code></pre>
+> cat(mark('````\n```{r, echo=TRUE}\n1 + 1;\n```\n````'))
+<pre><code>```{r, echo=TRUE}
+1 + 1;
+```
+</code></pre>
+> 
+> # raw blocks
+> cat(mark('```{=html}\n<p>raw HTML</p>\n```'))
+<p>raw HTML</p>
+> cat(mark('```{=latex}\n<p>raw HTML</p>\n```'))
+> 
+> # skip_html tags
+> mkd = '<style>a {}</style><script type="text/javascript">console.log("No!");</script>\n[Hello](#)'
+> cat(mark(mkd))
+<style>a {}</style><script type="text/javascript">console.log("No!");</script>
+<p><a href="#">Hello</a></p>
+> # TODO: wait for https://github.com/r-lib/commonmark/issues/15 to be fixed
+> # cat(mark(mkd, options = "tagfilter"))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("rpubsUpload")
+> ### * rpubsUpload
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: rpubsUpload
+> ### Title: Upload an HTML file to RPubs
+> ### Aliases: rpubsUpload
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D # upload a document
+> ##D result <- rpubsUpload("My document title", "Document.html")
+> ##D if (!is.null(result$continueUrl))
+> ##D     browseURL(result$continueUrl) else stop(result$error)
+> ##D 
+> ##D # update the same document with a new title
+> ##D updateResult <- rpubsUpload("My updated title", "Document.html", result$id)
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("smartypants")
+> ### * smartypants
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: smartypants
+> ### Title: Convert some ASCII strings to HTML entities
+> ### Aliases: smartypants
+> 
+> ### ** Examples
+> 
+> cat(smartypants("1/2 (c)\n"))
+&frac12; &copy; > 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  0.136 0.027 0.163 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

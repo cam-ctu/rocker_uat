@@ -1,0 +1,180 @@
+
+R version 4.4.0 (2024-04-24) -- "Puppy Cup"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> source("incl/start.R")
+Loading required package: future
+[17:01:12.601] plan(): Setting new future strategy stack:
+[17:01:12.602] List of future strategies:
+[17:01:12.602] 1. sequential:
+[17:01:12.602]    - args: function (..., envir = parent.frame(), workers = "<NULL>")
+[17:01:12.602]    - tweaked: FALSE
+[17:01:12.602]    - call: future::plan("sequential")
+[17:01:12.617] plan(): nbrOfWorkers() = 1
+> 
+> message("*** Options in nested parallelization ...")
+*** Options in nested parallelization ...
+> 
+> options(future.debug = FALSE)
+> options(future.apply.debug = FALSE)
+> options(future.globals.maxSize = 1234000)
+> 
+> for (cores in 1:availCores) {
++   message(sprintf("Testing with %d cores ...", cores))
++   options(mc.cores = cores)
++   strategies <- supportedStrategies(cores)
++ 
++   for (strategy1 in strategies) {
++     for (strategy2 in strategies) {
++       message(sprintf("- plan('%s') ...", strategy2))
++       plan(list(outer = tweak(strategy1), inner = strategy2))
++ 
++       v <- future_lapply(1:2, FUN = function(x) {
++         outer <- data.frame(
++           label   = "outer",
++           idx     = x,
++           pid     = Sys.getpid(),
++           maxSize = getOption("future.globals.maxSize", NA_real_)
++         )
++         
++         inner <- future_lapply(3:4, FUN = function(x) {
++           data.frame(
++             label   = "inner",
++             idx     = x,
++             pid     = Sys.getpid(),
++             maxSize = getOption("future.globals.maxSize", NA_real_))
++         })
++         inner <- do.call(rbind, inner)
++         rbind(outer, inner)
++       })
++       v <- do.call(rbind, v)
++       print(v)
++       stopifnot(!anyNA(v$maxSize))
++     } ## for (strategy2 ...)
++   } ## for (strategy1 ...)
++ } ## for (cores in ...)
+Testing with 1 cores ...
+- plan('sequential') ...
+  label idx   pid maxSize
+1 outer   1 37274 1234000
+2 inner   3 37274 1234000
+3 inner   4 37274 1234000
+4 outer   2 37274 1234000
+5 inner   3 37274 1234000
+6 inner   4 37274 1234000
+- plan('multicore') ...
+  label idx   pid maxSize
+1 outer   1 37274 1234000
+2 inner   3 37274 1234000
+3 inner   4 37274 1234000
+4 outer   2 37274 1234000
+5 inner   3 37274 1234000
+6 inner   4 37274 1234000
+- plan('multisession') ...
+  label idx   pid maxSize
+1 outer   1 37274 1234000
+2 inner   3 37274 1234000
+3 inner   4 37274 1234000
+4 outer   2 37274 1234000
+5 inner   3 37274 1234000
+6 inner   4 37274 1234000
+- plan('sequential') ...
+  label idx   pid maxSize
+1 outer   1 37274 1234000
+2 inner   3 37274 1234000
+3 inner   4 37274 1234000
+4 outer   2 37274 1234000
+5 inner   3 37274 1234000
+6 inner   4 37274 1234000
+- plan('multicore') ...
+  label idx   pid maxSize
+1 outer   1 37274 1234000
+2 inner   3 37274 1234000
+3 inner   4 37274 1234000
+4 outer   2 37274 1234000
+5 inner   3 37274 1234000
+6 inner   4 37274 1234000
+- plan('multisession') ...
+  label idx   pid maxSize
+1 outer   1 37274 1234000
+2 inner   3 37274 1234000
+3 inner   4 37274 1234000
+4 outer   2 37274 1234000
+5 inner   3 37274 1234000
+6 inner   4 37274 1234000
+- plan('sequential') ...
+  label idx   pid maxSize
+1 outer   1 37274 1234000
+2 inner   3 37274 1234000
+3 inner   4 37274 1234000
+4 outer   2 37274 1234000
+5 inner   3 37274 1234000
+6 inner   4 37274 1234000
+- plan('multicore') ...
+  label idx   pid maxSize
+1 outer   1 37274 1234000
+2 inner   3 37274 1234000
+3 inner   4 37274 1234000
+4 outer   2 37274 1234000
+5 inner   3 37274 1234000
+6 inner   4 37274 1234000
+- plan('multisession') ...
+  label idx   pid maxSize
+1 outer   1 37274 1234000
+2 inner   3 37274 1234000
+3 inner   4 37274 1234000
+4 outer   2 37274 1234000
+5 inner   3 37274 1234000
+6 inner   4 37274 1234000
+Testing with 2 cores ...
+- plan('multicore') ...
+  label idx   pid maxSize
+1 outer   1 37448 1234000
+2 inner   3 37448 1234000
+3 inner   4 37448 1234000
+4 outer   2 37455 1234000
+5 inner   3 37455 1234000
+6 inner   4 37455 1234000
+- plan('multisession') ...
+  label idx   pid maxSize
+1 outer   1 37478 1234000
+2 inner   3 37478 1234000
+3 inner   4 37478 1234000
+4 outer   2 37485 1234000
+5 inner   3 37485 1234000
+6 inner   4 37485 1234000
+- plan('multicore') ...
+  label idx   pid maxSize
+1 outer   1 37537 1234000
+2 inner   3 37537 1234000
+3 inner   4 37537 1234000
+4 outer   2 37538 1234000
+5 inner   3 37538 1234000
+6 inner   4 37538 1234000
+- plan('multisession') ...
+  label idx   pid maxSize
+1 outer   1 37660 1234000
+2 inner   3 37660 1234000
+3 inner   4 37660 1234000
+4 outer   2 37661 1234000
+5 inner   3 37661 1234000
+6 inner   4 37661 1234000
+> 
+> message("*** Options in nested parallelization ... done")
+*** Options in nested parallelization ... done
+> 
+> source("incl/end.R")
+> 

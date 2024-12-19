@@ -1,0 +1,291 @@
+
+R version 4.4.2 (2024-10-31) -- "Pile of Leaves"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library("matrixStats")
+> 
+> set.seed(1)
+> x <- rnorm(1e4)
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Variance estimators
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> sigma2_a <- var(x)
+> cat(sprintf("var(x) = %g\n", sigma2_a))
+var(x) = 1.02487
+> 
+> sigma2_b <- varDiff(x)
+> cat(sprintf("varDiff(x) = %g\n", sigma2_b))
+varDiff(x) = 1.01224
+> 
+> d <- abs(sigma2_b - sigma2_a)
+> cat(sprintf("Absolute difference = %g\n", d))
+Absolute difference = 0.0126268
+> stopifnot(d < 0.02)
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Standard deviation estimators
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> sigma_a <- sd(x)
+> cat(sprintf("sd(x) = %g\n", sigma_a))
+sd(x) = 1.01236
+> 
+> sigma_b <- sdDiff(x)
+> cat(sprintf("sdDiff(x) = %g\n", sigma_b))
+sdDiff(x) = 1.0061
+> 
+> d <- abs(sigma_b - sigma_a)
+> cat(sprintf("Absolute difference = %g\n", d))
+Absolute difference = 0.00625567
+> stopifnot(d < 0.01)
+> 
+> # Sanity checks
+> stopifnot(abs(sigma2_a - sigma_a ^ 2) < 1e-9)
+> stopifnot(abs(sigma2_b - sigma_b ^ 2) < 1e-9)
+> 
+> 
+> sigma_a2 <- mad(x)
+> cat(sprintf("mad(x) = %g\n", sigma_a2))
+mad(x) = 0.998376
+> 
+> sigma_b2 <- madDiff(x)
+> cat(sprintf("madDiff(x) = %g\n", sigma_b2))
+madDiff(x) = 1.02513
+> 
+> d <- abs(sigma_b2 - sigma_a2)
+> cat(sprintf("Absolute difference = %g\n", d))
+Absolute difference = 0.0267497
+> stopifnot(d < 0.05)
+> 
+> 
+> sigma_a3 <- IQR(x)
+> cat(sprintf("IQR(x) = %g\n", sigma_a3))
+IQR(x) = 1.35105
+> 
+> sigma_b3 <- iqrDiff(x)
+> cat(sprintf("iqrDiff(x) = %g\n", sigma_b3))
+iqrDiff(x) = 1.37797
+> 
+> d <- abs(sigma_b3 - sigma_a3)
+> cat(sprintf("Absolute difference = %g\n", d))
+Absolute difference = 0.0269152
+> stopifnot(d < 0.05)
+> 
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Trimmed estimators
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> y <- x
+> outliers <- sample(length(x), size = 0.1 * length(x))
+> y[outliers] <- 100 * y[outliers]
+> 
+> sigma_ao <- sd(y[-outliers])
+> cat(sprintf("sd(y) = %g\n", sigma_ao))
+sd(y) = 1.01166
+> 
+> sigma_bo <- sdDiff(y[-outliers])
+> cat(sprintf("sdDiff(y) = %g\n", sigma_bo))
+sdDiff(y) = 1.00743
+> 
+> d <- abs(sigma_b - sigma_a)
+> cat(sprintf("Absolute difference = %g\n", d))
+Absolute difference = 0.00625567
+> stopifnot(d < 0.01)
+> 
+> sigma_bot <- sdDiff(y, trim = 0.05)
+> cat(sprintf("sdDiff(y, trim = 0.05) = %g\n", sigma_bot))
+sdDiff(y, trim = 0.05) = 7.74327
+> 
+> d <- abs(sigma_bot - sigma_a)
+> cat(sprintf("Absolute difference = %g\n", d))
+Absolute difference = 6.73091
+> #stopifnot(d < 1e-3)
+> 
+> sigma_cot <- madDiff(y, trim = 0.05)
+> cat(sprintf("madDiff(y, trim = 0.05) = %g\n", sigma_cot))
+madDiff(y, trim = 0.05) = 1.15278
+> 
+> sigma_dot <- iqrDiff(y, trim = 0.05)
+> cat(sprintf("iqrDiff(y, trim = 0.05) = %g\n", sigma_dot))
+iqrDiff(y, trim = 0.05) = 1.55762
+> 
+> 
+> fcns <- list(
++   varDiff = varDiff,
++   sdDiff  = sdDiff,
++   madDiff = madDiff,
++   iqrDiff = iqrDiff
++ )
+> 
+> for (name in names(fcns)) {
++   cat(sprintf("%s()...\n", name))
++   fcn <- fcns[[name]]
++ 
++   for (mode in c("integer", "double")) {
++     cat("mode: ", mode, "", sep = "")
++     for (n in 0:3) {
++       x <- runif(n, min = -5, max = 5)
++       storage.mode(x) <- mode
++       str(x)
++ 
++       y <- fcn(x)
++       yt <- fcn(x, trim = 0.1)
++       str(list("non-trimmed" = y, trimmed = yt))
++     } # for (mode ...)
++   }
++ 
++   cat(sprintf("%s()...DONE\n", name))
++ } # for (name ...)
+varDiff()...
+mode: integer int(0) 
+List of 2
+ $ non-trimmed: num NA
+ $ trimmed    : num NA
+ int -4
+List of 2
+ $ non-trimmed: num NA
+ $ trimmed    : num NA
+ int [1:2] 3 2
+List of 2
+ $ non-trimmed: num NA
+ $ trimmed    : num NA
+ int [1:3] 1 4 -1
+List of 2
+ $ non-trimmed: num 16
+ $ trimmed    : num 16
+mode: double num(0) 
+List of 2
+ $ non-trimmed: num NA
+ $ trimmed    : num NA
+ num -0.794
+List of 2
+ $ non-trimmed: num NA
+ $ trimmed    : num NA
+ num [1:2] 0.897 -3.728
+List of 2
+ $ non-trimmed: num NA
+ $ trimmed    : num NA
+ num [1:3] 2.07 -1.13 1.94
+List of 2
+ $ non-trimmed: num 9.83
+ $ trimmed    : num 9.83
+varDiff()...DONE
+sdDiff()...
+mode: integer int(0) 
+List of 2
+ $ non-trimmed: num NA
+ $ trimmed    : num NA
+ int 2
+List of 2
+ $ non-trimmed: num NA
+ $ trimmed    : num NA
+ int [1:2] -4 1
+List of 2
+ $ non-trimmed: num NA
+ $ trimmed    : num NA
+ int [1:3] -2 1 -1
+List of 2
+ $ non-trimmed: num 2.5
+ $ trimmed    : num 2.5
+mode: double num(0) 
+List of 2
+ $ non-trimmed: num NA
+ $ trimmed    : num NA
+ num -3.78
+List of 2
+ $ non-trimmed: num NA
+ $ trimmed    : num NA
+ num [1:2] -2.04 2.38
+List of 2
+ $ non-trimmed: num NA
+ $ trimmed    : num NA
+ num [1:3] 1.42 -2.14 1.14
+List of 2
+ $ non-trimmed: num 3.42
+ $ trimmed    : num 3.42
+sdDiff()...DONE
+madDiff()...
+mode: integer int(0) 
+List of 2
+ $ non-trimmed: num NA
+ $ trimmed    : num NA
+ int -1
+List of 2
+ $ non-trimmed: num NA
+ $ trimmed    : num NA
+ int [1:2] -1 4
+List of 2
+ $ non-trimmed: num NA
+ $ trimmed    : num NA
+ int [1:3] -1 0 -3
+List of 2
+ $ non-trimmed: num 2.1
+ $ trimmed    : num 2.1
+mode: double num(0) 
+List of 2
+ $ non-trimmed: num NA
+ $ trimmed    : num NA
+ num -1.13
+List of 2
+ $ non-trimmed: num NA
+ $ trimmed    : num NA
+ num [1:2] -1.7 -1.21
+List of 2
+ $ non-trimmed: num NA
+ $ trimmed    : num NA
+ num [1:3] -2.39 -0.464 3.086
+List of 2
+ $ non-trimmed: num 0.851
+ $ trimmed    : num 0.851
+madDiff()...DONE
+iqrDiff()...
+mode: integer int(0) 
+List of 2
+ $ non-trimmed: num NA
+ $ trimmed    : num NA
+ int 3
+List of 2
+ $ non-trimmed: num 0
+ $ trimmed    : num 0
+ int [1:2] -3 4
+List of 2
+ $ non-trimmed: num 0
+ $ trimmed    : num 0
+ int [1:3] 0 -2 -2
+List of 2
+ $ non-trimmed: num 0.707
+ $ trimmed    : num 0.707
+mode: double num(0) 
+List of 2
+ $ non-trimmed: num NA
+ $ trimmed    : num NA
+ num -4.46
+List of 2
+ $ non-trimmed: num 0
+ $ trimmed    : num 0
+ num [1:2] 3.67 1.02
+List of 2
+ $ non-trimmed: num 0
+ $ trimmed    : num 0
+ num [1:3] -0.537 -2.733 2.857
+List of 2
+ $ non-trimmed: num 2.75
+ $ trimmed    : num 2.75
+iqrDiff()...DONE
+> 

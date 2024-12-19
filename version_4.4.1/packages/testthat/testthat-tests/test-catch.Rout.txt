@@ -1,0 +1,146 @@
+
+R version 4.4.1 (2024-06-14) -- "Race for Your Life"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(testthat)
+> 
+> local({
++ 
++   # Disable test on Windows, pending devtools
++   # compatibility with new toolchain
++   isWindows <- Sys.info()[["sysname"]] == "Windows"
++   if (isWindows)
++     return()
++ 
++   # Disable tests on Solaris, because we don't use Catch there.
++   isSolaris <- Sys.info()[["sysname"]] == "SunOS"
++   if (isSolaris)
++     return()
++ 
++   if (!requireNamespace("usethis", quietly = TRUE))
++     return()
++ 
++   # devel <- try(pkgbuild::has_compiler(), silent = TRUE)
++   # if (!isTRUE(devel))
++   #   return()
++ 
++   quietly <- function(expr) {
++     suppressMessages(capture_output(result <- expr))
++     result
++   }
++ 
++   perform_test <- function(pkgName, catchEnabled) {
++ 
++     owd <- setwd(tempdir())
++     on.exit(setwd(owd), add = TRUE)
++ 
++     pkgPath <- file.path(tempdir(), pkgName)
++     libPath <- file.path(tempdir(), "rlib")
++     if (!utils::file_test("-d", libPath))
++       dir.create(libPath)
++     .libPaths(c(libPath, .libPaths()))
++ 
++     on.exit({
++       unlink(pkgPath, recursive = TRUE)
++       unlink(libPath, recursive = TRUE)
++     }, add = TRUE)
++ 
++     quietly(usethis::create_package(pkgPath, open = FALSE))
++     quietly(testthat::use_catch(pkgPath))
++ 
++     cat("LinkingTo: testthat",
++         file = file.path(pkgPath, "DESCRIPTION"),
++         append = TRUE,
++         sep = "\n")
++ 
++     cat(
++       sprintf("useDynLib(%s, .registration=TRUE)", pkgName),
++       file = file.path(pkgPath, "NAMESPACE"),
++       append = TRUE,
++       sep = "\n"
++     )
++ 
++     if (!catchEnabled) {
++ 
++       makevarsPath <- file.path(
++         pkgPath,
++         "src",
++         if (isWindows) "Makevars.win" else "Makevars"
++       )
++ 
++       cat(
++         "PKG_CPPFLAGS = -DTESTTHAT_DISABLED",
++         file = makevarsPath,
++         sep = "\n"
++       )
++ 
++     }
++ 
++     install.packages(pkgs = pkgPath, repos = NULL, type = "source")
++     library(pkgName, character.only = TRUE)
++     stopifnot(.Call("run_testthat_tests", FALSE, PACKAGE = pkgName))
++     pkgload::unload(pkgName)
++   }
++ 
++   withr::with_envvar(c(R_TESTS = ''), perform_test("testthatclient1",  TRUE))
++   withr::with_envvar(c(R_TESTS = ''), perform_test("testthatclient2", FALSE))
++ })
+Installing package into ‘/tmp/Rtmppi2M0X/rlib’
+(as ‘lib’ is unspecified)
+* installing *source* package ‘testthatclient1’ ...
+** using staged installation
+** libs
+using C++ compiler: ‘g++ (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0’
+g++ -std=gnu++17 -I"/usr/local/lib/R/include" -DNDEBUG  -I'/usr/local/lib/R/site-library/testthat/include' -I/usr/local/include    -fpic  -g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2 -g   -c test-example.cpp -o test-example.o
+g++ -std=gnu++17 -I"/usr/local/lib/R/include" -DNDEBUG  -I'/usr/local/lib/R/site-library/testthat/include' -I/usr/local/include    -fpic  -g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2 -g   -c test-runner.cpp -o test-runner.o
+g++ -std=gnu++17 -shared -L/usr/local/lib/R/lib -L/usr/local/lib -o testthatclient1.so test-example.o test-runner.o -L/usr/local/lib/R/lib -lR
+installing to /tmp/Rtmppi2M0X/rlib/00LOCK-testthatclient1/00new/testthatclient1/libs
+** R
+** byte-compile and prepare package for lazy loading
+** help
+No man pages found in package  ‘testthatclient1’ 
+*** installing help indices
+** building package indices
+** testing if installed package can be loaded from temporary location
+** checking absolute paths in shared objects and dynamic libraries
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (testthatclient1)
+===============================================================================
+All tests passed (1 assertion in 1 test case)
+
+Installing package into ‘/tmp/Rtmppi2M0X/rlib’
+(as ‘lib’ is unspecified)
+* installing *source* package ‘testthatclient2’ ...
+** using staged installation
+** libs
+using C++ compiler: ‘g++ (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0’
+g++ -std=gnu++17 -I"/usr/local/lib/R/include" -DNDEBUG -DTESTTHAT_DISABLED -I'/usr/local/lib/R/site-library/testthat/include' -I/usr/local/include    -fpic  -g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2 -g   -c test-example.cpp -o test-example.o
+g++ -std=gnu++17 -I"/usr/local/lib/R/include" -DNDEBUG -DTESTTHAT_DISABLED -I'/usr/local/lib/R/site-library/testthat/include' -I/usr/local/include    -fpic  -g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2 -g   -c test-runner.cpp -o test-runner.o
+g++ -std=gnu++17 -shared -L/usr/local/lib/R/lib -L/usr/local/lib -o testthatclient2.so test-example.o test-runner.o -L/usr/local/lib/R/lib -lR
+installing to /tmp/Rtmppi2M0X/rlib/00LOCK-testthatclient2/00new/testthatclient2/libs
+** R
+** byte-compile and prepare package for lazy loading
+** help
+No man pages found in package  ‘testthatclient2’ 
+*** installing help indices
+** building package indices
+** testing if installed package can be loaded from temporary location
+** checking absolute paths in shared objects and dynamic libraries
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (testthatclient2)
+> 

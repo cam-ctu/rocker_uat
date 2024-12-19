@@ -1,0 +1,1094 @@
+
+R version 4.4.0 (2024-04-24) -- "Puppy Cup"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "pillar"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('pillar')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("align")
+> ### * align
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: align
+> ### Title: Alignment helper
+> ### Aliases: align
+> 
+> ### ** Examples
+> 
+> align(c("abc", "de"), align = "left")
+[1] "abc" "de "
+> align(c("abc", "de"), align = "right")
+[1] "abc" " de"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("ctl_new_pillar")
+> ### * ctl_new_pillar
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: ctl_new_pillar
+> ### Title: Customize the appearance of simple pillars in your tibble
+> ###   subclass
+> ### Aliases: ctl_new_pillar ctl_new_rowid_pillar
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (rlang::is_installed("palmerpenguins") && requireNamespace("tibble")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ # Create pillar objects
++ ctl_new_pillar(
++   palmerpenguins::penguins,
++   palmerpenguins::penguins$species[1:3],
++   width = 60
++ )
++ 
++ ctl_new_pillar(
++   palmerpenguins::penguins,
++   palmerpenguins::penguins$bill_length_mm[1:3],
++   width = 60
++ )
++ ## Don't show: 
++ }) # examplesIf
+> ## End(Don't show)
+> 
+> # Customize output
+> lines <- function(char = "-") {
++   stopifnot(nchar(char) == 1)
++   structure(char, class = "lines")
++ }
+> 
+> format.lines <- function(x, width, ...) {
++   paste(rep(x, width), collapse = "")
++ }
+> 
+> ctl_new_pillar.line_tbl <- function(controller, x, width, ...) {
++   out <- NextMethod()
++   new_pillar(list(
++     title = out$title,
++     type = out$type,
++     lines = new_pillar_component(list(lines("=")), width = 1),
++     data = out$data
++   ))
++ }
+> 
+> ctl_new_rowid_pillar.line_tbl <- function(controller, x, width, ...) {
++   out <- NextMethod()
++   new_pillar(
++     list(
++       title = out$title,
++       type = out$type,
++       lines = new_pillar_component(list(lines("=")), width = 1),
++       data = out$data
++     ),
++     width = as.integer(floor(log10(max(nrow(x), 1))) + 1)
++   )
++ }
+> 
+> vctrs::new_data_frame(
++   list(a = 1:3, b = letters[1:3]),
++   class = c("line_tbl", "tbl")
++ )
+# A data frame: 3 × 2
+      a b    
+  <int> <chr>
+=     = =    
+1     1 a    
+2     2 b    
+3     3 c    
+> 
+> ctl_new_rowid_pillar.roman_tbl <- function(controller, x, width, ...) {
++   out <- NextMethod()
++   rowid <- utils::as.roman(seq_len(nrow(x)))
++   width <- max(nchar(as.character(rowid)))
++   new_pillar(
++     list(
++       title = out$title,
++       type = out$type,
++       data = pillar_component(
++         new_pillar_shaft(list(row_ids = rowid),
++           width = width,
++           class = "pillar_rif_shaft"
++         )
++       )
++     ),
++     width = width
++   )
++ }
+> 
+> vctrs::new_data_frame(
++   list(a = 1:3, b = letters[1:3]),
++   class = c("roman_tbl", "tbl")
++ )
+# A data frame: 3 × 2
+        a b    
+    <int> <chr>
+I       1 a    
+II      2 b    
+III     3 c    
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("ctl_new_pillar_list")
+> ### * ctl_new_pillar_list
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: ctl_new_pillar_list
+> ### Title: Customize the appearance of compound pillars in your tibble
+> ###   subclass
+> ### Aliases: ctl_new_pillar_list
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (rlang::is_installed("palmerpenguins") && requireNamespace("tibble")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ # Simple column
++ ctl_new_pillar_list(
++   tibble::tibble(),
++   palmerpenguins::penguins$weight[1:3],
++   width = 10
++ )
++ 
++ # Packed data frame: unknown width
++ ctl_new_pillar_list(
++   tibble::tibble(),
++   palmerpenguins::penguins[1:3, ],
++   width = NULL
++ )
++ 
++ # Packed data frame: known width
++ ctl_new_pillar_list(
++   tibble::tibble(),
++   palmerpenguins::penguins,
++   width = 60
++ )
++ 
++ # Deeply packed data frame with known width:
++ # showing only the first sub-column even if the width is sufficient
++ ctl_new_pillar_list(
++   tibble::tibble(),
++   tibble::tibble(x = tibble::tibble(b = 1, c = 2), y = 3),
++   width = 60
++ )
++ 
++ # Packed matrix: unknown width
++ ctl_new_pillar_list(tibble::tibble(), matrix(1:6, ncol = 2), width = NULL)
++ 
++ # Packed matrix: known width
++ ctl_new_pillar_list(tibble::tibble(), matrix(1:6, ncol = 2), width = 60)
++ 
++ # Packed array
++ ctl_new_pillar_list(tibble::tibble(), Titanic, width = 60)
++ ## Don't show: 
++ }) # examplesIf
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("dim_desc")
+> ### * dim_desc
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: dim_desc
+> ### Title: Format dimensions
+> ### Aliases: dim_desc
+> 
+> ### ** Examples
+> 
+> dim_desc(1:10)
+[1] "10"
+> dim_desc(Titanic)
+[1] "4 × 2 × 2 × 2"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("format_glimpse")
+> ### * format_glimpse
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: format_glimpse
+> ### Title: Format a vector for horizontal printing
+> ### Aliases: format_glimpse
+> 
+> ### ** Examples
+> 
+> format_glimpse(1:3)
+[1] "1" "2" "3"
+> 
+> # Lists use [], vectors inside lists use <>
+> format_glimpse(list(1:3))
+[1] "<1, 2, 3>"
+> format_glimpse(list(1, 2:3))
+[1] "1"      "<2, 3>"
+> format_glimpse(list(list(1), list(2:3)))
+[1] "[1]"      "[<2, 3>]"
+> format_glimpse(list(as.list(1), as.list(2:3)))
+[1] "[1]"    "[2, 3]"
+> format_glimpse(list(character()))
+[1] "<>"
+> format_glimpse(list(NULL))
+[1] "<NULL>"
+> 
+> # Character strings are always quoted
+> writeLines(format_glimpse(letters[1:3]))
+"a"
+"b"
+"c"
+> writeLines(format_glimpse(c("A", "B, C")))
+"A"
+"B, C"
+> 
+> # Factors are quoted only when needed
+> writeLines(format_glimpse(factor(letters[1:3])))
+a
+b
+c
+> writeLines(format_glimpse(factor(c("A", "B, C"))))
+"A"
+"B, C"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("format_type_sum")
+> ### * format_type_sum
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: format_type_sum
+> ### Title: Format a type summary
+> ### Aliases: format_type_sum format_type_sum.default format_type_sum.AsIs
+> 
+> ### ** Examples
+> 
+> # Default method: show the type with angle brackets
+> format_type_sum(1, NULL)
+[1] "<1>"
+> pillar(1)
+<pillar>
+<dbl>
+    1
+> 
+> # AsIs method: show the type without angle brackets
+> type_sum.accel <- function(x) {
++   I("kg m/s^2")
++ }
+> 
+> accel <- structure(9.81, class = "accel")
+> pillar(accel)
+<pillar>
+kg m/s^2
+9.81    
+> 
+> 
+> 
+> cleanEx()
+> nameEx("get_extent")
+> ### * get_extent
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: get_extent
+> ### Title: Calculate display width
+> ### Aliases: get_extent get_max_extent
+> 
+> ### ** Examples
+> 
+> get_extent(c("abc", "de"))
+[1] 3 2
+> get_extent("\u904b\u6c23")
+[1] 4
+> get_max_extent(c("abc", "de"))
+[1] 3
+> 
+> 
+> 
+> cleanEx()
+> nameEx("glimpse")
+> ### * glimpse
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: glimpse
+> ### Title: Get a glimpse of your data
+> ### Aliases: glimpse
+> 
+> ### ** Examples
+> 
+> glimpse(mtcars)
+Rows: 32
+Columns: 11
+$ mpg  <dbl> 21.0, 21.0, 22.8, 21.4, 18.7, 18.1, 14.3, 24.4, 22.8, 19.2, 17.8,…
+$ cyl  <dbl> 6, 6, 4, 6, 8, 6, 8, 4, 4, 6, 6, 8, 8, 8, 8, 8, 8, 4, 4, 4, 4, 8,…
+$ disp <dbl> 160.0, 160.0, 108.0, 258.0, 360.0, 225.0, 360.0, 146.7, 140.8, 16…
+$ hp   <dbl> 110, 110, 93, 110, 175, 105, 245, 62, 95, 123, 123, 180, 180, 180…
+$ drat <dbl> 3.90, 3.90, 3.85, 3.08, 3.15, 2.76, 3.21, 3.69, 3.92, 3.92, 3.92,…
+$ wt   <dbl> 2.620, 2.875, 2.320, 3.215, 3.440, 3.460, 3.570, 3.190, 3.150, 3.…
+$ qsec <dbl> 16.46, 17.02, 18.61, 19.44, 17.02, 20.22, 15.84, 20.00, 22.90, 18…
+$ vs   <dbl> 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0,…
+$ am   <dbl> 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0,…
+$ gear <dbl> 4, 4, 4, 3, 3, 3, 3, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 4, 4, 4, 3, 3,…
+$ carb <dbl> 4, 4, 1, 1, 2, 1, 4, 2, 2, 4, 4, 3, 3, 3, 4, 4, 4, 1, 2, 1, 1, 2,…
+> 
+> ## Don't show: 
+> if (rlang::is_installed("nycflights13")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ glimpse(nycflights13::flights)
++ ## Don't show: 
++ }) # examplesIf
+> glimpse(nycflights13::flights)
+Rows: 336,776
+Columns: 19
+$ year           <int> 2013, 2013, 2013, 2013, 2013, 2013, 2013, 2013, 2013, 2…
+$ month          <int> 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1…
+$ day            <int> 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1…
+$ dep_time       <int> 517, 533, 542, 544, 554, 554, 555, 557, 557, 558, 558, …
+$ sched_dep_time <int> 515, 529, 540, 545, 600, 558, 600, 600, 600, 600, 600, …
+$ dep_delay      <dbl> 2, 4, 2, -1, -6, -4, -5, -3, -3, -2, -2, -2, -2, -2, -1…
+$ arr_time       <int> 830, 850, 923, 1004, 812, 740, 913, 709, 838, 753, 849,…
+$ sched_arr_time <int> 819, 830, 850, 1022, 837, 728, 854, 723, 846, 745, 851,…
+$ arr_delay      <dbl> 11, 20, 33, -18, -25, 12, 19, -14, -8, 8, -2, -3, 7, -1…
+$ carrier        <chr> "UA", "UA", "AA", "B6", "DL", "UA", "B6", "EV", "B6", "…
+$ flight         <int> 1545, 1714, 1141, 725, 461, 1696, 507, 5708, 79, 301, 4…
+$ tailnum        <chr> "N14228", "N24211", "N619AA", "N804JB", "N668DN", "N394…
+$ origin         <chr> "EWR", "LGA", "JFK", "JFK", "LGA", "EWR", "EWR", "LGA",…
+$ dest           <chr> "IAH", "IAH", "MIA", "BQN", "ATL", "ORD", "FLL", "IAD",…
+$ air_time       <dbl> 227, 227, 160, 183, 116, 150, 158, 53, 140, 138, 149, 1…
+$ distance       <dbl> 1400, 1416, 1089, 1576, 762, 719, 1065, 229, 944, 733, …
+$ hour           <dbl> 5, 5, 5, 5, 6, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5, 6, 6, 6…
+$ minute         <dbl> 15, 29, 40, 45, 0, 58, 0, 0, 0, 0, 0, 0, 0, 0, 0, 59, 0…
+$ time_hour      <dttm> 2013-01-01 05:00:00, 2013-01-01 05:00:00, 2013-01-01 0…
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("new_ornament")
+> ### * new_ornament
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: new_ornament
+> ### Title: Helper to define the contents of a pillar
+> ### Aliases: new_ornament
+> 
+> ### ** Examples
+> 
+> new_ornament(c("abc", "de"), align = "right")
+<pillar_ornament>
+abc
+ de
+> 
+> 
+> 
+> cleanEx()
+> nameEx("new_pillar")
+> ### * new_pillar
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: new_pillar
+> ### Title: Construct a custom pillar object
+> ### Aliases: new_pillar
+> 
+> ### ** Examples
+> 
+> lines <- function(char = "-") {
++   stopifnot(nchar(char) == 1)
++   structure(char, class = "lines")
++ }
+> 
+> format.lines <- function(x, width, ...) {
++   paste(rep(x, width), collapse = "")
++ }
+> 
+> new_pillar(list(
++   title = pillar_component(new_ornament(c("abc", "de"), align = "right")),
++   lines = new_pillar_component(list(lines("=")), width = 1)
++ ))
+<pillar>
+abc
+ de
+=  
+> 
+> 
+> 
+> cleanEx()
+> nameEx("new_pillar_component")
+> ### * new_pillar_component
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: new_pillar_component
+> ### Title: Components of a pillar
+> ### Aliases: new_pillar_component pillar_component
+> 
+> ### ** Examples
+> 
+> new_pillar_component(list(letters[1:3]), width = 1)
+[[1]]
+[1] "a" "b" "c"
+
+attr(,"width")
+[1] 1
+attr(,"min_width")
+[1] 1
+attr(,"class")
+[1] "pillar_component"
+> pillar_component(new_pillar_title("letters"))
+[[1]]
+[[1]]
+[1] "letters"
+
+attr(,"class")
+[1] "pillar_title"
+attr(,"width")
+[1] 7
+attr(,"min_width")
+[1] 7
+
+attr(,"width")
+[1] 7
+attr(,"min_width")
+[1] 7
+attr(,"class")
+[1] "pillar_component"
+> pillar_component(new_pillar_type(letters))
+[[1]]
+[[1]]
+[1] "chr"
+
+attr(,"class")
+[1] "pillar_type"
+attr(,"width")
+[1] 5
+attr(,"min_width")
+[1] 5
+
+attr(,"width")
+[1] 5
+attr(,"min_width")
+[1] 5
+attr(,"class")
+[1] "pillar_component"
+> pillar_component(pillar_shaft(letters[1:3]))
+[[1]]
+<pillar_ornament>
+a
+b
+c
+
+attr(,"width")
+[1] 1
+attr(,"min_width")
+[1] 1
+attr(,"class")
+[1] "pillar_component"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("new_pillar_title")
+> ### * new_pillar_title
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: new_pillar_title
+> ### Title: Prepare a column title for formatting
+> ### Aliases: new_pillar_title
+> 
+> ### ** Examples
+> 
+> format(new_pillar_title(names(trees)))
+[1] "Girth " "Height" "Volume"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("new_pillar_type")
+> ### * new_pillar_type
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: new_pillar_type
+> ### Title: Prepare a column type for formatting
+> ### Aliases: new_pillar_type
+> 
+> ### ** Examples
+> 
+> format(new_pillar_type("a"))
+[1] "<chr>"
+> format(new_pillar_type(factor("a")))
+[1] "<fct>"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("pillar-package")
+> ### * pillar-package
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: pillar-package
+> ### Title: pillar: Coloured Formatting for Columns
+> ### Aliases: pillar-package
+> 
+> ### ** Examples
+> 
+> pillar(1:3)
+<pillar>
+<int>
+    1
+    2
+    3
+> pillar(c(1, 2, 3))
+<pillar>
+<dbl>
+    1
+    2
+    3
+> pillar(factor(letters[1:3]), title = "letters")
+<pillar>
+letters
+<fct>  
+a      
+b      
+c      
+> tbl_format_setup(tibble::as_tibble(mtcars), width = 60)
+<pillar_tbl_format_setup>
+<tbl_format_header(setup)>
+# A tibble: 32 × 11
+<tbl_format_body(setup)>
+     mpg   cyl  disp    hp  drat    wt  qsec    vs    am
+   <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
+ 1  21       6  160    110  3.9   2.62  16.5     0     1
+ 2  21       6  160    110  3.9   2.88  17.0     0     1
+ 3  22.8     4  108     93  3.85  2.32  18.6     1     1
+ 4  21.4     6  258    110  3.08  3.22  19.4     1     0
+ 5  18.7     8  360    175  3.15  3.44  17.0     0     0
+ 6  18.1     6  225    105  2.76  3.46  20.2     1     0
+ 7  14.3     8  360    245  3.21  3.57  15.8     0     0
+ 8  24.4     4  147.    62  3.69  3.19  20       1     0
+ 9  22.8     4  141.    95  3.92  3.15  22.9     1     0
+10  19.2     6  168.   123  3.92  3.44  18.3     1     0
+<tbl_format_footer(setup)>
+# ℹ 22 more rows
+# ℹ 2 more variables: gear <dbl>, carb <dbl>
+> 
+> 
+> 
+> cleanEx()
+> nameEx("pillar")
+> ### * pillar
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: pillar
+> ### Title: Object for formatting a vector suitable for tabular display
+> ### Aliases: pillar
+> 
+> ### ** Examples
+> 
+> x <- 123456789 * (10^c(-1, -3, -5, NA, -8, -10))
+> pillar(x)
+<pillar>
+        <dbl>
+12345679.    
+  123457.    
+    1235.    
+      NA     
+       1.23  
+       0.0123
+> pillar(-x)
+<pillar>
+   <dbl>
+-1.23e+7
+-1.23e+5
+-1.23e+3
+NA      
+-1.23e+0
+-1.23e-2
+> pillar(runif(10))
+<pillar>
+ <dbl>
+0.266 
+0.372 
+0.573 
+0.908 
+0.202 
+0.898 
+0.945 
+0.661 
+0.629 
+0.0618
+> pillar(rcauchy(20))
+<pillar>
+   <dbl>
+  0.756 
+  0.620 
+ -1.50  
+  2.62  
+ -0.883 
+138.    
+ -1.23  
+ -0.0254
+  2.53  
+ -0.841 
+ -0.208 
+  0.787 
+ -1.94  
+  0.416 
+  1.11  
+  2.67  
+  0.0421
+  2.58  
+ -0.434 
+  1.82  
+> 
+> # Special values are highlighted
+> pillar(c(runif(5), NA, NaN, Inf, -Inf))
+<pillar>
+   <dbl>
+   0.482
+   0.600
+   0.494
+   0.186
+   0.827
+  NA    
+ NaN    
+ Inf    
+-Inf    
+> 
+> # Very wide ranges will be displayed in scientific format
+> pillar(c(1e10, 1e-10), width = 20)
+<pillar>
+<dbl>
+1e+10
+1e-10
+> pillar(c(1e10, 1e-10))
+<pillar>
+<dbl>
+1e+10
+1e-10
+> 
+> x <- c(FALSE, NA, FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, FALSE, TRUE)
+> pillar(x)
+<pillar>
+<lgl>
+FALSE
+NA   
+FALSE
+FALSE
+TRUE 
+FALSE
+FALSE
+TRUE 
+FALSE
+TRUE 
+> 
+> x <- c("This is string is rather long", NA, "?", "Short")
+> pillar(x)
+<pillar>
+<chr>                        
+This is string is rather long
+<NA>                         
+?                            
+Short                        
+> pillar(x, width = 30)
+<pillar>
+<chr>                        
+This is string is rather long
+<NA>                         
+?                            
+Short                        
+> pillar(x, width = 5)
+<pillar>
+<chr>
+This…
+<NA> 
+?    
+Short
+> 
+> date <- as.Date("2017-05-15")
+> pillar(date + c(1, NA, 3:5))
+<pillar>
+<date>    
+2017-05-16
+NA        
+2017-05-18
+2017-05-19
+2017-05-20
+> pillar(as.POSIXct(date) + c(30, NA, 600, 3600, 86400))
+<pillar>
+<dttm>             
+2017-05-15 00:00:30
+NA                 
+2017-05-15 00:10:00
+2017-05-15 01:00:00
+2017-05-16 00:00:00
+> 
+> 
+> 
+> cleanEx()
+> nameEx("pillar_options")
+> ### * pillar_options
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: pillar_options
+> ### Title: Package options
+> ### Aliases: pillar_options
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> df <- tibble::tibble(x = c(1.234567, NA, 5:10))
+> df
+# A tibble: 8 × 1
+      x
+  <dbl>
+1  1.23
+2 NA   
+3  5   
+4  6   
+5  7   
+6  8   
+7  9   
+8 10   
+> 
+> # Change for the duration of the session:
+> old <- options(
++   pillar.sigfig = 6,
++   pillar.print_max = 5,
++   pillar.print_min = 5,
++   pillar.advice = FALSE
++ )
+> df
+# A tibble: 8 × 1
+         x
+     <dbl>
+1  1.23457
+2 NA      
+3  5      
+4  6      
+5  7      
+# ℹ 3 more rows
+> 
+> # Change back to the original value:
+> options(old)
+> df
+# A tibble: 8 × 1
+      x
+  <dbl>
+1  1.23
+2 NA   
+3  5   
+4  6   
+5  7   
+6  8   
+7  9   
+8 10   
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("pillar_shaft")
+> ### * pillar_shaft
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: pillar_shaft
+> ### Title: Column data
+> ### Aliases: pillar_shaft print.pillar_shaft format.pillar_shaft
+> ###   pillar_shaft.logical pillar_shaft.numeric pillar_shaft.Date
+> ###   pillar_shaft.POSIXt pillar_shaft.character pillar_shaft.glue
+> ###   pillar_shaft.list pillar_shaft.factor pillar_shaft.AsIs
+> ###   pillar_shaft.default
+> 
+> ### ** Examples
+> 
+> pillar_shaft(1:3)
+<pillar_ornament>
+1
+2
+3
+> pillar_shaft(1.5:3.5)
+<pillar_ornament>
+1.5
+2.5
+3.5
+> pillar_shaft(NA)
+<pillar_ornament>
+NA   
+> pillar_shaft(c(1:3, NA))
+<pillar_ornament>
+ 1
+ 2
+ 3
+NA
+> 
+> 
+> 
+> cleanEx()
+> nameEx("style_subtle")
+> ### * style_subtle
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: style_num
+> ### Title: Styling helpers
+> ### Aliases: style_num style_subtle style_subtle_num style_bold style_na
+> ###   style_neg
+> 
+> ### ** Examples
+> 
+> style_num(
++   c("123", "456"),
++   negative = c(TRUE, FALSE)
++ )
+[1] "123" "456"
+> style_num(
++   c("123", "456"),
++   negative = c(TRUE, FALSE),
++   significant = c(FALSE, FALSE)
++ )
+[1] "123" "456"
+> style_subtle("text")
+[1] "text"
+> style_subtle_num(0.01 * 1:3, c(TRUE, FALSE, TRUE))
+[1] "0.01" "0.02" "0.03"
+> style_bold("Petal.Width")
+[1] "Petal.Width"
+> style_na("NA")
+[1] "NA"
+> style_neg("123")
+[1] "123"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("tbl_format_body")
+> ### * tbl_format_body
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: tbl_format_body
+> ### Title: Format the body of a tibble
+> ### Aliases: tbl_format_body
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (rlang::is_installed("palmerpenguins")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ setup <- tbl_format_setup(palmerpenguins::penguins)
++ tbl_format_body(palmerpenguins::penguins, setup)
++ 
++ # Shortcut for debugging
++ tbl_format_body(setup)
++ ## Don't show: 
++ }) # examplesIf
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("tbl_format_footer")
+> ### * tbl_format_footer
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: tbl_format_footer
+> ### Title: Format the footer of a tibble
+> ### Aliases: tbl_format_footer
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (rlang::is_installed("palmerpenguins")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ setup <- tbl_format_setup(palmerpenguins::penguins)
++ tbl_format_footer(palmerpenguins::penguins, setup)
++ 
++ # Shortcut for debugging
++ tbl_format_footer(setup)
++ ## Don't show: 
++ }) # examplesIf
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("tbl_format_header")
+> ### * tbl_format_header
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: tbl_format_header
+> ### Title: Format the header of a tibble
+> ### Aliases: tbl_format_header
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (rlang::is_installed("palmerpenguins")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ setup <- tbl_format_setup(palmerpenguins::penguins)
++ tbl_format_header(palmerpenguins::penguins, setup)
++ 
++ # Shortcut for debugging
++ tbl_format_header(setup)
++ ## Don't show: 
++ }) # examplesIf
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("tbl_format_setup")
+> ### * tbl_format_setup
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: tbl_format_setup
+> ### Title: Set up formatting
+> ### Aliases: tbl_format_setup tbl_format_setup.tbl
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (rlang::is_installed("palmerpenguins")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ tbl_format_setup(palmerpenguins::penguins)
++ ## Don't show: 
++ }) # examplesIf
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("tbl_sum")
+> ### * tbl_sum
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: tbl_sum
+> ### Title: Provide a succinct summary of an object
+> ### Aliases: tbl_sum
+> 
+> ### ** Examples
+> 
+> tbl_sum(1:10)
+Description 
+ "int [10]" 
+> tbl_sum(matrix(1:10))
+   Description 
+"int [10 × 1]" 
+> tbl_sum(data.frame(a = 1))
+ Description 
+"df [1 × 1]" 
+> tbl_sum(Sys.Date())
+Description 
+ "date [1]" 
+> tbl_sum(Sys.time())
+Description 
+ "dttm [1]" 
+> tbl_sum(mean)
+Description 
+       "fn" 
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("type_sum")
+> ### * type_sum
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: type_sum
+> ### Title: Provide a succinct summary of an object
+> ### Aliases: type_sum obj_sum size_sum
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> obj_sum(1:10)
+[1] "int [10]"
+attr(,"short")
+[1] "int"
+> obj_sum(matrix(1:10))
+[1] "int [10 × 1]"
+attr(,"short")
+[1] "int[…]"
+> obj_sum(data.frame(a = 1))
+[1] "df [1 × 1]"
+attr(,"short")
+[1] "df"
+> obj_sum(Sys.Date())
+[1] "date [1]"
+attr(,"short")
+[1] "date"
+> obj_sum(Sys.time())
+[1] "dttm [1]"
+attr(,"short")
+[1] "dttm"
+> obj_sum(mean)
+[1] "fn"
+> 
+> size_sum(1:10)
+[1] "[10]"
+> size_sum(trees)
+[1] "[31 × 3]"
+> size_sum(Titanic)
+[1] "[4 × 2 × 2 × 2]"
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  1.465 0.061 1.526 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

@@ -1,0 +1,108 @@
+
+R version 4.4.0 (2024-04-24) -- "Puppy Cup"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> source("incl/start.R")
+[17:03:19.248] plan(): Setting new future strategy stack:
+[17:03:19.248] List of future strategies:
+[17:03:19.248] 1. sequential:
+[17:03:19.248]    - args: function (..., envir = parent.frame(), workers = "<NULL>")
+[17:03:19.248]    - tweaked: FALSE
+[17:03:19.248]    - call: future::plan("sequential")
+[17:03:19.259] plan(): nbrOfWorkers() = 1
+> 
+> message("*** Non-exportable globals ...")
+*** Non-exportable globals ...
+> 
+> options(future.debug = FALSE)
+> options(future.globals.onReference = "warning")
+> plan(cluster, workers = 1L)
+> 
+> 
+> message("* R connections ...")
+* R connections ...
+> 
+> ## Create a dummy, global connection with a high enough connection index
+> ## such that it won't conflict with an existing connection index on the
+> ## worker. We use sink():s to "pad" with enough connections
+> tmp_file <- tempfile()
+> utils::capture.output(utils::capture.output({
++   con <- file(tmp_file, open = "wb")
++ }))
+[1] "character(0)"
+> cat("hello\n", file = con)
+> flush(con)
+> bfr <- readLines(con = tmp_file)
+> print(bfr)
+[1] "hello"
+> stopifnot(bfr == "hello")
+> message(sprintf("Connection index of dummy 'con' connection: %d\n", as.integer(con)))
+Connection index of dummy 'con' connection: 6
+
+> stopifnot(as.integer(con) >= 6)
+> 
+> 
+> message("- Run-time error")
+- Run-time error
+> 
+> ## Assert we can detect the reference
+> res <- tryCatch({
++   f <- future(cat("world\n", file = con), stdout = NA)
++ }, FutureWarning = identity)
+Timing stopped at: 0.001 0 0
+> print(res)
+<FutureWarning: Detected a non-exportable reference (‘externalptr’) in one of the globals (‘con’ of class ‘file’) used in the future expression>
+
+
+Future UUID: <NA>
+> stopifnot(inherits(res, "FutureWarning"),
++           grepl("non-exportable reference", conditionMessage(res)))
+> 
+> f <- future({
++   max <- max(getAllConnections(), na.rm = TRUE)
++   cat(sprintf("Max connection index on worker: %d\n", max))
++   if (as.integer(con) <= max) {
++     warning(sprintf("TEST ERROR: Index of global 'con' is the same of an existing connection of the worker: %d in [0,%d]", as.integer(con), max))
++   }
++   cat("world\n", file = con)
++ })
+Warning: Detected a non-exportable reference (‘externalptr’) in one of the globals (‘con’ of class ‘file’) used in the future expression
+> res <- tryCatch({
++   v <- value(f)
++ }, error = identity)
+Max connection index on worker: 5
+> print(res)
+<simpleError in cat("world\n", file = con): invalid connection>
+> stopifnot(inherits(res, "error"))
+> ## Nothing changed
+> bfr <- readLines(con = tmp_file)
+> print(bfr)
+[1] "hello"
+> stopifnot(bfr == "hello")
+> 
+> close(con)
+> file.remove(tmp_file)
+[1] TRUE
+> 
+> message("* R connections ... DONE")
+* R connections ... DONE
+> 
+> 
+> message("*** Non-exportable globals ... DONE")
+*** Non-exportable globals ... DONE
+> 
+> source("incl/end.R")
+> 

@@ -1,0 +1,687 @@
+
+R version 4.4.0 (2024-04-24) -- "Puppy Cup"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> source("incl/start.R")
+> 
+> message("*** availableWorkers() ...")
+*** availableWorkers() ...
+> 
+> ## The default
+> w <- availableWorkers()
+> print(w)
+[1] "localhost" "localhost"
+> stopifnot(is.character(w), length(w) >= 1)
+> 
+> ## Minimium of all known settings (default)
+> print(availableWorkers(which = "min"))
+[1] "localhost"
+> 
+> ## Maximum of all known settings (should never be used)
+> print(availableWorkers(which = "max"))
+[1] "localhost" "localhost" "localhost" "localhost"
+> 
+> ## All known settings
+> print(availableWorkers(na.rm = FALSE, which = "all"))
+$mc.cores
+[1] "localhost" "localhost"
+
+$BiocParallel
+character(0)
+
+$`_R_CHECK_LIMIT_CORES_`
+character(0)
+
+$Bioconductor
+character(0)
+
+$LSF
+character(0)
+
+$PJM
+character(0)
+
+$PBS
+character(0)
+
+$SGE
+character(0)
+
+$Slurm
+character(0)
+
+$custom
+character(0)
+
+$cgroups.cpuset
+character(0)
+
+$cgroups.cpuquota
+character(0)
+
+$cgroups2.cpu.max
+character(0)
+
+$nproc
+[1] "localhost" "localhost" "localhost" "localhost"
+
+$system
+[1] "localhost" "localhost" "localhost" "localhost"
+
+$fallback
+character(0)
+
+> 
+> ## System settings
+> w <- availableWorkers(methods = "system")
+> print(w)
+[1] "localhost" "localhost" "localhost" "localhost"
+> stopifnot(is.character(w), length(w) >= 1)
+> 
+> ## Predefined ones for known cluster schedulers
+> print(availableWorkers(methods = "PBS"))
+[1] "localhost"
+> print(availableWorkers(methods = "SGE"))
+[1] "localhost"
+> print(availableWorkers(methods = "Slurm"))
+[1] "localhost"
+> print(availableWorkers(methods = "LSF"))
+[1] "localhost"
+> print(availableWorkers(methods = "PJM"))
+[1] "localhost"
+> 
+> 
+> message("*** HPC related ...")
+*** HPC related ...
+> 
+> sge_expand_node_count_pairs <- parallelly:::sge_expand_node_count_pairs
+> read_pbs_nodefile <- parallelly:::read_pbs_nodefile
+> read_pjm_nodefile <- parallelly:::read_pjm_nodefile
+> read_pe_hostfile <- parallelly:::read_pe_hostfile
+> 
+> workers0 <- c("n1", "n2", "n3", "n1", "n6", "n3", "n3", "n5")
+> data0 <- as.data.frame(table(workers0), stringsAsFactors = FALSE)
+> colnames(data0) <- c("node", "count")
+> data0 <- data0[order(data0$node, data0$count), ]
+> 
+> 
+> message("*** LSF ...")
+*** LSF ...
+> 
+> Sys.setenv(LSB_HOSTS = paste(workers0, collapse = " "))
+> workers <- availableWorkers(methods = "LSF")
+> print(workers)
+[1] "n1" "n2" "n3" "n1" "n6" "n3" "n3" "n5"
+> stopifnot(length(workers) == length(workers0))
+> 
+> message("*** LSF ... done")
+*** LSF ... done
+> 
+> 
+> 
+> message("*** read_pbs_nodefile() ...")
+*** read_pbs_nodefile() ...
+> 
+> workers <- workers0
+> pathname <- tempfile()
+> writeLines(workers, con = pathname)
+> 
+> data <- read_pbs_nodefile(pathname)
+> str(data)
+'data.frame':	8 obs. of  1 variable:
+ $ node: chr  "n1" "n1" "n2" "n3" ...
+> stopifnot(
++   c("node") %in% colnames(data),
++   is.character(data$node),
++   !anyNA(data$node),
++   nrow(data$node) == length(workers),
++   all(sort(data$node) == sort(workers))
++ )
+> 
+> Sys.setenv(PBS_NODEFILE = pathname)
+> Sys.setenv(PBS_NP = length(workers),
++            PBS_NUM_NODES = length(workers) / 2,
++            PBS_NUM_PPN = 2)
+> workers <- availableWorkers(methods = "PBS")
+> print(workers)
+[1] "n1" "n1" "n2" "n3" "n3" "n3" "n5" "n6"
+> stopifnot(length(workers) == length(workers0), all(workers == sort(workers0)))
+> 
+> Sys.setenv(PBS_NUM_PPN = 3)
+> res <- tryCatch({
++   workers <- availableWorkers(methods = "PBS")
++ }, warning = identity)
+> stopifnot(inherits(res, "warning"))
+> 
+> Sys.setenv(PBS_NP = length(workers) + 1)
+> res <- tryCatch({
++   workers <- availableWorkers(methods = "PBS")
++ }, warning = identity)
+> stopifnot(inherits(res, "warning"))
+> 
+> ## Exceptions
+> workersE <- c(workers, "n 3")
+> pathname <- tempfile()
+> writeLines(workersE, con = pathname)
+> res <- tryCatch(read_pbs_nodefile(pathname), error = identity)
+> print(res)
+<simpleError: ‘!any(grepl("[[:space:]]", lines))’ is not TRUE>
+> stopifnot(inherits(res, "error"))
+> 
+> Sys.setenv(PBS_NODEFILE = "<non-existing-file>")
+> res <- tryCatch({
++   workers <- availableWorkers(methods = "PBS")
++ }, warning = identity)
+> stopifnot(inherits(res, "warning"))
+> 
+> message("*** read_pbs_nodefile() ... DONE")
+*** read_pbs_nodefile() ... DONE
+> 
+> 
+> 
+> 
+> message("*** read_pjm_nodefile() ...")
+*** read_pjm_nodefile() ...
+> 
+> workersT <- unique(workers0)
+> pathname <- tempfile()
+> writeLines(workersT, con = pathname)
+> 
+> data <- read_pjm_nodefile(pathname)
+> str(data)
+'data.frame':	5 obs. of  1 variable:
+ $ node: chr  "n1" "n2" "n3" "n5" ...
+> stopifnot(
++   c("node") %in% colnames(data),
++   is.character(data$node),
++   !anyNA(data$node),
++   nrow(data$node) == length(workersT),
++   all(sort(data$node) == sort(workersT)),
++   identical(data$node, unique(data$node))
++ )
+> 
+> Sys.setenv(PJM_O_NODEINF = pathname)
+> 
+> message("- PJM_VNODE_CORE=1")
+- PJM_VNODE_CORE=1
+> Sys.setenv(PJM_VNODE_CORE = "1")
+> workers <- availableWorkers(methods = "PJM")
+> print(workers)
+[1] "n1" "n2" "n3" "n6" "n5"
+> stopifnot(
++   length(workers) == length(workersT),
++   all(sort(workers) == sort(workersT))
++ )
+> 
+> message("- PJM_VNODE=", length(workersT))
+- PJM_VNODE=5
+> message("- PJM_VNODE_CORE=2")
+- PJM_VNODE_CORE=2
+> Sys.setenv(PJM_VNODE = length(workersT))
+> Sys.setenv(PJM_VNODE_CORE = "2")
+> workers <- availableWorkers(methods = "PJM")
+> print(workers)
+ [1] "n1" "n1" "n2" "n2" "n3" "n3" "n6" "n6" "n5" "n5"
+> stopifnot(
++   length(workers) == 2L * length(workersT),
++   all(workers %in% workersT),
++   all(workersT %in% workers)
++ )
+> 
+> 
+> message("- PJM_VNODE=1 (incompatible => warning)")
+- PJM_VNODE=1 (incompatible => warning)
+> message("- PJM_VNODE_CORE=2")
+- PJM_VNODE_CORE=2
+> Sys.setenv(PJM_VNODE = "1")
+> Sys.setenv(PJM_VNODE_CORE = "2")
+> workers <- availableWorkers(methods = "PJM")
+Warning: Environment variable ‘PJM_VNODE’ does not agree with the number of hosts in file ‘PJM_O_NODEINF’: 1 != 5
+> print(workers)
+ [1] "n1" "n1" "n2" "n2" "n3" "n3" "n6" "n6" "n5" "n5"
+> stopifnot(
++   length(workers) == 2L * length(workersT),
++   all(workers %in% workersT),
++   all(workersT %in% workers)
++ )
+> 
+> 
+> message("- PJM_O_NODEINF = <non-existing-file>")
+- PJM_O_NODEINF = <non-existing-file>
+> Sys.setenv(PJM_O_NODEINF = "<non-existing-file>")
+> res <- tryCatch({
++   workers <- availableWorkers(methods = "PJM")
++ }, warning = identity)
+> stopifnot(inherits(res, "warning"))
+> 
+> message("*** read_pjm_nodefile() ... DONE")
+*** read_pjm_nodefile() ... DONE
+> 
+> 
+> 
+> message("*** read_pe_hostfile() ...")
+*** read_pe_hostfile() ...
+> 
+> workers <- workers0
+> pathname <- tempfile()
+> write.table(data0, file = pathname, quote = FALSE, row.names = FALSE, col.names = FALSE)
+> lines <- readLines(pathname)
+> print(lines)
+[1] "n1 2" "n2 1" "n3 3" "n5 1" "n6 1"
+> data <- read_pe_hostfile(pathname, expand = FALSE)
+> print(data)
+  node count
+1   n1     2
+2   n2     1
+3   n3     3
+4   n5     1
+5   n6     1
+> stopifnot(
++   is.character(data$node),
++   !anyNA(data$node),
++   is.integer(data$count),
++   !anyNA(data$count),
++   all(is.finite(data$count)),
++   all(data$count > 0),
++   nrow(data) == nrow(data0),
++   all.equal(data[, c("node", "count")], data0[, c("node", "count")])
++ )
+> 
+> workers <- sge_expand_node_count_pairs(data)
+> stopifnot(length(workers) == length(workers0), all(workers == sort(workers0)))
+> 
+> Sys.setenv(PE_HOSTFILE = pathname)
+> Sys.setenv(NSLOTS = length(workers0))  ## Use to validate results
+> workers <- availableWorkers(methods = "SGE")
+Warning: Identified 8 workers from the ‘PE_HOSTFILE’ file (‘/tmp/RtmpNo3NWf/filefa9612c2968b’), which is more than environment variable ‘NSLOTS’ = 8
+> print(workers)
+[1] "n1" "n1" "n2" "n3" "n3" "n3" "n5" "n6"
+> stopifnot(length(workers) == length(workers0), all(workers == sort(workers0)))
+> 
+> ## Test validation
+> Sys.setenv(NSLOTS = length(workers0) + 1L)
+> workers <- tryCatch(availableWorkers(methods = "SGE"), warning = identity)
+> print(workers)
+<simpleWarning: Identified 8 workers from the ‘PE_HOSTFILE’ file (‘/tmp/RtmpNo3NWf/filefa9612c2968b’), which is more than environment variable ‘NSLOTS’ = 9>
+> stopifnot(inherits(workers, "warning"))
+> 
+> Sys.setenv(PE_HOSTFILE = "<non-existing-file>")
+> res <- tryCatch({
++   workers <- availableWorkers(methods = "SGE")
++ }, warning = identity)
+> stopifnot(inherits(res, "warning"))
+> 
+> message("*** read_pe_hostfile() ... DONE")
+*** read_pe_hostfile() ... DONE
+> 
+> 
+> message("*** Slurm w/ SLURM_JOB_NODELIST ...")
+*** Slurm w/ SLURM_JOB_NODELIST ...
+> 
+> slurm_expand_nodelist <- parallelly:::slurm_expand_nodelist
+> 
+> specs <- list(
++   "n1" = c("n1"),
++   "  n1" = c("n1"),
++   "n1,,  n3" = c("n1", "n3"),
++   "n1,  n3" = c("n1", "n3"),
++   "n3  n1" = c("n3", "n1"),
++   "n[1-13]" = sprintf("n%d", c(1:13)),
++   ## scontrol show hostname treats "n[1,3-4,  11-13]" == "n[1,3-4,0011-13]"
++   "n[1,3-4,  11-13]" = c("n1", "n3", "n4", "n0011", "n0012", "n0013"),
++   "a1,b[   02-04,6-7]" = c("a1", "b00002", "b00003", "b00004", "b6", "b7")
++ )
+> 
+> ## All combined
+> all <- list(unlist(specs, use.names = FALSE))
+> names(all) <- paste(names(specs), collapse = ",")
+> specs <- c(specs, all)
+> 
+> ## Again, all combined but in reverse order 
+> all <- list(unlist(rev(specs), use.names = FALSE))
+> names(all) <- paste(rev(names(specs)), collapse = ",")
+> specs <- c(specs, all)
+> 
+> for (kk in seq_along(specs)) {
++   message(sprintf("- Specification #%d of %d", kk, length(specs)))
++   nodelist <- names(specs)[kk]
++   truth <- specs[[kk]]
++   cat(sprintf("nodelist: %s\n", sQuote(nodelist)))
++   expanded <- slurm_expand_nodelist(nodelist, manual = TRUE)
++   cat(sprintf("expanded: c(%s)\n", paste(sQuote(expanded), collapse = ", ")))
++   cat(sprintf("truth: c(%s)\n", paste(sQuote(truth), collapse = ", ")))
++   stopifnot(
++     is.character(expanded),
++     !any(is.na(expanded)),
++     length(expanded) == length(truth),
++     identical(expanded, truth)
++   )
++ 
++   Sys.unsetenv(c("SLURM_JOB_NODELIST", "SLURM_NODELIST",
++                  "SLURM_JOB_CPUS_PER_NODE", "SLURM_TASKS_PER_NODE"))
++ 
++   ## Test without SLURM_JOB_CPUS_PER_NODE/SLURM_TASKS_PER_NODE
++   Sys.setenv(SLURM_JOB_NODELIST = nodelist)
++   for (name in c("SLURM_JOB_NODELIST", "SLURM_JOB_CPUS_PER_NODE")) {
++     cat(sprintf("%s = %s\n", name, sQuote(Sys.getenv(name))))
++   }
++   workers <- availableWorkers(methods = "Slurm")
++   cat(sprintf("workers: c(%s)\n", paste(sQuote(workers), collapse = ", ")))
++   stopifnot(identical(workers, truth))
++ 
++ 
++   ## Test with SLURM_JOB_CPUS_PER_NODE/SLURM_TASKS_PER_NODE
++   nhosts <- length(expanded)
++   ncores_per_host <- sample(1:10, size = nhosts, replace = TRUE)
++ 
++   ## Handle the case when 'nodelist' result in a non-ordered 'expanded'
++   expanded2 <- as.list(expanded)
++   for (kk in seq_along(expanded2)) {
++     expanded2[[kk]] <- rep(expanded2[[kk]], times = ncores_per_host[kk])
++   }
++   expanded2 <- unlist(expanded2, use.names = FALSE)
++ 
++   Sys.setenv(SLURM_JOB_NODELIST = nodelist)
++   Sys.setenv(SLURM_JOB_CPUS_PER_NODE = paste(ncores_per_host, collapse = ","))
++ 
++   for (name in c("SLURM_JOB_NODELIST", "SLURM_JOB_CPUS_PER_NODE")) {
++     cat(sprintf("%s = %s\n", name, sQuote(Sys.getenv(name))))
++   }
++   workers <- availableWorkers(methods = "Slurm")
++   cat(sprintf("workers: c(%s)\n", paste(sQuote(workers), collapse = ", ")))
++   stopifnot(identical(unique(workers), unique(truth)))
++   counts <- table(workers)
++   counts <- counts[unique(workers)]
++   print(counts)
++   counts2 <- table(expanded2)
++   counts2 <- counts2[unique(expanded2)]
++   print(counts2)
++   stopifnot(
++     sum(counts) == sum(ncores_per_host),
++     sum(counts) == sum(counts2),
++     all(counts == counts2)
++   )
++   
++   Sys.unsetenv(c("SLURM_JOB_NODELIST", "SLURM_JOB_CPUS_PER_NODE"))
++ }
+- Specification #1 of 10
+nodelist: ‘n1’
+expanded: c(‘n1’)
+truth: c(‘n1’)
+SLURM_JOB_NODELIST = ‘n1’
+SLURM_JOB_CPUS_PER_NODE = ‘’
+Warning in availableWorkers(methods = "Slurm") :
+  Expected either environment variable 'SLURM_JOB_CPUS_PER_NODE' or 'SLURM_TASKS_PER_NODE' to be set. Will assume one core per node.
+workers: c(‘n1’)
+SLURM_JOB_NODELIST = ‘n1’
+SLURM_JOB_CPUS_PER_NODE = ‘2’
+workers: c(‘n1’, ‘n1’)
+n1 
+ 2 
+n1 
+ 2 
+- Specification #2 of 10
+nodelist: ‘  n1’
+expanded: c(‘n1’)
+truth: c(‘n1’)
+SLURM_JOB_NODELIST = ‘  n1’
+SLURM_JOB_CPUS_PER_NODE = ‘’
+Warning in availableWorkers(methods = "Slurm") :
+  Expected either environment variable 'SLURM_JOB_CPUS_PER_NODE' or 'SLURM_TASKS_PER_NODE' to be set. Will assume one core per node.
+workers: c(‘n1’)
+SLURM_JOB_NODELIST = ‘  n1’
+SLURM_JOB_CPUS_PER_NODE = ‘1’
+workers: c(‘n1’)
+n1 
+ 1 
+n1 
+ 1 
+- Specification #3 of 10
+nodelist: ‘n1,,  n3’
+expanded: c(‘n1’, ‘n3’)
+truth: c(‘n1’, ‘n3’)
+SLURM_JOB_NODELIST = ‘n1,,  n3’
+SLURM_JOB_CPUS_PER_NODE = ‘’
+Warning in availableWorkers(methods = "Slurm") :
+  Expected either environment variable 'SLURM_JOB_CPUS_PER_NODE' or 'SLURM_TASKS_PER_NODE' to be set. Will assume one core per node.
+workers: c(‘n1’, ‘n3’)
+SLURM_JOB_NODELIST = ‘n1,,  n3’
+SLURM_JOB_CPUS_PER_NODE = ‘10,3’
+workers: c(‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n3’, ‘n3’, ‘n3’)
+workers
+n1 n3 
+10  3 
+expanded2
+n1 n3 
+10  3 
+- Specification #4 of 10
+nodelist: ‘n1,  n3’
+expanded: c(‘n1’, ‘n3’)
+truth: c(‘n1’, ‘n3’)
+SLURM_JOB_NODELIST = ‘n1,  n3’
+SLURM_JOB_CPUS_PER_NODE = ‘’
+Warning in availableWorkers(methods = "Slurm") :
+  Expected either environment variable 'SLURM_JOB_CPUS_PER_NODE' or 'SLURM_TASKS_PER_NODE' to be set. Will assume one core per node.
+workers: c(‘n1’, ‘n3’)
+SLURM_JOB_NODELIST = ‘n1,  n3’
+SLURM_JOB_CPUS_PER_NODE = ‘4,7’
+workers: c(‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’)
+workers
+n1 n3 
+ 4  7 
+expanded2
+n1 n3 
+ 4  7 
+- Specification #5 of 10
+nodelist: ‘n3  n1’
+expanded: c(‘n3’, ‘n1’)
+truth: c(‘n3’, ‘n1’)
+SLURM_JOB_NODELIST = ‘n3  n1’
+SLURM_JOB_CPUS_PER_NODE = ‘’
+Warning in availableWorkers(methods = "Slurm") :
+  Expected either environment variable 'SLURM_JOB_CPUS_PER_NODE' or 'SLURM_TASKS_PER_NODE' to be set. Will assume one core per node.
+workers: c(‘n3’, ‘n1’)
+SLURM_JOB_NODELIST = ‘n3  n1’
+SLURM_JOB_CPUS_PER_NODE = ‘4,1’
+workers: c(‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n1’)
+workers
+n3 n1 
+ 4  1 
+expanded2
+n3 n1 
+ 4  1 
+- Specification #6 of 10
+nodelist: ‘n[1-13]’
+expanded: c(‘n1’, ‘n2’, ‘n3’, ‘n4’, ‘n5’, ‘n6’, ‘n7’, ‘n8’, ‘n9’, ‘n10’, ‘n11’, ‘n12’, ‘n13’)
+truth: c(‘n1’, ‘n2’, ‘n3’, ‘n4’, ‘n5’, ‘n6’, ‘n7’, ‘n8’, ‘n9’, ‘n10’, ‘n11’, ‘n12’, ‘n13’)
+SLURM_JOB_NODELIST = ‘n[1-13]’
+SLURM_JOB_CPUS_PER_NODE = ‘’
+Warning in availableWorkers(methods = "Slurm") :
+  Expected either environment variable 'SLURM_JOB_CPUS_PER_NODE' or 'SLURM_TASKS_PER_NODE' to be set. Will assume one core per node.
+workers: c(‘n1’, ‘n2’, ‘n3’, ‘n4’, ‘n5’, ‘n6’, ‘n7’, ‘n8’, ‘n9’, ‘n10’, ‘n11’, ‘n12’, ‘n13’)
+SLURM_JOB_NODELIST = ‘n[1-13]’
+SLURM_JOB_CPUS_PER_NODE = ‘5,7,1,1,8,2,1,1,3,1,8,4,8’
+workers: c(‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n2’, ‘n2’, ‘n2’, ‘n2’, ‘n2’, ‘n2’, ‘n2’, ‘n3’, ‘n4’, ‘n5’, ‘n5’, ‘n5’, ‘n5’, ‘n5’, ‘n5’, ‘n5’, ‘n5’, ‘n6’, ‘n6’, ‘n7’, ‘n8’, ‘n9’, ‘n9’, ‘n9’, ‘n10’, ‘n11’, ‘n11’, ‘n11’, ‘n11’, ‘n11’, ‘n11’, ‘n11’, ‘n11’, ‘n12’, ‘n12’, ‘n12’, ‘n12’, ‘n13’, ‘n13’, ‘n13’, ‘n13’, ‘n13’, ‘n13’, ‘n13’, ‘n13’)
+workers
+ n1  n2  n3  n4  n5  n6  n7  n8  n9 n10 n11 n12 n13 
+  5   7   1   1   8   2   1   1   3   1   8   4   8 
+expanded2
+ n1  n2  n3  n4  n5  n6  n7  n8  n9 n10 n11 n12 n13 
+  5   7   1   1   8   2   1   1   3   1   8   4   8 
+- Specification #7 of 10
+nodelist: ‘n[1,3-4,  11-13]’
+expanded: c(‘n1’, ‘n3’, ‘n4’, ‘n0011’, ‘n0012’, ‘n0013’)
+truth: c(‘n1’, ‘n3’, ‘n4’, ‘n0011’, ‘n0012’, ‘n0013’)
+SLURM_JOB_NODELIST = ‘n[1,3-4,  11-13]’
+SLURM_JOB_CPUS_PER_NODE = ‘’
+Warning in availableWorkers(methods = "Slurm") :
+  Expected either environment variable 'SLURM_JOB_CPUS_PER_NODE' or 'SLURM_TASKS_PER_NODE' to be set. Will assume one core per node.
+workers: c(‘n1’, ‘n3’, ‘n4’, ‘n0011’, ‘n0012’, ‘n0013’)
+SLURM_JOB_NODELIST = ‘n[1,3-4,  11-13]’
+SLURM_JOB_CPUS_PER_NODE = ‘10,1,5,1,4,2’
+workers: c(‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n3’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n0011’, ‘n0012’, ‘n0012’, ‘n0012’, ‘n0012’, ‘n0013’, ‘n0013’)
+workers
+   n1    n3    n4 n0011 n0012 n0013 
+   10     1     5     1     4     2 
+expanded2
+   n1    n3    n4 n0011 n0012 n0013 
+   10     1     5     1     4     2 
+- Specification #8 of 10
+nodelist: ‘a1,b[   02-04,6-7]’
+expanded: c(‘a1’, ‘b00002’, ‘b00003’, ‘b00004’, ‘b6’, ‘b7’)
+truth: c(‘a1’, ‘b00002’, ‘b00003’, ‘b00004’, ‘b6’, ‘b7’)
+SLURM_JOB_NODELIST = ‘a1,b[   02-04,6-7]’
+SLURM_JOB_CPUS_PER_NODE = ‘’
+Warning in availableWorkers(methods = "Slurm") :
+  Expected either environment variable 'SLURM_JOB_CPUS_PER_NODE' or 'SLURM_TASKS_PER_NODE' to be set. Will assume one core per node.
+workers: c(‘a1’, ‘b00002’, ‘b00003’, ‘b00004’, ‘b6’, ‘b7’)
+SLURM_JOB_NODELIST = ‘a1,b[   02-04,6-7]’
+SLURM_JOB_CPUS_PER_NODE = ‘7,1,5,4,4,10’
+workers: c(‘a1’, ‘a1’, ‘a1’, ‘a1’, ‘a1’, ‘a1’, ‘a1’, ‘b00002’, ‘b00003’, ‘b00003’, ‘b00003’, ‘b00003’, ‘b00003’, ‘b00004’, ‘b00004’, ‘b00004’, ‘b00004’, ‘b6’, ‘b6’, ‘b6’, ‘b6’, ‘b7’, ‘b7’, ‘b7’, ‘b7’, ‘b7’, ‘b7’, ‘b7’, ‘b7’, ‘b7’, ‘b7’)
+workers
+    a1 b00002 b00003 b00004     b6     b7 
+     7      1      5      4      4     10 
+expanded2
+    a1 b00002 b00003 b00004     b6     b7 
+     7      1      5      4      4     10 
+- Specification #9 of 10
+nodelist: ‘n1,  n1,n1,,  n3,n1,  n3,n3  n1,n[1-13],n[1,3-4,  11-13],a1,b[   02-04,6-7]’
+expanded: c(‘n1’, ‘n1’, ‘n1’, ‘n3’, ‘n1’, ‘n3’, ‘n3’, ‘n1’, ‘n1’, ‘n2’, ‘n3’, ‘n4’, ‘n5’, ‘n6’, ‘n7’, ‘n8’, ‘n9’, ‘n10’, ‘n11’, ‘n12’, ‘n13’, ‘n1’, ‘n3’, ‘n4’, ‘n0011’, ‘n0012’, ‘n0013’, ‘a1’, ‘b00002’, ‘b00003’, ‘b00004’, ‘b6’, ‘b7’)
+truth: c(‘n1’, ‘n1’, ‘n1’, ‘n3’, ‘n1’, ‘n3’, ‘n3’, ‘n1’, ‘n1’, ‘n2’, ‘n3’, ‘n4’, ‘n5’, ‘n6’, ‘n7’, ‘n8’, ‘n9’, ‘n10’, ‘n11’, ‘n12’, ‘n13’, ‘n1’, ‘n3’, ‘n4’, ‘n0011’, ‘n0012’, ‘n0013’, ‘a1’, ‘b00002’, ‘b00003’, ‘b00004’, ‘b6’, ‘b7’)
+SLURM_JOB_NODELIST = ‘n1,  n1,n1,,  n3,n1,  n3,n3  n1,n[1-13],n[1,3-4,  11-13],a1,b[   02-04,6-7]’
+SLURM_JOB_CPUS_PER_NODE = ‘’
+Warning in availableWorkers(methods = "Slurm") :
+  Expected either environment variable 'SLURM_JOB_CPUS_PER_NODE' or 'SLURM_TASKS_PER_NODE' to be set. Will assume one core per node.
+workers: c(‘n1’, ‘n1’, ‘n1’, ‘n3’, ‘n1’, ‘n3’, ‘n3’, ‘n1’, ‘n1’, ‘n2’, ‘n3’, ‘n4’, ‘n5’, ‘n6’, ‘n7’, ‘n8’, ‘n9’, ‘n10’, ‘n11’, ‘n12’, ‘n13’, ‘n1’, ‘n3’, ‘n4’, ‘n0011’, ‘n0012’, ‘n0013’, ‘a1’, ‘b00002’, ‘b00003’, ‘b00004’, ‘b6’, ‘b7’)
+SLURM_JOB_NODELIST = ‘n1,  n1,n1,,  n3,n1,  n3,n3  n1,n[1-13],n[1,3-4,  11-13],a1,b[   02-04,6-7]’
+SLURM_JOB_CPUS_PER_NODE = ‘1,9,10,5,10,8,7,10,9,9,1,4,7,7,5,5,6,8,10,8,5,3,8,10,1,7,8,6,7,5,5,4,4’
+workers: c(‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n2’, ‘n2’, ‘n2’, ‘n2’, ‘n2’, ‘n2’, ‘n2’, ‘n2’, ‘n2’, ‘n3’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n5’, ‘n5’, ‘n5’, ‘n5’, ‘n5’, ‘n5’, ‘n5’, ‘n6’, ‘n6’, ‘n6’, ‘n6’, ‘n6’, ‘n6’, ‘n6’, ‘n7’, ‘n7’, ‘n7’, ‘n7’, ‘n7’, ‘n8’, ‘n8’, ‘n8’, ‘n8’, ‘n8’, ‘n9’, ‘n9’, ‘n9’, ‘n9’, ‘n9’, ‘n9’, ‘n10’, ‘n10’, ‘n10’, ‘n10’, ‘n10’, ‘n10’, ‘n10’, ‘n10’, ‘n11’, ‘n11’, ‘n11’, ‘n11’, ‘n11’, ‘n11’, ‘n11’, ‘n11’, ‘n11’, ‘n11’, ‘n12’, ‘n12’, ‘n12’, ‘n12’, ‘n12’, ‘n12’, ‘n12’, ‘n12’, ‘n13’, ‘n13’, ‘n13’, ‘n13’, ‘n13’, ‘n1’, ‘n1’, ‘n1’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n0011’, ‘n0012’, ‘n0012’, ‘n0012’, ‘n0012’, ‘n0012’, ‘n0012’, ‘n0012’, ‘n0013’, ‘n0013’, ‘n0013’, ‘n0013’, ‘n0013’, ‘n0013’, ‘n0013’, ‘n0013’, ‘a1’, ‘a1’, ‘a1’, ‘a1’, ‘a1’, ‘a1’, ‘b00002’, ‘b00002’, ‘b00002’, ‘b00002’, ‘b00002’, ‘b00002’, ‘b00002’, ‘b00003’, ‘b00003’, ‘b00003’, ‘b00003’, ‘b00003’, ‘b00004’, ‘b00004’, ‘b00004’, ‘b00004’, ‘b00004’, ‘b6’, ‘b6’, ‘b6’, ‘b6’, ‘b7’, ‘b7’, ‘b7’, ‘b7’)
+workers
+    n1     n3     n2     n4     n5     n6     n7     n8     n9    n10    n11 
+    52     29      9     14      7      7      5      5      6      8     10 
+   n12    n13  n0011  n0012  n0013     a1 b00002 b00003 b00004     b6     b7 
+     8      5      1      7      8      6      7      5      5      4      4 
+expanded2
+    n1     n3     n2     n4     n5     n6     n7     n8     n9    n10    n11 
+    52     29      9     14      7      7      5      5      6      8     10 
+   n12    n13  n0011  n0012  n0013     a1 b00002 b00003 b00004     b6     b7 
+     8      5      1      7      8      6      7      5      5      4      4 
+- Specification #10 of 10
+nodelist: ‘n1,  n1,n1,,  n3,n1,  n3,n3  n1,n[1-13],n[1,3-4,  11-13],a1,b[   02-04,6-7],a1,b[   02-04,6-7],n[1,3-4,  11-13],n[1-13],n3  n1,n1,  n3,n1,,  n3,  n1,n1’
+expanded: c(‘n1’, ‘n1’, ‘n1’, ‘n3’, ‘n1’, ‘n3’, ‘n3’, ‘n1’, ‘n1’, ‘n2’, ‘n3’, ‘n4’, ‘n5’, ‘n6’, ‘n7’, ‘n8’, ‘n9’, ‘n10’, ‘n11’, ‘n12’, ‘n13’, ‘n1’, ‘n3’, ‘n4’, ‘n0011’, ‘n0012’, ‘n0013’, ‘a1’, ‘b00002’, ‘b00003’, ‘b00004’, ‘b6’, ‘b7’, ‘a1’, ‘b00002’, ‘b00003’, ‘b00004’, ‘b6’, ‘b7’, ‘n1’, ‘n3’, ‘n4’, ‘n0011’, ‘n0012’, ‘n0013’, ‘n1’, ‘n2’, ‘n3’, ‘n4’, ‘n5’, ‘n6’, ‘n7’, ‘n8’, ‘n9’, ‘n10’, ‘n11’, ‘n12’, ‘n13’, ‘n3’, ‘n1’, ‘n1’, ‘n3’, ‘n1’, ‘n3’, ‘n1’, ‘n1’)
+truth: c(‘n1’, ‘n1’, ‘n1’, ‘n3’, ‘n1’, ‘n3’, ‘n3’, ‘n1’, ‘n1’, ‘n2’, ‘n3’, ‘n4’, ‘n5’, ‘n6’, ‘n7’, ‘n8’, ‘n9’, ‘n10’, ‘n11’, ‘n12’, ‘n13’, ‘n1’, ‘n3’, ‘n4’, ‘n0011’, ‘n0012’, ‘n0013’, ‘a1’, ‘b00002’, ‘b00003’, ‘b00004’, ‘b6’, ‘b7’, ‘a1’, ‘b00002’, ‘b00003’, ‘b00004’, ‘b6’, ‘b7’, ‘n1’, ‘n3’, ‘n4’, ‘n0011’, ‘n0012’, ‘n0013’, ‘n1’, ‘n2’, ‘n3’, ‘n4’, ‘n5’, ‘n6’, ‘n7’, ‘n8’, ‘n9’, ‘n10’, ‘n11’, ‘n12’, ‘n13’, ‘n3’, ‘n1’, ‘n1’, ‘n3’, ‘n1’, ‘n3’, ‘n1’, ‘n1’)
+SLURM_JOB_NODELIST = ‘n1,  n1,n1,,  n3,n1,  n3,n3  n1,n[1-13],n[1,3-4,  11-13],a1,b[   02-04,6-7],a1,b[   02-04,6-7],n[1,3-4,  11-13],n[1-13],n3  n1,n1,  n3,n1,,  n3,  n1,n1’
+SLURM_JOB_CPUS_PER_NODE = ‘’
+Warning in availableWorkers(methods = "Slurm") :
+  Expected either environment variable 'SLURM_JOB_CPUS_PER_NODE' or 'SLURM_TASKS_PER_NODE' to be set. Will assume one core per node.
+workers: c(‘n1’, ‘n1’, ‘n1’, ‘n3’, ‘n1’, ‘n3’, ‘n3’, ‘n1’, ‘n1’, ‘n2’, ‘n3’, ‘n4’, ‘n5’, ‘n6’, ‘n7’, ‘n8’, ‘n9’, ‘n10’, ‘n11’, ‘n12’, ‘n13’, ‘n1’, ‘n3’, ‘n4’, ‘n0011’, ‘n0012’, ‘n0013’, ‘a1’, ‘b00002’, ‘b00003’, ‘b00004’, ‘b6’, ‘b7’, ‘a1’, ‘b00002’, ‘b00003’, ‘b00004’, ‘b6’, ‘b7’, ‘n1’, ‘n3’, ‘n4’, ‘n0011’, ‘n0012’, ‘n0013’, ‘n1’, ‘n2’, ‘n3’, ‘n4’, ‘n5’, ‘n6’, ‘n7’, ‘n8’, ‘n9’, ‘n10’, ‘n11’, ‘n12’, ‘n13’, ‘n3’, ‘n1’, ‘n1’, ‘n3’, ‘n1’, ‘n3’, ‘n1’, ‘n1’)
+SLURM_JOB_NODELIST = ‘n1,  n1,n1,,  n3,n1,  n3,n3  n1,n[1-13],n[1,3-4,  11-13],a1,b[   02-04,6-7],a1,b[   02-04,6-7],n[1,3-4,  11-13],n[1-13],n3  n1,n1,  n3,n1,,  n3,  n1,n1’
+SLURM_JOB_CPUS_PER_NODE = ‘1,7,1,10,1,10,4,10,9,10,5,9,7,3,10,6,10,5,2,8,4,9,2,5,2,10,1,3,4,6,4,6,10,10,7,3,9,2,4,7,4,9,5,4,1,8,9,7,9,5,10,8,5,5,10,7,7,10,10,10,2,1,6,1,7,4’
+workers: c(‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n1’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n2’, ‘n2’, ‘n2’, ‘n2’, ‘n2’, ‘n2’, ‘n2’, ‘n2’, ‘n2’, ‘n2’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n5’, ‘n5’, ‘n5’, ‘n5’, ‘n5’, ‘n5’, ‘n5’, ‘n6’, ‘n6’, ‘n6’, ‘n7’, ‘n7’, ‘n7’, ‘n7’, ‘n7’, ‘n7’, ‘n7’, ‘n7’, ‘n7’, ‘n7’, ‘n8’, ‘n8’, ‘n8’, ‘n8’, ‘n8’, ‘n8’, ‘n9’, ‘n9’, ‘n9’, ‘n9’, ‘n9’, ‘n9’, ‘n9’, ‘n9’, ‘n9’, ‘n9’, ‘n10’, ‘n10’, ‘n10’, ‘n10’, ‘n10’, ‘n11’, ‘n11’, ‘n12’, ‘n12’, ‘n12’, ‘n12’, ‘n12’, ‘n12’, ‘n12’, ‘n12’, ‘n13’, ‘n13’, ‘n13’, ‘n13’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n3’, ‘n3’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n0011’, ‘n0011’, ‘n0012’, ‘n0012’, ‘n0012’, ‘n0012’, ‘n0012’, ‘n0012’, ‘n0012’, ‘n0012’, ‘n0012’, ‘n0012’, ‘n0013’, ‘a1’, ‘a1’, ‘a1’, ‘b00002’, ‘b00002’, ‘b00002’, ‘b00002’, ‘b00003’, ‘b00003’, ‘b00003’, ‘b00003’, ‘b00003’, ‘b00003’, ‘b00004’, ‘b00004’, ‘b00004’, ‘b00004’, ‘b6’, ‘b6’, ‘b6’, ‘b6’, ‘b6’, ‘b6’, ‘b7’, ‘b7’, ‘b7’, ‘b7’, ‘b7’, ‘b7’, ‘b7’, ‘b7’, ‘b7’, ‘b7’, ‘a1’, ‘a1’, ‘a1’, ‘a1’, ‘a1’, ‘a1’, ‘a1’, ‘a1’, ‘a1’, ‘a1’, ‘b00002’, ‘b00002’, ‘b00002’, ‘b00002’, ‘b00002’, ‘b00002’, ‘b00002’, ‘b00003’, ‘b00003’, ‘b00003’, ‘b00004’, ‘b00004’, ‘b00004’, ‘b00004’, ‘b00004’, ‘b00004’, ‘b00004’, ‘b00004’, ‘b00004’, ‘b6’, ‘b6’, ‘b7’, ‘b7’, ‘b7’, ‘b7’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n0011’, ‘n0011’, ‘n0011’, ‘n0011’, ‘n0011’, ‘n0012’, ‘n0012’, ‘n0012’, ‘n0012’, ‘n0013’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n2’, ‘n2’, ‘n2’, ‘n2’, ‘n2’, ‘n2’, ‘n2’, ‘n2’, ‘n2’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n4’, ‘n5’, ‘n5’, ‘n5’, ‘n5’, ‘n5’, ‘n6’, ‘n6’, ‘n6’, ‘n6’, ‘n6’, ‘n6’, ‘n6’, ‘n6’, ‘n6’, ‘n6’, ‘n7’, ‘n7’, ‘n7’, ‘n7’, ‘n7’, ‘n7’, ‘n7’, ‘n7’, ‘n8’, ‘n8’, ‘n8’, ‘n8’, ‘n8’, ‘n9’, ‘n9’, ‘n9’, ‘n9’, ‘n9’, ‘n10’, ‘n10’, ‘n10’, ‘n10’, ‘n10’, ‘n10’, ‘n10’, ‘n10’, ‘n10’, ‘n10’, ‘n11’, ‘n11’, ‘n11’, ‘n11’, ‘n11’, ‘n11’, ‘n11’, ‘n12’, ‘n12’, ‘n12’, ‘n12’, ‘n12’, ‘n12’, ‘n12’, ‘n13’, ‘n13’, ‘n13’, ‘n13’, ‘n13’, ‘n13’, ‘n13’, ‘n13’, ‘n13’, ‘n13’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n3’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n3’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n3’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’, ‘n1’)
+workers
+    n1     n3     n2     n4     n5     n6     n7     n8     n9    n10    n11 
+    82     54     19     32     12     13     18     11     15     15      9 
+   n12    n13  n0011  n0012  n0013     a1 b00002 b00003 b00004     b6     b7 
+    15     14      7     14      2     13     11      9     13      8     14 
+expanded2
+    n1     n3     n2     n4     n5     n6     n7     n8     n9    n10    n11 
+    82     54     19     32     12     13     18     11     15     15      9 
+   n12    n13  n0011  n0012  n0013     a1 b00002 b00003 b00004     b6     b7 
+    15     14      7     14      2     13     11      9     13      8     14 
+> 
+> message("*** Slurm w/ SLURM_JOB_NODELIST ... DONE")
+*** Slurm w/ SLURM_JOB_NODELIST ... DONE
+> 
+> 
+> message("*** Slurm w/ SLURM_TASKS_PER_NODE ...")
+*** Slurm w/ SLURM_TASKS_PER_NODE ...
+> 
+> slurm_expand_nodecounts <- parallelly:::slurm_expand_nodecounts
+> 
+> specs <- list(
++   "1" = c(1L),
++   "1,3" = c(1L,3L),
++   "1, 3" = c(1L,3L),
++   "2(x3)" = rep(2L, times = 3L),
++   "2(x3),3,4(x1)" = c(rep(2L, times = 3L), 3L, 4L)
++ )
+> 
+> for (kk in seq_along(specs)) {
++   message(sprintf("- Specification #%d of %d", kk, length(specs)))
++   nodecounts <- names(specs)[kk]
++   truth <- specs[[kk]]
++   cat(sprintf("nodecounts: %s\n", sQuote(nodecounts)))
++   expanded <- slurm_expand_nodecounts(nodecounts)
++   cat(sprintf("expanded: c(%s)\n", paste(sQuote(expanded), collapse = ", ")))
++   cat(sprintf("truth: c(%s)\n", paste(sQuote(truth), collapse = ", ")))
++   stopifnot(
++     is.integer(expanded),
++     !any(is.na(expanded)),
++     length(expanded) == length(truth),
++     identical(expanded, truth)
++   )
++ }
+- Specification #1 of 5
+nodecounts: ‘1’
+expanded: c(‘1’)
+truth: c(‘1’)
+- Specification #2 of 5
+nodecounts: ‘1,3’
+expanded: c(‘1’, ‘3’)
+truth: c(‘1’, ‘3’)
+- Specification #3 of 5
+nodecounts: ‘1, 3’
+expanded: c(‘1’, ‘3’)
+truth: c(‘1’, ‘3’)
+- Specification #4 of 5
+nodecounts: ‘2(x3)’
+expanded: c(‘2’, ‘2’, ‘2’)
+truth: c(‘2’, ‘2’, ‘2’)
+- Specification #5 of 5
+nodecounts: ‘2(x3),3,4(x1)’
+expanded: c(‘2’, ‘2’, ‘2’, ‘3’, ‘4’)
+truth: c(‘2’, ‘2’, ‘2’, ‘3’, ‘4’)
+> 
+> message("*** Slurm w/ SLURM_TASKS_PER_NODE ... DONE")
+*** Slurm w/ SLURM_TASKS_PER_NODE ... DONE
+> 
+> 
+> 
+> message("*** HPC related ... DONE")
+*** HPC related ... DONE
+> 
+> 
+> ## Any R options and system environment variable
+> print(availableWorkers(methods = c("width", "FOO_BAR_ENV"),
++                      na.rm = FALSE, which = "all"))
+$width
+[1] "80"
+
+$FOO_BAR_ENV
+character(0)
+
+> 
+> ## Exception handling
+> Sys.setenv("FOO_BAR_ENV" = "0")
+> res <- tryCatch(availableWorkers(methods = "FOO_BAR_ENV"), error = identity)
+[17:27:07.772] Detected invalid (zero or less) core settings: ‘FOO_BAR_ENV’ = 0
+> stopifnot(inherits(res, "error"))
+> 
+> message("*** availableWorkers() ... DONE")
+*** availableWorkers() ... DONE
+> 
+> source("incl/end.R")
+> 
