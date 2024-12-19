@@ -4,10 +4,30 @@ on:
 permissions:
   contents: write
 jobs:
+  
+  generate_matrix:
+    runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4.1.4
+      - id: set-json
+        run: |
+          JSON=versions/versions.json
+          echo "json=${JSON}" >>"$GITHUB_OUTPUT"
+          echo ${JSON}
+      - id: set-matrix
+        run: |
+          CONTENT=$(jq -r 'tostring' ${{ steps.set-json.outputs.json }})
+          echo "matrix=${CONTENT}" >>"$GITHUB_OUTPUT"
+          echo "${CONTENT}"
+
+
   build-and-deploy:
     runs-on: ubuntu-latest
     container:
-      image: shug0131/cctu:4.4.0
+      image: shug0131/cctu:${{matrix.version}}
     steps:
       - name: Checkout 
         uses: actions/checkout@v3
@@ -24,3 +44,4 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./_site
+          destination_dir: version_${{matrix.version}}
