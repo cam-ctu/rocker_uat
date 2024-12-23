@@ -21,6 +21,8 @@ jsonlite::toJSON(df, dataframe="columns") |>
 comp <- current!=df 
 index <- apply(comp,1, any)
 
-jsonlite::toJSON(df[index,], dataframe="columns") |>
-  write(file="versions/change_versions.json")
+if( any(index)){
+  jsonlite::toJSON(df[index,], dataframe="columns") |>
+    write(file="versions/change_versions.json")
+}
 
