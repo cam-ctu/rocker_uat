@@ -1,0 +1,238 @@
+
+R version 4.3.3 (2024-02-29) -- "Angel Food Cake"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> # argclash.R -- Try to work around dotargs that have a name that clashes 
+> #     with variable names in function calls
+> # J C Nash 2021-12-16
+> # Trying to fix issue raised in 
+> # https://stackoverflow.com/questions/69033754/maximum-likelihood-estimation-of-three-parameter-reverse-weibull-model-implement/70382556#70382556
+> # WARNING: It is NOT certain that all name clashes between dotargs and other names
+> # in functions in optimx will be avoided by the current mechanisms.
+> # This script does, however, show some tests
+> rm(list=ls()) # In case we want to ensure clear workspace, delete first #
+> sqmod<-function(z, x){
++    nn<-length(z)
++    yy<-x^(1:nn)
++    f<-sum((yy-z)^2)
++ #   cat("Fv=",f," at ")
++ #   print(z)
++    f
++ }
+> sqmod.g <- function(z, x){
++    nn<-length(z)
++    yy<-x^(1:nn)
++    gg<- 2*(z - yy)
++ }
+> 
+> require(optimx)
+Loading required package: optimx
+> require(numDeriv)
+Loading required package: numDeriv
+> sessionInfo()
+R version 4.3.3 (2024-02-29)
+Platform: x86_64-pc-linux-gnu (64-bit)
+Running under: Ubuntu 22.04.4 LTS
+
+Matrix products: default
+BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
+LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.20.so;  LAPACK version 3.10.0
+
+locale:
+ [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              
+ [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    
+ [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   
+ [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 
+ [9] LC_ADDRESS=C               LC_TELEPHONE=C            
+[11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
+
+time zone: Etc/UTC
+tzcode source: system (glibc)
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] numDeriv_2016.8-1.1 optimx_2023-10.21  
+
+loaded via a namespace (and not attached):
+[1] compiler_4.3.3 nloptr_2.0.3   pracma_2.4.4  
+> nn<-2
+> st<-rep(0.5, nn)
+> # See if optimx() can handle the clash. 
+> 
+> t2 <- optimx(st, fn=sqmod, x=2)
+> t2
+                  p1       p2        value fevals gevals niter convcode kkt1
+Nelder-Mead 1.999981 4.000296 8.808035e-08     69     NA    NA        0 TRUE
+BFGS        2.000000 4.000000 6.669752e-25     12      3    NA        0 TRUE
+            kkt2 xtime
+Nelder-Mead TRUE 0.012
+BFGS        TRUE 0.000
+> o1 <- optim(st, fn=sqmod,  x=2)
+> o1
+$par
+[1] 1.999981 4.000296
+
+$value
+[1] 8.808035e-08
+
+$counts
+function gradient 
+      69       NA 
+
+$convergence
+[1] 0
+
+$message
+NULL
+
+> 
+> # Try grchk -- The argclash is fixed in the optimx.run code and in optimr().
+> tgr <- try(grchk(xpar=st, ffn=sqmod, ggr=sqmod.g, trace=2, x=2))
+Gradient test with tolerance =  6.055454e-06 
+Analytic gradient uses function  sqmod.g 
+function at parameters =  14.5  with attributes:
+NULL
+Compute analytic gradient
+[1] -3 -7
+Compute numeric gradient
+[1] -3 -7
+gradient test tolerance =  6.055454e-06   fval= 14.5 
+ compare to max(abs(gn-ga))/(1+abs(fval)) =  2.321515e-11 
+> tgr
+[1] TRUE
+attr(,"ga")
+[1] -3 -7
+attr(,"gn")
+[1] -3 -7
+attr(,"maxdiff")
+[1] 3.598348e-10
+> # One way that x gets into the dot arguments
+> xval <- 2
+> sqmod1 <- function(z){ sqmod(z, x=xval) }
+> # Another way
+> dots <- list(x=2)
+> str(dots)
+List of 1
+ $ x: num 2
+> sqmod2 <- function(z){ sqmod(z, unlist(dots)) }
+> # simple test
+> x <- c(1,3)
+> # Note that x is a listed argument (the 2nd) of numDeriv::grad()
+> tryg1 <- grad(sqmod1, x )
+> tryg1
+[1] -2 -2
+> eg1<-sqmod.g(z=x, x=xval)
+> eg1
+[1] -2 -2
+> 
+> cat("sqmod2 for x=2:", sqmod2(x), "\n")
+sqmod2 for x=2: 2 
+> tryg2 <- grad(sqmod2, x )
+> tryg2
+[1] -2 -2
+> 
+> x<-2.0
+> t2x <- optimx(st, fn=sqmod, x=x)
+> t2x
+                  p1       p2        value fevals gevals niter convcode kkt1
+Nelder-Mead 1.999981 4.000296 8.808035e-08     69     NA    NA        0 TRUE
+BFGS        2.000000 4.000000 6.669752e-25     12      3    NA        0 TRUE
+            kkt2 xtime
+Nelder-Mead TRUE     0
+BFGS        TRUE     0
+> 
+> t2fm <- optimx(st, fn=sqmod, method="BFGS", x=2)
+> t2fm
+     p1 p2        value fevals gevals niter convcode kkt1 kkt2 xtime
+BFGS  2  4 6.669752e-25     12      3    NA        0 TRUE TRUE     0
+> 
+> # Following illustrates collision of arguments in gradient after solve
+> t2fgm <- try(optimx(st, fn=sqmod, gr=sqmod.g, method="BFGS", x=2))
+> t2fgm
+     p1 p2        value fevals gevals niter convcode kkt1 kkt2 xtime
+BFGS  2  4 3.204747e-30      5      3    NA        0 TRUE TRUE     0
+> 
+> 
+> r2 <- optimr(st, fn=sqmod, gr=sqmod.g, method="Rvmmin", control=list(trace=0), x=2)
+> proptimr(r2)
+Result  r2 ( Rvmmin  ->  sqmod ) calc. min. = 7.888609e-31  at 
+2     4     
+After  4  fn evals, and  3  gr evals and  0  hessian evals
+Termination code is  2 : Rvmminu appears to have converged 
+
+-------------------------------------------------
+> 
+> 
+> x<-2.0
+> r2xn <- optimr(st, fn=sqmod, gr="grfwd", method="Rvmmin", control=list(trace=0), x=x)
+> proptimr(r2xn)
+Result  r2xn ( Rvmmin  ->  sqmod ) calc. min. = 4.727608e-12  at 
+1.999999     3.999998     
+After  61  fn evals, and  15  gr evals and  0  hessian evals
+Termination code is  0 : Rvmminu appears to have converged 
+
+-------------------------------------------------
+> 
+> t2g <- optimx(st, fn=sqmod, gr=sqmod.g, control=list(trace=0), x=2)
+> t2g
+                  p1       p2        value fevals gevals niter convcode kkt1
+Nelder-Mead 1.999981 4.000296 8.808035e-08     69     NA    NA        0 TRUE
+BFGS        2.000000 4.000000 3.204747e-30      5      3    NA        0 TRUE
+            kkt2 xtime
+Nelder-Mead TRUE     0
+BFGS        TRUE     0
+> x<-2.0
+> t2gn <- optimx(st, fn=sqmod,control=list(trace=0), x=x)
+> t2gn
+                  p1       p2        value fevals gevals niter convcode kkt1
+Nelder-Mead 1.999981 4.000296 8.808035e-08     69     NA    NA        0 TRUE
+BFGS        2.000000 4.000000 6.669752e-25     12      3    NA        0 TRUE
+            kkt2 xtime
+Nelder-Mead TRUE     0
+BFGS        TRUE     0
+> 
+> ## Explicit try
+> xtry<-grchk(xpar=st, ffn=sqmod, ggr=sqmod.g, trace=0, testtol=(.Machine$double.eps^(1/3)), x=x)
+> xtry
+[1] TRUE
+attr(,"ga")
+[1] -3 -7
+attr(,"gn")
+[1] -3 -7
+attr(,"maxdiff")
+[1] 3.598348e-10
+> 
+> r2g <- optimr(st, fn=sqmod, gr=sqmod.g, method="Rvmmin", control=list(trace=0), x=2)
+> proptimr(r2g)
+Result  r2g ( Rvmmin  ->  sqmod ) calc. min. = 7.888609e-31  at 
+2     4     
+After  4  fn evals, and  3  gr evals and  0  hessian evals
+Termination code is  2 : Rvmminu appears to have converged 
+
+-------------------------------------------------
+> x<-2.0
+> r2xf <- optimr(st, fn=sqmod, gr="grfwd", method="Rvmmin", control=list(trace=0), x=x)
+> proptimr(r2xf)
+Result  r2xf ( Rvmmin  ->  sqmod ) calc. min. = 4.727608e-12  at 
+1.999999     3.999998     
+After  61  fn evals, and  15  gr evals and  0  hessian evals
+Termination code is  0 : Rvmminu appears to have converged 
+
+-------------------------------------------------
+> 
+> 

@@ -1,0 +1,757 @@
+
+R version 4.3.3 (2024-02-29) -- "Angel Food Cake"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "withr"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('withr')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("defer")
+> ### * defer
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: defer
+> ### Title: Defer Evaluation of an Expression
+> ### Aliases: defer defer_parent deferred_run deferred_clear
+> 
+> ### ** Examples
+> 
+> # define a 'local' function that creates a file, and
+> # removes it when the parent function has finished executing
+> local_file <- function(path) {
++   file.create(path)
++   defer_parent(unlink(path))
++ }
+> 
+> # create tempfile path
+> path <- tempfile()
+> 
+> # use 'local_file' in a function
+> local({
++   local_file(path)
++   stopifnot(file.exists(path))
++ })
+> 
+> # file is deleted as we leave 'local' local
+> stopifnot(!file.exists(path))
+> 
+> # investigate how 'defer' modifies the
+> # executing function's environment
+> local({
++   local_file(path)
++   print(attributes(environment()))
++ })
+NULL
+> 
+> # Note that examples lack function scoping so deferred calls are
+> # generally executed immediately
+> defer(print("one"))
+> defer(print("two"))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("devices")
+> ### * devices
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: devices
+> ### Title: Graphics devices
+> ### Aliases: devices with_dev with_device with_bmp local_bmp with_cairo_pdf
+> ###   local_cairo_pdf with_cairo_ps local_cairo_ps with_pdf local_pdf
+> ###   with_postscript local_postscript with_svg local_svg with_tiff
+> ###   local_tiff with_xfig local_xfig with_png local_png with_jpeg
+> ###   local_jpeg
+> 
+> ### ** Examples
+> 
+> # dimensions are in inches
+> with_pdf(file.path(tempdir(), "test.pdf"), width = 7, height = 5,
++   plot(runif(5))
++ )
+> 
+> # dimensions are in pixels
+> with_png(file.path(tempdir(), "test.png"), width = 800, height = 600,
++   plot(runif(5))
++ )
+> 
+> 
+> 
+> cleanEx()
+> nameEx("with_")
+> ### * with_
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: local_
+> ### Title: Create a new "with" or "local" function
+> ### Aliases: local_ with_
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> with_(setwd)
+function (new, code) 
+{
+    old <- setwd(dir = new)
+    on.exit(setwd(old))
+    force(code)
+}
+> 
+> global_stack <- list()
+> set_global_state <- function(state, msg = "Changing global state.") {
++   global_stack <- c(list(state), global_stack)
++   message(msg)
++   state
++ }
+> reset_global_state <- function(state) {
++   old_state <- global_stack[[1]]
++   global_stack <- global_stack[-1]
++   stopifnot(identical(state, old_state))
++ }
+> with_(set_global_state, reset_global_state)
+function (new, code, msg = "Changing global state.") 
+{
+    old <- set_global_state(state = new, msg = msg)
+    on.exit(reset_global_state(old))
+    force(code)
+}
+> 
+> 
+> 
+> cleanEx()
+> nameEx("with_connection")
+> ### * with_connection
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: with_connection
+> ### Title: Connections which close themselves
+> ### Aliases: with_connection local_connection
+> 
+> ### ** Examples
+> 
+> with_connection(list(con = file("foo", "w")), {
++   writeLines(c("foo", "bar"), con)
++ })
+> 
+> read_foo <- function() {
++   readLines(local_connection(file("foo", "r")))
++ }
+> read_foo()
+[1] "foo" "bar"
+> 
+> unlink("foo")
+> 
+> 
+> 
+> cleanEx()
+> nameEx("with_db_connection")
+> ### * with_db_connection
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: with_db_connection
+> ### Title: DBMS Connections which disconnect themselves.
+> ### Aliases: with_db_connection local_db_connection
+> 
+> ### ** Examples
+> 
+> db <- tempfile()
+> with_db_connection(
++   list(con = DBI::dbConnect(RSQLite::SQLite(), db)), {
++     DBI::dbWriteTable(con, "mtcars", mtcars)
++ })
+> 
+> head_db_table <- function(...) {
++   con <- local_db_connection(DBI::dbConnect(RSQLite::SQLite(), db))
++   head(DBI::dbReadTable(con, "mtcars"), ...)
++ }
+> head_db_table()
+   mpg cyl disp  hp drat    wt  qsec vs am gear carb
+1 21.0   6  160 110 3.90 2.620 16.46  0  1    4    4
+2 21.0   6  160 110 3.90 2.875 17.02  0  1    4    4
+3 22.8   4  108  93 3.85 2.320 18.61  1  1    4    1
+4 21.4   6  258 110 3.08 3.215 19.44  1  0    3    1
+5 18.7   8  360 175 3.15 3.440 17.02  0  0    3    2
+6 18.1   6  225 105 2.76 3.460 20.22  1  0    3    1
+> unlink(db)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("with_dir")
+> ### * with_dir
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: with_dir
+> ### Title: Working directory
+> ### Aliases: with_dir local_dir
+> 
+> ### ** Examples
+> 
+> getwd()
+[1] "/__w/rocker_uat/rocker_uat/packages/withr"
+> 
+> with_dir(tempdir(), getwd())
+[1] "/tmp/RtmpBCWQOP"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("with_envvar")
+> ### * with_envvar
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: with_envvar
+> ### Title: Environment variables
+> ### Aliases: with_envvar local_envvar
+> 
+> ### ** Examples
+> 
+> with_envvar(new = c("GITHUB_PAT" = "abcdef"), Sys.getenv("GITHUB_PAT"))
+[1] "abcdef"
+> 
+> # with_envvar unsets variables after usage
+> Sys.getenv("TEMP_SECRET")
+[1] ""
+> with_envvar(new = c("TEMP_SECRET" = "secret"), Sys.getenv("TEMP_SECRET"))
+[1] "secret"
+> Sys.getenv("TEMP_SECRET")
+[1] ""
+> 
+> 
+> 
+> cleanEx()
+> nameEx("with_file")
+> ### * with_file
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: with_file
+> ### Title: Files which delete themselves
+> ### Aliases: with_file local_file
+> 
+> ### ** Examples
+> 
+> with_file("file1", {
++   writeLines("foo", "file1")
++   readLines("file1")
++ })
+> 
+> with_file(list("file1" = writeLines("foo", "file1")), {
++   readLines("file1")
++ })
+> 
+> 
+> 
+> cleanEx()
+> nameEx("with_language")
+> ### * with_language
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: with_language
+> ### Title: Language
+> ### Aliases: with_language local_language
+> 
+> ### ** Examples
+> 
+> with_language("en", try(mean[[1]]))
+Error in mean[[1]] : object of type 'closure' is not subsettable
+> with_language("fr", try(mean[[1]]))
+Error in mean[[1]] : objet de type 'closure' non indiçable
+> with_language("es", try(mean[[1]]))
+Error in mean[[1]] : objeto de tipo 'closure' no es subconjunto
+> 
+> 
+> 
+> cleanEx()
+> nameEx("with_libpaths")
+> ### * with_libpaths
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: with_libpaths
+> ### Title: Library paths
+> ### Aliases: with_libpaths local_libpaths
+> 
+> ### ** Examples
+> 
+> .libPaths()
+[1] "/usr/local/lib/R/site-library" "/usr/local/lib/R/library"     
+> new_lib <- tempfile()
+> dir.create(new_lib)
+> with_libpaths(new_lib, print(.libPaths()))
+[1] "/tmp/RtmpBCWQOP/file237de76f4387a" "/usr/local/lib/R/site-library"    
+[3] "/usr/local/lib/R/library"         
+> unlink(new_lib, recursive = TRUE)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("with_locale")
+> ### * with_locale
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: with_locale
+> ### Title: Locale settings
+> ### Aliases: with_locale local_locale
+> 
+> ### ** Examples
+> 
+> 
+> ## Change locale for time:
+> df <- data.frame(
++   stringsAsFactors = FALSE,
++   date = as.Date(c("2019-01-01", "2019-02-01")),
++   value = c(1, 2)
++ )
+> with_locale(new = c("LC_TIME" = "es_ES"), code = plot(df$date, df$value))
+Warning in (function (category = "LC_ALL", locale = "")  :
+  OS reports request to set locale to "es_ES" cannot be honored
+> ## Compare with:
+> #  plot(df$date, df$value)
+> 
+> ## Month names:
+> with_locale(new = c("LC_TIME" = "en_GB"), format(ISOdate(2000, 1:12, 1), "%B"))
+Warning in (function (category = "LC_ALL", locale = "")  :
+  OS reports request to set locale to "en_GB" cannot be honored
+ [1] "January"   "February"  "March"     "April"     "May"       "June"     
+ [7] "July"      "August"    "September" "October"   "November"  "December" 
+> with_locale(new = c("LC_TIME" = "es_ES"), format(ISOdate(2000, 1:12, 1), "%B"))
+Warning in (function (category = "LC_ALL", locale = "")  :
+  OS reports request to set locale to "es_ES" cannot be honored
+ [1] "January"   "February"  "March"     "April"     "May"       "June"     
+ [7] "July"      "August"    "September" "October"   "November"  "December" 
+> 
+> ## Change locale for currencies:
+> with_locale(new = c("LC_MONETARY" = "it_IT"), Sys.localeconv())
+Warning in (function (category = "LC_ALL", locale = "")  :
+  OS reports request to set locale to "it_IT" cannot be honored
+    decimal_point     thousands_sep          grouping   int_curr_symbol 
+              "."                ""                ""            "USD " 
+  currency_symbol mon_decimal_point mon_thousands_sep      mon_grouping 
+              "$"               "."               ","        "\003\003" 
+    positive_sign     negative_sign   int_frac_digits       frac_digits 
+               ""               "-"               "2"               "2" 
+    p_cs_precedes    p_sep_by_space     n_cs_precedes    n_sep_by_space 
+              "1"               "0"               "1"               "0" 
+      p_sign_posn       n_sign_posn 
+              "1"               "1" 
+> with_locale(new = c("LC_MONETARY" = "en_US"), Sys.localeconv())
+Warning in (function (category = "LC_ALL", locale = "")  :
+  OS reports request to set locale to "en_US" cannot be honored
+    decimal_point     thousands_sep          grouping   int_curr_symbol 
+              "."                ""                ""            "USD " 
+  currency_symbol mon_decimal_point mon_thousands_sep      mon_grouping 
+              "$"               "."               ","        "\003\003" 
+    positive_sign     negative_sign   int_frac_digits       frac_digits 
+               ""               "-"               "2"               "2" 
+    p_cs_precedes    p_sep_by_space     n_cs_precedes    n_sep_by_space 
+              "1"               "0"               "1"               "0" 
+      p_sign_posn       n_sign_posn 
+              "1"               "1" 
+> 
+> ## Ordering:
+> x <- c("bernard", "bérénice", "béatrice", "boris")
+> with_locale(c(LC_COLLATE = "fr_FR"), sort(x))
+Warning in (function (category = "LC_ALL", locale = "")  :
+  OS reports request to set locale to "fr_FR" cannot be honored
+[1] "béatrice" "bérénice" "bernard"  "boris"   
+> with_locale(c(LC_COLLATE = "C"), sort(x))
+[1] "bernard"  "boris"    "béatrice" "bérénice"
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("with_makevars")
+> ### * with_makevars
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: with_makevars
+> ### Title: Makevars variables
+> ### Aliases: with_makevars local_makevars
+> 
+> ### ** Examples
+> 
+> writeLines("void foo(int* bar) { *bar = 1; }\n", "foo.c")
+> system("R CMD SHLIB --preclean -c foo.c")
+using C compiler: ‘gcc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0’
+gcc -I"/usr/local/lib/R/include" -DNDEBUG   -I/usr/local/include    -fpic  -g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2 -g  -c foo.c -o foo.o
+gcc -shared -L/usr/local/lib/R/lib -L/usr/local/lib -o foo.so foo.o -L/usr/local/lib/R/lib -lR
+> with_makevars(c(CFLAGS = "-O3"), system("R CMD SHLIB --preclean -c foo.c"))
+using C compiler: ‘gcc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0’
+gcc -I"/usr/local/lib/R/include" -DNDEBUG   -I/usr/local/include    -fpic  -O3 -c foo.c -o foo.o
+gcc -shared -L/usr/local/lib/R/lib -L/usr/local/lib -o foo.so foo.o -L/usr/local/lib/R/lib -lR
+> unlink(c("foo.c", "foo.so"))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("with_options")
+> ### * with_options
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: with_options
+> ### Title: Options
+> ### Aliases: with_options local_options
+> 
+> ### ** Examples
+> 
+> # number of significant digits to print
+> getOption("digits")
+[1] 7
+> # modify temporarily the number of significant digits to print
+> with_options(list(digits = 3), getOption("digits"))
+[1] 3
+> with_options(list(digits = 3), print(pi))
+[1] 3.14
+> 
+> # modify temporarily the character to be used as the decimal point
+> getOption("digits")
+[1] 7
+> with_options(list(OutDec = ","), print(pi))
+[1] 3,141593
+> 
+> # modify temporarily multiple options
+> with_options(list(OutDec = ",", digits = 3), print(pi))
+[1] 3,14
+> 
+> # modify, within the scope of the function, the number of
+> # significant digits to print
+> print_3_digits <- function(x) {
++   # assign 3 to the option "digits" for the rest of this function
++   # after the function exits, the option will return to its previous
++   # value
++   local_options(list(digits = 3))
++   print(x)
++ }
+> 
+> print_3_digits(pi)  # returns 3.14
+[1] 3.14
+> print(pi)           # returns 3.141593
+[1] 3.141593
+> 
+> 
+> 
+> cleanEx()
+> nameEx("with_package")
+> ### * with_package
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: with_package
+> ### Title: Execute code with a modified search path
+> ### Aliases: with_package local_package with_namespace local_namespace
+> ###   with_environment local_environment
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D with_package("ggplot2", {
+> ##D   ggplot(mtcars) + geom_point(aes(wt, hp))
+> ##D })
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("with_par")
+> ### * with_par
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: with_par
+> ### Title: Graphics parameters
+> ### Aliases: with_par local_par
+> 
+> ### ** Examples
+> 
+> old <- par("col" = "black")
+> 
+> # This will be in red
+> with_par(list(col = "red", pch = 19),
++   plot(mtcars$hp, mtcars$wt)
++ )
+> 
+> # This will still be in black
+> plot(mtcars$hp, mtcars$wt)
+> 
+> par(old)
+> 
+> 
+> 
+> graphics::par(get("par.postscript", pos = 'CheckExEnv'))
+> cleanEx()
+> nameEx("with_path")
+> ### * with_path
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: with_path
+> ### Title: PATH environment variable
+> ### Aliases: with_path local_path
+> 
+> ### ** Examples
+> 
+> # temporarily modify the system PATH, *prefixing* the current path
+> with_path(getwd(), Sys.getenv("PATH"))
+[1] "/__w/rocker_uat/rocker_uat/packages/withr:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/texlive/bin/linux:/usr/local/texlive/bin/linux/"
+> # temporarily modify the system PATH, *appending* to the current path
+> with_path(getwd(), Sys.getenv("PATH"), "suffix")
+[1] "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/usr/sbin:/usr/bin:/usr/local/texlive/bin/x86_64-linux:/usr/local/texlive/bin/x86_64-linux:/__w/rocker_uat/rocker_uat/packages/withr"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("with_rng_version")
+> ### * with_rng_version
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: with_rng_version
+> ### Title: RNG version
+> ### Aliases: with_rng_version local_rng_version
+> 
+> ### ** Examples
+> 
+> RNGkind()
+[1] "Mersenne-Twister" "Inversion"        "Rejection"       
+> with_rng_version("3.0.0", RNGkind())
+[1] "Mersenne-Twister" "Inversion"        "Rounding"        
+> with_rng_version("1.6.0", RNGkind())
+[1] "Marsaglia-Multicarry"   "Buggy Kinderman-Ramage" "Rounding"              
+> 
+> with_rng_version("3.0.0",
++   with_seed(42, sample(1:100, 3)))
+[1] 92 93 29
+> 
+> with_rng_version("1.6.0",
++   with_seed(42, sample(1:100, 3)))
+Warning in RNGkind(kind[[1]], normal.kind = kind[[2]]) :
+  buggy version of Kinderman-Ramage generator used
+Warning in RNGkind(kind[[1]], normal.kind = kind[[2]]) :
+  RNGkind: Marsaglia-Multicarry has poor statistical properties
+[1] 33 44 32
+> 
+> RNGkind()
+[1] "Mersenne-Twister" "Inversion"        "Rejection"       
+> 
+> fun1 <- function() {
++   local_rng_version("3.0.0")
++   with_seed(42, sample(1:100, 3))
++ }
+> 
+> fun2 <- function() {
++   local_rng_version("1.6.0")
++   with_seed(42, sample(1:100, 3))
++ }
+> 
+> RNGkind()
+[1] "Mersenne-Twister" "Inversion"        "Rejection"       
+> fun1()
+[1] 92 93 29
+> fun2()
+Warning in RNGkind(kind[[1]], normal.kind = kind[[2]]) :
+  buggy version of Kinderman-Ramage generator used
+Warning in RNGkind(kind[[1]], normal.kind = kind[[2]]) :
+  RNGkind: Marsaglia-Multicarry has poor statistical properties
+[1] 33 44 32
+> RNGkind()
+[1] "Mersenne-Twister" "Inversion"        "Rejection"       
+> 
+> 
+> 
+> cleanEx()
+> nameEx("with_seed")
+> ### * with_seed
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: with_seed
+> ### Title: Random seed
+> ### Aliases: with_seed local_seed with_preserve_seed local_preserve_seed
+> 
+> ### ** Examples
+> 
+> # Same random values:
+> with_preserve_seed(runif(5))
+[1] 0.2655087 0.3721239 0.5728534 0.9082078 0.2016819
+> with_preserve_seed(runif(5))
+[1] 0.2655087 0.3721239 0.5728534 0.9082078 0.2016819
+> 
+> # Use a pseudorandom value as seed to advance the RNG and pick a different
+> # value for the next call:
+> with_seed(seed <- sample.int(.Machine$integer.max, 1L), runif(5))
+[1] 0.3699238 0.8712722 0.3406855 0.1912549 0.3158635
+> with_seed(seed, runif(5))
+[1] 0.3699238 0.8712722 0.3406855 0.1912549 0.3158635
+> with_seed(seed <- sample.int(.Machine$integer.max, 1L), runif(5))
+[1] 0.29955263 0.09763946 0.72676925 0.88149119 0.37544935
+> 
+> 
+> 
+> cleanEx()
+> nameEx("with_tempfile")
+> ### * with_tempfile
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: with_tempfile
+> ### Title: Temporary files and directories
+> ### Aliases: with_tempfile local_tempfile with_tempdir local_tempdir
+> 
+> ### ** Examples
+> 
+> # local_tempfile() is the easiest to use because it returns a path
+> local({
++   path1 <<- local_tempfile(lines = c("x,y", "1,2"))
++   readLines(path1)
++ })
+[1] "x,y" "1,2"
+> # the file is deleted automatically
+> file.exists(path1)
+[1] FALSE
+> 
+> # with_tempfile() is a bit trickier; the first argument gives the name
+> # of a variable that will contain the path:
+> with_tempfile("path2", {
++   print(path2)
++   write.csv(iris, path2)
++   file.size(path2)
++ })
+[1] "/tmp/RtmpBCWQOP/file237de509b42cc"
+[1] 4821
+> 
+> # Note that this variable is only available in the scope of with_tempfile
+> try(path2)
+Error : object 'path2' not found
+> 
+> 
+> 
+> cleanEx()
+> nameEx("with_timezone")
+> ### * with_timezone
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: with_timezone
+> ### Title: Time zone
+> ### Aliases: with_timezone local_timezone
+> 
+> ### ** Examples
+> 
+> Sys.time()
+[1] "2025-01-06 17:21:14 UTC"
+> with_timezone("Europe/Paris", print(Sys.time()))
+[1] "2025-01-06 18:21:14 CET"
+> with_timezone("America/Los_Angeles", print(Sys.time()))
+[1] "2025-01-06 09:21:14 PST"
+> 
+> fun1 <- function() {
++   local_timezone("CET")
++   print(Sys.time())
++ }
+> 
+> fun2 <- function() {
++   local_timezone("America/Los_Angeles")
++   print(Sys.time())
++ }
+> Sys.time()
+[1] "2025-01-06 17:21:14 UTC"
+> fun1()
+[1] "2025-01-06 18:21:14 CET"
+> fun2()
+[1] "2025-01-06 09:21:14 PST"
+> Sys.time()
+[1] "2025-01-06 17:21:14 UTC"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("withr")
+> ### * withr
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: withr
+> ### Title: Execute code in temporarily altered environment
+> ### Aliases: withr-package withr
+> 
+> ### ** Examples
+> 
+> getwd()
+[1] "/__w/rocker_uat/rocker_uat/packages/withr"
+> with_dir(tempdir(), getwd())
+[1] "/tmp/RtmpBCWQOP"
+> getwd()
+[1] "/__w/rocker_uat/rocker_uat/packages/withr"
+> 
+> Sys.getenv("WITHR")
+[1] ""
+> with_envvar(c("WITHR" = 2), Sys.getenv("WITHR"))
+[1] "2"
+> Sys.getenv("WITHR")
+[1] ""
+> 
+> with_envvar(c("A" = 1),
++   with_envvar(c("A" = 2), action = "suffix", Sys.getenv("A"))
++ )
+[1] "1 2"
+> 
+> # local variants are best used within other functions
+> f <- function(x) {
++   local_envvar(c("WITHR" = 2))
++   Sys.getenv("WITHR")
++ }
+> Sys.getenv("WITHR")
+[1] ""
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  0.48 0.041 0.83 0.292 0.666 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')
+[1] "two"
+[1] "one"
+Ran 2/2 deferred expressions

@@ -1,0 +1,170 @@
+
+R version 4.3.3 (2024-02-29) -- "Angel Food Cake"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "qrng"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('qrng')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("qrng")
+> ### * qrng
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: qrng
+> ### Title: Compute Quasi-Random Sequences
+> ### Aliases: korobov ghalton sobol
+> ### Keywords: distribution
+> 
+> ### ** Examples
+> 
+> n <- 1021 # prime
+> d <- 4 # dimension
+> 
+> ## Korobov's sequence
+> generator <- 76 # see l'Ecuyer and Lemieux
+> u <- korobov(n, d = d, generator = generator)
+> pairs(u, gap = 0, pch = ".", labels = as.expression(
++       sapply(1:d, function(j) bquote(italic(u[.(j)])))))
+> 
+> ## Randomized Korobov's sequence
+> set.seed(271)
+> u <- korobov(n, d = d, generator = generator, randomize = "shift")
+> pairs(u, gap = 0, pch = ".", labels = as.expression(
++       sapply(1:d, function(j) bquote(italic(u[.(j)])))))
+> 
+> ## Generalized Halton sequence (randomized by definition)
+> set.seed(271)
+> u <- ghalton(n, d)
+> pairs(u, gap = 0, pch = ".", labels = as.expression(
++       sapply(1:d, function(j) bquote(italic(u[.(j)])))))
+> 
+> ## For sobol() examples, see demo(sobol_examples)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("test_functions")
+> ### * test_functions
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: test_functions
+> ### Title: Test Functions
+> ### Aliases: sum_of_squares sobol_g exceedance
+> ### Keywords: utilities
+> 
+> ### ** Examples
+> 
+> ## Generate some (here: copula, pseudo-random) data
+> library(copula)
+> set.seed(271)
+> cop <- claytonCopula(iTau(claytonCopula(), tau = 0.5)) # Clayton copula
+> U <- rCopula(1000, copula = cop)
+> 
+> ## Compute sum of squares test function
+> mean(sum_of_squares(U)) # estimate of E(3(sum_{j=1}^d U_j^2)/d)
+[1] 1.047148
+> 
+> ## Compute the Sobol' g test function
+> if(packageVersion("copula") >= "0.999-20")
++     mean(sobol_g(U)) # estimate of E(<Sobol's g function>)
+[1] 1.013144
+> 
+> ## Compute an exceedance probability
+> X <- qnorm(U)
+> mean(exceedance(X, q = qnorm(0.99))) # fixed threshold q
+[1] 0.001
+> mean(exceedance(X, p = 0.99)) # empirically estimated marginal p-quantiles as thresholds
+[1] 0.001
+> 
+> ## Compute 99% expected shortfall for the sum
+> mean(exceedance(X, p = 0.99, method = "sum.given.sum.exceeds"))
+[1] 4.160058
+> ## Or use ES_np(X, level = 0.99) from 'qrmtools'
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:copula’
+
+> nameEx("to_array")
+> ### * to_array
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: to_array
+> ### Title: Compute Matrices to Arrays
+> ### Aliases: to_array
+> ### Keywords: utilities
+> 
+> ### ** Examples
+> 
+> ## Basic call
+> N <- 4 # replications
+> n <- 3 # time steps
+> d <- 2 # dimension
+> set.seed(271) # note: respected for the choice of 'randomize'
+> x <- sobol(N, d = n * d, randomize = "digital.shift") # higher-dim. Sobol'
+> stopifnot(dim(to_array(x, f = n)) == c(N * n, d)) # conversion and check
+> stopifnot(dim(to_array(x, f = n, format = "(n,f,d)")) == c(N, n, d))
+> 
+> ## See how the conversion is done
+> (x <- matrix(1:(N * n * d), nrow = N, byrow = TRUE))
+     [,1] [,2] [,3] [,4] [,5] [,6]
+[1,]    1    2    3    4    5    6
+[2,]    7    8    9   10   11   12
+[3,]   13   14   15   16   17   18
+[4,]   19   20   21   22   23   24
+> to_array(x, f = n) # => (n * d)-column x was blocked in n groups of size d each
+      [,1] [,2]
+ [1,]    1    2
+ [2,]    3    4
+ [3,]    5    6
+ [4,]    7    8
+ [5,]    9   10
+ [6,]   11   12
+ [7,]   13   14
+ [8,]   15   16
+ [9,]   17   18
+[10,]   19   20
+[11,]   21   22
+[12,]   23   24
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  1.011 0.101 1.112 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

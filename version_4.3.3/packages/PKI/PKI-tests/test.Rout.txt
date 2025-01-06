@@ -1,0 +1,250 @@
+
+R version 4.3.3 (2024-02-29) -- "Angel Food Cake"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> ## simple test suite - avoid testthat! It has an insane amount of
+> ## unnecessary dependencies. A test package should have exactly 0
+> 
+> assert <- function(msg, what) {
++     cat("   . ", msg,"\n")
++     stopifnot(what)
++     .GlobalEnv$ok <- .GlobalEnv$ok + 1L
++ }
+> 
+> xfail <- function(...) suppressWarnings(tryCatch({ ...; FALSE }, error=function(e) TRUE))
+> 
+> ## none of these are fatal
+> info <- function(...) message(" -- ", ...)
+> err  <- function(...) message(" ** ERROR: ", ...)
+> warn <- function(...) message(" !! ", ...)
+> 
+> ## all warnings (unless suppressed) are errors
+> options(warn=2)
+> 
+> library(PKI)
+Loading required package: base64enc
+> 
+> .GlobalEnv$ok <- 0L
+> 
+> ## Majority of tests are in th3 examples,
+> ## so we won't repeat those, but some special cases
+> ## not covered there as well as expected failures
+> 
+> info("Checking failure paths")
+ -- Checking failure paths
+> xfail(PKI.load.cert(what="foo", file="bar")) ## set both what and file
+[1] TRUE
+> xfail(PKI.load.cert("foo", "DER")) ## binary format with text
+[1] TRUE
+> xfail(PKI.load.cert("nothing")) ## invalid content
+[1] TRUE
+> xfail(PKI.digest("foo", "bar")) ## invalid hash spec
+[1] TRUE
+> xfail(PKI.load.key(what="foo", file="bar"))
+[1] TRUE
+> xfail(PKI:::PKI.decode.SSH2(fn.priv.der)) ## try to load invalid content
+[1] TRUE
+> 
+> info("Checking key paths via files/connections")
+ -- Checking key paths via files/connections
+> key <- PKI.genRSAkey(bits = 2048L)
+> fn.priv.pem <- tempfile()
+> PKI.save.key(key, target=fn.priv.pem)
+ [1] "-----BEGIN RSA PRIVATE KEY-----"                                 
+ [2] "MIIEowIBAAKCAQEAt0JNpupfRMzbCd3Um+HeYydDFW+Z8+EhrxEKGnJeZtNlREdi"
+ [3] "+hF6Dyb9wVFALHRNrg/k5fe8fs5jJNYWxT/Cm/GZt8FWiMNlQWhXmKDstAYwyeSA"
+ [4] "ojkvB6NzU8iJsXijSpgY+JSPcDZAjjqSJ35FKhvUwNBciEXp35FdSZJADAJ3TPTB"
+ [5] "/fk+CkbkjL/QmQ6BrmTV10ihrEUWcVJicCYgw+n7qpkMMV4nOlttj08Y+7A7QXRq"
+ [6] "lxk7FIWchddc7U5G0dAS/SpR2+/5CiLVp2/sEH71vBDrEA1JcFT2RmSOItWrYBp0"
+ [7] "kJX86ra89rUj5TVs48NxFCFoW9kgBUq4n/C2AQIDAQABAoIBAAPZ5Zpcoghm2rKM"
+ [8] "Ih/tgPgp9s+wQva8VDIi5Ei2fxPfnOjwrByPufYwDlSd8cCNaCWAiYGosWIj0bMQ"
+ [9] "ObXG937B9sZFDp28p3fWqsKXHSpSV/uiLO7bz0h0j6Oi2vvrCllytVGiA5qq1TP3"
+[10] "+KLSVT9DivbLWip196p+WkzFwUlPSb1liUZOGiT8h7yabC6JYWyvz5nw1eDD4QP1"
+[11] "JEqoGSLvGHSvWq1REHUT8aKXyr5ZRsStL931MPR2JMZ7oPtk8AxBIlDEsJbB+bEz"
+[12] "31GPm3fbD8sb5ww5Fsy863sN2yd6cd20+q2kpAghAYCazVTuQUzgnMUpmE+IJr4u"
+[13] "NHQ1DjECgYEA/aPNB7Mw4Q0RFJgwOCEl1OixlMHOUInagKnkRX0Se5dc3SJ8WccT"
+[14] "wjWk5/zMR+/DBsUCeiT5IHsbj3Eq8lxxMU2ABxC1sute+R2xLPWRVp/HiASsmr/a"
+[15] "z8C3OAF+BdKKKQqmn7CtQBxm1UTJB+mYWVP6asRMcT/Q7Xtho/u0kzkCgYEAuPbY"
+[16] "4j0kwPmNmRi7IYOncGVfLxmUMAeORJSz6QjAgOAcxtaWePJ+e3uxasCrLrPo6HiM"
+[17] "ylxGIdHy/7hzFFxeO7m3/FP9CP4fn6cBtc/DWOXEdXHuHOUPSzPH5ZZMfn4wNsr0"
+[18] "tmoYqVThbEBvEmnSqMAVTM0jdQSeVeMAhc+W0QkCgYBcUbiY6uIJqCXlZxd19qq8"
+[19] "eg3Y5UnhCqwbVLsfh8yoa4mDe7/jNZC9iaUCQ4NfU6ea2S5zou2Cowx/A2PsXzVc"
+[20] "Cqdk6vIXs5AYAHSytpc1/mYz3e+tS9Oq9qw5mGF0YROkqJnJWhdVVIEhcy3w0VeA"
+[21] "fA6TuetQ9TdomRYLB9zMEQKBgQCM/jXjd2Jd650Bd/WlnXr0VYHSIHhyiD/tjUD7"
+[22] "QV2kn7Gv7IG1XnwF2wsp6gZTSncfRk1kMCSRwT2vqsWmXqbCdlaGdOtsgHJQu/i0"
+[23] "w9QQHs28DQXKZt1aoPUe0Iws3DoaemlB5+w2n+paH1/LtHkNg6Z47eK6X7Pmmmya"
+[24] "k9xOKQKBgDGfWsOG0Nw1/BMb173qjQXkROZS/JgBcquSR51iIvFtl/Uz/jkQCedS"
+[25] "dfhCIpR2KUTNj81EhlVV0ZuBZfr+KcgXP9jP6c5Vamc9eqVJYPwlTX85vYx9sJhL"
+[26] "t7kQMEa/svUa9w4yxNk3wRlgLiAEFsT+oxkWFRkW8RzO9RE7QAyB"            
+[27] "-----END RSA PRIVATE KEY-----"                                   
+> fn.priv.der <- tempfile()
+> PKI.save.key(key, "DER", target=fn.priv.der)
+   [1] 30 82 04 a3 02 01 00 02 82 01 01 00 b7 42 4d a6 ea 5f 44 cc db 09 dd d4
+  [25] 9b e1 de 63 27 43 15 6f 99 f3 e1 21 af 11 0a 1a 72 5e 66 d3 65 44 47 62
+  [49] fa 11 7a 0f 26 fd c1 51 40 2c 74 4d ae 0f e4 e5 f7 bc 7e ce 63 24 d6 16
+  [73] c5 3f c2 9b f1 99 b7 c1 56 88 c3 65 41 68 57 98 a0 ec b4 06 30 c9 e4 80
+  [97] a2 39 2f 07 a3 73 53 c8 89 b1 78 a3 4a 98 18 f8 94 8f 70 36 40 8e 3a 92
+ [121] 27 7e 45 2a 1b d4 c0 d0 5c 88 45 e9 df 91 5d 49 92 40 0c 02 77 4c f4 c1
+ [145] fd f9 3e 0a 46 e4 8c bf d0 99 0e 81 ae 64 d5 d7 48 a1 ac 45 16 71 52 62
+ [169] 70 26 20 c3 e9 fb aa 99 0c 31 5e 27 3a 5b 6d 8f 4f 18 fb b0 3b 41 74 6a
+ [193] 97 19 3b 14 85 9c 85 d7 5c ed 4e 46 d1 d0 12 fd 2a 51 db ef f9 0a 22 d5
+ [217] a7 6f ec 10 7e f5 bc 10 eb 10 0d 49 70 54 f6 46 64 8e 22 d5 ab 60 1a 74
+ [241] 90 95 fc ea b6 bc f6 b5 23 e5 35 6c e3 c3 71 14 21 68 5b d9 20 05 4a b8
+ [265] 9f f0 b6 01 02 03 01 00 01 02 82 01 00 03 d9 e5 9a 5c a2 08 66 da b2 8c
+ [289] 22 1f ed 80 f8 29 f6 cf b0 42 f6 bc 54 32 22 e4 48 b6 7f 13 df 9c e8 f0
+ [313] ac 1c 8f b9 f6 30 0e 54 9d f1 c0 8d 68 25 80 89 81 a8 b1 62 23 d1 b3 10
+ [337] 39 b5 c6 f7 7e c1 f6 c6 45 0e 9d bc a7 77 d6 aa c2 97 1d 2a 52 57 fb a2
+ [361] 2c ee db cf 48 74 8f a3 a2 da fb eb 0a 59 72 b5 51 a2 03 9a aa d5 33 f7
+ [385] f8 a2 d2 55 3f 43 8a f6 cb 5a 2a 75 f7 aa 7e 5a 4c c5 c1 49 4f 49 bd 65
+ [409] 89 46 4e 1a 24 fc 87 bc 9a 6c 2e 89 61 6c af cf 99 f0 d5 e0 c3 e1 03 f5
+ [433] 24 4a a8 19 22 ef 18 74 af 5a ad 51 10 75 13 f1 a2 97 ca be 59 46 c4 ad
+ [457] 2f dd f5 30 f4 76 24 c6 7b a0 fb 64 f0 0c 41 22 50 c4 b0 96 c1 f9 b1 33
+ [481] df 51 8f 9b 77 db 0f cb 1b e7 0c 39 16 cc bc eb 7b 0d db 27 7a 71 dd b4
+ [505] fa ad a4 a4 08 21 01 80 9a cd 54 ee 41 4c e0 9c c5 29 98 4f 88 26 be 2e
+ [529] 34 74 35 0e 31 02 81 81 00 fd a3 cd 07 b3 30 e1 0d 11 14 98 30 38 21 25
+ [553] d4 e8 b1 94 c1 ce 50 89 da 80 a9 e4 45 7d 12 7b 97 5c dd 22 7c 59 c7 13
+ [577] c2 35 a4 e7 fc cc 47 ef c3 06 c5 02 7a 24 f9 20 7b 1b 8f 71 2a f2 5c 71
+ [601] 31 4d 80 07 10 b5 b2 eb 5e f9 1d b1 2c f5 91 56 9f c7 88 04 ac 9a bf da
+ [625] cf c0 b7 38 01 7e 05 d2 8a 29 0a a6 9f b0 ad 40 1c 66 d5 44 c9 07 e9 98
+ [649] 59 53 fa 6a c4 4c 71 3f d0 ed 7b 61 a3 fb b4 93 39 02 81 81 00 b8 f6 d8
+ [673] e2 3d 24 c0 f9 8d 99 18 bb 21 83 a7 70 65 5f 2f 19 94 30 07 8e 44 94 b3
+ [697] e9 08 c0 80 e0 1c c6 d6 96 78 f2 7e 7b 7b b1 6a c0 ab 2e b3 e8 e8 78 8c
+ [721] ca 5c 46 21 d1 f2 ff b8 73 14 5c 5e 3b b9 b7 fc 53 fd 08 fe 1f 9f a7 01
+ [745] b5 cf c3 58 e5 c4 75 71 ee 1c e5 0f 4b 33 c7 e5 96 4c 7e 7e 30 36 ca f4
+ [769] b6 6a 18 a9 54 e1 6c 40 6f 12 69 d2 a8 c0 15 4c cd 23 75 04 9e 55 e3 00
+ [793] 85 cf 96 d1 09 02 81 80 5c 51 b8 98 ea e2 09 a8 25 e5 67 17 75 f6 aa bc
+ [817] 7a 0d d8 e5 49 e1 0a ac 1b 54 bb 1f 87 cc a8 6b 89 83 7b bf e3 35 90 bd
+ [841] 89 a5 02 43 83 5f 53 a7 9a d9 2e 73 a2 ed 82 a3 0c 7f 03 63 ec 5f 35 5c
+ [865] 0a a7 64 ea f2 17 b3 90 18 00 74 b2 b6 97 35 fe 66 33 dd ef ad 4b d3 aa
+ [889] f6 ac 39 98 61 74 61 13 a4 a8 99 c9 5a 17 55 54 81 21 73 2d f0 d1 57 80
+ [913] 7c 0e 93 b9 eb 50 f5 37 68 99 16 0b 07 dc cc 11 02 81 81 00 8c fe 35 e3
+ [937] 77 62 5d eb 9d 01 77 f5 a5 9d 7a f4 55 81 d2 20 78 72 88 3f ed 8d 40 fb
+ [961] 41 5d a4 9f b1 af ec 81 b5 5e 7c 05 db 0b 29 ea 06 53 4a 77 1f 46 4d 64
+ [985] 30 24 91 c1 3d af aa c5 a6 5e a6 c2 76 56 86 74 eb 6c 80 72 50 bb f8 b4
+[1009] c3 d4 10 1e cd bc 0d 05 ca 66 dd 5a a0 f5 1e d0 8c 2c dc 3a 1a 7a 69 41
+[1033] e7 ec 36 9f ea 5a 1f 5f cb b4 79 0d 83 a6 78 ed e2 ba 5f b3 e6 9a 6c 9a
+[1057] 93 dc 4e 29 02 81 80 31 9f 5a c3 86 d0 dc 35 fc 13 1b d7 bd ea 8d 05 e4
+[1081] 44 e6 52 fc 98 01 72 ab 92 47 9d 62 22 f1 6d 97 f5 33 fe 39 10 09 e7 52
+[1105] 75 f8 42 22 94 76 29 44 cd 8f cd 44 86 55 55 d1 9b 81 65 fa fe 29 c8 17
+[1129] 3f d8 cf e9 ce 55 6a 67 3d 7a a5 49 60 fc 25 4d 7f 39 bd 8c 7d b0 98 4b
+[1153] b7 b9 10 30 46 bf b2 f5 1a f7 0e 32 c4 d9 37 c1 19 60 2e 20 04 16 c4 fe
+[1177] a3 19 16 15 19 16 f1 1c ce f5 11 3b 40 0c 81
+attr(,"class")
+[1] "private.key.DER"
+> PKI.load.key(file=fn.priv.pem)
+<pointer: 0x55fcffb3af50>
+attr(,"class")
+[1] "private.key"
+> PKI.load.key(file=fn.priv.der, format="DER", private=TRUE)
+<pointer: 0x55fcffb2c6b0>
+attr(,"class")
+[1] "private.key"
+> fn.pub.pem <- tempfile()
+> PKI.save.key(key, target=fn.pub.pem, private=FALSE)
+[1] "-----BEGIN PUBLIC KEY-----"                                      
+[2] "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAt0JNpupfRMzbCd3Um+He"
+[3] "YydDFW+Z8+EhrxEKGnJeZtNlREdi+hF6Dyb9wVFALHRNrg/k5fe8fs5jJNYWxT/C"
+[4] "m/GZt8FWiMNlQWhXmKDstAYwyeSAojkvB6NzU8iJsXijSpgY+JSPcDZAjjqSJ35F"
+[5] "KhvUwNBciEXp35FdSZJADAJ3TPTB/fk+CkbkjL/QmQ6BrmTV10ihrEUWcVJicCYg"
+[6] "w+n7qpkMMV4nOlttj08Y+7A7QXRqlxk7FIWchddc7U5G0dAS/SpR2+/5CiLVp2/s"
+[7] "EH71vBDrEA1JcFT2RmSOItWrYBp0kJX86ra89rUj5TVs48NxFCFoW9kgBUq4n/C2"
+[8] "AQIDAQAB"                                                        
+[9] "-----END PUBLIC KEY-----"                                        
+> fn.pub.der <- tempfile()
+> PKI.save.key(key, "DER", target=fn.pub.der, private=FALSE)
+  [1] 30 82 01 22 30 0d 06 09 2a 86 48 86 f7 0d 01 01 01 05 00 03 82 01 0f 00 30
+ [26] 82 01 0a 02 82 01 01 00 b7 42 4d a6 ea 5f 44 cc db 09 dd d4 9b e1 de 63 27
+ [51] 43 15 6f 99 f3 e1 21 af 11 0a 1a 72 5e 66 d3 65 44 47 62 fa 11 7a 0f 26 fd
+ [76] c1 51 40 2c 74 4d ae 0f e4 e5 f7 bc 7e ce 63 24 d6 16 c5 3f c2 9b f1 99 b7
+[101] c1 56 88 c3 65 41 68 57 98 a0 ec b4 06 30 c9 e4 80 a2 39 2f 07 a3 73 53 c8
+[126] 89 b1 78 a3 4a 98 18 f8 94 8f 70 36 40 8e 3a 92 27 7e 45 2a 1b d4 c0 d0 5c
+[151] 88 45 e9 df 91 5d 49 92 40 0c 02 77 4c f4 c1 fd f9 3e 0a 46 e4 8c bf d0 99
+[176] 0e 81 ae 64 d5 d7 48 a1 ac 45 16 71 52 62 70 26 20 c3 e9 fb aa 99 0c 31 5e
+[201] 27 3a 5b 6d 8f 4f 18 fb b0 3b 41 74 6a 97 19 3b 14 85 9c 85 d7 5c ed 4e 46
+[226] d1 d0 12 fd 2a 51 db ef f9 0a 22 d5 a7 6f ec 10 7e f5 bc 10 eb 10 0d 49 70
+[251] 54 f6 46 64 8e 22 d5 ab 60 1a 74 90 95 fc ea b6 bc f6 b5 23 e5 35 6c e3 c3
+[276] 71 14 21 68 5b d9 20 05 4a b8 9f f0 b6 01 02 03 01 00 01
+attr(,"class")
+[1] "public.key.DER"
+> PKI.load.key(file=fn.pub.pem)
+<pointer: 0x55fcfd456ad0>
+attr(,"class")
+[1] "public.key"
+> PKI.load.key(file=fn.pub.der, format="DER", private=FALSE)
+<pointer: 0x55fcfddd8660>
+attr(,"class")
+[1] "public.key"
+> 
+> info("gmp")
+ -- gmp
+> if (requireNamespace("gmp", quietly=TRUE)) {
++     PKI.mkRSApubkey(gmp::as.bigz("119445732379544598056145200053932732877863846799652384989588303737527328743970559883211146487286317168142202446955508902936035124709397221178664495721428029984726868375359168203283442617134197706515425366188396513684446494070223079865755643116690165578452542158755074958452695530623055205290232290667934914919"))
++ } else {
++     warn("gmp not found, skipping bignum tests")
++ }
+  [1] 30 81 9f 30 0d 06 09 2a 86 48 86 f7 0d 01 01 01 05 00 03 81 8d 00 30 81 89
+ [26] 02 81 81 00 aa 18 ab a4 3b 50 de ef 38 59 8f af 87 d2 ab 63 4e 45 71 c1 30
+ [51] a9 bc a7 b8 78 26 74 14 fa ab 8b 47 1b d8 96 5f 5c 9f c3 81 84 85 ea f5 29
+ [76] c2 62 46 f3 05 50 64 a8 de 19 c8 c3 38 be 54 96 cb ae b0 59 dc 0b 35 81 43
+[101] b4 4a 35 44 9e b2 64 11 31 21 a4 55 bd 7f de 3f ac 91 9e 94 b5 6f b9 bb 4f
+[126] 65 1c db 23 ea d4 39 d6 cd 52 3e b0 81 91 e7 5b 35 fd 13 a7 41 9b 30 90 f2
+[151] 47 87 bd 4f 4e 19 67 02 03 01 00 01
+> 
+> info("Ciphers")
+ -- Ciphers
+> skey <- PKI.random(256)
+> for (cipher in c("aes256ecb", "aes256ofb", "bfcbc", "bfecb", "bfofb", "bfcfb"))
++     assert(cipher, all(PKI.decrypt(PKI.encrypt(charToRaw("foo!"), skey, cipher), skey, cipher)[1:4] == charToRaw("foo!")))
+   .  aes256ecb 
+   .  aes256ofb 
+   .  bfcbc 
+   .  bfecb 
+   .  bfofb 
+   .  bfcfb 
+> iv <- PKI.random(256)
+> for (cipher in c("bfcbc", "bfecb", "bfofb", "bfcfb"))
++     assert(paste0(cipher, " (with IV)"),
++                   all(PKI.decrypt(PKI.encrypt(charToRaw("foo!"), skey, cipher, iv=iv), skey, cipher, iv=iv)[1:4] == charToRaw("foo!")))
+   .  bfcbc (with IV) 
+   .  bfecb (with IV) 
+   .  bfofb (with IV) 
+   .  bfcfb (with IV) 
+> 
+> info("ASN.1")
+ -- ASN.1
+> 
+> assert("ASN.1 encode/decode", 
++ { d <- ASN1.decode(ASN1.encode(ASN1.item(0:255, 3L)))
++   ASN1.type(d) == 3L && all(d == as.raw(0:255)) })
+   .  ASN.1 encode/decode 
+> 
+> info("Tar ball signing")
+ -- Tar ball signing
+> tmpfn <- c(fn.pub.der, fn.pub.pem, fn.priv.der, fn.priv.pem)
+> fn <- tempfile()
+> ## on some systems using abs paths can break 100 byte limit
+> ## so we must do this in the tempdir
+> wd <- getwd()
+> td <- tempdir()
+> setwd(td)
+> tar(fn, basename(tmpfn), "none")
+> PKI.sign.tar(fn, key)
+> PKI.verify.tar(fn, key)
+[1] TRUE
+> setwd(wd)
+> 
+> unlink(c(fn, tmpfn))
+> 

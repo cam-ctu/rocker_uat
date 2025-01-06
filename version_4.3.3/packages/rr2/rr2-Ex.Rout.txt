@@ -1,0 +1,1032 @@
+
+R version 4.3.3 (2024-02-29) -- "Angel Food Cake"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "rr2"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('rr2')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("R2")
+> ### * R2
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: R2
+> ### Title: Calculate R2_lik, R2_resid, and R2_pred
+> ### Aliases: R2
+> 
+> ### ** Examples
+> 
+> library(ape)
+
+Attaching package: ‘ape’
+
+The following object is masked from ‘package:rr2’:
+
+    binaryPGLMM
+
+> library(phylolm)
+> library(lme4)
+Loading required package: Matrix
+> library(nlme)
+
+Attaching package: ‘nlme’
+
+The following object is masked from ‘package:lme4’:
+
+    lmList
+
+> library(phyr)
+> 
+> set.seed(12345)
+> p1 <- 10
+> nsample <- 10
+> n <- p1 * nsample
+> 
+> d <- data.frame(x1 = 0, x2 = 0, u1 = rep(1:p1, each = nsample),
++                 u2 = rep(1:p1, times = nsample))
+> d$u1 <- as.factor(d$u1)
+> d$u2 <- as.factor(d$u2)
+> 
+> b1 <- 1
+> b2 <- -1
+> sd1 <- 1.5
+> 
+> d$x1 <- rnorm(n = n)
+> d$x2 <- rnorm(n = n)
+> d$y.lmm <- b1 * d$x1 + b2 * d$x2 + 
++   rep(rnorm(n = p1, sd = sd1), each = nsample) +
++   rep(rnorm(n = p1, sd = sd1), times = nsample) + 
++   rnorm(n = n)
+> 
+> prob <- inv.logit(b1 * d$x1 + rep(rnorm(n = p1, sd = sd1), each = nsample))
+> d$y.glmm <- rbinom(n = n, size = 1, prob = prob)
+> 
+> # LMM with two fixed and two random effects ----
+> z.f <- lmer(y.lmm ~ x1 + x2 + (1 | u1) + (1 | u2), data = d, REML = FALSE)
+> z.x <- lmer(y.lmm ~ x1 + (1 | u1) + (1 | u2), data = d, REML = FALSE)
+> z.v <- lmer(y.lmm ~ 1 + (1 | u2), data = d, REML = FALSE)
+> z.0 <- lm(y.lmm ~ 1, data = d)
+> 
+> R2(z.f, z.x)
+   R2_lik  R2_resid   R2_pred 
+0.5040451 0.5740266 0.5790698 
+> R2(z.f, z.v)
+   R2_lik  R2_resid   R2_pred 
+0.7160172 0.8134681 0.8329192 
+> R2(z.f)
+   R2_lik  R2_resid   R2_pred 
+0.7926359 0.8891184 0.9093432 
+> 
+> # GLMM with one fixed and one random effect ----
+> z.f <- glmer(y.glmm ~ x1 + (1 | u1), data = d, family = 'binomial')
+> z.x <- glmer(y.glmm ~ 1 + (1 | u1), data = d, family = 'binomial')
+> z.v <- glm(y.glmm ~ x1, data = d, family = 'binomial')
+> 
+> R2(z.f, z.x)
+    R2_lik   R2_resid    R2_pred 
+0.10910674 0.06541345 0.09784273 
+> R2(z.f, z.v)
+   R2_lik  R2_resid   R2_pred 
+0.1261440 0.2266569 0.2814428 
+> R2(z.f)
+   R2_lik  R2_resid   R2_pred 
+0.2212490 0.2853903 0.3399959 
+> 
+> # These give different results for R2_resid.
+> R2(z.f, sigma2_d = 's2w')
+   R2_lik  R2_resid   R2_pred 
+0.2212490 0.2853903 0.3399959 
+> R2(z.f, sigma2_d = 'NS')
+   R2_lik  R2_resid   R2_pred 
+0.2212490 0.3712448 0.3399959 
+> R2(z.f, sigma2_d = 'rNS')
+   R2_lik  R2_resid   R2_pred 
+0.2212490 0.4023949 0.3399959 
+> 
+> # GLS {nlme} with one fixed effect and autocorrelated errors among 6 groups ----
+> nT <- 10
+> nseries <- 6
+> n <- nT * nseries
+> 
+> d <- data.frame(x = 0, y = 0, u = rep(1:nseries, each = nT), e = rnorm(1))
+> d$u <- as.factor(d$u)
+> d$x <- rnorm(n = n)
+> ar1 <- .5
+> for(t in 2:n) d$e[t] <- ar1*d$e[t-1] + rnorm(1)
+> 
+> b1 <- 1
+> d$y <- b1 * d$x + d$e
+> 
+> z.f <- gls(y ~ x + u, correlation = corAR1(form = ~1 | u), data = d)
+> z.x <- gls(y ~ 1, correlation = corAR1(form = ~1 | u), data = d)
+> z.ar <- lm(y ~ x + u, data = d)
+> 
+> R2(z.f, z.x)
+Models of class gls that are not phylogenetic do not have a R2_resid method.
+   R2_lik   R2_pred 
+0.6921216 0.7217625 
+> R2(z.f, z.ar)
+Models of class gls that are not phylogenetic do not have a R2_resid method.
+    R2_lik    R2_pred 
+0.06707455 0.27194920 
+> R2(z.f)
+Models of class gls that are not phylogenetic do not have a R2_resid method.
+   R2_lik   R2_pred 
+0.7252294 0.7855702 
+> 
+> # PGLS with a single fixed effect ----
+> n <- 100
+> d <- data.frame(x = rep(0, n), y = 0)
+> 
+> b1 <- 1.5
+> signal <- 0.7
+> 
+> phy <- compute.brlen(rtree(n = n), method = 'Grafen', power = 1)
+> phy.x <- compute.brlen(phy, method = 'Grafen', power = .0001)
+> 
+> # Generate random data
+> x <- rTraitCont(phy.x, model = 'BM', sigma = 1)
+> e <- signal ^ 0.5 * rTraitCont(phy, model = 'BM', sigma = 1) +
++   (1 - signal) ^ 0.5 * rnorm(n = n)
+> d$x <- x[match(names(e), names(x))]
+> d$y <- b1 * x + e
+> rownames(d) <- phy$tip.label
+> d$sp <- phy$tip.label
+> 
+> # Fit with phylolm() in {phylolm}
+> z.f <- phylolm(y ~ x, phy = phy, data = d, model = 'lambda')
+> z.x <- phylolm(y ~ 1, phy = phy, data = d, model = 'lambda')
+> z.v <- lm(y ~ x, data = d)
+> 
+> R2(z.f, z.x, phy = phy)
+   R2_lik  R2_resid   R2_pred 
+0.8470207 0.8632149 0.8562347 
+> R2(z.f, z.v, phy = phy)
+   R2_lik  R2_resid   R2_pred 
+0.2547901 0.3440106 0.3013723 
+> R2(z.f, phy = phy)
+   R2_lik  R2_resid   R2_pred 
+0.8473914 0.8656625 0.8569308 
+> 
+> # These data can also be fit with pglmm_compare in {phyr}
+> # Note that pglmm_compare will be renamed to pglmm_compare in the next version
+> z.f <- pglmm_compare(y ~ x, data = d, phy = phy, REML=FALSE)
+'as(<matrix>, "dgTMatrix")' is deprecated.
+Use 'as(as(as(., "dMatrix"), "generalMatrix"), "TsparseMatrix")' instead.
+See help("Deprecated") and help("Matrix-deprecated").
+> z.x <- pglmm_compare(y ~ 1, data = d, phy = phy, REML=FALSE)
+> z.v <- glm(y ~ x, data = d)
+> 
+> R2(z.f, z.x)
+    R2_lik   R2_resid    R2_pred 
+0.84702072 0.86323737 0.04480609 
+> R2(z.f, z.v)
+    R2_lik   R2_resid    R2_pred 
+ 0.2547901  0.3439794 -3.6418490 
+> R2(z.f)
+    R2_lik   R2_resid    R2_pred 
+0.84739135 0.86565609 0.04941378 
+> 
+> # This also works for models fit with gls() in {nlme}
+> z.f <- gls(y ~ x, data = d, correlation = corPagel(1, phy, form = ~sp), method = "ML")
+> z.x <- gls(y ~ 1, data = d, correlation = corPagel(1, phy, form = ~sp), method = "ML")
+> z.v <- lm(y ~ x, data = d)
+> 
+> R2(z.f, z.x)
+   R2_lik  R2_resid   R2_pred 
+0.8470207 0.8632151 0.8562346 
+> R2(z.f, z.v)
+   R2_lik  R2_resid   R2_pred 
+0.2547901 0.3440202 0.3013722 
+> R2(z.f)
+   R2_lik  R2_resid   R2_pred 
+0.8473914 0.8656644 0.8569307 
+> 
+> # But note that you need to define weights for gls() with non-ultrametric trees;
+> # if not, you will get a error from R2_resid,  "Matrix is not block-diagonal"
+> 
+> phy.nu <- rtree(n = n)
+> # Generate random data
+> e <- signal ^ 0.5 * rTraitCont(phy.nu, model = 'BM', sigma = 1) +
++   (1 - signal) ^ 0.5 * rnorm(n = n)
+> d$x <- x[match(names(e), names(x))]
+> d$y <- b1 * x + e
+> rownames(d) <- phy.nu$tip.label
+> d$sp <- phy.nu$tip.label
+> 
+> weights <- diag(vcv.phylo(phy.nu))
+> z.f <- gls(y ~ x, data = d,
++            correlation = corPagel(1, phy.nu, form = ~sp),
++            weights = varFixed(~weights), method = "ML")
+> z.x <- gls(y ~ 1, data = d,
++            correlation = corPagel(1, phy.nu, form = ~sp),
++            weights = varFixed(~weights), method = "ML")
+> z.v <- lm(y ~ x, weights = 1/weights, data = d)
+> 
+> R2(z.f, z.x)
+    R2_lik   R2_resid    R2_pred 
+0.05723778 0.09429155 0.06305523 
+> R2(z.f, z.v)
+    R2_lik   R2_resid    R2_pred 
+ 0.1136572 -2.0255772  0.2778122 
+> R2(z.f)
+    R2_lik   R2_resid    R2_pred 
+0.07835455 0.20206097 0.27406698 
+> 
+> # PGLMM with one fixed effect ----
+> n <- 100
+> b1 <- 1.5
+> signal <- 2
+> 
+> phy <- compute.brlen(rtree(n = n), method = 'Grafen', power = 1)
+> phy.x <- compute.brlen(phy, method = 'Grafen', power = .0001)
+> 
+> # Generate random data
+> x <- rnorm(n)
+> d <- data.frame(x = x, y = 0)
+> 
+> e <- signal * rTraitCont(phy, model = 'BM', sigma = 1)
+> e <- e[match(phy$tip.label, names(e))]
+> 
+> d$y <- rbinom(n = n, size = 1, prob = inv.logit(b1 * d$x + e))
+> rownames(d) <- phy$tip.label
+> # Use the function phyloglm() from the phylolm package.
+> z.f <- phyloglm(y ~ x, data = d, start.alpha = 1, phy = phy)
+> z.x <- phyloglm(y ~ 1, data = d, phy = phy, start.alpha = min(20, z.f$alpha))
+Warning in phyloglm(y ~ 1, data = d, phy = phy, start.alpha = min(20, z.f$alpha)) :
+  the estimate of 'alpha' (53.8427529297469) reached the upper bound (54.5981500331442).
+ This may simply reflect a flat likelihood at large alpha values,
+ meaning that the phylogenetic correlation is estimated to be negligible.
+Warning in phyloglm(y ~ 1, data = d, phy = phy, start.alpha = min(20, z.f$alpha)) :
+  phyloglm failed to converge.
+
+> z.v <- glm(y ~ x, data = d, family = 'binomial')
+> 
+> R2(z.f, z.x)
+Models of class phyloglm only have a R2_lik method.
+Warning in R2_lik.phyloglm(mod, mod.r) :
+  In mod.r, alphaWarn = 2, so model refit with glm()
+Warning in R2_lik.phyloglm(mod, mod.r) :
+  Reduced model mod.r was not converged
+   R2_lik 
+0.2339785 
+> R2(z.f, z.v)
+Models of class phyloglm only have a R2_lik method.
+    R2_lik 
+0.02502602 
+> R2(z.f)
+Models of class phyloglm only have a R2_lik method.
+   R2_lik 
+0.2339785 
+> 
+> # Use the function pglmm_compare() from the phyr package. Note that this is a 
+> # different model from phyloglm()
+> z.f <- pglmm_compare(y ~ x, data = d, family = 'binomial', phy = phy, REML = FALSE)
+> z.x <- pglmm_compare(y ~ 1, data = d, family = 'binomial', phy = phy, REML = FALSE)
+> z.v <- glm(y ~ x, data = d, family = 'binomial')
+> 
+> R2(z.f, z.x)
+   R2_lik  R2_resid   R2_pred 
+0.1901535 0.3371592 0.2210758 
+> R2(z.f, z.v)
+   R2_lik  R2_resid   R2_pred 
+0.1503297 0.4107898 0.3056483 
+> R2(z.f)
+   R2_lik  R2_resid   R2_pred 
+0.2859991 0.5043766 0.4148613 
+> 
+> # A community example of pglmm {phyr} ----
+> library(mvtnorm)
+> nspp <- 6
+> nsite <- 4
+> 
+> # Simulate a phylogeny that has a lot of phylogenetic signal (power = 1.3)
+> phy <- compute.brlen(rtree(n = nspp), method = "Grafen", power = 1.3)
+> 
+> # Simulate species means
+> sd.sp <- 1
+> mean.sp <- rTraitCont(phy, model = "BM", sigma=sd.sp ^ 2)
+> 
+> # Replicate values of mean.sp over sites
+> Y.sp <- rep(mean.sp, times = nsite)
+> 
+> # Simulate site means
+> sd.site <- 1
+> mean.site <- rnorm(nsite, sd = sd.site)
+> 
+> # Replicate values of mean.site over sp
+> Y.site <- rep(mean.site, each = nspp)
+> 
+> # Compute a covariance matrix for phylogenetic attraction
+> sd.attract <- 1
+> Vphy <- vcv(phy)
+> 
+> # Standardize the phylogenetic covariance matrix to have determinant = 1.
+> # (For an explanation of this standardization, see subsection 4.3.1 in Ives (2018))
+> Vphy <- Vphy/(det(Vphy)^(1/nspp))
+> 
+> # Construct the overall covariance matrix for phylogenetic attraction.
+> # (For an explanation of Kronecker products, see subsection 4.3.1 in the book)
+> V <- kronecker(diag(nrow = nsite, ncol = nsite), Vphy)
+> Y.attract <- array(t(rmvnorm(n = 1, sigma = sd.attract^2*V)))
+> 
+> # Simulate residual errors
+> sd.e <- 1
+> Y.e <- rnorm(nspp * nsite, sd = sd.e)
+> 
+> # Construct the dataset
+> d <- data.frame(sp = rep(phy$tip.label, times = nsite), site = rep(1:nsite, each = nspp))
+> 
+> # Simulate abundance data
+> d$Y <- Y.sp + Y.site + Y.attract + Y.e
+> 
+> # Full and reduced models
+> z.f <- pglmm(Y ~ 1 + (1|sp__) + (1|site) + (1|sp__@site),
++              data = d, cov_ranef = list(sp = phy), REML = FALSE)
+> z.nested <- pglmm(Y ~ 1 + (1|sp__) + (1|site),
++                   data = d, cov_ranef = list(sp = phy), REML = FALSE)
+> z.sp <- pglmm(Y ~ 1 + (1|sp) + (1|site),
++               data = d, cov_ranef = list(sp = phy), REML = FALSE)
+> 
+> R2(z.f, z.nested)
+Models of class pglmm do not have a R2_resid method.
+   R2_lik   R2_pred 
+0.2105983 0.4784063 
+> R2(z.nested, z.sp)
+Models of class pglmm do not have a R2_resid method.
+      R2_lik      R2_pred 
+0.0007723472 0.0041118390 
+> R2(z.f)
+Models of class pglmm do not have a R2_resid method.
+   R2_lik   R2_pred 
+0.2819389 0.5614172 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:mvtnorm’, ‘package:phyr’, ‘package:nlme’,
+  ‘package:lme4’, ‘package:Matrix’, ‘package:phylolm’, ‘package:ape’
+
+> nameEx("R2_lik")
+> ### * R2_lik
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: R2_lik
+> ### Title: Calculate R2_lik
+> ### Aliases: R2_lik
+> 
+> ### ** Examples
+> 
+> library(ape)
+
+Attaching package: ‘ape’
+
+The following object is masked from ‘package:rr2’:
+
+    binaryPGLMM
+
+> library(phylolm)
+> library(lme4)
+Loading required package: Matrix
+> library(nlme)
+
+Attaching package: ‘nlme’
+
+The following object is masked from ‘package:lme4’:
+
+    lmList
+
+> library(phyr)
+> 
+> set.seed(12345)
+> p1 <- 10
+> nsample <- 10
+> n <- p1 * nsample
+> 
+> d <- data.frame(x1 = 0, x2 = 0, u1 = rep(1:p1, each = nsample),
++                 u2 = rep(1:p1, times = nsample))
+> d$u1 <- as.factor(d$u1)
+> d$u2 <- as.factor(d$u2)
+> 
+> b1 <- 1
+> b2 <- -1
+> sd1 <- 1.5
+> 
+> d$x1 <- rnorm(n = n)
+> d$x2 <- rnorm(n = n)
+> d$y.lmm <- b1 * d$x1 + b2 * d$x2 + 
++   rep(rnorm(n = p1, sd = sd1), each = nsample) +
++   rep(rnorm(n = p1, sd = sd1), times = nsample) + 
++   rnorm(n = n)
+> 
+> prob <- inv.logit(b1 * d$x1 + rep(rnorm(n = p1, sd = sd1), each = nsample))
+> d$y.glmm <- rbinom(n = n, size = 1, prob = prob)
+> 
+> # LMM with two fixed and two random effects ----
+> z.f <- lmer(y.lmm ~ x1 + x2 + (1 | u1) + (1 | u2), data = d, REML = FALSE)
+> z.x <- lmer(y.lmm ~ x1 + (1 | u1) + (1 | u2), data = d, REML = FALSE)
+> z.v <- lmer(y.lmm ~ 1 + (1 | u2), data = d, REML = FALSE)
+> z.0 <- lm(y.lmm ~ 1, data = d)
+> 
+> R2_lik(z.f, z.x)
+[1] 0.5040451
+> R2_lik(z.f, z.v)
+[1] 0.7160172
+> R2_lik(z.f)
+[1] 0.7926359
+> 
+> # GLMM with one fixed and one random effect ----
+> z.f <- glmer(y.glmm ~ x1 + (1 | u1), data = d, family = 'binomial')
+> z.x <- glmer(y.glmm ~ 1 + (1 | u1), data = d, family = 'binomial')
+> z.v <- glm(y.glmm ~ x1, data = d, family = 'binomial')
+> 
+> R2_lik(z.f, z.x)
+[1] 0.1091067
+> R2_lik(z.f, z.v)
+[1] 0.126144
+> R2_lik(z.f)
+[1] 0.221249
+> 
+> # PGLS with a single fixed effect ----
+> n <- 100
+> d <- data.frame(x = array(0, dim = n), y = 0)
+> 
+> b1 <- 1.5
+> signal <- 0.5
+> 
+> phy <- compute.brlen(rtree(n = n), method = 'Grafen', power = 1)
+> phy.x <- compute.brlen(phy, method = 'Grafen', power = .0001)
+> 
+> # Generate random data
+> x <- rTraitCont(phy.x, model = 'BM', sigma = 1)
+> e <- signal^0.5 * rTraitCont(phy, model = 'BM', sigma = 1) + (1-signal)^0.5 * rnorm(n = n)
+> d$x <- x[match(names(e), names(x))]
+> d$y <- b1 * x + e
+> rownames(d) <- phy$tip.label
+> d$sp <- phy$tip.label
+> 
+> z.f <- pglmm_compare(y ~ x, data = d, phy = phy, REML=FALSE)
+> z.x <- pglmm_compare(y ~ 1, data = d, phy = phy, REML=FALSE)
+> z.v <- glm(y ~ x, data = d)
+> 
+> R2_lik(z.f, z.x)
+[1] 0.7564491
+> R2_lik(z.f, z.v)
+[1] 0.221244
+> R2_lik(z.f)
+[1] 0.7578927
+> 
+> # These data can also be fit with phylolm() in {phylolm}
+> z.f <- phylolm(y ~ x, phy = phy, data = d, model = 'lambda')
+> z.x <- phylolm(y ~ 1, phy = phy, data = d, model = 'lambda')
+> z.v <- lm(y ~ x, data = d)
+> 
+> R2_lik(z.f, z.x)
+[1] 0.7564491
+> R2_lik(z.f, z.v)
+[1] 0.2212442
+> R2_lik(z.f)
+[1] 0.7578928
+> 
+> # This also works for models fit with gls() in {nlme}
+> z.f <- gls(y ~ x, data = d, correlation = corPagel(1, phy, form = ~sp), method = "ML")
+> z.x <- gls(y ~ 1, data = d, correlation = corPagel(1, phy, form = ~sp), method = "ML")
+> z.v <- lm(y ~ x, data = d)
+> 
+> R2_lik(z.f, z.x)
+[1] 0.7564491
+> R2_lik(z.f, z.v)
+[1] 0.2212442
+> R2_lik(z.f)
+[1] 0.7578928
+> 
+> # PGLMM with one fixed effect ----
+> n <- 100
+> b1 <- 1.5
+> signal <- 2
+> 
+> phy <- compute.brlen(rtree(n = n), method = 'Grafen', power = 1)
+> phy.x <- compute.brlen(phy, method = 'Grafen', power = .0001)
+> 
+> # Generate random data
+> x <- rnorm(n)
+> d <- data.frame(x = x, y = 0)
+> 
+> e <- signal * rTraitCont(phy, model = 'BM', sigma = 1)
+> e <- e[match(phy$tip.label, names(e))]
+> 
+> d$y <- rbinom(n = n, size = 1, prob = inv.logit(b1 * d$x + e))
+> rownames(d) <- phy$tip.label
+> 
+> z.f <- phyloglm(y ~ x, data = d, start.alpha = 1, phy = phy)
+> z.x <- phyloglm(y ~ 1, data = d, phy = phy, start.alpha = min(20, z.f$alpha))
+Warning in phyloglm(y ~ 1, data = d, phy = phy, start.alpha = min(20, z.f$alpha)) :
+  phyloglm failed to converge.
+
+> z.v <- glm(y ~ x, data = d, family = 'binomial')
+> 
+> R2_lik(z.f, z.x)
+Warning in R2_lik.phyloglm(mod, mod.r) :
+  Reduced model mod.r was not converged
+[1] 0.5197346
+> R2_lik(z.f, z.v)
+[1] 0.0693166
+> R2_lik(z.f)
+[1] 0.4757723
+> 
+> # These data can also be fit with pglmm_compare(), although note that 
+> # this is a different model from phyloglm()
+> 
+> z.f <- pglmm_compare(y ~ x, data = d, family = "binomial", phy = phy, REML=FALSE)
+> z.x <- pglmm_compare(y ~ 1, data = d, family = "binomial", phy = phy, REML=FALSE)
+> z.v <- glm(y ~ x, data = d, family = "binomial")
+> 
+> R2_lik(z.f, z.x)
+[1] 0.3057661
+> R2_lik(z.f, z.v)
+[1] 0.01119579
+> R2_lik(z.f)
+[1] 0.3057661
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:phyr’, ‘package:nlme’, ‘package:lme4’,
+  ‘package:Matrix’, ‘package:phylolm’, ‘package:ape’
+
+> nameEx("R2_pred")
+> ### * R2_pred
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: R2_pred
+> ### Title: Calculate R2_pred
+> ### Aliases: R2_pred
+> 
+> ### ** Examples
+> 
+> library(ape)
+
+Attaching package: ‘ape’
+
+The following object is masked from ‘package:rr2’:
+
+    binaryPGLMM
+
+> library(phylolm)
+> library(lme4)
+Loading required package: Matrix
+> library(nlme)
+
+Attaching package: ‘nlme’
+
+The following object is masked from ‘package:lme4’:
+
+    lmList
+
+> library(phyr)
+> 
+> set.seed(12345)
+> p1 <- 10
+> nsample <- 10
+> n <- p1 * nsample
+> 
+> d <- data.frame(x1 = 0, x2 = 0, u1 = rep(1:p1, each = nsample),
++                 u2 = rep(1:p1, times = nsample))
+> d$u1 <- as.factor(d$u1)
+> d$u2 <- as.factor(d$u2)
+> 
+> b1 <- 1
+> b2 <- -1
+> sd1 <- 1.5
+> 
+> d$x1 <- rnorm(n = n)
+> d$x2 <- rnorm(n = n)
+> d$y.lmm <- b1 * d$x1 + b2 * d$x2 + 
++   rep(rnorm(n = p1, sd = sd1), each = nsample) +
++   rep(rnorm(n = p1, sd = sd1), times = nsample) + 
++   rnorm(n = n)
+> 
+> prob <- inv.logit(b1 * d$x1 + rep(rnorm(n = p1, sd = sd1), each = nsample))
+> d$y.glmm <- rbinom(n = n, size = 1, prob = prob)
+> 
+> # LMM with two fixed and two random effects ----
+> z.f <- lmer(y.lmm ~ x1 + x2 + (1 | u1) + (1 | u2), data = d, REML = FALSE)
+> z.x <- lmer(y.lmm ~ x1 + (1 | u1) + (1 | u2), data = d, REML = FALSE)
+> z.v <- lmer(y.lmm ~ 1 + (1 | u2), data = d, REML = FALSE)
+> z.0 <- lm(y.lmm ~ 1, data = d)
+> 
+> R2_pred(z.f, z.x)
+[1] 0.5790698
+> R2_pred(z.f, z.v)
+[1] 0.8329192
+> R2_pred(z.f)
+[1] 0.9093432
+> 
+> # GLMM with one fixed and one random effect ----
+> z.f <- glmer(y.glmm ~ x1 + (1 | u1), data = d, family = 'binomial')
+> z.x <- glmer(y.glmm ~ 1 + (1 | u1), data = d, family = 'binomial')
+> z.v <- glm(y.glmm ~ x1, data = d, family = 'binomial')
+> 
+> R2_pred(z.f, z.x)
+[1] 0.09784273
+> R2_pred(z.f, z.v)
+[1] 0.2814428
+> R2_pred(z.f)
+[1] 0.3399959
+> 
+> # PGLS with a single fixed effect ----
+> n <- 100
+> d <- data.frame(x = array(0, dim = n), y = 0)
+> 
+> b1 <- 1.5
+> signal <- 0.7
+> 
+> phy <- compute.brlen(rtree(n = n), method = 'Grafen', power = 1)
+> phy.x <- compute.brlen(phy, method = 'Grafen', power = .0001)
+> 
+> # Generate random data
+> x <- rTraitCont(phy.x, model = 'BM', sigma = 1)
+> e <- signal ^ 0.5 * rTraitCont(phy, model = 'BM', sigma = 1) +
++   (1 - signal) ^ 0.5 * rnorm(n = n)
+> d$x <- x[match(names(e), names(x))]
+> d$y <- b1 * x + e
+> rownames(d) <- phy$tip.label
+> d$sp <- phy$tip.label
+> 
+> z.x <- gls(y ~ 1, data = d, correlation = corPagel(1, phy, form = ~sp), method = "ML")
+> z.f <- gls(y ~ x, data = d, correlation = corPagel(1, phy, form = ~sp), method = "ML")
+> z.v <- lm(y ~ x, data = d)
+> 
+> R2_pred(z.f, z.x)
+[1] 0.8509727
+> R2_pred(z.f, z.v)
+[1] 0.4861976
+> R2_pred(z.f)
+[1] 0.8557832
+> 
+> # PGLMM with one fixed effect ----
+> n <- 100
+> b1 <- 1.5
+> signal <- 2
+> 
+> phy <- compute.brlen(rtree(n = n), method = 'Grafen', power = 1)
+> phy.x <- compute.brlen(phy, method = 'Grafen', power = .0001)
+> 
+> # Generate random data
+> x <- rnorm(n)
+> d <- data.frame(x = x, y = 0)
+> 
+> e <- signal * rTraitCont(phy, model = 'BM', sigma = 1)
+> e <- e[match(phy$tip.label, names(e))]
+> 
+> d$y <- rbinom(n = n, size = 1, prob = inv.logit(b1 * d$x + e))
+> rownames(d) <- phy$tip.label
+> 
+> z.f <- pglmm_compare(y ~ x, data = d, family = "binomial", phy = phy)
+> z.x <- pglmm_compare(y ~ 1, data = d, family = "binomial", phy = phy)
+> z.v <- glm(y ~ x, data = d, family = "binomial")
+> 
+> R2_pred(z.f, z.x)
+[1] 0.4762216
+> R2_pred(z.f, z.v)
+[1] 0.217728
+> R2_pred(z.f)
+[1] 0.4934769
+> 
+> #' #################
+> # A community example of pglmm {phyr} contrasting R2_pred when bayes = TRUE and bayes = F
+> 
+> library(mvtnorm)
+> nspp <- 6
+> nsite <- 4
+> 
+> # Simulate a phylogeny that has a lot of phylogenetic signal (power = 1.3)
+> phy <- compute.brlen(rtree(n = nspp), method = "Grafen", power = 1.3)
+> 
+> # Simulate species means
+> sd.sp <- 1
+> mean.sp <- rTraitCont(phy, model = "BM", sigma=sd.sp^2)
+> 
+> # Replicate values of mean.sp over sites
+> Y.sp <- rep(mean.sp, times=nsite)
+> 
+> # Simulate site means
+> sd.site <- 1
+> mean.site <- rnorm(nsite, sd=sd.site)
+> 
+> # Replicate values of mean.site over sp
+> Y.site <- rep(mean.site, each=nspp)
+> 
+> # Compute a covariance matrix for phylogenetic attraction
+> sd.attract <- 1
+> Vphy <- vcv(phy)
+> 
+> # Standardize the phylogenetic covariance matrix to have determinant = 1.
+> # (For an explanation of this standardization, see subsection 4.3.1 in Ives (2018))
+> Vphy <- Vphy/(det(Vphy)^(1/nspp))
+> 
+> # Construct the overall covariance matrix for phylogenetic attraction.
+> # (For an explanation of Kronecker products, see subsection 4.3.1 in the book)
+> V <- kronecker(diag(nrow = nsite, ncol = nsite), Vphy)
+> Y.attract <- array(t(rmvnorm(n = 1, sigma = sd.attract^2*V)))
+> 
+> # Simulate residual errors
+> sd.e <- 1
+> Y.e <- rnorm(nspp*nsite, sd = sd.e)
+> 
+> # Construct the dataset
+> d <- data.frame(sp = rep(phy$tip.label, times = nsite), site = rep(1:nsite, each = nspp))
+> 
+> # Simulate abundance data
+> d$Y <- Y.sp + Y.site + Y.attract + Y.e
+> 
+> # Full and reduced models
+> z.f <- pglmm(Y ~ 1 + (1|sp__) + (1|site) + (1|sp__@site),
++         data = d, cov_ranef = list(sp = phy), REML = FALSE)
+> z.nested <- pglmm(Y ~ 1 + (1|sp__) + (1|site),
++         data = d, cov_ranef = list(sp = phy), REML = FALSE)
+> z.sp <- pglmm(Y ~ 1 + (1|sp) + (1|site),
++         data = d, cov_ranef = list(sp = phy), REML = FALSE)
+> 
+> R2_pred(z.f, z.nested)
+[1] 0.1434724
+> R2_pred(z.nested, z.sp)
+[1] 0.02517097
+> R2_pred(z.f)
+[1] 0.271015
+> 
+> # vector - matrix
+> # These are generally larger when gaussian.pred = "nearest_node"
+> R2_pred(z.f, z.nested, gaussian.pred = "nearest_node")
+Warning in R2_pred(z.f, z.nested, gaussian.pred = "nearest_node") :
+  Predictions are made with gaussian.pred = nearest_node
+[1] 0.1446249
+> R2_pred(z.nested, z.sp, gaussian.pred = "nearest_node")
+Warning in R2_pred(z.nested, z.sp, gaussian.pred = "nearest_node") :
+  Predictions are made with gaussian.pred = nearest_node
+[1] -0.02973408
+> R2_pred(z.f, gaussian.pred = "nearest_node")
+Warning in R2_pred(z.f, gaussian.pred = "nearest_node") :
+  Predictions are made with gaussian.pred = nearest_node
+[1] 0.436354
+> 
+> # # When bayes = TRUE, gaussian.pred does not work.
+> # # Commented out because INLA is not on CRAN
+> # z.f.bayes <- pglmm(Y ~ 1 + (1|sp__) + (1|site) + (1|sp__@site),
+> #                data = d, cov_ranef = list(sp = phy), bayes = TRUE)
+> # z.nested.bayes <- pglmm(Y ~ 1 + (1|sp__) + (1|site),
+> #                data = d, cov_ranef = list(sp = phy), bayes = TRUE)
+> # z.sp.bayes <- pglmm(Y ~ 1 + (1|sp) + (1|site),
+> #                data = d, cov_ranef = list(sp = phy), bayes = TRUE)
+> # 
+> # R2_pred(z.f.bayes, z.nested.bayes)
+> # R2_pred(z.nested.bayes, z.sp.bayes)
+> # R2_pred(z.f.bayes)
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:mvtnorm’, ‘package:phyr’, ‘package:nlme’,
+  ‘package:lme4’, ‘package:Matrix’, ‘package:phylolm’, ‘package:ape’
+
+> nameEx("R2_resid")
+> ### * R2_resid
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: R2_resid
+> ### Title: Calculate R2_resid
+> ### Aliases: R2_resid
+> 
+> ### ** Examples
+> 
+> library(ape)
+
+Attaching package: ‘ape’
+
+The following object is masked from ‘package:rr2’:
+
+    binaryPGLMM
+
+> library(phylolm)
+> library(lme4)
+Loading required package: Matrix
+> library(nlme)
+
+Attaching package: ‘nlme’
+
+The following object is masked from ‘package:lme4’:
+
+    lmList
+
+> library(phyr)
+> 
+> set.seed(12345)
+> p1 <- 10
+> nsample <- 10
+> n <- p1 * nsample
+> 
+> d <- data.frame(x1 = 0, x2 = 0, u1 = rep(1:p1, each = nsample),
++                 u2 = rep(1:p1, times = nsample))
+> d$u1 <- as.factor(d$u1)
+> d$u2 <- as.factor(d$u2)
+> 
+> b1 <- 1
+> b2 <- -1
+> sd1 <- 1.5
+> 
+> d$x1 <- rnorm(n = n)
+> d$x2 <- rnorm(n = n)
+> d$y.lmm <- b1 * d$x1 + b2 * d$x2 + 
++   rep(rnorm(n = p1, sd = sd1), each = nsample) +
++   rep(rnorm(n = p1, sd = sd1), times = nsample) + 
++   rnorm(n = n)
+> 
+> prob <- inv.logit(b1 * d$x1 + rep(rnorm(n = p1, sd = sd1), each = nsample))
+> d$y.glmm <- rbinom(n = n, size = 1, prob = prob)
+> 
+> # LMM with two fixed and two random effects ----
+> z.f <- lmer(y.lmm ~ x1 + x2 + (1 | u1) + (1 | u2), data = d, REML = FALSE)
+> z.x <- lmer(y.lmm ~ x1 + (1 | u1) + (1 | u2), data = d, REML = FALSE)
+> z.v <- lmer(y.lmm ~ 1 + (1 | u2), data = d, REML = FALSE)
+> z.0 <- lm(y.lmm ~ 1, data = d)
+> 
+> R2_resid(z.f, z.x)
+[1] 0.5740266
+> R2_resid(z.f, z.v)
+[1] 0.8134681
+> R2_resid(z.f)
+[1] 0.8891184
+> 
+> # GLMM with one fixed and one random effect ----
+> z.f <- glmer(y.glmm ~ x1 + (1 | u1), data = d, family = 'binomial')
+> z.x <- glmer(y.glmm ~ 1 + (1 | u1), data = d, family = 'binomial')
+> z.v <- glm(y.glmm ~ x1, data = d, family = 'binomial')
+> 
+> R2_resid(z.f, z.x)
+[1] 0.06541345
+> R2_resid(z.f, z.v)
+[1] 0.2266569
+> R2_resid(z.f)
+[1] 0.2853903
+> 
+> # PGLS with a single fixed effect ----
+> n <- 100
+> d <- data.frame(x = array(0, dim = n), y = 0)
+> 
+> b1 <- 1.5
+> signal <- 0.7
+> 
+> phy <- compute.brlen(rtree(n = n), method = 'Grafen', power = 1)
+> phy.x <- compute.brlen(phy, method = 'Grafen', power = .0001)
+> 
+> # Generate random data
+> x <- rTraitCont(phy.x, model = 'BM', sigma = 1)
+> e <- signal ^ 0.5 * rTraitCont(phy, model = 'BM', sigma = 1) +
++   (1 - signal) ^ 0.5 * rnorm(n = n)
+> d$x <- x[match(names(e), names(x))]
+> d$y <- b1 * x + e
+> rownames(d) <- phy$tip.label
+> d$sp <- phy$tip.label
+> 
+> z.x <- pglmm_compare(y ~ 1, phy = phy, data = d, REML=FALSE)
+> z.f <- pglmm_compare(y ~ x, phy = phy, data = d, REML=FALSE)
+> z.v <- lm(y ~ x, data = d)
+> 
+> R2_resid(z.f, z.x)
+[1] 0.8494949
+> R2_resid(z.f, z.v)
+[1] 0.4975238
+> R2_resid(z.f)
+[1] 0.8589623
+> 
+> z.x <- phylolm(y ~ 1, phy = phy, data = d, model = 'lambda')
+> z.f <- phylolm(y ~ x, phy = phy, data = d, model = 'lambda')
+> z.v <- lm(y ~ x, data = d)
+> 
+> R2_resid(z.f, z.x, phy = phy)
+[1] 0.8495019
+> R2_resid(z.f, z.v, phy = phy)
+[1] 0.4975175
+> R2_resid(z.f, phy = phy)
+[1] 0.8589606
+> 
+> # This also works for models fit with gls() in {nlme}
+> z.f <- gls(y ~ x, data = d, correlation = corPagel(1, phy, form = ~sp), method = "ML")
+> z.x <- gls(y ~ 1, data = d, correlation = corPagel(1, phy, form = ~sp), method = "ML")
+> z.v <- lm(y ~ x, data = d)
+> 
+> R2_resid(z.f, z.x)
+[1] 0.849513
+> R2_resid(z.f, z.v)
+[1] 0.4975366
+> R2_resid(z.f)
+[1] 0.8589659
+> 
+> # But note that you need to define weights for gls() with non-ultrametric trees;
+> # if not, you will get a error "Matrix is not block-diagonal"
+> 
+> phy.nu <- rtree(n = n)
+> 
+> # Generate random data
+> e <- signal ^ 0.5 * rTraitCont(phy.nu, model = 'BM', sigma = 1) +
++   (1 - signal) ^ 0.5 * rnorm(n = n)
+> d$x <- x[match(names(e), names(x))]
+> d$y <- b1 * x + e
+> rownames(d) <- phy.nu$tip.label
+> d$sp <- phy.nu$tip.label
+> 
+> weights <- diag(vcv.phylo(phy.nu))
+> z.x <- gls(y ~ 1,data = d,
++          correlation = corPagel(1, phy.nu, form = ~sp),
++          weights=varFixed(~weights), method = "ML")
+> z.f <- gls(y ~ x,data = d,
++          correlation = corPagel(1, phy.nu, form = ~sp),
++          weights=varFixed(~weights), method = "ML")
+> z.v <- lm(y ~ x, weights = 1/weights, data = d)
+> 
+> R2_resid(z.f, z.x)
+[1] 0.004180242
+> R2_resid(z.f, z.v)
+[1] -2.476031
+> R2_resid(z.f)
+[1] 0.09342274
+> 
+> # PGLMM with one fixed effect ----
+> 
+> n <- 100
+> b1 <- 1.5
+> signal <- 2
+> 
+> phy <- compute.brlen(rtree(n = n), method = 'Grafen', power = 1)
+> phy.x <- compute.brlen(phy, method = 'Grafen', power = .0001)
+> 
+> # Generate random data
+> x <- rnorm(n)
+> d <- data.frame(x = x, y = 0)
+> 
+> e <- signal * rTraitCont(phy, model = 'BM', sigma = 1)
+> e <- e[match(phy$tip.label, names(e))]
+> 
+> d$y <- rbinom(n = n, size = 1, prob = inv.logit(b1 * d$x + e))
+> rownames(d) <- phy$tip.label
+> 
+> # Use the function pglmm_compare in {phyr}.
+> z.f <- pglmm_compare(y ~ x, data = d, family = "binomial", phy = phy)
+> z.x <- pglmm_compare(y ~ 1, data = d, family = "binomial", phy = phy)
+> z.v <- glm(y ~ x, data = d, family = 'binomial')
+> 
+> R2_resid(z.f, z.x)
+[1] 0.3372527
+> R2_resid(z.f, z.v)
+[1] 0.3247603
+> R2_resid(z.f)
+[1] 0.4892628
+> 
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+
+detaching ‘package:phyr’, ‘package:nlme’, ‘package:lme4’,
+  ‘package:Matrix’, ‘package:phylolm’, ‘package:ape’
+
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  6.893 6.775 5.326 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

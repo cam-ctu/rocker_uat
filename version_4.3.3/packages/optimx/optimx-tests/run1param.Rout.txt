@@ -1,0 +1,213 @@
+
+R version 4.3.3 (2024-02-29) -- "Angel Food Cake"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> # run1param.R
+> ##  author: John C. Nash
+> # rm(list=ls())
+> require(optimx)
+Loading required package: optimx
+> sessionInfo()
+R version 4.3.3 (2024-02-29)
+Platform: x86_64-pc-linux-gnu (64-bit)
+Running under: Ubuntu 22.04.4 LTS
+
+Matrix products: default
+BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
+LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.20.so;  LAPACK version 3.10.0
+
+locale:
+ [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              
+ [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    
+ [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   
+ [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 
+ [9] LC_ADDRESS=C               LC_TELEPHONE=C            
+[11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
+
+time zone: Etc/UTC
+tzcode source: system (glibc)
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] optimx_2023-10.21
+
+loaded via a namespace (and not attached):
+[1] compiler_4.3.3      nloptr_2.0.3        numDeriv_2016.8-1.1
+[4] pracma_2.4.4       
+> 
+> # Note that solving 1 dimensional problems with multi-dimensional
+> # minimizers can be unpredictable!
+> 
+>   f1<-function(xx){ # function of one parameter
++     ((3*xx+2)*xx-5)*xx+4  ## 3*xx^3 + 2*xx^2 -5*xx + 4
++   }
+> 
+>   g1 <- function(xx){
++      gg <- 9*xx*xx+4*xx -5
++   }
+>   x0 <- .1234
+>   lb <- -1
+>   ub <- 10
+> 
+> 
+>   cat("R has optimize function for [1D] functions\n")
+R has optimize function for [1D] functions
+>   aoptimize <- optimize(f1, c(-1, 10))
+>   print(aoptimize)
+$minimum
+[1] 0.5555439
+
+$objective
+[1] 2.353909
+
+> 
+>   cat("or we can use optim() with method='Brent' \n")
+or we can use optim() with method='Brent' 
+>   abrent <- optim(x0, f1, lower=lb, upper=ub, method="Brent", control=list(trace=0))
+>   print(abrent)
+$par
+[1] 0.5555556
+
+$value
+[1] 2.353909
+
+$counts
+function gradient 
+      NA       NA 
+
+$convergence
+[1] 0
+
+$message
+NULL
+
+> 
+> # My own Rvmmin and Rcgmin handle 1D
+>   ansone2<-opm(x0, f1, g1, method = c("Rvmmin", "Rcgmin"), control=list(trace=0))
+>   ansone2.sum<-summary(ansone2, order=value)
+>   print(ansone2.sum)
+              p1 s1    value fevals gevals hevals conv kkt1 kkt2 xtime
+Rvmmin 0.5555556    2.353909     16      8      0    0 TRUE TRUE 0.007
+Rcgmin 0.5555556    2.353909      8      6      0    0 TRUE TRUE 0.001
+> 
+>   ansone<-opm(x0, f1, g1, method = "ALL", control=list(trace=0))
+Error : Use `optimize' for univariate optimization
+In addition: Warning messages:
+1: In opm(x0, f1, g1, method = "ALL", control = list(trace = 0)) :
+  'snewtonm' removed from 'method' -- no hess()
+2: In opm(x0, f1, g1, method = "ALL", control = list(trace = 0)) :
+  'snewtm' removed from 'method' -- no hess()
+3: In optim(par = par, fn = efn, gr = egr, method = method, hessian = FALSE,  :
+  one-dimensional optimization by Nelder-Mead is unreliable:
+use "Brent" or optimize() directly
+Error : For univariate functions use some different method.
+Error in pracma::anms(fn = efn, x0 = spar, maxfeval = control$maxfeval) : 
+  is.numeric(x0) && length(x0) > 1 is not TRUE
+Error in rowSums(p[, -ihi]) : 
+  'x' must be an array of at least two dimensions
+>   ansone.sum<-summary(ansone, order=value)
+>   print(ansone.sum)
+                   p1 s1         value fevals gevals hevals conv kkt1 kkt2
+L-BFGS-B    0.5555556     2.353909e+00      7      7      0    0 TRUE TRUE
+lbfgsb3c    0.5555556     2.353909e+00      7      7      0    0 TRUE TRUE
+Rvmmin      0.5555556     2.353909e+00     16      8      0    0 TRUE TRUE
+newuoa      0.5555556     2.353909e+00     23      0      0    0 TRUE TRUE
+bobyqa      0.5555556     2.353909e+00     24      0      0    0 TRUE TRUE
+lbfgs       0.5555556     2.353909e+00      7      7      0    0 TRUE TRUE
+subplex     0.5555556     2.353909e+00    156      0      0    0 TRUE TRUE
+ncg         0.5555556     2.353909e+00     12      6      0    0 TRUE TRUE
+nvm         0.5555556     2.353909e+00     16      8      0    0 TRUE TRUE
+slsqp       0.5555556     2.353909e+00     10      9      0    0 TRUE TRUE
+tnewt       0.5555556     2.353909e+00      5      4      0    0 TRUE TRUE
+nlm         0.5555556     2.353909e+00      8      8      0    0 TRUE TRUE
+nlminb      0.5555556     2.353909e+00      9      7      0    0 TRUE TRUE
+Rcgmin      0.5555556     2.353909e+00      8      6      0    0 TRUE TRUE
+hjn         0.5555555     2.353909e+00     65      0      0    0 TRUE TRUE
+spg         0.5555556     2.353909e+00     17      7      0    0 TRUE TRUE
+ucminf      0.5555556     2.353909e+00      7      7      0    0 TRUE TRUE
+nlnm        0.5555556     2.353909e+00     44      0      0    0 TRUE TRUE
+CG          0.5555555     2.353909e+00     81     21      0    0 TRUE TRUE
+Rtnmin      0.5555555     2.353909e+00     29     29      0    0 TRUE TRUE
+mla         0.5555559     2.353909e+00      9     15      0    0 TRUE TRUE
+BFGS        0.5555551     2.353909e+00     14      7      0    0 TRUE TRUE
+Nelder-Mead 0.5555892     2.353909e+00     32      0      0    0 TRUE TRUE
+nmkb               NA    8.988466e+307      0      0      0 9999   NA   NA
+hjkb               NA    8.988466e+307      0      0      0 9999   NA   NA
+anms               NA    8.988466e+307      0      0      0 9999   NA   NA
+pracmanm           NA    8.988466e+307      2      0      0 9999   NA   NA
+            xtime
+L-BFGS-B    0.001
+lbfgsb3c    0.063
+Rvmmin      0.001
+newuoa      0.000
+bobyqa      0.001
+lbfgs       0.003
+subplex     0.003
+ncg         0.002
+nvm         0.002
+slsqp       0.003
+tnewt       0.002
+nlm         0.001
+nlminb      0.001
+Rcgmin      0.000
+hjn         0.001
+spg         0.005
+ucminf      0.002
+nlnm        0.002
+CG          0.000
+Rtnmin      0.003
+mla         0.014
+BFGS        0.000
+Nelder-Mead 0.000
+nmkb        0.002
+hjkb        0.001
+anms        0.001
+pracmanm    0.001
+> # Most methods actually do OK  
+>   
+> # test 2
+>   x0 = 1
+>   cat("Start with x0=1. Use optim() with method='Brent' \n")
+Start with x0=1. Use optim() with method='Brent' 
+>   abrent1 <- optim(x0, f1, lower=lb, upper=ub, method="Brent", control=list(trace=0))
+>   print(abrent1)
+$par
+[1] 0.5555556
+
+$value
+[1] 2.353909
+
+$counts
+function gradient 
+      NA       NA 
+
+$convergence
+[1] 0
+
+$message
+NULL
+
+> 
+>   ansone1<-opm(x0, f1, g1,  lower=lb, upper=ub, method = c("Rvmmin", "Rcgmin"),  control=list(trace=0))
+>   ansone1.sum<-summary(ansone1, order=value)
+>   print(ansone1.sum)
+              p1 s1    value fevals gevals hevals conv kkt1 kkt2 xtime
+Rvmmin 0.5555556    2.353909     14      6      0    0 TRUE TRUE 0.002
+Rcgmin 0.5555556    2.353909      8      6      0    0 TRUE TRUE 0.002
+> 
+> 
