@@ -1,0 +1,1448 @@
+
+R version 4.3.0 (2023-04-21) -- "Already Tomorrow"
+Copyright (C) 2023 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> ## rosenbrock.R -- tests inspired by the 
+> ## Rosenbrock banana shaped valley
+> rm(list=ls())
+> require(optimx)
+Loading required package: optimx
+> 
+> #Rosenbrock banana valley function -- original
+> f2 <- function(x){
++   return(100*(x[2] - x[1]*x[1])^2 + (1-x[1])^2)
++ }
+> #gradient
+> g2 <- function(x){
++   return(c(-400*x[1]*(x[2] - x[1]*x[1]) - 2*(1-x[1]), 200*(x[2] - x[1]*x[1])))
++ }
+> #Hessian
+> h2 <- function(x) {
++   a11 <- 2 - 400*x[2] + 1200*x[1]*x[1]; a21 <- -400*x[1]
++   return(matrix(c(a11, a21, a21, 200), 2, 2))
++ }
+> 
+> 
+> # we can also use nlm and nlminb
+> fgh2 <- function(x){
++   ## combine f, g and h into single function for nlm
++   ff <- f2(x)
++   gg <- g2(x)
++   hh <- h2(x)
++   attr(ff, "gradient") <- gg
++   attr(ff, "hessian") <- hh
++   ff
++ }
+> 
+> 
+> XRosenbrock.f <- function (x) 
++ {
++     n <- length(x)
++     x1 <- x[2:n]
++     x2 <- x[1:(n - 1)]
++     sum(100 * (x1 - x2^2)^2 + (1 - x2)^2)
++ }
+> XRosenbrock.g <- function (x) 
++ {
++     n <- length(x)
++     g <- rep(NA, n)
++     g[1] <- 2 * (x[1] - 1) + 400 * x[1] * (x[1]^2 - x[2])
++     if (n > 2) {
++         ii <- 2:(n - 1)
++         g[ii] <- 2 * (x[ii] - 1) + 400 * x[ii] * (x[ii]^2 - x[ii + 
++             1]) + 200 * (x[ii] - x[ii - 1]^2)
++     }
++     g[n] <- 200 * (x[n] - x[n - 1]^2)
++     g
++ }
+> 
+> # genrose function code 
+> # A different generalization of the Rosenbrock banana valley function 
+> # -- attempts to match the rosenbrock at gs=100 and x=c(-1.2,1)
+> genrose.f<- function(x, gs=NULL){ # objective function
++ 	n <- length(x)
++         if(is.null(gs)) { gs=100.0 }
++         # Note do not at 1.0 so min at 0
++ 	fval<-sum (gs*(x[1:(n-1)]^2 - x[2:n])^2 + (x[1:(n-1)] - 1)^2)
++ }
+> 
+> genrose.g <- function(x, gs=NULL){
++ # vectorized gradient for genrose.f
++ # Ravi Varadhan 2009-04-03
++ 	n <- length(x)
++         if(is.null(gs)) { gs=100.0 }
++ 	gg <- as.vector(rep(0, n))
++ 	tn <- 2:n
++ 	tn1 <- tn - 1
++ 	z1 <- x[tn] - x[tn1]^2
++ 	z2 <- 1 - x[tn1]
++         # f = gs*z1*z1 + z2*z2
++ 	gg[tn] <- 2 * (gs * z1)
++ 	gg[tn1] <- gg[tn1] - 4 * gs * x[tn1] * z1 - 2 *z2 
++ 	return(gg)
++ }
+> 
+> genrose.h <- function(x, gs=NULL) { ## compute Hessian
++    if(is.null(gs)) { gs=100.0 }
++ 	n <- length(x)
++ 	hh<-matrix(rep(0, n*n),n,n)
++ 	for (i in 2:n) {
++ 		z1<-x[i]-x[i-1]*x[i-1]
++ #		z2<-1.0 - x[i-1] # Not needed
++                 hh[i,i]<-hh[i,i]+2.0*(gs+1.0)
++                 hh[i-1,i-1]<-hh[i-1,i-1]-4.0*gs*z1-4.0*gs*x[i-1]*(-2.0*x[i-1])
++                 hh[i,i-1]<-hh[i,i-1]-4.0*gs*x[i-1]
++                 hh[i-1,i]<-hh[i-1,i]-4.0*gs*x[i-1]
++ 	}
++         return(hh)
++ }
+> 
+> cat("Standard start, original function -- single methods\n\n")
+Standard start, original function -- single methods
+
+> xstart <- c(-1.2,1)
+> 
+> 
+> sn1 <- snewton(xstart, fn=f2, gr=g2, hess=h2, control=list(trace=0))
+> print(sn1)
+$par
+[1] 1 1
+
+$value
+[1] 0
+
+$grad
+[1] 0 0
+
+$Hess
+     [,1] [,2]
+[1,]  802 -400
+[2,] -400  200
+
+$counts
+$counts$niter
+[1] 25
+
+$counts$nfn
+[1] 33
+
+$counts$ngr
+[1] 25
+
+$counts$nhess
+[1] 24
+
+
+$convcode
+[1] 0
+
+$message
+[1] "Small gradient norm"
+
+> 
+> cat("This should be fast, but is not. Why?\n")
+This should be fast, but is not. Why?
+> t1nlm <- nlm(f=fgh2, xstart, hessian=TRUE, print.level=2)
+iteration = 0
+Step:
+[1] 0 0
+Parameter:
+[1] -1.2  1.0
+Function Value
+[1] 24.2
+Gradient:
+[1] -215.6  -88.0
+
+iteration = 1
+Step:
+[1] 0.0247191 0.3806742
+Parameter:
+[1] -1.175281  1.380674
+Function Value
+[1] 4.731884
+Gradient:
+[1] -4.6378164 -0.1222068
+
+iteration = 2
+Step:
+[1]  0.1938396 -0.4555708
+Parameter:
+[1] -0.9814413  0.9251034
+Function Value
+[1] 4.071451
+Gradient:
+[1] -18.929357  -7.624742
+
+iteration = 3
+Step:
+[1]  0.2297392 -0.4128274
+Parameter:
+[1] -0.7517021  0.5122760
+Function Value
+[1] 3.347034
+Gradient:
+[1] -19.37337 -10.55602
+
+iteration = 4
+Step:
+[1]  0.1515835 -0.1751112
+Parameter:
+[1] -0.6001186  0.3371648
+Function Value
+[1] 2.613176
+Gradient:
+[1] -8.715943 -4.595513
+
+iteration = 5
+Step:
+[1]  0.2859646 -0.3202478
+Parameter:
+[1] -0.31415403  0.01691701
+Function Value
+[1] 2.395728
+Gradient:
+[1] -12.90438 -16.35515
+
+iteration = 6
+Step:
+[1] 0.07572128 0.03419945
+Parameter:
+[1] -0.23843275  0.05111646
+Function Value
+[1] 1.537003
+Gradient:
+[1] -3.023707 -1.146742
+
+iteration = 7
+Step:
+[1]  0.05768893 -0.02693649
+Parameter:
+[1] -0.18074382  0.02417997
+Function Value
+[1] 1.401361
+Gradient:
+[1] -2.975175 -1.697671
+
+iteration = 8
+Step:
+[1]  0.05928265 -0.02028025
+Parameter:
+[1] -0.121461164  0.003899727
+Function Value
+[1] 1.269454
+Gradient:
+[1] -2.770214 -2.170617
+
+iteration = 9
+Step:
+[1]  0.08487890 -0.01801455
+Parameter:
+[1] -0.03658226 -0.01411482
+Function Value
+[1] 1.098383
+Gradient:
+[1] -2.299288 -3.090617
+
+iteration = 10
+Step:
+[1]  0.253404866 -0.003087162
+Parameter:
+[1]  0.21682260 -0.01720198
+Function Value
+[1] 1.025711
+Gradient:
+[1]   4.002866 -12.842805
+
+iteration = 11
+Step:
+[1] 0.05657649 0.08874815
+Parameter:
+[1] 0.27339910 0.07154617
+Function Value
+[1] 0.5289734
+Gradient:
+[1] -1.103153 -0.640180
+
+iteration = 12
+Step:
+[1] 0.04430007 0.02454329
+Parameter:
+[1] 0.31769917 0.09608946
+Function Value
+[1] 0.4678802
+Gradient:
+[1] -0.7491159 -0.9686612
+
+iteration = 13
+Step:
+[1] 0.05287769 0.03433734
+Parameter:
+[1] 0.3705769 0.1304268
+Function Value
+[1] 0.4009351
+Gradient:
+[1] -0.2359925 -1.3800832
+
+iteration = 14
+Step:
+[1] 0.08030927 0.06161702
+Parameter:
+[1] 0.4508861 0.1920438
+Function Value
+[1] 0.3141924
+Gradient:
+[1]  0.931568 -2.250896
+
+iteration = 15
+Step:
+[1] 0.1689115 0.1635742
+Parameter:
+[1] 0.6197977 0.3556180
+Function Value
+[1] 0.2259562
+Gradient:
+[1]  6.313001 -5.706221
+
+iteration = 16
+Step:
+[1] 0.05669397 0.09880869
+Parameter:
+[1] 0.6764916 0.4544267
+Function Value
+[1] 0.1056908
+Gradient:
+[1]  0.2227369 -0.6428413
+
+iteration = 17
+Step:
+[1] 0.06703272 0.09178828
+Parameter:
+[1] 0.7435244 0.5462150
+Function Value
+[1] 0.07015354
+Gradient:
+[1]  1.453955 -1.322692
+
+iteration = 18
+Step:
+[1] 0.1104217 0.1708160
+Parameter:
+[1] 0.8539461 0.7170310
+Function Value
+[1] 0.03619857
+Gradient:
+[1]  3.872745 -2.438592
+
+iteration = 19
+Step:
+[1] 0.04247491 0.08473553
+Parameter:
+[1] 0.8964210 0.8017665
+Function Value
+[1] 0.01105409
+Gradient:
+[1]  0.4397418 -0.3608236
+
+iteration = 20
+Step:
+[1] 0.07611493 0.13826616
+Parameter:
+[1] 0.9725359 0.9400327
+Function Value
+[1] 0.004110718
+Gradient:
+[1]  2.198820 -1.158696
+
+iteration = 21
+Step:
+[1] 0.01272252 0.03053970
+Parameter:
+[1] 0.9852585 0.9705724
+Function Value
+[1] 0.000219933
+Gradient:
+[1]  0.03430751 -0.03237251
+
+iteration = 22
+Step:
+[1] 0.01427928 0.02829943
+Parameter:
+[1] 0.9995377 0.9988718
+Function Value
+[1] 4.371119e-06
+Gradient:
+[1]  0.08059697 -0.04077959
+
+iteration = 23
+Step:
+[1] 0.0004441443 0.0010917760
+Parameter:
+[1] 0.9999819 0.9999636
+Function Value
+[1] 3.319368e-10
+Gradient:
+[1]  4.268019e-05 -3.945284e-05
+
+iteration = 24
+Parameter:
+[1] 1 1
+Function Value
+[1] 1.127026e-17
+Gradient:
+[1]  1.297788e-07 -6.560392e-08
+
+Relative gradient close to zero.
+Current iterate is probably solution.
+
+> print(t1nlm)
+$minimum
+[1] 1.127026e-17
+
+$estimate
+[1] 1 1
+
+$gradient
+[1]  1.297788e-07 -6.560392e-08
+
+$hessian
+        [,1]    [,2]
+[1,]  802.24 -400.02
+[2,] -400.02  200.00
+
+$code
+[1] 1
+
+$iterations
+[1] 24
+
+> 
+> cat("It looks like nlminb is using a Newton-type method\n")
+It looks like nlminb is using a Newton-type method
+> t1nlminb <- nlminb(xstart, f2, gradient=g2, hessian=h2, control=list(trace=1))
+  0:     24.200000: -1.20000  1.00000
+  1:     4.7318843: -1.17528  1.38067
+  2:     4.1185053: -1.02313  1.03084
+  3:     3.4877941: -0.851666 0.701020
+  4:     2.8656106: -0.651455 0.387204
+  5:     2.2659017: -0.455737 0.169391
+  6:     1.7378734: -0.287660 0.0544980
+  7:     1.3374723: -0.0940265 -0.0286528
+  8:    0.95926083: 0.0347014 -0.0153667
+  9:    0.73171551: 0.161329 0.00919067
+ 10:    0.55413441: 0.353365 0.0879888
+ 11:    0.32780370: 0.430570 0.179430
+ 12:    0.24068818: 0.519227 0.259826
+ 13:    0.17104970: 0.591831 0.343595
+ 14:    0.11873673: 0.660666 0.430489
+ 15:   0.078218534: 0.725043 0.520572
+ 16:   0.047818423: 0.785832 0.613116
+ 17:   0.025947706: 0.843482 0.707654
+ 18:   0.010811755: 0.932337 0.861356
+ 19:  0.0017636164: 0.958572 0.918173
+ 20: 0.00023632061: 0.987247 0.973799
+ 21: 4.8951105e-06: 0.998131 0.996148
+ 22: 2.9806009e-09: 0.999957 0.999910
+ 23: 1.1784043e-15:  1.00000  1.00000
+ 24: 1.9486097e-28:  1.00000  1.00000
+ 25:     0.0000000:  1.00000  1.00000
+> print(t1nlminb)
+$par
+[1] 1 1
+
+$objective
+[1] 0
+
+$convergence
+[1] 0
+
+$iterations
+[1] 25
+
+$evaluations
+function gradient 
+      33       26 
+
+$message
+[1] "X-convergence (3)"
+
+> cat("But try without the hessian specified\n")
+But try without the hessian specified
+> t1anlminb <- nlminb(xstart, f2, gradient=g2, hessian=NULL, control=list(trace=1))
+  0:     24.200000: -1.20000  1.00000
+  1:     11.298090: -0.916319  1.11579
+  2:     3.6832653: -0.878971 0.811671
+  3:     3.0264111: -0.738569 0.539330
+  4:     2.8738710: -0.669080 0.417996
+  5:     2.7399461: -0.596536 0.312149
+  6:     2.4721420: -0.512267 0.219383
+  7:     1.9715170: -0.394019 0.138449
+  8:     1.7942340: -0.285988 0.0443101
+  9:     1.4393081: -0.153222 -0.00959680
+ 10:     1.1968650: -0.0785139 0.0245146
+ 11:     1.0016961: -0.000696349 -0.00174001
+ 12:    0.87823307: 0.0808212 -0.0117281
+ 13:    0.80844393: 0.162768 -0.00629170
+ 14:    0.68863014: 0.203045 0.0180988
+ 15:    0.50226244: 0.313088 0.0805843
+ 16:    0.37094000: 0.392027 0.157302
+ 17:    0.30110961: 0.484979 0.216267
+ 18:    0.24838461: 0.525122 0.260628
+ 19:    0.15712889: 0.604556 0.362744
+ 20:    0.14975086: 0.693216 0.456961
+ 21:   0.097345475: 0.690984 0.473152
+ 22:   0.074919430: 0.728091 0.526978
+ 23:   0.050655822: 0.789126 0.614854
+ 24:   0.033264540: 0.845784 0.705613
+ 25:   0.013501068: 0.884534 0.781102
+ 26:  0.0075988869: 0.927000 0.854564
+ 27:  0.0029619374: 0.954465 0.908023
+ 28: 0.00077922602: 0.972116 0.945142
+ 29: 0.00019764487: 0.991268 0.981510
+ 30: 2.4278304e-05: 0.996174 0.992053
+ 31: 3.4539882e-07: 0.999626 0.999207
+ 32: 3.3528148e-09: 0.999947 0.999895
+ 33: 2.3909559e-10:  1.00001  1.00002
+ 34: 2.0297874e-16:  1.00000  1.00000
+ 35: 4.2919664e-22:  1.00000  1.00000
+> print(t1nlminb)
+$par
+[1] 1 1
+
+$objective
+[1] 0
+
+$convergence
+[1] 0
+
+$iterations
+[1] 25
+
+$evaluations
+function gradient 
+      33       26 
+
+$message
+[1] "X-convergence (3)"
+
+> 
+> # and call them from optimx package 
+> 
+> # Same result for nlm
+> 
+> t1nlmo <- optimr(xstart, f2, g2, hess=h2, method="nlm", control=list(trace=1))
+Parameter scaling:[1] 1 1
+iteration = 0
+Step:
+[1] 0 0
+Parameter:
+[1] -1.2  1.0
+Function Value
+[1] 24.2
+Gradient:
+[1] -215.6  -88.0
+
+iteration = 1
+Step:
+[1] 0.0247191 0.3806742
+Parameter:
+[1] -1.175281  1.380674
+Function Value
+[1] 4.731884
+Gradient:
+[1] -4.6378164 -0.1222068
+
+iteration = 2
+Step:
+[1]  0.1938396 -0.4555708
+Parameter:
+[1] -0.9814413  0.9251034
+Function Value
+[1] 4.071451
+Gradient:
+[1] -18.929357  -7.624742
+
+iteration = 3
+Step:
+[1]  0.2297392 -0.4128274
+Parameter:
+[1] -0.7517021  0.5122760
+Function Value
+[1] 3.347034
+Gradient:
+[1] -19.37337 -10.55602
+
+iteration = 4
+Step:
+[1]  0.1515835 -0.1751112
+Parameter:
+[1] -0.6001186  0.3371648
+Function Value
+[1] 2.613176
+Gradient:
+[1] -8.715943 -4.595513
+
+iteration = 5
+Step:
+[1]  0.2859646 -0.3202478
+Parameter:
+[1] -0.31415403  0.01691701
+Function Value
+[1] 2.395728
+Gradient:
+[1] -12.90438 -16.35515
+
+iteration = 6
+Step:
+[1] 0.07572128 0.03419945
+Parameter:
+[1] -0.23843275  0.05111646
+Function Value
+[1] 1.537003
+Gradient:
+[1] -3.023707 -1.146742
+
+iteration = 7
+Step:
+[1]  0.05768893 -0.02693649
+Parameter:
+[1] -0.18074382  0.02417997
+Function Value
+[1] 1.401361
+Gradient:
+[1] -2.975175 -1.697671
+
+iteration = 8
+Step:
+[1]  0.05928265 -0.02028025
+Parameter:
+[1] -0.121461164  0.003899727
+Function Value
+[1] 1.269454
+Gradient:
+[1] -2.770214 -2.170617
+
+iteration = 9
+Step:
+[1]  0.08487890 -0.01801455
+Parameter:
+[1] -0.03658226 -0.01411482
+Function Value
+[1] 1.098383
+Gradient:
+[1] -2.299288 -3.090617
+
+iteration = 10
+Step:
+[1]  0.253404866 -0.003087162
+Parameter:
+[1]  0.21682260 -0.01720198
+Function Value
+[1] 1.025711
+Gradient:
+[1]   4.002866 -12.842805
+
+iteration = 11
+Step:
+[1] 0.05657649 0.08874815
+Parameter:
+[1] 0.27339910 0.07154617
+Function Value
+[1] 0.5289734
+Gradient:
+[1] -1.103153 -0.640180
+
+iteration = 12
+Step:
+[1] 0.04430007 0.02454329
+Parameter:
+[1] 0.31769917 0.09608946
+Function Value
+[1] 0.4678802
+Gradient:
+[1] -0.7491159 -0.9686612
+
+iteration = 13
+Step:
+[1] 0.05287769 0.03433734
+Parameter:
+[1] 0.3705769 0.1304268
+Function Value
+[1] 0.4009351
+Gradient:
+[1] -0.2359925 -1.3800832
+
+iteration = 14
+Step:
+[1] 0.08030927 0.06161702
+Parameter:
+[1] 0.4508861 0.1920438
+Function Value
+[1] 0.3141924
+Gradient:
+[1]  0.931568 -2.250896
+
+iteration = 15
+Step:
+[1] 0.1689115 0.1635742
+Parameter:
+[1] 0.6197977 0.3556180
+Function Value
+[1] 0.2259562
+Gradient:
+[1]  6.313001 -5.706221
+
+iteration = 16
+Step:
+[1] 0.05669397 0.09880869
+Parameter:
+[1] 0.6764916 0.4544267
+Function Value
+[1] 0.1056908
+Gradient:
+[1]  0.2227369 -0.6428413
+
+iteration = 17
+Step:
+[1] 0.06703272 0.09178828
+Parameter:
+[1] 0.7435244 0.5462150
+Function Value
+[1] 0.07015354
+Gradient:
+[1]  1.453955 -1.322692
+
+iteration = 18
+Step:
+[1] 0.1104217 0.1708160
+Parameter:
+[1] 0.8539461 0.7170310
+Function Value
+[1] 0.03619857
+Gradient:
+[1]  3.872745 -2.438592
+
+iteration = 19
+Step:
+[1] 0.04247491 0.08473553
+Parameter:
+[1] 0.8964210 0.8017665
+Function Value
+[1] 0.01105409
+Gradient:
+[1]  0.4397418 -0.3608236
+
+iteration = 20
+Step:
+[1] 0.07611493 0.13826616
+Parameter:
+[1] 0.9725359 0.9400327
+Function Value
+[1] 0.004110718
+Gradient:
+[1]  2.198820 -1.158696
+
+iteration = 21
+Step:
+[1] 0.01272252 0.03053970
+Parameter:
+[1] 0.9852585 0.9705724
+Function Value
+[1] 0.000219933
+Gradient:
+[1]  0.03430751 -0.03237251
+
+iteration = 22
+Step:
+[1] 0.01427928 0.02829943
+Parameter:
+[1] 0.9995377 0.9988718
+Function Value
+[1] 4.371119e-06
+Gradient:
+[1]  0.08059697 -0.04077959
+
+iteration = 23
+Step:
+[1] 0.0004441443 0.0010917760
+Parameter:
+[1] 0.9999819 0.9999636
+Function Value
+[1] 3.319368e-10
+Gradient:
+[1]  4.268019e-05 -3.945284e-05
+
+iteration = 24
+Parameter:
+[1] 1 1
+Function Value
+[1] 1.127026e-17
+Gradient:
+[1]  1.297788e-07 -6.560392e-08
+
+Relative gradient close to zero.
+Current iterate is probably solution.
+
+> print(t1nlmo)
+$convergence
+[1] 0
+
+$value
+[1] 1.127026e-17
+
+$par
+[1] 1 1
+
+$counts
+[1] NA 24
+
+$message
+[1] "nlm: Convergence indicator (code) =  1"
+
+> 
+> # Same result for nlminb
+> t1nlminbo <- optimr(xstart, f2, g2, hess=h2, method="nlminb", control=list(trace=1))
+Parameter scaling:[1] 1 1
+  0:     24.200000: -1.20000  1.00000
+  1:     4.7318843: -1.17528  1.38067
+  2:     4.1185053: -1.02313  1.03084
+  3:     3.4877941: -0.851666 0.701020
+  4:     2.8656106: -0.651455 0.387204
+  5:     2.2659017: -0.455737 0.169391
+  6:     1.7378734: -0.287660 0.0544980
+  7:     1.3374723: -0.0940265 -0.0286528
+  8:    0.95926083: 0.0347014 -0.0153667
+  9:    0.73171551: 0.161329 0.00919067
+ 10:    0.55413441: 0.353365 0.0879888
+ 11:    0.32780370: 0.430570 0.179430
+ 12:    0.24068818: 0.519227 0.259826
+ 13:    0.17104970: 0.591831 0.343595
+ 14:    0.11873673: 0.660666 0.430489
+ 15:   0.078218534: 0.725043 0.520572
+ 16:   0.047818423: 0.785832 0.613116
+ 17:   0.025947706: 0.843482 0.707654
+ 18:   0.010811755: 0.932337 0.861356
+ 19:  0.0017636164: 0.958572 0.918173
+ 20: 0.00023632061: 0.987247 0.973799
+ 21: 4.8951105e-06: 0.998131 0.996148
+ 22: 2.9806009e-09: 0.999957 0.999910
+ 23: 1.1784043e-15:  1.00000  1.00000
+ 24: 1.9486097e-28:  1.00000  1.00000
+ 25:     0.0000000:  1.00000  1.00000
+> print(t1nlminbo)
+$par
+[1] 1 1
+
+$convergence
+[1] 0
+
+$message
+[1] "X-convergence (3)"
+
+$value
+[1] 0
+
+$counts
+[1] 33 26
+
+> 
+> cat("\n\n Now use XRosenbrock and genrose functions\n")
+
+
+ Now use XRosenbrock and genrose functions
+> 
+> cat("XRrosenbrock.f(xstart)=",XRosenbrock.f(xstart),"\n")
+XRrosenbrock.f(xstart)= 24.2 
+> cat("genrose.f(xstart)=",genrose.f(xstart),"\n")
+genrose.f(xstart)= 24.2 
+> 
+> aX2<-optimr(xstart, XRosenbrock.f, XRosenbrock.g, method="Rvmmin")
+> print(aX2)
+$par
+[1] 1 1
+
+$value
+[1] 1.232595e-32
+
+$counts
+function gradient 
+      59       39 
+
+$convergence
+[1] 2
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> aX2.target <- structure(list(par = c(1, 1), value = 0, counts = structure(c(59, 
++ 39), .Names = c("function", "gradient")), convergence = 2, 
++ message = "Rvmminu appears to have converged"), .Names = c("par", 
++ "value", "counts", "convergence", "message"))
+> all.equal(aX2, aX2.target)
+[1] TRUE
+> 
+> ag2<-optimr(xstart, genrose.f, genrose.g, method="Rvmmin")
+> print(ag2)
+$par
+[1] 1 1
+
+$value
+[1] 1.232595e-32
+
+$counts
+function gradient 
+      59       39 
+
+$convergence
+[1] 2
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> all.equal(ag2, aX2.target)
+[1] TRUE
+> 
+> # Newton methods fail with no hessian
+> cat("All methods via opm -- no hessian\n")
+All methods via opm -- no hessian
+> aX2all <- opm(xstart, XRosenbrock.f, XRosenbrock.g, method="ALL", control=list(kkt=FALSE))
+Warning messages:
+1: In optimr(par, fn, gr, hess = hess, method = meth, lower = lower,  :
+  Note: snewton needs Hessian function (hess) specified
+2: In optimr(par, fn, gr, hess = hess, method = meth, lower = lower,  :
+  Note: snewtonm needs Hessian function specified
+3: In optimr(par, fn, gr, hess = hess, method = meth, lower = lower,  :
+  Successful convergence  Restarts for stagnation =0
+> aX2all.sum <- summary(aX2all, order=value)
+> print(aX2all.sum)
+                   p1        p2         value fevals gevals convergence kkt1
+Rvmmin      1.0000000 1.0000000  1.232595e-32     59     39           2   NA
+subplex     1.0000000 1.0000000  2.605213e-28    609     NA           0   NA
+nlminb      1.0000000 1.0000000  4.291966e-22     43     36           0   NA
+nlm         1.0000000 1.0000000  1.182096e-20     NA     24           0   NA
+Rcgmin      1.0000000 1.0000000  8.843379e-18    735    434           0   NA
+BFGS        1.0000000 1.0000000  9.594956e-18    110     43           0   NA
+ucminf      1.0000000 1.0000000  2.725659e-17     38     38           0   NA
+bobyqa      0.9999998 0.9999996  5.189581e-14    332     NA           0   NA
+L-BFGS-B    0.9999997 0.9999995  2.267577e-13     47     47           0   NA
+lbfgs       1.0000006 1.0000012  3.545445e-13     NA     NA           0   NA
+hjn         1.0000009 1.0000018  8.493464e-13    865     NA           0   NA
+Rtnmin      0.9999988 0.9999975  1.524614e-12     49     49           0   NA
+newuoa      0.9999975 0.9999950  6.350559e-12    233     NA           0   NA
+hjkb        1.0000046 1.0000076  2.537918e-10    684     NA           0   NA
+lbfgsb3c    1.0000275 1.0000560  8.551377e-10     74     74           0   NA
+spg         0.9998027 0.9996047  3.898009e-08    141    112           0   NA
+Nelder-Mead 1.0002601 1.0005060  8.825241e-08    195     NA           0   NA
+nmkb        1.0002749 1.0006092  4.268664e-07    120     NA           0   NA
+CG          0.9174130 0.8413632  6.802745e-03   3957   1001           1   NA
+snewton            NA        NA 8.988466e+307     NA     NA        9997   NA
+snewtonm           NA        NA 8.988466e+307     NA     NA        9997   NA
+            kkt2 xtime
+Rvmmin        NA 0.003
+subplex       NA 0.003
+nlminb        NA 0.000
+nlm           NA 0.001
+Rcgmin        NA 0.005
+BFGS          NA 0.001
+ucminf        NA 0.004
+bobyqa        NA 0.002
+L-BFGS-B      NA 0.001
+lbfgs         NA 0.003
+hjn           NA 0.005
+Rtnmin        NA 0.004
+newuoa        NA 0.006
+hjkb          NA 0.005
+lbfgsb3c      NA 0.065
+spg           NA 0.009
+Nelder-Mead   NA 0.000
+nmkb          NA 0.008
+CG            NA 0.012
+snewton       NA 0.001
+snewtonm      NA 0.000
+> 
+> ag2all <- opm(xstart, genrose.f, genrose.g, hess=genrose.h, method="ALL", control=list(kkt=FALSE))
+Warning message:
+In optimr(par, fn, gr, hess = hess, method = meth, lower = lower,  :
+  Successful convergence  Restarts for stagnation =0
+> ag2all.sum <- summary(ag2all, order=value)
+> print(ag2all.sum)
+                   p1        p2        value fevals gevals convergence kkt1
+Rvmmin      1.0000000 1.0000000 1.232595e-32     59     39           2   NA
+snewtonm    1.0000000 1.0000000 1.232595e-30    151    132           0   NA
+subplex     1.0000000 1.0000000 2.605213e-28    609     NA           0   NA
+snewton     1.0000000 1.0000000 2.972526e-28    143    128          92   NA
+Rcgmin      1.0000000 1.0000000 8.843379e-18    735    434           0   NA
+BFGS        1.0000000 1.0000000 9.594956e-18    110     43           0   NA
+ucminf      1.0000000 1.0000000 2.725659e-17     38     38           0   NA
+nlminb      1.0000000 0.9999999 1.797072e-15     72     69           0   NA
+bobyqa      0.9999998 0.9999996 5.189581e-14    332     NA           0   NA
+L-BFGS-B    0.9999997 0.9999995 2.267577e-13     47     47           0   NA
+lbfgs       1.0000006 1.0000012 3.545445e-13     NA     NA           0   NA
+hjn         1.0000009 1.0000018 8.493464e-13    865     NA           0   NA
+Rtnmin      0.9999988 0.9999975 1.524614e-12     49     49           0   NA
+nlm         0.9999988 0.9999975 1.545130e-12     NA     58           0   NA
+newuoa      0.9999975 0.9999950 6.350559e-12    233     NA           0   NA
+lbfgsb3c    1.0000275 1.0000560 8.551377e-10     74     74           0   NA
+hjkb        1.0000809 1.0001602 6.775044e-09    640     NA           0   NA
+spg         0.9998027 0.9996047 3.898009e-08    141    112           0   NA
+Nelder-Mead 1.0002601 1.0005060 8.825241e-08    195     NA           0   NA
+nmkb        1.0002749 1.0006092 4.268664e-07    120     NA           0   NA
+CG          0.9174130 0.8413632 6.802745e-03   3957   1001           1   NA
+            kkt2 xtime
+Rvmmin        NA 0.002
+snewtonm      NA 0.005
+subplex       NA 0.002
+snewton       NA 0.006
+Rcgmin        NA 0.006
+BFGS          NA 0.001
+ucminf        NA 0.001
+nlminb        NA 0.002
+bobyqa        NA 0.002
+L-BFGS-B      NA 0.001
+lbfgs         NA 0.001
+hjn           NA 0.005
+Rtnmin        NA 0.003
+nlm           NA 0.017
+newuoa        NA 0.001
+lbfgsb3c      NA 0.001
+hjkb          NA 0.004
+spg           NA 0.004
+Nelder-Mead   NA 0.001
+nmkb          NA 0.004
+CG            NA 0.014
+> 
+> 
+> cat("\n \n Different set of all methods via optimx -- no hessian")
+
+ 
+ Different set of all methods via optimx -- no hessian> aX2allx <- optimx(xstart, XRosenbrock.f, XRosenbrock.g, control=list(all.methods=TRUE, kkt=FALSE))
+> aX2allx.sum <- summary(aX2allx, order=value)
+> print(aX2allx.sum)
+                    p1        p2        value fevals gevals niter convcode kkt1
+Rvmmin       1.0000000 1.0000000 1.232595e-32     59     39    NA        2   NA
+nlminb       1.0000000 1.0000000 4.291966e-22     43     36    35        0   NA
+nlm          1.0000000 1.0000000 1.182096e-20     NA     NA    24        0   NA
+Rcgmin       1.0000000 1.0000000 8.843379e-18    735    434    NA        0   NA
+BFGS         1.0000000 1.0000000 9.594956e-18    110     43    NA        0   NA
+ucminf       1.0000000 1.0000000 2.725659e-17     38     38    NA        0   NA
+newuoa       1.0000000 0.9999999 2.177737e-15    257     NA    NA        0   NA
+L-BFGS-B     0.9999997 0.9999995 2.267577e-13     47     47    NA        0   NA
+bobyqa       1.0000005 1.0000009 2.844885e-13    290     NA    NA        0   NA
+spg          0.9998027 0.9996047 3.898009e-08    141     NA   112        0   NA
+hjkb         0.9997070 0.9994125 8.609045e-08    480     NA    19        0   NA
+Nelder-Mead  1.0002601 1.0005060 8.825241e-08    195     NA    NA        0   NA
+nmkb         1.0002749 1.0006092 4.268664e-07    120     NA    NA        0   NA
+CG          -0.7648373 0.5927588 3.106579e+00    402    101    NA        1   NA
+            kkt2 xtime
+Rvmmin        NA 0.002
+nlminb        NA 0.000
+nlm           NA 0.000
+Rcgmin        NA 0.005
+BFGS          NA 0.001
+ucminf        NA 0.000
+newuoa        NA 0.001
+L-BFGS-B      NA 0.001
+bobyqa        NA 0.001
+spg           NA 0.004
+hjkb          NA 0.002
+Nelder-Mead   NA 0.001
+nmkb          NA 0.005
+CG            NA 0.001
+> # ?? lbfgsb3 fails in optimx
+> 
+> ag2allx <- optimx(xstart, genrose.f, genrose.g, control=list(all.methods=TRUE, kkt=FALSE))
+> ag2allx.sum <- summary(ag2allx, order=value)
+> print(ag2allx.sum)
+                    p1        p2        value fevals gevals niter convcode kkt1
+Rvmmin       1.0000000 1.0000000 1.232595e-32     59     39    NA        2   NA
+nlminb       1.0000000 1.0000000 4.291966e-22     43     36    35        0   NA
+nlm          1.0000000 1.0000000 1.182096e-20     NA     NA    24        0   NA
+Rcgmin       1.0000000 1.0000000 8.843379e-18    735    434    NA        0   NA
+BFGS         1.0000000 1.0000000 9.594956e-18    110     43    NA        0   NA
+ucminf       1.0000000 1.0000000 2.725659e-17     38     38    NA        0   NA
+newuoa       1.0000000 0.9999999 2.177737e-15    257     NA    NA        0   NA
+L-BFGS-B     0.9999997 0.9999995 2.267577e-13     47     47    NA        0   NA
+bobyqa       1.0000005 1.0000009 2.844885e-13    290     NA    NA        0   NA
+hjkb         1.0001953 1.0003891 3.839159e-08    504     NA    19        0   NA
+spg          0.9998027 0.9996047 3.898009e-08    141     NA   112        0   NA
+Nelder-Mead  1.0002601 1.0005060 8.825241e-08    195     NA    NA        0   NA
+nmkb         1.0002749 1.0006092 4.268664e-07    120     NA    NA        0   NA
+CG          -0.7648373 0.5927588 3.106579e+00    402    101    NA        1   NA
+            kkt2 xtime
+Rvmmin        NA 0.002
+nlminb        NA 0.000
+nlm           NA 0.000
+Rcgmin        NA 0.005
+BFGS          NA 0.000
+ucminf        NA 0.000
+newuoa        NA 0.001
+L-BFGS-B      NA 0.001
+bobyqa        NA 0.001
+hjkb          NA 0.003
+spg           NA 0.005
+Nelder-Mead   NA 0.000
+nmkb          NA 0.004
+CG            NA 0.001
+> # ?? lbfgsb3 fails in optimx
+> 
+> cat("Note things are different for n>2\n\n")
+Note things are different for n>2
+
+> 
+> # analytic gradient test
+> xx<-rep(pi,5)
+> print(xx)
+[1] 3.141593 3.141593 3.141593 3.141593 3.141593
+> lower<-NULL
+> upper<-NULL
+> bdmsk<-NULL # Not used in optimr
+> cat("XRrosenbrock.f(xx)=",XRosenbrock.f(xx),"\n")
+XRrosenbrock.f(xx)= 18124.8 
+> cat("genrose.f(xx)=",genrose.f(xx),"\n")
+genrose.f(xx)= 18124.8 
+> 
+> genrosea<-optimr(xx,genrose.f, genrose.g, method="Rvmmin", gs=10)
+> cat("genrosea uses analytic gradient\n")
+genrosea uses analytic gradient
+> print(genrosea)
+$par
+[1] 1 1 1 1 1
+
+$value
+[1] 1.02828e-27
+
+$counts
+function gradient 
+      57       40 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> cat("genrosenf uses grfwd standard numerical gradient\n")
+genrosenf uses grfwd standard numerical gradient
+> genrosenf<-optimr(xx,genrose.f, gr="grfwd", method="Rvmmin", gs=10) # use local numerical gradient
+> print(genrosenf)
+$par
+[1] 0.9999999 0.9999999 0.9999998 0.9999996 0.9999991
+
+$value
+[1] 2.487726e-13
+
+$counts
+function gradient 
+      57       40 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> cat("genrosenullgr has no gradient specified\n")
+genrosenullgr has no gradient specified
+> genrosenullgr<-optimr(xx,genrose.f, method="Rvmmin", gs=10) # no gradient specified
+> print(genrosenullgr)
+$value
+[1] 8.988466e+307
+
+$par
+[1] NA NA NA NA NA
+
+$counts
+[1] NA NA
+
+$message
+[1] "Must specify gradient function for Rvmmin"
+
+$convergence
+[1] 9998
+
+> 
+> cat("timings direct call Bounded vs Unbounded\n")
+timings direct call Bounded vs Unbounded
+> # require(Rvmmin) # for direct call
+> xx<-rep(pi,50)
+> lo<-rep(-10000,50) # Bounds are activated if much smaller
+> up<-rep(10000,50)
+> bdmsk<-rep(1,50) # Used in Rvmmin, not in optimr
+> #tb<-system.time(ab<-Rvmminb(xx,genrose.f, genrose.g, lower=lo, upper=up, bdmsk=bdmsk, gs=10))[1]
+> #tu<-system.time(au<-Rvmminu(xx,genrose.f, genrose.g, gs=10))[1]
+> tb<-system.time(ab<-optimr(xx,genrose.f, genrose.g, lower=lo, upper=up, method="Rvmmin", gs=10))[1]
+trace= 0 
+> tu<-system.time(au<-optimr(xx,genrose.f, genrose.g, method="Rvmmin", gs=10))[1]
+> cat("times U=",tu,"   B=",tb,"\n")
+times U= 0.014    B= 0.027 
+> cat("solution Rvmminu\n")
+solution Rvmminu
+> print(au)
+$par
+ [1] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+[39] 1 1 1 1 1 1 1 1 1 1 1 1
+
+$value
+[1] 1.503064e-27
+
+$counts
+function gradient 
+     264      112 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> cat("solution Rvmminb\n")
+solution Rvmminb
+> print(ab)
+$par
+ [1] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+[39] 1 1 1 1 1 1 1 1 1 1 1 1
+
+$value
+[1] 1.503064e-27
+
+$counts
+function gradient 
+     264      112 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminb appears to have converged"
+
+> cat("diff fu-fb=",au$value-ab$value,"\n")
+diff fu-fb= 0 
+> cat("max abs parameter diff = ", max(abs(au$par-ab$par)),"\n")
+max abs parameter diff =  0 
+> 
+> #####################
+> cat("test bounds and masks\n")
+test bounds and masks
+> nn<-4
+> startx<-rep(pi,nn)
+> lo<-rep(2,nn)
+> up<-rep(10,nn)
+> grbds1 <- optimr(startx,genrose.f, genrose.g, lower=lo, upper=up, method="Rvmmin") 
+trace= 0 
+> print(grbds1)
+$par
+[1]  2.000000  2.000000  3.181997 10.000000
+
+$value
+[1] 475.2391
+
+$counts
+function gradient 
+      26       14 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminb appears to have converged"
+
+> 
+> cat("test lower bound only\n")
+test lower bound only
+> nn<-4
+> startx<-rep(pi,nn)
+> lo<-rep(2,nn)
+> grbds2<-optimr(startx,genrose.f, genrose.g, lower=lo, method="Rvmmin") 
+trace= 0 
+> print(grbds2)
+$par
+[1]  2.000000  2.000000  3.970297 15.763258
+
+$value
+[1] 410.9109
+
+$counts
+function gradient 
+      36       17 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminb appears to have converged"
+
+> 
+> cat("test lower bound single value only\n")
+test lower bound single value only
+> nn<-4
+> startx<-rep(pi,nn)
+> lo<-2
+> up<-rep(10,nn)
+> grbds3<-optimr(startx,genrose.f, genrose.g, lower=lo, method="Rvmmin") 
+trace= 0 
+> print(grbds3)
+$par
+[1]  2.000000  2.000000  3.970297 15.763258
+
+$value
+[1] 410.9109
+
+$counts
+function gradient 
+      36       17 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminb appears to have converged"
+
+> 
+> cat("test upper bound only\n")
+test upper bound only
+> nn<-4
+> startx<-rep(pi,nn)
+> up<-rep(10,nn)
+> grbds4<-optimr(startx,genrose.f, genrose.g, upper=up, method="Rvmmin") 
+trace= 0 
+> print(grbds4)
+$par
+[1] 1 1 1 1
+
+$value
+[1] 2.248254e-29
+
+$counts
+function gradient 
+      56       45 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminb appears to have converged"
+
+> 
+> cat("test upper bound single value only\n")
+test upper bound single value only
+> nn<-4
+> startx<-rep(2,nn)
+> grbds5<-optimr(startx,genrose.f, genrose.g, upper=2, method="Rvmmin") 
+trace= 0 
+> print(grbds5)
+$par
+[1] -1.084938  1.186700  1.413091  2.000000
+
+$value
+[1] 4.565046
+
+$counts
+function gradient 
+      38       20 
+
+$convergence
+[1] 3
+
+$message
+[1] "Rvmminb appears to have converged"
+
+> 
+> 
+> cat("test masks only\n")
+test masks only
+> nn<-6
+> lo <- c(-1000, -1000, 2, 2, -1000, -1000)
+> up <- c(1000, 1000, 2, 2, 1000, 1000) # mid two values equal
+> bd<-c(1,1,0,0,1,1) # NOT used
+> startx<-c(pi, pi, 2, 2, pi, pi)
+> grbds6<-optimr(startx,genrose.f, genrose.g, lower=lo, upper=up, method="Rvmmin") 
+trace= 0 
+Warning messages:
+1: In bmchk(par, lower = lower, upper = upper, shift2bound = TRUE) :
+  Masks (fixed parameters) set by bmchk due to tight bounds. CAUTION!!
+2: In bmchk(par, lower = lower, upper = upper, bdmsk = bdmsk, trace = control$trace) :
+  Masks (fixed parameters) set by bmchk due to tight bounds. CAUTION!!
+> print(grbds6)
+$par
+[1]  1.188614  1.413597  2.000000  2.000000  3.970297 15.763259
+
+$value
+[1] 411.1179
+
+$counts
+function gradient 
+      45       18 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminb appears to have converged"
+
+> 
+> cat("test upper bound on first two elements only\n")
+test upper bound on first two elements only
+> nn<-4
+> startx<-rep(pi,nn)
+> upper<-c(10,8, Inf, Inf)
+> grbds7<-optimr(startx,genrose.f, genrose.g, upper=upper, method="Rvmmin") 
+trace= 0 
+> print(grbds7)
+$par
+[1] 1 1 1 1
+
+$value
+[1] 1.232595e-30
+
+$counts
+function gradient 
+      58       43 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminb appears to have converged"
+
+> 
+> 
+> cat("test lower bound on first two elements only\n")
+test lower bound on first two elements only
+> nn<-4
+> startx<-rep(0,nn) # NOTE: Will not work because of bounds and initial parameters ??
+> startx <- c(pi, 1.1, pi, pi)
+> lower<-c(0, 1.1, -Inf, -Inf)
+> grbds8<-optimr(startx,genrose.f,genrose.g,lower=lower, method="Rvmmin", control=list(maxit=2000)) 
+trace= 0 
+> print(grbds8)
+$par
+[1] 0.000000 1.100000 1.207921 1.459073
+
+$value
+[1] 122.0537
+
+$counts
+function gradient 
+      41       17 
+
+$convergence
+[1] 0
+
+$message
+[1] "Rvmminb appears to have converged"
+
+> 
+> #####################
+> 

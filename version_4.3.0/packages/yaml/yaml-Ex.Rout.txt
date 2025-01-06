@@ -60,17 +60,12 @@ Type 'q()' to quit R.
 >   as.yaml(Sys.time(), handlers = list(
 +     POSIXct = function(x) format(x, "%Y-%m-%d")
 +   ))
-[1] "'2024-12-19'\n"
+[1] "'2025-01-06'\n"
 > 
 >   # custom handler with verbatim output to change how logical vectors are
 >   # emitted
 >   as.yaml(c(TRUE, FALSE), handlers = list(
-+     logical = function(x) {
-+       result <- ifelse(x, "true", "false")
-+       class(result) <- "verbatim"
-+       return(result)
-+     }
-+   ))
++     logical = verbatim_logical))
 [1] "- true\n- false\n"
 > 
 >   # force quotes around a string
@@ -136,6 +131,26 @@ Type 'q()' to quit R.
 >   # reading from a character vector
 >   read_yaml(text="- hey\n- hi\n- hello")
 [1] "hey"   "hi"    "hello"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("verbatim_logical")
+> ### * verbatim_logical
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: verbatim_logical
+> ### Title: Alternative logical handler
+> ### Aliases: verbatim_logical
+> ### Keywords: data manip
+> 
+> ### ** Examples
+> 
+> vector <- c(TRUE, FALSE, TRUE)
+> 
+> as.yaml(vector, handlers=list(logical=verbatim_logical))
+[1] "- true\n- false\n- true\n"
 > 
 > 
 > 
@@ -239,9 +254,9 @@ $foo
 [1] 23.55844
 >   yaml.load("!foo\n- 1\n- 2", handlers=list(foo=function(x) { as.integer(x) + 1 }))
 [1] 2 3
->   yaml.load("!bar\none: 1\ntwo: 2", handlers=list(foo=function(x) { x$one <- "one"; x }))
+>   yaml.load("!bar\none: 1\ntwo: 2", handlers=list(bar=function(x) { x$one <- "one"; x }))
 $one
-[1] 1
+[1] "one"
 
 $two
 [1] 2
@@ -266,7 +281,7 @@ Error in yaml.load("*", error.label = "foo") :
 > cleanEx()
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  0.07 0.002 0.072 0 0 
+Time elapsed:  0.065 0.009 0.074 0 0 
 > grDevices::dev.off()
 null device 
           1 

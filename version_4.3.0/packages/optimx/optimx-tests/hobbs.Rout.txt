@@ -1,0 +1,266 @@
+
+R version 4.3.0 (2023-04-21) -- "Already Tomorrow"
+Copyright (C) 2023 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> rm(list=ls())
+> require(optimx)
+Loading required package: optimx
+> ## Optimization test function HOBBS
+> ## ?? refs (put in .doc??)
+> ## Nash and Walker-Smith (1987, 1989) ...
+> 
+> 
+> hobbs.f<- function(x){ # # Hobbs weeds problem -- function
++     if (abs(12*x[3]) > 500) { # check computability
++        fbad<-.Machine$double.xmax
++        return(fbad)
++     }
++     res<-hobbs.res(x)
++     f<-sum(res*res)
++ }
+> 
+> 
+> hobbs.res<-function(x){ # Hobbs weeds problem -- residual
++ # This variant uses looping
++     if(length(x) != 3) stop("hobbs.res -- parameter vector n!=3")
++     y<-c(5.308, 7.24, 9.638, 12.866, 17.069, 23.192, 31.443, 38.558, 50.156, 62.948,
++          75.995, 91.972)
++     t<-1:12
++     if(abs(12*x[3])>50) {
++        res<-rep(Inf,12)
++     } else {
++        res<-x[1]/(1+x[2]*exp(-x[3]*t)) - y
++     }
++ }
+> 
+> hobbs.jac<-function(x){ # Jacobian of Hobbs weeds problem
++    jj<-matrix(0.0, 12, 3)
++    t<-1:12
++     yy<-exp(-x[3]*t)
++     zz<-1.0/(1+x[2]*yy)
++      jj[t,1] <- zz
++      jj[t,2] <- -x[1]*zz*zz*yy
++      jj[t,3] <- x[1]*zz*zz*yy*x[2]*t
++    return(jj)
++ }
+> 
+> hobbs.g<-function(x){ # gradient of Hobbs weeds problem
++     # NOT EFFICIENT TO CALL AGAIN
++     jj<-hobbs.jac(x)
++     res<-hobbs.res(x)
++     gg<-as.vector(2.*t(jj) %*% res)
++     return(gg)
++ }
+> 
+> 
+> hobbs.rsd<-function(x) { # Jacobian second derivative
++     rsd<-array(0.0, c(12,3,3))
++     t<-1:12
++     yy<-exp(-x[3]*t)
++     zz<-1.0/(1+x[2]*yy)
++     rsd[t,1,1]<- 0.0
++     rsd[t,2,1]<- -yy*zz*zz
++     rsd[t,1,2]<- -yy*zz*zz
++     rsd[t,2,2]<- 2.0*x[1]*yy*yy*zz*zz*zz
++     rsd[t,3,1]<- t*x[2]*yy*zz*zz
++     rsd[t,1,3]<- t*x[2]*yy*zz*zz
++     rsd[t,3,2]<- t*x[1]*yy*zz*zz*(1-2*x[2]*yy*zz)
++     rsd[t,2,3]<- t*x[1]*yy*zz*zz*(1-2*x[2]*yy*zz)
++ ##    rsd[t,3,3]<- 2*t*t*x[1]*x[2]*x[2]*yy*yy*zz*zz*zz
++     rsd[t,3,3]<- -t*t*x[1]*x[2]*yy*zz*zz*(1-2*yy*zz*x[2])
++     return(rsd)
++ }
+> 
+> 
+> hobbs.h <- function(x) { ## compute Hessian
++ #   cat("Hessian not yet available\n")
++ #   return(NULL)
++     H<-matrix(0,3,3)
++     res<-hobbs.res(x)
++     jj<-hobbs.jac(x)
++     rsd<-hobbs.rsd(x)
++ ##    H<-2.0*(t(res) %*% rsd + t(jj) %*% jj)
++     for (j in 1:3) {
++        for (k in 1:3) {
++           for (i in 1:12) {
++              H[j,k]<-H[j,k]+res[i]*rsd[i,j,k]
++           }
++        }
++     }
++     H<-2*(H + t(jj) %*% jj)
++     return(H)
++ }
+> 
+> 
+> allm <- c("BFGS", "CG", "Nelder-Mead",  "nlm", "nlminb", 
++           "lbfgsb3c", "Rcgmin", "Rtnmin", "Rvmmin",
++           "spg", "ucminf", "bobyqa", "hjkb", "hjn", 
++           "subplex")
+> # Dropped "L-BFGS-B", "newuoa", "nmkb", "snewton", "snewtonm","lbfgs",  as they give trouble
+> #  Not an optimx problem, but one in underlying methods
+> 
+> 
+> x0 <- c(200, 50, .3)
+> # This start seems to be OK for all methods
+> cat("Start for Hobbs:")
+Start for Hobbs:> print(x0)
+[1] 200.0  50.0   0.3
+> cat("Initial value of hobbs.f = ",hobbs.f(x0),"\n")
+Initial value of hobbs.f =  158.2324 
+> 
+> ## Following revealed typo in optimr() for lbfgsb3c
+> # ahobb01 <- opm(x0, hobbs.f, hobbs.g, hess=hobbs.h, method="lbfgsb3c")
+> # ahobb01
+> 
+> ahobb0 <- opm(x0, hobbs.f, hobbs.g, hess=hobbs.h, method=allm)
+Warning messages:
+1: In Rcgminu(par = spar, fn = efn, gr = egr, control = mcontrol, ...) :
+  Rcgmin - undefined function
+2: In Rcgminu(par = spar, fn = efn, gr = egr, control = mcontrol, ...) :
+  Rcgmin - undefined function
+3: In Rcgminu(par = spar, fn = efn, gr = egr, control = mcontrol, ...) :
+  Rcgmin - undefined function
+4: In Rcgminu(par = spar, fn = efn, gr = egr, control = mcontrol, ...) :
+  Rcgmin - undefined function
+5: In Rcgminu(par = spar, fn = efn, gr = egr, control = mcontrol, ...) :
+  Rcgmin - undefined function
+6: In dfoptim::hjk(par = spar, fn = efn, control = mcontrol, ...) :
+  Function evaluation limit exceeded -- may not converge.
+> print(summary(ahobb0, order=value))
+                  p1       p2        p3    value fevals gevals convergence
+subplex     196.1863 49.09164 0.3135697 2.587277    823     NA           0
+Rvmmin      196.1863 49.09164 0.3135697 2.587277     32     19           0
+ucminf      196.1863 49.09164 0.3135697 2.587277     23     23           0
+nlminb      196.1863 49.09164 0.3135697 2.587277      8      7           0
+nlm         196.1863 49.09164 0.3135697 2.587277     NA      6           0
+BFGS        196.1856 49.09156 0.3135701 2.587277     74     25           0
+Rcgmin      196.1828 49.09126 0.3135717 2.587277   2011    254           1
+Nelder-Mead 196.1782 49.09055 0.3135750 2.587279    162     NA           0
+spg         199.4569 49.45394 0.3117617 2.610151    774    333           0
+lbfgsb3c    200.0162 49.51408 0.3114548 2.618411     30     30           0
+bobyqa      200.4891 49.98062 0.3120166 2.662018     38     NA           0
+CG          200.0001 49.99834 0.3124232 2.667312   4976   1001           1
+hjkb        202.5725 49.71454 0.3099182 2.672670  10001     NA           1
+Rtnmin      203.8197 50.04305 0.3096444 2.707066      8      8           3
+hjn         221.3600 51.79258 0.3008320 3.639897  10000     NA           1
+             kkt1  kkt2 xtime
+subplex      TRUE FALSE 0.006
+Rvmmin       TRUE FALSE 0.003
+ucminf       TRUE FALSE 0.003
+nlminb       TRUE FALSE 0.001
+nlm          TRUE FALSE 0.035
+BFGS         TRUE FALSE 0.031
+Rcgmin       TRUE FALSE 0.017
+Nelder-Mead FALSE FALSE 0.001
+spg         FALSE FALSE 0.031
+lbfgsb3c    FALSE FALSE 0.062
+bobyqa      FALSE FALSE 0.004
+CG          FALSE FALSE 0.033
+hjkb        FALSE FALSE 0.075
+Rtnmin      FALSE FALSE 0.004
+hjn         FALSE FALSE 0.065
+> 
+> 
+> x1 <- c(1, 1, 1)
+> # Several methods fail because f or g becomes Inf.
+> cat("Start for Hobbs:")
+Start for Hobbs:> print(x1)
+[1] 1 1 1
+> cat("Initial value of hobbs.f = ",hobbs.f(x1),"\n")
+Initial value of hobbs.f =  23520.58 
+> ahobb1 <- opm(x1, hobbs.f, hobbs.g, hess=hobbs.h, method=allm)
+There were 25 warnings (use warnings() to see them)
+> print(summary(ahobb1, order=value))
+                    p1           p2        p3        value fevals gevals
+Rvmmin      196.186262  49.09163946 0.3135697     2.587277     81     44
+nlm         196.186262  49.09163945 0.3135697     2.587277     NA     23
+nlminb      196.186262  49.09163946 0.3135697     2.587277     46     29
+subplex     196.186264  49.09163916 0.3135697     2.587277   1191     NA
+Rcgmin      196.185306  49.09153494 0.3135703     2.587277   2007    377
+BFGS        196.177049  49.09063490 0.3135749     2.587278    184     63
+hjkb         86.156250 486.60937500 0.7656250   626.148918  10004     NA
+hjn         126.416000 288.13600002 0.5760000   652.858761  10000     NA
+spg          71.363275  19.13754838 0.4424962  1145.813131   1291   1001
+CG           56.875558  14.70550207 0.4880528  2315.753016   4353   1001
+bobyqa       34.013796  -0.07102111 1.8350563  9259.498427     35     NA
+Nelder-Mead  31.830911 -16.42301202 4.1666667 10071.143670    250     NA
+Rtnmin       12.108398  -0.04214966 4.1666406 15789.572326     16     16
+lbfgsb3c      5.999469   0.97109139 1.0668911 19677.717483      5      5
+ucminf        5.765566  -0.07005441 4.1666667 19837.987466     73     73
+            convergence  kkt1  kkt2 xtime
+Rvmmin                3  TRUE FALSE 0.004
+nlm                   0  TRUE FALSE 0.003
+nlminb                0  TRUE FALSE 0.002
+subplex               0  TRUE FALSE 0.005
+Rcgmin                1  TRUE FALSE 0.018
+BFGS                  0  TRUE FALSE 0.002
+hjkb                  1 FALSE FALSE 0.070
+hjn                   1 FALSE FALSE 0.063
+spg                   1 FALSE  TRUE 0.057
+CG                    1 FALSE  TRUE 0.030
+bobyqa                0 FALSE  TRUE 0.001
+Nelder-Mead           0 FALSE    NA 0.002
+Rtnmin                3 FALSE    NA 0.007
+lbfgsb3c              0 FALSE FALSE 0.000
+ucminf                0 FALSE    NA 0.001
+> 
+> # ahobb1lbfgsb<- optim(x1, hobbs.f, hobbs.g, method="L-BFGS-B", control=list(trace=3))
+> # Note that optim alone fails in the above
+> 
+> x1s <- c(100, 10, .1)
+> # L-BFGS-B and lbfgb3 both fail because f or g becomes Inf.
+> cat("Start for Hobbs:")
+Start for Hobbs:> print(x1s)
+[1] 100.0  10.0   0.1
+> cat("Initial value of hobbs.f = ",hobbs.f(x1s),"\n")
+Initial value of hobbs.f =  10685.29 
+> ahobb1s <- opm(x1s, hobbs.f, hobbs.g, hess=hobbs.h, method=allm)
+There were 20 warnings (use warnings() to see them)
+> print(summary(ahobb1s, order=value))
+                      p1           p2        p3       value fevals gevals
+Rvmmin          196.1863     49.09164 0.3135697    2.587277     67     33
+ucminf          196.1863     49.09164 0.3135697    2.587277     38     38
+nlminb          196.1863     49.09164 0.3135697    2.587277     25     19
+subplex         196.1863     49.09164 0.3135697    2.587277    991     NA
+nlm             196.1863     49.09164 0.3135697    2.587277     NA     17
+Rtnmin          196.1848     49.09125 0.3135701    2.587277     49     49
+Rcgmin          196.1894     49.09206 0.3135681    2.587277   2012    349
+BFGS            196.1745     49.08855 0.3135727    2.587278    127     50
+Nelder-Mead     195.8633     49.06095 0.3137564    2.587545    247     NA
+bobyqa          180.3997     47.41333 0.3233608    3.286394  10000     NA
+lbfgsb3c        102.2718     68.78451 0.4815771  148.553927    100    100
+spg             102.7901     24.78624 0.3679913  295.245333   1625   1001
+CG              100.0881     12.90512 0.3009783  812.232442   4678   1001
+hjn         2121406.0000 107164.00000 0.1000000 2688.206167  10000     NA
+hjkb         303450.0000  15327.00000 0.1000000 2688.769969  10004     NA
+            convergence  kkt1  kkt2 xtime
+Rvmmin                0  TRUE FALSE 0.003
+ucminf                0  TRUE FALSE 0.001
+nlminb                0  TRUE FALSE 0.002
+subplex               0  TRUE FALSE 0.004
+nlm                   0  TRUE FALSE 0.002
+Rtnmin                3 FALSE FALSE 0.009
+Rcgmin                1  TRUE FALSE 0.018
+BFGS                  0  TRUE FALSE 0.002
+Nelder-Mead           0 FALSE FALSE 0.001
+bobyqa                1 FALSE FALSE 0.059
+lbfgsb3c              1 FALSE FALSE 0.003
+spg                   1 FALSE FALSE 0.061
+CG                    1 FALSE FALSE 0.032
+hjn                   1 FALSE FALSE 0.066
+hjkb                  1 FALSE FALSE 0.067
+> 
+> 

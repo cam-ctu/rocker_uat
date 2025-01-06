@@ -185,8 +185,8 @@ NULL
 > ### ** Examples
 > 
 > logo = xfun:::R_logo()
-> img = htmltools::img(src = xfun::base64_uri(logo), alt = "R logo")
-> if (interactive()) htmltools::browsable(img)
+> img = xfun::html_tag("img", src = xfun::base64_uri(logo), alt = "R logo")
+> if (interactive()) xfun::html_view(img)
 > 
 > 
 > 
@@ -201,13 +201,11 @@ NULL
 > ### Aliases: base_pkgs
 > 
 > ### ** Examples
-> ## Don't show: 
-> if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
-+ ## End(Don't show)
-+ xfun::base_pkgs()
-+ ## Don't show: 
-+ }) # examplesIf
-> ## End(Don't show)
+> 
+> xfun::base_pkgs()
+ [1] "base"      "compiler"  "datasets"  "graphics"  "grDevices" "grid"     
+ [7] "methods"   "parallel"  "splines"   "stats"     "stats4"    "tcltk"    
+[13] "tools"     "utils"    
 > 
 > 
 > 
@@ -225,6 +223,38 @@ NULL
 > 
 > xfun::bump_version(c("0.1", "91.2.14"))
 [1] ‘0.2’     ‘91.2.15’
+> 
+> 
+> 
+> cleanEx()
+> nameEx("cache_exec")
+> ### * cache_exec
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: cache_exec
+> ### Title: Cache the execution of an expression in memory or on disk
+> ### Aliases: cache_exec
+> 
+> ### ** Examples
+> 
+> # the first run takes about 1 second
+> y1 = xfun::cache_exec({
++     x = rnorm(1e+05)
++     Sys.sleep(1)
++     x
++ }, path = ":memory:", id = "sim-norm")
+> 
+> # the second run takes almost no time
+> y2 = xfun::cache_exec({
++     # comments won't affect caching
++     x = rnorm(1e+05)
++     Sys.sleep(1)
++     x
++ }, path = ":memory:", id = "sim-norm")
+> 
+> # y1, y2, and x should be identical
+> stopifnot(identical(y1, y2), identical(y1, x))
 > 
 > 
 > 
@@ -258,10 +288,133 @@ NULL
  [1]  1  2  3  4  5  6  7  8  9 10
 > compute()
  [1]  1  2  3  4  5  6  7  8  9 10
-> file.remove(f)
-Warning in file.remove(f) :
-  cannot remove file '/tmp/Rtmp6Ci3iQ/file1b3239bbbfb4', reason 'No such file or directory'
-[1] FALSE
+> unlink(paste0(f, "_*.rds"))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("csv_options")
+> ### * csv_options
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: csv_options
+> ### Title: Parse comma-separated chunk options
+> ### Aliases: csv_options
+> 
+> ### ** Examples
+> 
+> xfun::csv_options("foo, eval=TRUE, fig.width=5, echo=if (TRUE) FALSE")
+$label
+[1] "foo"
+
+$eval
+[1] TRUE
+
+$fig.width
+[1] 5
+
+$echo
+if (TRUE) FALSE
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("decimal_dot")
+> ### * decimal_dot
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: decimal_dot
+> ### Title: Evaluate an expression after forcing the decimal point to be a
+> ###   dot
+> ### Aliases: decimal_dot
+> 
+> ### ** Examples
+> 
+> opts = options(OutDec = ",")
+> as.character(1.234)  # using ',' as the decimal separator
+[1] "1,234"
+> print(1.234)  # same
+[1] 1,234
+> xfun::decimal_dot(as.character(1.234))  # using dot
+[1] "1.234"
+> xfun::decimal_dot(print(1.234))  # using dot
+[1] 1.234
+> options(opts)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("divide_chunk")
+> ### * divide_chunk
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: divide_chunk
+> ### Title: Divide chunk options from the code chunk body
+> ### Aliases: divide_chunk
+> 
+> ### ** Examples
+> 
+> # parse yaml-like items
+> yaml_like = c("#| label: mine", "#| echo: true", "#| fig.width: 8", "#| foo: bar",
++     "1 + 1")
+> writeLines(yaml_like)
+#| label: mine
+#| echo: true
+#| fig.width: 8
+#| foo: bar
+1 + 1
+> xfun::divide_chunk("r", yaml_like)
+$options
+$options$label
+[1] "mine"
+
+$options$echo
+[1] TRUE
+
+$options$fig.width
+[1] 8
+
+$options$foo
+[1] "bar"
+
+
+$src
+[1] "#| label: mine"  "#| echo: true"   "#| fig.width: 8" "#| foo: bar"    
+
+$code
+[1] "1 + 1"
+
+> 
+> # parse CSV syntax
+> csv_like = c("#| mine, echo = TRUE, fig.width = 8, foo = 'bar'", "1 + 1")
+> writeLines(csv_like)
+#| mine, echo = TRUE, fig.width = 8, foo = 'bar'
+1 + 1
+> xfun::divide_chunk("r", csv_like)
+$options
+$options$label
+[1] "mine"
+
+$options$echo
+[1] TRUE
+
+$options$fig.width
+[1] 8
+
+$options$foo
+[1] "bar"
+
+
+$src
+[1] "#| mine, echo = TRUE, fig.width = 8, foo = 'bar'"
+
+$code
+[1] "1 + 1"
+
 > 
 > 
 > 
@@ -278,7 +431,7 @@ Warning in file.remove(f) :
 > ### ** Examples
 > 
 > do_once(message("Today's date is ", Sys.Date()), "xfun.date.reminder")
-Today's date is 2024-12-19
+Today's date is 2025-01-06
 You will not see this message again in this R session. If you never want to see this message, you may set options(xfun.date.reminder = FALSE) in your .Rprofile.
 > # if you run it again, it will not emit the message again
 > do_once(message("Today's date is ", Sys.Date()), "xfun.date.reminder")
@@ -349,8 +502,10 @@ You will not see this message again in this R session. If you never want to see 
 > logo = xfun:::R_logo()
 > link = xfun::embed_file(logo, text = "Download R logo")
 > link
-<a href="data:image/svg+xml;base64,PCEtLQpDb3B5cmlnaHQgKEMpIDIwMTUtMjAxNiBUaGUgUiBGb3VuZGF0aW9uCgpZb3UgY2FuIGRpc3RyaWJ1dGUgdGhpcyBsb2dvIHVuZGVyIHRoZSB0ZXJtcyBvZiB0aGUgQ3JlYXRpdmUKQ29tbW9ucyBBdHRyaWJ1dGlvbi1TaGFyZUFsaWtlIDQuMCBJbnRlcm5hdGlvbmFsIGxpY2Vuc2UgKENDLUJZLVNBCjQuMCkgb3IgKGF0IHlvdXIgb3B0aW9uKSB0aGUgR05VIEdlbmVyYWwgUHVibGljIExpY2Vuc2UgdmVyc2lvbiAyCihHUEwtMikuCgpUaGlzIHByb2dyYW0gaXMgZGlzdHJpYnV0ZWQgaW4gdGhlIGhvcGUgdGhhdCBpdCB3aWxsIGJlIHVzZWZ1bCwKYnV0IFdJVEhPVVQgQU5ZIFdBUlJBTlRZOyB3aXRob3V0IGV2ZW4gdGhlIGltcGxpZWQgd2FycmFudHkgb2YKTUVSQ0hBTlRBQklMSVRZIG9yIEZJVE5FU1MgRk9SIEEgUEFSVElDVUxBUiBQVVJQT1NFLiAgCgpZb3Ugc2hvdWxkIGhhdmUgcmVjZWl2ZWQgYSBjb3B5IG9mIHRoZSBHTlUgR2VuZXJhbCBQdWJsaWMgTGljZW5zZQphbG9uZyB3aXRoIHRoaXMgcHJvZ3JhbTsgaWYgbm90LCBhIGNvcHkgaXMgYXZhaWxhYmxlIGF0Cmh0dHBzOi8vd3d3LlItcHJvamVjdC5vcmcvTGljZW5zZXMvCgpUaGUgdGV4dCBvZiB0aGUgQ0MgQlktU0EgNC4wIGxpY2Vuc2UgaXMgYXZhaWxhYmxlIGF0Cmh0dHBzOi8vY3JlYXRpdmVjb21tb25zLm9yZy9saWNlbnNlcy9ieS1zYS80LjAvCi0tPgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHByZXNlcnZlQXNwZWN0UmF0aW89InhNaWRZTWlkIiB3aWR0aD0iNzI0IiBoZWlnaHQ9IjU2MSIgdmlld0JveD0iMCAwIDcyNCA1NjEiPgogIDxkZWZzPgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkaWVudEZpbGwtMSIgeDE9IjAiIHgyPSIxIiB5MT0iMCIgeTI9IjEiIGdyYWRpZW50VW5pdHM9Im9iamVjdEJvdW5kaW5nQm94IiBzcHJlYWRNZXRob2Q9InBhZCI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0icmdiKDIwMywyMDYsMjA4KSIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0icmdiKDEzMiwxMzEsMTM5KSIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkaWVudEZpbGwtMiIgeDE9IjAiIHgyPSIxIiB5MT0iMCIgeTI9IjEiIGdyYWRpZW50VW5pdHM9Im9iamVjdEJvdW5kaW5nQm94IiBzcHJlYWRNZXRob2Q9InBhZCI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0icmdiKDM5LDEwOSwxOTUpIiBzdG9wLW9wYWNpdHk9IjEiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSJyZ2IoMjIsOTIsMTcwKSIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cGF0aCBkPSJNMzYxLjQ1Myw0ODUuOTM3IEMxNjIuMzI5LDQ4NS45MzcgMC45MDYsMzc3LjgyOCAwLjkwNiwyNDQuNDY5IEMwLjkwNiwxMTEuMTA5IDE2Mi4zMjksMy4wMDAgMzYxLjQ1MywzLjAwMCBDNTYwLjU3OCwzLjAwMCA3MjIuMDAwLDExMS4xMDkgNzIyLjAwMCwyNDQuNDY5IEM3MjIuMDAwLDM3Ny44MjggNTYwLjU3OCw0ODUuOTM3IDM2MS40NTMsNDg1LjkzNyBaTTQxNi42NDEsOTcuNDA2IEMyNjUuMjg5LDk3LjQwNiAxNDIuNTk0LDE3MS4zMTQgMTQyLjU5NCwyNjIuNDg0IEMxNDIuNTk0LDM1My42NTQgMjY1LjI4OSw0MjcuNTYyIDQxNi42NDEsNDI3LjU2MiBDNTY3Ljk5Miw0MjcuNTYyIDY3OS42ODcsMzc3LjAzMyA2NzkuNjg3LDI2Mi40ODQgQzY3OS42ODcsMTQ3Ljk3MSA1NjcuOTkyLDk3LjQwNiA0MTYuNjQxLDk3LjQwNiBaIiBmaWxsPSJ1cmwoI2dyYWRpZW50RmlsbC0xKSIgZmlsbC1ydWxlPSJldmVub2RkIi8+CiAgPHBhdGggZD0iTTU1MC4wMDAsMzc3LjAwMCBDNTUwLjAwMCwzNzcuMDAwIDU3MS44MjIsMzgzLjU4NSA1ODQuNTAwLDM5MC4wMDAgQzU4OC44OTksMzkyLjIyNiA1OTYuNTEwLDM5Ni42NjggNjAyLjAwMCw0MDIuNTAwIEM2MDcuMzc4LDQwOC4yMTIgNjEwLjAwMCw0MTQuMDAwIDYxMC4wMDAsNDE0LjAwMCBMNjk2LjAwMCw1NTkuMDAwIEw1NTcuMDAwLDU1OS4wNjIgTDQ5Mi4wMDAsNDM3LjAwMCBDNDkyLjAwMCw0MzcuMDAwIDQ3OC42OTAsNDE0LjEzMSA0NzAuNTAwLDQwNy41MDAgQzQ2My42NjgsNDAxLjk2OSA0NjAuNzU1LDQwMC4wMDAgNDU0LjAwMCw0MDAuMDAwIEM0NDkuMjk4LDQwMC4wMDAgNDIwLjk3NCw0MDAuMDAwIDQyMC45NzQsNDAwLjAwMCBMNDIxLjAwMCw1NTguOTc0IEwyOTguMDAwLDU1OS4wMjYgTDI5OC4wMDAsMTUyLjkzOCBMNTQ1LjAwMCwxNTIuOTM4IEM1NDUuMDAwLDE1Mi45MzggNjU3LjUwMCwxNTQuOTY3IDY1Ny41MDAsMjYyLjAwMCBDNjU3LjUwMCwzNjkuMDMzIDU1MC4wMDAsMzc3LjAwMCA1NTAuMDAwLDM3Ny4wMDAgWk00OTYuNTAwLDI0MS4wMjQgTDQyMi4wMzcsMjQwLjk3NiBMNDIyLjAwMCwzMTAuMDI2IEw0OTYuNTAwLDMxMC4wMDIgQzQ5Ni41MDAsMzEwLjAwMiA1MzEuMDAwLDMwOS44OTUgNTMxLjAwMCwyNzQuODc3IEM1MzEuMDAwLDIzOS4xNTUgNDk2LjUwMCwyNDEuMDI0IDQ5Ni41MDAsMjQxLjAyNCBaIiBmaWxsPSJ1cmwoI2dyYWRpZW50RmlsbC0yKSIgZmlsbC1ydWxlPSJldmVub2RkIi8+Cjwvc3ZnPgo=" download="Rlogo.svg">Download R logo</a>
-> if (interactive()) htmltools::browsable(link)
+[1] "<a href=\"data:image/svg+xml;base64,PCEtLQpDb3B5cmlnaHQgKEMpIDIwMTUtMjAxNiBUaGUgUiBGb3VuZGF0aW9uCgpZb3UgY2FuIGRpc3RyaWJ1dGUgdGhpcyBsb2dvIHVuZGVyIHRoZSB0ZXJtcyBvZiB0aGUgQ3JlYXRpdmUKQ29tbW9ucyBBdHRyaWJ1dGlvbi1TaGFyZUFsaWtlIDQuMCBJbnRlcm5hdGlvbmFsIGxpY2Vuc2UgKENDLUJZLVNBCjQuMCkgb3IgKGF0IHlvdXIgb3B0aW9uKSB0aGUgR05VIEdlbmVyYWwgUHVibGljIExpY2Vuc2UgdmVyc2lvbiAyCihHUEwtMikuCgpUaGlzIHByb2dyYW0gaXMgZGlzdHJpYnV0ZWQgaW4gdGhlIGhvcGUgdGhhdCBpdCB3aWxsIGJlIHVzZWZ1bCwKYnV0IFdJVEhPVVQgQU5ZIFdBUlJBTlRZOyB3aXRob3V0IGV2ZW4gdGhlIGltcGxpZWQgd2FycmFudHkgb2YKTUVSQ0hBTlRBQklMSVRZIG9yIEZJVE5FU1MgRk9SIEEgUEFSVElDVUxBUiBQVVJQT1NFLiAgCgpZb3Ugc2hvdWxkIGhhdmUgcmVjZWl2ZWQgYSBjb3B5IG9mIHRoZSBHTlUgR2VuZXJhbCBQdWJsaWMgTGljZW5zZQphbG9uZyB3aXRoIHRoaXMgcHJvZ3JhbTsgaWYgbm90LCBhIGNvcHkgaXMgYXZhaWxhYmxlIGF0Cmh0dHBzOi8vd3d3LlItcHJvamVjdC5vcmcvTGljZW5zZXMvCgpUaGUgdGV4dCBvZiB0aGUgQ0MgQlktU0EgNC4wIGxpY2Vuc2UgaXMgYXZhaWxhYmxlIGF0Cmh0dHBzOi8vY3JlYXRpdmVjb21tb25zLm9yZy9saWNlbnNlcy9ieS1zYS80LjAvCi0tPgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHByZXNlcnZlQXNwZWN0UmF0aW89InhNaWRZTWlkIiB3aWR0aD0iNzI0IiBoZWlnaHQ9IjU2MSIgdmlld0JveD0iMCAwIDcyNCA1NjEiPgogIDxkZWZzPgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkaWVudEZpbGwtMSIgeDE9IjAiIHgyPSIxIiB5MT0iMCIgeTI9IjEiIGdyYWRpZW50VW5pdHM9Im9iamVjdEJvdW5kaW5nQm94IiBzcHJlYWRNZXRob2Q9InBhZCI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0icmdiKDIwMywyMDYsMjA4KSIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0icmdiKDEzMiwxMzEsMTM5KSIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkaWVudEZpbGwtMiIgeDE9IjAiIHgyPSIxIiB5MT0iMCIgeTI9IjEiIGdyYWRpZW50VW5pdHM9Im9iamVjdEJvdW5kaW5nQm94IiBzcHJlYWRNZXRob2Q9InBhZCI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0icmdiKDM5LDEwOSwxOTUpIiBzdG9wLW9wYWNpdHk9IjEiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSJyZ2IoMjIsOTIsMTcwKSIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cGF0aCBkPSJNMzYxLjQ1Myw0ODUuOTM3IEMxNjIuMzI5LDQ4NS45MzcgMC45MDYsMzc3LjgyOCAwLjkwNiwyNDQuNDY5IEMwLjkwNiwxMTEuMTA5IDE2Mi4zMjksMy4wMDAgMzYxLjQ1MywzLjAwMCBDNTYwLjU3OCwzLjAwMCA3MjIuMDAwLDExMS4xMDkgNzIyLjAwMCwyNDQuNDY5IEM3MjIuMDAwLDM3Ny44MjggNTYwLjU3OCw0ODUuOTM3IDM2MS40NTMsNDg1LjkzNyBaTTQxNi42NDEsOTcuNDA2IEMyNjUuMjg5LDk3LjQwNiAxNDIuNTk0LDE3MS4zMTQgMTQyLjU5NCwyNjIuNDg0IEMxNDIuNTk0LDM1My42NTQgMjY1LjI4OSw0MjcuNTYyIDQxNi42NDEsNDI3LjU2MiBDNTY3Ljk5Miw0MjcuNTYyIDY3OS42ODcsMzc3LjAzMyA2NzkuNjg3LDI2Mi40ODQgQzY3OS42ODcsMTQ3Ljk3MSA1NjcuOTkyLDk3LjQwNiA0MTYuNjQxLDk3LjQwNiBaIiBmaWxsPSJ1cmwoI2dyYWRpZW50RmlsbC0xKSIgZmlsbC1ydWxlPSJldmVub2RkIi8+CiAgPHBhdGggZD0iTTU1MC4wMDAsMzc3LjAwMCBDNTUwLjAwMCwzNzcuMDAwIDU3MS44MjIsMzgzLjU4NSA1ODQuNTAwLDM5MC4wMDAgQzU4OC44OTksMzkyLjIyNiA1OTYuNTEwLDM5Ni42NjggNjAyLjAwMCw0MDIuNTAwIEM2MDcuMzc4LDQwOC4yMTIgNjEwLjAwMCw0MTQuMDAwIDYxMC4wMDAsNDE0LjAwMCBMNjk2LjAwMCw1NTkuMDAwIEw1NTcuMDAwLDU1OS4wNjIgTDQ5Mi4wMDAsNDM3LjAwMCBDNDkyLjAwMCw0MzcuMDAwIDQ3OC42OTAsNDE0LjEzMSA0NzAuNTAwLDQwNy41MDAgQzQ2My42NjgsNDAxLjk2OSA0NjAuNzU1LDQwMC4wMDAgNDU0LjAwMCw0MDAuMDAwIEM0NDkuMjk4LDQwMC4wMDAgNDIwLjk3NCw0MDAuMDAwIDQyMC45NzQsNDAwLjAwMCBMNDIxLjAwMCw1NTguOTc0IEwyOTguMDAwLDU1OS4wMjYgTDI5OC4wMDAsMTUyLjkzOCBMNTQ1LjAwMCwxNTIuOTM4IEM1NDUuMDAwLDE1Mi45MzggNjU3LjUwMCwxNTQuOTY3IDY1Ny41MDAsMjYyLjAwMCBDNjU3LjUwMCwzNjkuMDMzIDU1MC4wMDAsMzc3LjAwMCA1NTAuMDAwLDM3Ny4wMDAgWk00OTYuNTAwLDI0MS4wMjQgTDQyMi4wMzcsMjQwLjk3NiBMNDIyLjAwMCwzMTAuMDI2IEw0OTYuNTAwLDMxMC4wMDIgQzQ5Ni41MDAsMzEwLjAwMiA1MzEuMDAwLDMwOS44OTUgNTMxLjAwMCwyNzQuODc3IEM1MzEuMDAwLDIzOS4xNTUgNDk2LjUwMCwyNDEuMDI0IDQ5Ni41MDAsMjQxLjAyNCBaIiBmaWxsPSJ1cmwoI2dyYWRpZW50RmlsbC0yKSIgZmlsbC1ydWxlPSJldmVub2RkIi8+Cjwvc3ZnPgo=\" download=\"Rlogo.svg\">Download R logo</a>"
+attr(,"class")
+[1] "xfun_html" "html"     
+> if (interactive()) xfun::html_view(link)
 > 
 > 
 > 
@@ -435,6 +590,34 @@ NULL
 > 
 > 
 > cleanEx()
+> nameEx("fenced_block")
+> ### * fenced_block
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: fenced_block
+> ### Title: Create a fenced block in Markdown
+> ### Aliases: fenced_block fenced_div make_fence
+> 
+> ### ** Examples
+> 
+> # code block with class 'r' and ID 'foo'
+> xfun::fenced_block("1+1", c(".r", "#foo"))
+[1] ""              "``` {.r #foo}" "1+1"           "```"          
+> # fenced Div
+> xfun::fenced_block("This is a **Div**.", char = ":")
+[1] ""                   ":::"                "This is a **Div**."
+[4] ":::"               
+> # three backticks by default
+> xfun::make_fence("1+1")
+[1] "```"
+> # needs five backticks for the fences because content has four
+> xfun::make_fence(c("````r", "1+1", "````"))
+[1] "`````"
+> 
+> 
+> 
+> cleanEx()
 > nameEx("file_ext")
 > ### * file_ext
 > 
@@ -487,7 +670,7 @@ NULL
 Package: xfun
 Type: Package
 Title: Supporting Functions for Packages Maintained by 'Yihui Xie'
-Version: 0.39
+Version: 0.49
 Authors@R: c(
   person("Yihui", "Xie", role = c("aut", "cre", "cph"), email = "xie@yihui.name", comment = c(ORCID = "0000-0003-0645-5666")),
   person("Wush", "Wu", role = "ctb"),
@@ -495,33 +678,33 @@ Authors@R: c(
   person("Xianying", "Tan", role = "ctb"),
   person("Salim", "Brüggemann", role = "ctb", email = "salim-b@pm.me", comment = c(ORCID = "0000-0002-5329-5987")),
   person("Christophe", "Dervieux", role = "ctb"),
-  person(given = "Posit Software, PBC", role = c("cph", "fnd")),
   person()
   )
 Description: Miscellaneous functions commonly used in other packages maintained by 'Yihui Xie'.
-Imports: stats, tools
-Suggests: testit, parallel, codetools, rstudioapi, tinytex (>= 0.30),
-        mime, markdown (>= 1.5), knitr (>= 1.42), htmltools, remotes,
-        pak, rhub, renv, curl, jsonlite, magick, yaml, rmarkdown
+Depends: R (>= 3.2.0)
+Imports: grDevices, stats, tools
+Suggests: testit, parallel, codetools, methods, rstudioapi, tinytex (>=
+        0.30), mime, litedown, commonmark, knitr (>= 1.47), remotes,
+        pak, rhub, renv, curl, xml2, jsonlite, magick, yaml, qs,
+        rmarkdown
 License: MIT + file LICENSE
 URL: https://github.com/yihui/xfun
 BugReports: https://github.com/yihui/xfun/issues
 Encoding: UTF-8
-RoxygenNote: 7.2.3
-VignetteBuilder: knitr
+RoxygenNote: 7.3.2
+VignetteBuilder: litedown
 NeedsCompilation: yes
-Packaged: 2023-04-19 22:17:10 UTC; yihui
+Packaged: 2024-10-31 16:27:34 UTC; yihui
 Author: Yihui Xie [aut, cre, cph] (<https://orcid.org/0000-0003-0645-5666>),
   Wush Wu [ctb],
   Daijiang Li [ctb],
   Xianying Tan [ctb],
   Salim Brüggemann [ctb] (<https://orcid.org/0000-0002-5329-5987>),
-  Christophe Dervieux [ctb],
-  Posit Software, PBC [cph, fnd]
+  Christophe Dervieux [ctb]
 Maintainer: Yihui Xie <xie@yihui.name>
-Repository: RSPM
-Date/Publication: 2023-04-20 12:50:02 UTC
-Built: R 4.3.0; x86_64-pc-linux-gnu; 2023-04-21 21:45:58 UTC; unix
+Repository: CRAN
+Date/Publication: 2024-10-31 18:10:02 UTC
+Built: R 4.3.0; x86_64-pc-linux-gnu; 2025-01-06 16:00:07 UTC; unix
 > 
 > 
 > 
@@ -570,7 +753,7 @@ Built: R 4.3.0; x86_64-pc-linux-gnu; 2023-04-21 21:45:58 UTC; unix
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: github_releases
-> ### Title: Get the tags of Github releases of a repository
+> ### Title: Get the tags of GitHub releases of a repository
 > ### Aliases: github_releases
 > 
 > ### ** Examples
@@ -626,6 +809,41 @@ Built: R 4.3.0; x86_64-pc-linux-gnu; 2023-04-21 21:45:58 UTC; unix
 > 
 > 
 > cleanEx()
+> nameEx("html_tag")
+> ### * html_tag
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: html_tag
+> ### Title: Tools for HTML tags
+> ### Aliases: html_tag html_value html_escape html_view
+> 
+> ### ** Examples
+> 
+> xfun::html_tag("a", "<R Project>", href = "https://www.r-project.org", target = "_blank")
+[1] "<a href=\"https://www.r-project.org\" target=\"_blank\">&lt;R Project&gt;</a>"
+attr(,"class")
+[1] "xfun_html" "html"     
+> xfun::html_tag("br")
+[1] "<br />"
+attr(,"class")
+[1] "xfun_html" "html"     
+> xfun::html_tag("a", xfun::html_tag("strong", "R Project"), href = "#")
+[1] "<a href=\"#\"><strong>R Project</strong></a>"
+attr(,"class")
+[1] "xfun_html" "html"     
+> xfun::html_tag("a", list("<text>", xfun::html_tag("b", "R Project")), href = "#")
+[1] "<a href=\"#\">&lt;text&gt;<b>R Project</b></a>"
+attr(,"class")
+[1] "xfun_html" "html"     
+> xfun::html_escape("\" quotes \" & brackets < >")
+[1] "\" quotes \" &amp; brackets &lt; &gt;"
+> xfun::html_escape("\" & < > \r \n", attr = TRUE)
+[1] "&quot; &amp; &lt; &gt; &#13; &#10;"
+> 
+> 
+> 
+> cleanEx()
 > nameEx("in_dir")
 > ### * in_dir
 > 
@@ -642,34 +860,8 @@ Built: R 4.3.0; x86_64-pc-linux-gnu; 2023-04-21 21:45:58 UTC; unix
 +     print(getwd())
 +     list.files()
 + })
-[1] "/tmp/Rtmp6Ci3iQ"
-[1] "file1b32344c466cc"                                    
-[2] "file1b3239bbbfb4_abe943e05b1199c9c4c96c2d702338cb.rds"
-> 
-> 
-> 
-> cleanEx()
-> nameEx("isFALSE")
-> ### * isFALSE
-> 
-> flush(stderr()); flush(stdout())
-> 
-> ### Name: isFALSE
-> ### Title: Test if an object is 'FALSE'
-> ### Aliases: isFALSE
-> ### Keywords: internal
-> 
-> ### ** Examples
-> ## Don't show: 
-> if (getRversion() < '3.5.0') (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
-+ ## End(Don't show)
-+ library(xfun)
-+ isFALSE(TRUE)  # false
-+ isFALSE(FALSE)  # true
-+ isFALSE(c(FALSE, FALSE))  # false
-+ ## Don't show: 
-+ }) # examplesIf
-> ## End(Don't show)
+[1] "/tmp/RtmpieljkA"
+[1] "file259d139f402d8"
 > 
 > 
 > 
@@ -819,7 +1011,126 @@ Built: R 4.3.0; x86_64-pc-linux-gnu; 2023-04-21 21:45:58 UTC; unix
  [9] "/usr/local/lib/R/site-library/xfun/NAMESPACE"  
 [10] "/usr/local/lib/R/site-library/xfun/NEWS.md"    
 [11] "/usr/local/lib/R/site-library/xfun/R/"         
-[12] "/usr/local/lib/R/site-library/xfun/scripts/"   
+[12] "/usr/local/lib/R/site-library/xfun/resources/" 
+[13] "/usr/local/lib/R/site-library/xfun/scripts/"   
+> 
+> 
+> 
+> cleanEx()
+> nameEx("md5")
+> ### * md5
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: md5
+> ### Title: Calculate the MD5 checksums of R objects
+> ### Aliases: md5
+> 
+> ### ** Examples
+> 
+> x1 = 1
+> x2 = 1:10
+> x3 = seq(1, 10)
+> x4 = iris
+> x5 = paste
+> (m = xfun::md5(x1, x2, x3, x4, x5))
+[1] "f17801eb638793fa56d7fbaad2ae9c6b" "80e76ade6af799c5b55e6447e7bf0d7b"
+[3] "80e76ade6af799c5b55e6447e7bf0d7b" "999d7a900799faebc7d3eedbdf663570"
+[5] "e146801e93d742df390caa1a551e1965"
+> stopifnot(m[2] == m[3])  # x2 and x3 should be identical
+> 
+> xfun::md5(x1 = x1, x2 = x2)  # named arguments
+                                x1                                 x2 
+"f17801eb638793fa56d7fbaad2ae9c6b" "80e76ade6af799c5b55e6447e7bf0d7b" 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("md_table")
+> ### * md_table
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: md_table
+> ### Title: Generate a simple Markdown pipe table
+> ### Aliases: md_table
+> 
+> ### ** Examples
+> 
+> xfun::md_table(head(iris))
+[1] "|Sepal.Length|Sepal.Width|Petal.Length|Petal.Width|Species|"
+[2] "|--:|--:|--:|--:|---|"                                      
+[3] "|5.1|3.5|1.4|0.2|setosa|"                                   
+[4] "|4.9|3.0|1.4|0.2|setosa|"                                   
+[5] "|4.7|3.2|1.3|0.2|setosa|"                                   
+[6] "|4.6|3.1|1.5|0.2|setosa|"                                   
+[7] "|5.0|3.6|1.4|0.2|setosa|"                                   
+[8] "|5.4|3.9|1.7|0.4|setosa|"                                   
+> xfun::md_table(mtcars, limit = c(10, 6))
+ [1] "| |mpg|cyl|...|gear|am|vs|"                                 
+ [2] "|---|--:|--:|:-:|--:|--:|--:|"                              
+ [3] "|Mazda RX4|21.0|6|...|4|1|0|"                               
+ [4] "|Mazda RX4 Wag|21.0|6|...|4|1|0|"                           
+ [5] "|Datsun 710|22.8|4|...|4|1|1|"                              
+ [6] "|Hornet 4 Drive|21.4|6|...|3|0|1|"                          
+ [7] "|Hornet Sportabout|18.7|8|...|3|0|0|"                       
+ [8] "|&vellip;|&vellip;|&vellip;|...|&vellip;|&vellip;|&vellip;|"
+ [9] "|Lotus Europa|30.4|4|...|5|1|1|"                            
+[10] "|Ford Pantera L|15.8|8|...|5|1|0|"                          
+[11] "|Ferrari Dino|19.7|6|...|5|1|0|"                            
+[12] "|Maserati Bora|15.0|8|...|5|1|0|"                           
+[13] "|Volvo 142E|21.4|4|...|4|1|1|"                              
+> 
+> 
+> 
+> cleanEx()
+> nameEx("mime_type")
+> ### * mime_type
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: mime_type
+> ### Title: Get the MIME types of files
+> ### Aliases: mime_type
+> 
+> ### ** Examples
+> ## Don't show: 
+> if (tolower(Sys.getenv('CI')) == 'true') (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ f = list.files(R.home("doc"), full.names = TRUE)
++ mime_type(f)
++ mime_type(f, FALSE)  # don't use mime
++ mime_type(f, FALSE, NA)  # run command for files without extension
++ ## Don't show: 
++ }) # examplesIf
+> f = list.files(R.home("doc"), full.names = TRUE)
+> mime_type(f)
+ [1] "text/plain"               "text/csv"                
+ [3] "text/plain"               "text/plain"              
+ [5] "text/csv"                 "text/plain"              
+ [7] "text/plain"               "text/plain"              
+ [9] "application/octet-stream" "text/plain"              
+[11] "text/plain"               "application/octet-stream"
+[13] "application/octet-stream" "application/octet-stream"
+[15] "application/octet-stream" "application/octet-stream"
+[17] "application/octet-stream" "application/pdf"         
+[19] "application/octet-stream" "text/plain"              
+[21] "text/plain"              
+> mime_type(f, FALSE)
+ [1] "text/plain"       "text/csv"         "text/plain"       "text/plain"      
+ [5] "text/csv"         "text/plain"       "text/plain"       "text/plain"      
+ [9] "text/plain"       "text/plain"       "text/plain"       "text/plain"      
+[13] "text/plain"       "text/plain"       "application/gzip" "text/plain"      
+[17] "application/gzip" "application/pdf"  "application/gzip" "text/plain"      
+[21] "text/plain"      
+> mime_type(f, FALSE, NA)
+ [1] "text/plain"       "text/csv"         "text/plain"       "text/plain"      
+ [5] "text/csv"         "text/plain"       "inode/directory"  "text/plain"      
+ [9] "text/plain"       "inode/directory"  "text/plain"       "text/plain"      
+[13] "text/plain"       "text/plain"       "application/gzip" "text/plain"      
+[17] "application/gzip" "application/pdf"  "application/gzip" "text/plain"      
+[21] "text/plain"      
+> ## End(Don't show)
 > 
 > 
 > 
@@ -995,6 +1306,12 @@ Hello world! This message appears right after the previous one.
 [1] "minus nine hundred eighty-seven million, six hundred fifty-four thousand, three hundred twenty-one"
 > n2w(1e+15 - 1)
 [1] "nine hundred ninety-nine trillion, nine hundred ninety-nine billion, nine hundred ninety-nine million, nine hundred ninety-nine thousand, nine hundred ninety-nine"
+> n2w(123.456)
+[1] "one hundred twenty-three point four five six"
+> n2w(123.45678901)
+[1] "one hundred twenty-three point four five six seven eight nine zero one"
+> n2w(123.456789098765)
+[1] "one hundred twenty-three point four five six seven eight nine zero nine eight seven six five"
 > 
 > 
 > 
@@ -1178,14 +1495,16 @@ hello	world!
 > # two files in this package
 > fs = system.file("scripts", c("call-fun.R", "child-pids.sh"), package = "xfun")
 > xfun::read_all(fs)
-# This script is executed via the command line `Rscript call-fun.R arg1 arg2`,
-# where arg1 is a path to an .rds file, which contains the function and its
-# arguments saved as a list, and arg2 is a path to an .rds file to which the
-# returned value of the function call is saved.
+# This script is executed via the command line `Rscript call-fun.R arg1 arg2
+# arg3`, where arg1 is a path to an .rds file, which contains the function and
+# its arguments saved as a list; arg2 is a path to an .rds file to which the
+# returned value of the function call is saved; arg3 saves the error message.
 
 local({
-  if (length(a <- commandArgs(TRUE)) != 2)
-    stop('The number of arguments passed to Rscript should be 2.')
+  if (length(a <- commandArgs(TRUE)) != 3)
+    stop('The number of arguments passed to Rscript should be 3.')
+  # save the error message on exit if an error occurred
+  on.exit(if (!file.exists(a[2])) saveRDS(geterrmessage(), a[3]))
   x = readRDS(a[1])  # list(fun, args)
   f = x[[1]]
   if (is.character(f)) f = eval(parse(text = f), envir = globalenv())
@@ -1207,14 +1526,16 @@ done
 > # add file paths before file content and an empty line after content
 > xfun::read_all(fs, before = function(f) paste("#-----", f, "-----"), after = "")
 #----- /usr/local/lib/R/site-library/xfun/scripts/call-fun.R -----
-# This script is executed via the command line `Rscript call-fun.R arg1 arg2`,
-# where arg1 is a path to an .rds file, which contains the function and its
-# arguments saved as a list, and arg2 is a path to an .rds file to which the
-# returned value of the function call is saved.
+# This script is executed via the command line `Rscript call-fun.R arg1 arg2
+# arg3`, where arg1 is a path to an .rds file, which contains the function and
+# its arguments saved as a list; arg2 is a path to an .rds file to which the
+# returned value of the function call is saved; arg3 saves the error message.
 
 local({
-  if (length(a <- commandArgs(TRUE)) != 2)
-    stop('The number of arguments passed to Rscript should be 2.')
+  if (length(a <- commandArgs(TRUE)) != 3)
+    stop('The number of arguments passed to Rscript should be 3.')
+  # save the error message on exit if an error occurred
+  on.exit(if (!file.exists(a[2])) saveRDS(geterrmessage(), a[3]))
   x = readRDS(a[1])  # list(fun, args)
   f = x[[1]]
   if (is.character(f)) f = eval(parse(text = f), envir = globalenv())
@@ -1239,14 +1560,16 @@ done
 > # add constants
 > xfun::read_all(fs, before = "/*", after = c("*/", ""))
 /*
-# This script is executed via the command line `Rscript call-fun.R arg1 arg2`,
-# where arg1 is a path to an .rds file, which contains the function and its
-# arguments saved as a list, and arg2 is a path to an .rds file to which the
-# returned value of the function call is saved.
+# This script is executed via the command line `Rscript call-fun.R arg1 arg2
+# arg3`, where arg1 is a path to an .rds file, which contains the function and
+# its arguments saved as a list; arg2 is a path to an .rds file to which the
+# returned value of the function call is saved; arg3 saves the error message.
 
 local({
-  if (length(a <- commandArgs(TRUE)) != 2)
-    stop('The number of arguments passed to Rscript should be 2.')
+  if (length(a <- commandArgs(TRUE)) != 3)
+    stop('The number of arguments passed to Rscript should be 3.')
+  # save the error message on exit if an error occurred
+  on.exit(if (!file.exists(a[2])) saveRDS(geterrmessage(), a[3]))
   x = readRDS(a[1])  # list(fun, args)
   f = x[[1]]
   if (is.character(f)) f = eval(parse(text = f), envir = globalenv())
@@ -1292,6 +1615,94 @@ done
 > 
 > 
 > 
+> cleanEx()
+> nameEx("record")
+> ### * record
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: record
+> ### Title: Run R code and record the results
+> ### Aliases: record format.xfun_record_results print.xfun_record_results
+> 
+> ### ** Examples
+> 
+> code = c("# a warning test", "1:2 + 1:3", "par(mar = c(4, 4, 1, .2))",
++     "barplot(5:1, col = 2:6, horiz = TRUE)", "head(iris)",
++     "sunflowerplot(iris[, 3:4], seg.col = 'purple')",
++     "if (TRUE) {\n  message('Hello, xfun::record()!')\n}",
++     "# throw an error", "1 + 'a'")
+> res = xfun::record(code, dev.args = list(width = 9, height = 6.75),
++     error = TRUE)
+> xfun::tree(res)
+List of 13
+ |-: 'record_source' chr [1:2] "# a warning test" "1:2 + 1:3"
+ |  - attr(*, "lines")= int [1:2] 1 2
+ |-: 'record_warning' chr "longer object length is not a multiple of shorter object length"
+ |-: 'record_output' chr "[1] 2 4 4"
+ |-: 'record_source' chr [1:2] "par(mar = c(4, 4, 1, .2))" "barplot(5:1, col = 2:6, horiz = TRUE)"
+ |  - attr(*, "lines")= int [1:2] 3 3
+ |-: 'record_plot' chr "xfun-record-1.png"
+ |-: 'record_source' chr "head(iris)"
+ |  - attr(*, "lines")= int [1:2] 5 5
+ |-: 'record_output' chr [1:7] "  Sepal.Length Sepal.Width Petal.Length Petal.Width Species" "1          5.1         3.5          1.4         0.2  setosa" "2          4.9         3.0          1.4         0.2  setosa" "3          4.7         3.2          1.3         0.2  setosa" ...
+ |-: 'record_source' chr "sunflowerplot(iris[, 3:4], seg.col = 'purple')"
+ |  - attr(*, "lines")= int [1:2] 6 6
+ |-: 'record_plot' chr "xfun-record-2.png"
+ |-: 'record_source' chr [1:3] "if (TRUE) {" "  message('Hello, xfun::record()!')" "}"
+ |  - attr(*, "lines")= int [1:2] 7 9
+ |-: 'record_message' chr "Hello, xfun::record()!\n"
+ |-: 'record_source' chr [1:2] "# throw an error" "1 + 'a'"
+ |  - attr(*, "lines")= int [1:2] 10 11
+ |-: 'record_error' chr "non-numeric argument to binary operator"
+ - attr(*, "class")= chr "xfun_record_results"
+> format(res)
+# a warning test
+1:2 + 1:3
+
+#> longer object length is not a multiple of shorter object length
+
+#> [1] 2 4 4
+
+par(mar = c(4, 4, 1, .2))
+barplot(5:1, col = 2:6, horiz = TRUE)
+
+#> xfun-record-1.png
+
+head(iris)
+
+#>   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+#> 1          5.1         3.5          1.4         0.2  setosa
+#> 2          4.9         3.0          1.4         0.2  setosa
+#> 3          4.7         3.2          1.3         0.2  setosa
+#> 4          4.6         3.1          1.5         0.2  setosa
+#> 5          5.0         3.6          1.4         0.2  setosa
+#> 6          5.4         3.9          1.7         0.4  setosa
+
+sunflowerplot(iris[, 3:4], seg.col = 'purple')
+
+#> xfun-record-2.png
+
+if (TRUE) {
+  message('Hello, xfun::record()!')
+}
+
+#> Hello, xfun::record()!
+
+# throw an error
+1 + 'a'
+
+#> non-numeric argument to binary operator
+
+> # find and clean up plot files
+> plots = Filter(function(x) inherits(x, "record_plot"),
++     res)
+> file.remove(unlist(plots))
+[1] TRUE TRUE
+> 
+> 
+> 
+> graphics::par(get("par.postscript", pos = 'CheckExEnv'))
 > cleanEx()
 > nameEx("relative_path")
 > ### * relative_path
@@ -1356,7 +1767,7 @@ character(0)
 + # with query parameters
 + xfun::rest_api("https://httpbin.org", "/response-headers", params = list(foo = "bar"))
 + 
-+ # get the rate limit info from Github
++ # get the rate limit info from GitHub
 + xfun::github_api("/rate_limit")
 + ## Don't show: 
 + }) # examplesIf
@@ -1378,7 +1789,7 @@ character(0)
 > ## Don't show: 
 > if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
 + ## End(Don't show)
-+ # read the Github releases info of the repo yihui/xfun
++ # read the GitHub releases info of the repo yihui/xfun
 + xfun::retry(xfun::github_releases, "yihui/xfun")
 + ## Don't show: 
 + }) # examplesIf
@@ -1542,9 +1953,23 @@ character(0)
 > 
 > ### ** Examples
 > 
-> xfun::split_source(c("if (TRUE) {", "1 + 1", "}", "print(1:5)"))
+> code = c("# comment 1", "# comment 2", "if (TRUE) {", "1 + 1", "}", "print(1:5)")
+> xfun::split_source(code)
 [[1]]
+[1] "# comment 1"
+
+[[2]]
+[1] "# comment 2"
+
+[[3]]
 [1] "if (TRUE) {" "1 + 1"       "}"          
+
+[[4]]
+[1] "print(1:5)"
+
+> xfun::split_source(code, merge_comments = TRUE)
+[[1]]
+[1] "# comment 1" "# comment 2" "if (TRUE) {" "1 + 1"       "}"          
 
 [[2]]
 [1] "print(1:5)"
@@ -1915,6 +2340,36 @@ List of 12
 > 
 > 
 > cleanEx()
+> nameEx("upload_imgur")
+> ### * upload_imgur
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: upload_imgur
+> ### Title: Upload an image to imgur.com
+> ### Aliases: upload_imgur
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D f = tempfile(fileext = ".png")
+> ##D png(f)
+> ##D plot(rnorm(100), main = R.version.string)
+> ##D dev.off()
+> ##D 
+> ##D res = imgur_upload(f, include_xml = TRUE)
+> ##D res  # link to original URL of the image
+> ##D attr(res, "XML")  # all information
+> ##D if (interactive())
+> ##D     browseURL(res)
+> ##D 
+> ##D # to use your own key
+> ##D options(xfun.upload_imgur.key = "your imgur key")
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
 > nameEx("url_accessible")
 > ### * url_accessible
 > 
@@ -1996,18 +2451,21 @@ Error in parse(text = code, keep.source = FALSE) :
 > 
 > ### ** Examples
 > 
-> xfun::yaml_body(c("---", "title: Hello", "output: markdown::html_document", "---",
+> xfun::yaml_body(c("---", "title: Hello", "output: litedown::html_format", "---",
 +     "", "Content."))
 $yaml
 $yaml$title
 [1] "Hello"
 
 $yaml$output
-[1] "markdown::html_document"
+[1] "litedown::html_format"
 
 
 $body
 [1] ""         ""         ""         ""         ""         "Content."
+
+$lines
+[1] 1 4
 
 > 
 > 
@@ -2093,7 +2551,7 @@ $a
 > cleanEx()
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  0.831 0.083 5.785 0.978 1.576 
+Time elapsed:  0.822 0.086 6.839 0.976 1.695 
 > grDevices::dev.off()
 null device 
           1 

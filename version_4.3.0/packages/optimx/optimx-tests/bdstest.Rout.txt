@@ -1,0 +1,369 @@
+
+R version 4.3.0 (2023-04-21) -- "Already Tomorrow"
+Copyright (C) 2023 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> rm(list=ls())
+> # fname<-paste(format(Sys.time(), "%Y%m%d%H%M"),"-btRvmmin.out",sep='')
+> # sink(fname, append=TRUE, split=TRUE)
+> require("optimx")
+Loading required package: optimx
+> #####################
+> 
+> # This test script illustrates the use of bounds in optimr() with the
+> # optimizers Rvmmin and L-BFGS-B, as well as a Kuhn Karush Tucker check 
+> # on the final parameters from the second optimization.
+> # Masks are tested at the very end for the two methods for which they are
+> # available. Note that they must be called via the opm() function.
+> 
+> 
+> # Simple bounds test for n=4
+> bt.f<-function(x){
++  sum(x*x)
++ }
+> 
+> bt.g<-function(x){
++   gg<-2.0*x
++ }
+> 
+> n<-4
+> lower<-rep(0,n)
+> upper<-lower # to get arrays set
+> bdmsk<-rep(1,n)
+> # bdmsk[(trunc(n/2)+1)]<-0
+> for (i in 1:n) { 
++     lower[i]<-1.0*(i-1)*(n-1)/n
++     upper[i]<-1.0*i*(n+1)/n
++ }
+> xx<-0.5*(lower+upper)
+> 
+> cat("lower bounds:")
+lower bounds:> print(lower)
+[1] 0.00 0.75 1.50 2.25
+> cat("start:       ")
+start:       > print(xx)
+[1] 0.625 1.625 2.625 3.625
+> cat("upper bounds:")
+upper bounds:> print(upper)
+[1] 1.25 2.50 3.75 5.00
+> 
+> cat("Rvmmin \n\n")
+Rvmmin 
+
+> # Note: trace set to 0 below. Change as needed to view progress. 
+> 
+> abtrvm <- optimr(xx, bt.f, bt.g, lower=lower, upper=upper, method="Rvmmin", control=list(trace=0))
+trace= 0 
+> # Note: use lower=lower etc. because there is a missing hess= argument
+> print(abtrvm)
+$par
+[1] 0.00 0.75 1.50 2.25
+
+$value
+[1] 7.875
+
+$counts
+function gradient 
+       8        8 
+
+$convergence
+[1] 2
+
+$message
+[1] "Rvmminb appears to have converged"
+
+> 
+> cat("Axial search")
+Axial search> axabtrvm <- axsearch(abtrvm$par, fn=bt.f, fmin=abtrvm$value, lower, upper, bdmsk=NULL, 
++               trace=0)
+> print(axabtrvm)
+$bestfn
+[1] 7.875
+
+$par
+[1] 0.00 0.75 1.50 2.25
+
+$details
+  par0 fback fmin0     ffwd      parstep tilt roc
+1 0.00    NA 7.875 7.875000 3.666853e-07   90 Inf
+2 0.75    NA 7.875 7.875682 4.545258e-04   90 Inf
+3 1.50    NA 7.875 7.877727 9.086849e-04   90 Inf
+4 2.25    NA 7.875 7.881135 1.362844e-03   90 Inf
+
+> 
+> cat("Now force an early stop\n")
+Now force an early stop
+> abtrvm1 <- optimr(xx, bt.f, bt.g, lower=lower, upper=upper, method="Rvmmin", 
++                   control=list(maxit=1, trace=0))
+trace= 0 
+Warning message:
+In Rvmminb(par, fn, gr, lower = lower, upper = upper, bdmsk = bdmsk,  :
+  Too many gradient evaluations
+> print(abtrvm1)
+$par
+[1] 0.625 1.625 2.625 3.625
+
+$value
+[1] 8.884958
+
+$counts
+function gradient 
+       2        2 
+
+$convergence
+[1] 1
+
+$message
+[1] "Rvmminb appears to have converged"
+
+> cat("Axial search")
+Axial search> axabtrvm1 <- axsearch(abtrvm1$par, fn=bt.f, fmin=abtrvm1$value, lower, upper, bdmsk=NULL, 
++                      trace=0)
+> print(axabtrvm1)
+$bestfn
+[1] 8.884958
+
+$par
+[1] 0.625 1.625 2.625 3.625
+
+$details
+   par0    fback    fmin0     ffwd      parstep      tilt          roc
+1 0.625 23.06203 8.884958 23.06297 0.0003788326 -51.34019 4.152308e-08
+2 1.625 23.05930 8.884958 23.06570 0.0009843780 -72.89727 2.687203e-06
+3 2.625 23.05416 8.884958 23.07085 0.0015899235 -79.21570 2.721735e-05
+4 3.625 23.04659 8.884958 23.07842 0.0021954689 -82.14669 1.332738e-04
+
+> 
+> 
+> cat("Maximization test\n")
+Maximization test
+> mabtrvm <- optimr(xx, bt.f, bt.g, lower=lower, upper=upper, method="Rvmmin", 
++                  control=list(trace=1, maximize=TRUE))
+Parameter scaling:[1] 1 1 1 1
+gradient test tolerance =  6.055454e-06   fval= 23.0625 
+ compare to max(abs(gn-ga))/(1+abs(fval)) =  3.374164e-12 
+admissible =  TRUE 
+maskadded =  FALSE 
+parchanged =  FALSE 
+trace= 1 
+Rvmminb -- J C Nash 2009-2015 - an R implementation of Alg 21
+Problem of size n= 4   Dot arguments:
+list()
+Initial fn= 23.0625 
+ig= 1   gnorm= 9.604686     1   1   23.0625 
+ig= 2   gnorm= 3.910222     2   2   8.884958 
+ig= 3   gnorm= 4.973974     3   3   8.435105 
+No acceptable point
+Reset to gradient search
+  3   3   8.435105 
+ig= 4   gnorm= 1.964173     4   4   8.276993 
+ig= 5   gnorm= 4.537982     5   5   7.960819 
+No acceptable point
+Reset to gradient search
+  5   5   7.960819 
+ig= 6   gnorm= 0.5767744     6   6   7.958167 
+ig= 7   gnorm= 4.50001     7   7   7.875022 
+No acceptable point
+Reset to gradient search
+  7   7   7.875022 
+ig= 8   gnorm= 0   Seem to be done Rvmminb
+> # Note: use lower=lower etc. because there is a missing hess= argument
+> print(mabtrvm)
+$par
+[1] 0.00 0.75 1.50 2.25
+
+$value
+[1] 7.875
+
+$counts
+function gradient 
+       8        8 
+
+$convergence
+[1] 2
+
+$message
+[1] "Rvmminb appears to have converged"
+
+> cat("Do NOT try axsearch() with maximize\n")
+Do NOT try axsearch() with maximize
+> cat("KKT condition check\n")
+KKT condition check
+> akktm <- kktchk(mabtrvm$par, bt.f, bt.g, hess=NULL, upper=upper, lower=lower,  maximize=TRUE, control=list(trace=0))
+Warning message:
+In kktchk(mabtrvm$par, bt.f, bt.g, hess = NULL, upper = upper, lower = lower,  :
+  All parameters are constrained
+> print(akktm)
+$gmax
+[1] 0
+
+$evratio
+[1] NA
+
+$kkt1
+[1] TRUE
+
+$kkt2
+[1] TRUE
+
+$hev
+[1] 0 0 0 0
+
+$ngatend
+[1] 0.0 1.5 3.0 4.5
+
+$nhatend
+     [,1] [,2] [,3] [,4]
+[1,]   -2    0    0    0
+[2,]    0   -2    0    0
+[3,]    0    0   -2    0
+[4,]    0    0    0   -2
+
+> 
+> 
+> 
+> 
+> alb<-optimr(xx,bt.f, bt.g, lower=lower, upper=upper, method="L-BFGS-B", 
++             control=list(trace=0))
+> print(alb)
+$par
+[1] 0.00 0.75 1.50 2.25
+
+$value
+[1] 7.875
+
+$counts
+function gradient 
+       2        2 
+
+$convergence
+[1] 0
+
+$message
+[1] "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL"
+
+> 
+> cat("KKT condition check\n")
+KKT condition check
+> alkkt <- kktchk(alb$par, bt.f, bt.g, hess=NULL, upper=upper, lower=lower,  maximize=FALSE, control=list(trace=0))
+Warning message:
+In kktchk(alb$par, bt.f, bt.g, hess = NULL, upper = upper, lower = lower,  :
+  All parameters are constrained
+> print(alkkt)
+$gmax
+[1] 0
+
+$evratio
+[1] NA
+
+$kkt1
+[1] TRUE
+
+$kkt2
+[1] TRUE
+
+$hev
+[1] 0 0 0 0
+
+$ngatend
+[1] 0.0 1.5 3.0 4.5
+
+$nhatend
+     [,1] [,2] [,3] [,4]
+[1,]    2    0    0    0
+[2,]    0    2    0    0
+[3,]    0    0    2    0
+[4,]    0    0    0    2
+
+> 
+> alhn<-optimr(xx, bt.f, lower=lower, upper=upper, method="hjn", 
++              control=list(trace=0))
+> print(alhn)
+$par
+[1] 0.00 0.75 1.50 2.25
+
+$value
+[1] 7.875
+
+$counts
+[1] 70 NA
+
+$convergence
+[1] 0
+
+$message
+[1] NA
+
+> 
+> #sink()
+> cat("All bounded methods attempt with opm\n")
+All bounded methods attempt with opm
+> 
+> allbds <- opm(xx, bt.f, bt.g, lower=lower, upper=upper, method="ALL", control=list(trace=0))
+trace= 0 
+Warning message:
+In optimr(par, fn, gr, hess = hess, method = meth, lower = lower,  :
+  Successful convergence  Restarts for stagnation =0
+> print(summary(allbds, order=value))
+                 p1   p2  p3   p4 value fevals gevals convergence  kkt1 kkt2
+L-BFGS-B 0.0000e+00 0.75 1.5 2.25 7.875      2      2           0 FALSE TRUE
+nlminb   0.0000e+00 0.75 1.5 2.25 7.875      3      2           0 FALSE TRUE
+lbfgsb3c 0.0000e+00 0.75 1.5 2.25 7.875      3      3           0 FALSE TRUE
+Rcgmin   0.0000e+00 0.75 1.5 2.25 7.875      9      8           0 FALSE TRUE
+Rtnmin   0.0000e+00 0.75 1.5 2.25 7.875      8      8           0 FALSE TRUE
+Rvmmin   0.0000e+00 0.75 1.5 2.25 7.875      8      8           2 FALSE TRUE
+bobyqa   0.0000e+00 0.75 1.5 2.25 7.875     29     NA           0 FALSE TRUE
+hjkb     0.0000e+00 0.75 1.5 2.25 7.875    151     NA           0 FALSE TRUE
+hjn      0.0000e+00 0.75 1.5 2.25 7.875     70     NA           0 FALSE TRUE
+nmkb     5.4088e-08 0.75 1.5 2.25 7.875     62     NA           0 FALSE TRUE
+         xtime
+L-BFGS-B 0.001
+nlminb   0.000
+lbfgsb3c 0.062
+Rcgmin   0.001
+Rtnmin   0.002
+Rvmmin   0.001
+bobyqa   0.003
+hjkb     0.002
+hjn      0.001
+nmkb     0.006
+> 
+> cat("Now force a mask upper=lower for parameter 3 and see what happens\n")
+Now force a mask upper=lower for parameter 3 and see what happens
+> lower[3] <- upper[3]
+> xx[3] <- lower[3] # MUST reset parameter also
+> 
+> allbdm <- opm(xx, bt.f, bt.g, lower=lower, upper=upper, method="ALL", control=list(trace=0))
+trace= 0 
+Warning messages:
+1: In bmchk(par, lower = lower, upper = upper) :
+  Masks (fixed parameters) set by bmchk due to tight bounds. CAUTION!!
+2: In bmchk(par, lower = lower, upper = upper, shift2bound = TRUE) :
+  Masks (fixed parameters) set by bmchk due to tight bounds. CAUTION!!
+3: In bmchk(par, lower = lower, upper = upper, shift2bound = TRUE) :
+  Masks (fixed parameters) set by bmchk due to tight bounds. CAUTION!!
+4: In bmchk(par, lower = lower, upper = upper, bdmsk = bdmsk, trace = control$trace) :
+  Masks (fixed parameters) set by bmchk due to tight bounds. CAUTION!!
+5: In bmchk(par, lower = lower, upper = upper, shift2bound = TRUE) :
+  Masks (fixed parameters) set by bmchk due to tight bounds. CAUTION!!
+6: In hjn(spar, efn, lower = slower, upper = supper, bdmsk = msk, control = control,  :
+  hjn: lower >= upper for some parameters -- set masks
+> print(summary(allbdm, order=value))
+       p1   p2   p3   p4  value fevals gevals convergence  kkt1 kkt2 xtime
+Rcgmin  0 0.75 3.75 2.25 19.688      7      6           0 FALSE TRUE 0.001
+Rvmmin  0 0.75 3.75 2.25 19.688      5      5           2 FALSE TRUE 0.001
+hjn     0 0.75 3.75 2.25 19.688     53     NA           0 FALSE TRUE 0.001
+> 
+> 

@@ -25,6 +25,88 @@ Type 'q()' to quit R.
 > base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
 > base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
 > cleanEx()
+> nameEx("evaluate")
+> ### * evaluate
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: evaluate
+> ### Title: Evaluate input and return all details of evaluation
+> ### Aliases: evaluate
+> 
+> ### ** Examples
+> 
+> evaluate(c(
++   "1 + 1",
++   "2 + 2"
++ ))
+<evaluation>
+Source code: 
+  1 + 1
+Text output: 
+  [1] 2
+Source code: 
+  2 + 2
+Text output: 
+  [1] 4
+> 
+> # Not that's there's a difference in output between putting multiple
+> # expressions on one line vs spreading them across multiple lines
+> evaluate("1;2;3")
+<evaluation>
+Source code: 
+  1;2;3
+Text output: 
+  [1] 1
+Text output: 
+  [1] 2
+Text output: 
+  [1] 3
+> evaluate(c("1", "2", "3"))
+<evaluation>
+Source code: 
+  1
+Text output: 
+  [1] 1
+Source code: 
+  2
+Text output: 
+  [1] 2
+Source code: 
+  3
+Text output: 
+  [1] 3
+> 
+> # This also affects how errors propagate, matching the behaviour
+> # of the R console
+> evaluate("1;stop(2);3")
+<evaluation>
+Source code: 
+  1;stop(2);3
+Text output: 
+  [1] 1
+Condition: 
+  Error:
+  2
+> evaluate(c("1", "stop(2)", "3"))
+<evaluation>
+Source code: 
+  1
+Text output: 
+  [1] 1
+Source code: 
+  stop(2)
+Condition: 
+  Error:
+  2
+Source code: 
+  3
+Text output: 
+  [1] 3
+> 
+> 
+> 
+> cleanEx()
 > nameEx("inject_funs")
 > ### * inject_funs
 > 
@@ -50,42 +132,140 @@ GNU General Public License versions 2 or 3.
 For more information about these matters see
 https://www.gnu.org/licenses/.
 
-[[1]]
-$src
-[1] "system('R --version')"
-
-attr(,"class")
-[1] "source"
-
+<evaluation>
+Source code: 
+  system('R --version')
 > 
 > # replace the system() function
-> inject_funs(system = function(...) cat(base::system(..., intern = TRUE), sep = "\n"))
+> old <- inject_funs(system = function(...) {
++   cat(base::system(..., intern = TRUE), sep = "\n")
++ })
 > 
 > evaluate("system('R --version')")
-[[1]]
-$src
-[1] "system('R --version')"
-
-attr(,"class")
-[1] "source"
-
-[[2]]
-[1] "R version 4.3.0 (2023-04-21) -- \"Already Tomorrow\"\nCopyright (C) 2023 The R Foundation for Statistical Computing\nPlatform: x86_64-pc-linux-gnu (64-bit)\n\nR is free software and comes with ABSOLUTELY NO WARRANTY.\nYou are welcome to redistribute it under the terms of the\nGNU General Public License versions 2 or 3.\nFor more information about these matters see\nhttps://www.gnu.org/licenses/.\n\n"
-
+<evaluation>
+Source code: 
+  system('R --version')
+Text output: 
+  R version 4.3.0 (2023-04-21) -- "Already Tomorrow"
+  Copyright (C) 2023 The R Foundation for Statistical Computing
+  Platform: x86_64-pc-linux-gnu (64-bit)
+  
+  R is free software and comes with ABSOLUTELY NO WARRANTY.
+  You are welcome to redistribute it under the terms of the
+  GNU General Public License versions 2 or 3.
+  For more information about these matters see
+  https://www.gnu.org/licenses/.
+  
 > 
-> inject_funs()  # empty previously injected functions
+> # restore previously injected functions
+> inject_funs(old)
 > 
 > 
 > 
 > cleanEx()
-> nameEx("remove_hooks")
-> ### * remove_hooks
+> nameEx("parse_all")
+> ### * parse_all
 > 
 > flush(stderr()); flush(stdout())
 > 
-> ### Name: remove_hooks
-> ### Title: Remove hooks.
-> ### Aliases: remove_hooks
+> ### Name: parse_all
+> ### Title: Parse, retaining comments
+> ### Aliases: parse_all
+> 
+> ### ** Examples
+> 
+> # Each of these inputs are single line, but generate different numbers of
+> # expressions
+> source <- c(
++   "# a comment",
++   "x",
++   "x;y",
++   "x;y;z"
++ )
+> parsed <- parse_all(source)
+> lengths(parsed$expr)
+[1] 0 1 2 3
+> str(parsed$expr)
+List of 4
+ $ :  expression()
+ $ :  expression(x)
+ $ :  expression(x, y)
+ $ :  expression(x, y, z)
+> 
+> # Each of these inputs are a single expression, but span different numbers
+> # of lines
+> source <- c(
++   "function() {}",
++   "function() {",
++   "  # Hello!",
++   "}",
++   "function() {",
++   "  # Hello!",
++   "  # Goodbye!",
++   "}"
++ )
+> parsed <- parse_all(source)
+> lengths(parsed$expr)
+[1] 1 1 1
+> parsed$src
+[1] "function() {}\n"                            
+[2] "function() {\n  # Hello!\n}\n"              
+[3] "function() {\n  # Hello!\n  # Goodbye!\n}\n"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("replay")
+> ### * replay
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: replay
+> ### Title: Replay a list of evaluated results
+> ### Aliases: replay
+> 
+> ### ** Examples
+> 
+> f1 <- function() {
++   cat("1\n")
++   print("2")
++   warning("3")
++   print("4")
++   message("5")
++   stop("6")
++ }
+> replay(evaluate("f1()"))
+> f1()
+1
+[1] "2"
+Warning in f1():
+3
+[1] "4"
+5
+Error in f1():
+6
+> 
+> f2 <- function() {
++   message("Hello")
++   plot(1:10)
++   message("Goodbye")
++ }
+> replay(evaluate("f2()"))
+> f2()
+Hello
+Goodbye
+> 
+> 
+> 
+> cleanEx()
+> nameEx("set_hooks")
+> ### * set_hooks
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: set_hooks
+> ### Title: Set and remove hooks
+> ### Aliases: set_hooks remove_hooks
 > ### Keywords: internal
 > 
 > ### ** Examples
@@ -106,45 +286,86 @@ attr(,"class")
 > 
 > 
 > cleanEx()
-> nameEx("replay")
-> ### * replay
+> nameEx("trim_intermediate_plots")
+> ### * trim_intermediate_plots
 > 
 > flush(stderr()); flush(stdout())
 > 
-> ### Name: replay
-> ### Title: Replay a list of evaluated results.
-> ### Aliases: replay
+> ### Name: trim_intermediate_plots
+> ### Title: Trim away intermediate plots
+> ### Aliases: trim_intermediate_plots
 > 
 > ### ** Examples
 > 
-> samples <- system.file("tests", "testthat", package = "evaluate")
-> if (file_test("-d", samples)) {
-+     replay(evaluate(file(file.path(samples, "order.R"))))
-+     replay(evaluate(file(file.path(samples, "plot.R"))))
-+     replay(evaluate(file(file.path(samples, "data.R"))))
-+ }
+> ev <- evaluate(c(
++   "plot(1:3)",
++   "text(1, 1, 'x')",
++   "text(1, 1, 'y')"
++ ))
 > 
-> 
-> 
-> cleanEx()
-> nameEx("set_hooks")
-> ### * set_hooks
-> 
-> flush(stderr()); flush(stdout())
-> 
-> ### Name: set_hooks
-> ### Title: Set hooks.
-> ### Aliases: set_hooks
-> ### Keywords: internal
-> 
-> ### ** Examples
-> 
-> new <- list(before.plot.new = function() print("Plotted!"))
-> hooks <- set_hooks(new)
-> plot(1)
-[1] "Plotted!"
-> set_hooks(hooks, "replace")
-> plot(1)
+> # All intermediate plots are captured
+> ev
+<evaluation>
+Source code: 
+  plot(1:3)
+Plot [9]:
+  <base> C_plot_new()
+  <base> palette2()
+  <base> C_mtext()
+  <base> C_plot_window()
+  <base> C_plotXY()
+  <base> C_axis()
+  <base> C_axis()
+  <base> C_box()
+  <base> C_title()
+Source code: 
+  text(1, 1, 'x')
+Plot [10]:
+  <base> C_plot_new()
+  <base> palette2()
+  <base> C_mtext()
+  <base> C_plot_window()
+  <base> C_plotXY()
+  <base> C_axis()
+  <base> C_axis()
+  <base> C_box()
+  <base> C_title()
+  <base> C_text()
+Source code: 
+  text(1, 1, 'y')
+Plot [11]:
+  <base> C_plot_new()
+  <base> palette2()
+  <base> C_mtext()
+  <base> C_plot_window()
+  <base> C_plotXY()
+  <base> C_axis()
+  <base> C_axis()
+  <base> C_box()
+  <base> C_title()
+  <base> C_text()
+  <base> C_text()
+> # Only the final plot is shown
+> trim_intermediate_plots(ev)
+<evaluation>
+Source code: 
+  plot(1:3)
+Source code: 
+  text(1, 1, 'x')
+Source code: 
+  text(1, 1, 'y')
+Plot [11]:
+  <base> C_plot_new()
+  <base> palette2()
+  <base> C_mtext()
+  <base> C_plot_window()
+  <base> C_plotXY()
+  <base> C_axis()
+  <base> C_axis()
+  <base> C_box()
+  <base> C_title()
+  <base> C_text()
+  <base> C_text()
 > 
 > 
 > 
@@ -153,7 +374,7 @@ attr(,"class")
 > cleanEx()
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  0.09 0.001 0.117 0.014 0.018 
+Time elapsed:  0.124 0.012 0.163 0.012 0.021 
 > grDevices::dev.off()
 null device 
           1 

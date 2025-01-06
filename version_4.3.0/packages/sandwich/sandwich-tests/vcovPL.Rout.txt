@@ -45,6 +45,34 @@ institutions -0.001241881  2.128408e-05
 > ## vcovPL covariance matrix compared with vcovSCC from plm package
 > if(!require("plm")) q()
 Loading required package: plm
-Warning message:
-In library(package, lib.loc = lib.loc, character.only = TRUE, logical.return = TRUE,  :
-  there is no package called ‘plm’
+> pm <- plm::plm(y ~ x, data = PetersenCL, model = "pooling", indexes = c("firm", "year"))
+> 
+> (pl1 <- vcovPL(m, cluster = ~ firm, adjust = FALSE))
+             (Intercept)            x
+(Intercept) 5.932790e-04 2.221403e-05
+x           2.221403e-05 7.931731e-04
+> (pl2 <- plm::vcovSCC(pm))
+             (Intercept)            x
+(Intercept) 5.932790e-04 2.221403e-05
+x           2.221403e-05 7.931731e-04
+attr(,"cluster")
+[1] "time"
+> attr(pl2, "cluster") <- NULL
+> 
+> all.equal(pl1, pl2)
+[1] TRUE
+> 
+> 
+> ## vcovPL compared with Stata's xtscc (xtscc y x, lag(1) ase) standard errors
+> pl4 <- c(0.0243573, 0.0281633)
+> names(pl4) <- c("(Intercept)", "x")
+> pl4
+(Intercept)           x 
+  0.0243573   0.0281633 
+> (pl3 <- sqrt(diag(pl1)))
+(Intercept)           x 
+ 0.02435732  0.02816333 
+> 
+> all.equal(pl3, pl4, tolerance = 1e-6)
+[1] TRUE
+> 

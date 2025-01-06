@@ -61,22 +61,12 @@ Type 'q()' to quit R.
 +   local_file(path)
 +   print(attributes(environment()))
 + })
-$withr_handlers
-$withr_handlers[[1]]
-<environment: 0x5569cc770bd8>
-
-
+NULL
 > 
-> # defer and trigger events on the global environment
+> # Note that examples lack function scoping so deferred calls are
+> # generally executed immediately
 > defer(print("one"))
 > defer(print("two"))
-> deferred_run()
-[1] "two"
-[1] "one"
-> 
-> defer(print("three"))
-> deferred_clear()
-> deferred_run()
 > 
 > 
 > 
@@ -147,31 +137,6 @@ function (new, code, msg = "Changing global state.")
     on.exit(reset_global_state(old))
     force(code)
 }
-> 
-> 
-> 
-> cleanEx()
-> nameEx("with_collate")
-> ### * with_collate
-> 
-> flush(stderr()); flush(stdout())
-> 
-> ### Name: with_collate
-> ### Title: Collation Order
-> ### Aliases: with_collate local_collate
-> 
-> ### ** Examples
-> 
-> 
-> # Modify collation order:
-> x <- c("bernard", "bérénice", "béatrice", "boris")
-> with_collate("fr_FR", sort(x))
-Warning in (function (category = "LC_ALL", locale = "")  :
-  OS reports request to set locale to "fr_FR" cannot be honored
-[1] "béatrice" "bérénice" "bernard"  "boris"   
-> with_collate("C", sort(x))
-[1] "bernard"  "boris"    "béatrice" "bérénice"
-> 
 > 
 > 
 > 
@@ -251,7 +216,7 @@ Warning in (function (category = "LC_ALL", locale = "")  :
 [1] "/__w/rocker_uat/rocker_uat/packages/withr"
 > 
 > with_dir(tempdir(), getwd())
-[1] "/tmp/Rtmp4ghGoP"
+[1] "/tmp/RtmpjePKiG"
 > 
 > 
 > 
@@ -341,7 +306,7 @@ Error in mean[[1]] : objeto de tipo 'closure' no es subconjunto
 > new_lib <- tempfile()
 > dir.create(new_lib)
 > with_libpaths(new_lib, print(.libPaths()))
-[1] "/tmp/Rtmp4ghGoP/file1b0ec2e4ae6ae" "/usr/local/lib/R/site-library"    
+[1] "/tmp/RtmpjePKiG/file257c234d7f1c2" "/usr/local/lib/R/site-library"    
 [3] "/usr/local/lib/R/library"         
 > unlink(new_lib, recursive = TRUE)
 > 
@@ -661,14 +626,34 @@ Warning in RNGkind(kind[[1]], normal.kind = kind[[2]]) :
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: with_tempfile
-> ### Title: Temporary files
+> ### Title: Temporary files and directories
 > ### Aliases: with_tempfile local_tempfile with_tempdir local_tempdir
 > 
 > ### ** Examples
 > 
-> # check how big iris would be if written as csv vs RDS
-> tf <- with_tempfile("tf", {write.csv(iris, tf); file.size(tf)})
-> tf <- with_tempfile("tf", {saveRDS(iris, tf); file.size(tf)})
+> # local_tempfile() is the easiest to use because it returns a path
+> local({
++   path1 <<- local_tempfile(lines = c("x,y", "1,2"))
++   readLines(path1)
++ })
+[1] "x,y" "1,2"
+> # the file is deleted automatically
+> file.exists(path1)
+[1] FALSE
+> 
+> # with_tempfile() is a bit trickier; the first argument gives the name
+> # of a variable that will contain the path:
+> with_tempfile("path2", {
++   print(path2)
++   write.csv(iris, path2)
++   file.size(path2)
++ })
+[1] "/tmp/RtmpjePKiG/file257c235893ca4"
+[1] 4821
+> 
+> # Note that this variable is only available in the scope of with_tempfile
+> try(path2)
+Error : object 'path2' not found
 > 
 > 
 > 
@@ -685,11 +670,11 @@ Warning in RNGkind(kind[[1]], normal.kind = kind[[2]]) :
 > ### ** Examples
 > 
 > Sys.time()
-[1] "2024-12-19 18:29:29 UTC"
+[1] "2025-01-06 17:11:09 UTC"
 > with_timezone("Europe/Paris", print(Sys.time()))
-[1] "2024-12-19 19:29:29 CET"
-> with_timezone("US/Pacific", print(Sys.time()))
-[1] "2024-12-19 10:29:29 PST"
+[1] "2025-01-06 18:11:09 CET"
+> with_timezone("America/Los_Angeles", print(Sys.time()))
+[1] "2025-01-06 09:11:09 PST"
 > 
 > fun1 <- function() {
 +   local_timezone("CET")
@@ -697,17 +682,17 @@ Warning in RNGkind(kind[[1]], normal.kind = kind[[2]]) :
 + }
 > 
 > fun2 <- function() {
-+   local_timezone("US/Pacific")
++   local_timezone("America/Los_Angeles")
 +   print(Sys.time())
 + }
 > Sys.time()
-[1] "2024-12-19 18:29:29 UTC"
+[1] "2025-01-06 17:11:09 UTC"
 > fun1()
-[1] "2024-12-19 19:29:29 CET"
+[1] "2025-01-06 18:11:09 CET"
 > fun2()
-[1] "2024-12-19 10:29:29 PST"
+[1] "2025-01-06 09:11:09 PST"
 > Sys.time()
-[1] "2024-12-19 18:29:29 UTC"
+[1] "2025-01-06 17:11:09 UTC"
 > 
 > 
 > 
@@ -719,14 +704,14 @@ Warning in RNGkind(kind[[1]], normal.kind = kind[[2]]) :
 > 
 > ### Name: withr
 > ### Title: Execute code in temporarily altered environment
-> ### Aliases: withr withr-package
+> ### Aliases: withr-package withr
 > 
 > ### ** Examples
 > 
 > getwd()
 [1] "/__w/rocker_uat/rocker_uat/packages/withr"
 > with_dir(tempdir(), getwd())
-[1] "/tmp/Rtmp4ghGoP"
+[1] "/tmp/RtmpjePKiG"
 > getwd()
 [1] "/__w/rocker_uat/rocker_uat/packages/withr"
 > 
@@ -757,7 +742,7 @@ Warning in RNGkind(kind[[1]], normal.kind = kind[[2]]) :
 > cleanEx()
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  0.557 0.034 0.906 0.297 0.664 
+Time elapsed:  0.486 0.033 0.828 0.303 0.657 
 > grDevices::dev.off()
 null device 
           1 
@@ -767,3 +752,6 @@ null device
 > ### outline-regexp: "\\(> \\)?### [*]+" ***
 > ### End: ***
 > quit('no')
+[1] "two"
+[1] "one"
+Ran 2/2 deferred expressions

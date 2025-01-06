@@ -1,0 +1,616 @@
+
+R version 4.3.0 (2023-04-21) -- "Already Tomorrow"
+Copyright (C) 2023 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> require(optimx)
+Loading required package: optimx
+> maxfn<-function(x) {
++   n<-length(x)
++   ss<-seq(1,n)
++   f<-10-(crossprod(x-ss))^2
++   f<-as.numeric(f)
++   return(f)
++ }
+> 
+> 
+> negmaxfn<-function(x) {
++   f<-(-1)*maxfn(x)
++   return(f)
++ }
+> 
+> cat("test that maximize=TRUE works correctly\n")
+test that maximize=TRUE works correctly
+> 
+> n<-6
+> xx<-rep(1,n)
+> ansmax<-optimr(xx,maxfn, gr="grfwd", method="Rvmmin", control=list(maximize=TRUE,trace=0))
+> print(ansmax)
+$par
+[1]  1.000000e+00 -2.945923e+30 -5.891845e+30 -8.837767e+30 -1.178369e+31
+[6] -1.472961e+31
+
+$value
+[1] -2.278299e+125
+
+$counts
+function gradient 
+       4        4 
+
+$convergence
+[1] 2
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> 
+> amaxkkt <- kktchk(ansmax$par, maxfn, gr="grfwd", hess=NULL,  maximize=TRUE, control=list(trace=0))
+> print(amaxkkt)
+$gmax
+[1] 2.812268e+94
+
+$evratio
+[1] -1
+
+$kkt1
+[1] TRUE
+
+$kkt2
+[1] FALSE
+
+$hev
+[1]  4.446441e+78  3.995457e+63  1.909261e+63  1.909261e+63  1.909261e+63
+[6] -4.446441e+78
+
+$ngatend
+[1] 0.000000e+00 5.624538e+93 1.124907e+94 1.687361e+94 2.249814e+94
+[6] 2.812268e+94
+
+$nhatend
+              [,1]         [,2]         [,3]         [,4]          [,5]
+[1,]  0.000000e+00 5.659255e+77 6.458325e+76 5.817448e+77 -7.882261e+77
+[2,]  5.659255e+77 1.978689e+63 1.388554e+62 2.082831e+62  2.777108e+62
+[3,]  6.458325e+76 1.388554e+62 2.186972e+63 4.165661e+62  5.554214e+62
+[4,]  5.817448e+77 2.082831e+62 4.165661e+62 2.534110e+63  8.331321e+62
+[5,] -7.882261e+77 2.777108e+62 5.554214e+62 8.331321e+62  3.020104e+63
+[6,] -4.299612e+78 3.471385e+62 6.942768e+62 1.041415e+63  1.388554e+63
+              [,6]
+[1,] -4.299612e+78
+[2,]  3.471385e+62
+[3,]  6.942768e+62
+[4,]  1.041415e+63
+[5,]  1.388554e+63
+[6,]  3.644953e+63
+
+> 
+> 
+> cat("using the negmax function should give same parameters\n")
+using the negmax function should give same parameters
+> ansnegmax<-optimr(xx,negmaxfn, gr="grfwd",  method="Rvmmin", control=list(trace=0))
+> print(ansnegmax)
+$par
+[1] 1.000000 1.999988 2.999775 3.999419 4.999384 5.999090
+
+$value
+[1] -10
+
+$counts
+function gradient 
+      39       36 
+
+$convergence
+[1] 2
+
+$message
+[1] "Rvmminu appears to have converged"
+
+> 
+> # Test Carlo Lapid suggested fix for optimr()  180313
+> 
+> amaxo<-optimr(xx, maxfn, method="L-BFGS-B", control=list(maximize=TRUE, trace=0))
+> print(amaxo)
+$par
+[1] 1 1 1 1 1 1
+
+$value
+[1] -3015
+
+$counts
+function gradient 
+      21       21 
+
+$convergence
+[1] 52
+
+$message
+[1] "ERROR: ABNORMAL_TERMINATION_IN_LNSRCH"
+
+> 
+> cat("using the negmax function should give same parameters\n")
+using the negmax function should give same parameters
+> anegmaxo<-optimr(xx,negmaxfn, method="L-BFGS-B", control=list(trace=0))
+> print(anegmaxo)
+$par
+[1] 1.000000 1.998714 2.997429 3.996143 4.994857 5.993572
+
+$value
+[1] -10
+
+$counts
+function gradient 
+      25       25 
+
+$convergence
+[1] 0
+
+$message
+[1] "CONVERGENCE: REL_REDUCTION_OF_F <= FACTR*EPSMCH"
+
+> 
+> cat("WARNING -- this example should FAIL\n")
+WARNING -- this example should FAIL
+> cat("maximize=TRUE is NOT set up in hjn()\n")
+maximize=TRUE is NOT set up in hjn()
+> # 160706 -- not set up to maximize, except through optimr perhaps
+> n<-6
+> xx<-rep(1,n)
+> ansmax<-try(hjn(xx,maxfn, control=list(maximize=TRUE,trace=1, maxit=10, maxfeval=2000)))
+Error in hjn(xx, maxfn, control = list(maximize = TRUE, trace = 1, maxit = 10,  : 
+  Do NOT try to maximize with hjn()
+> print(ansmax)
+[1] "Error in hjn(xx, maxfn, control = list(maximize = TRUE, trace = 1, maxit = 10,  : \n  Do NOT try to maximize with hjn()\n"
+attr(,"class")
+[1] "try-error"
+attr(,"condition")
+<simpleError in hjn(xx, maxfn, control = list(maximize = TRUE, trace = 1, maxit = 10,     maxfeval = 2000)): Do NOT try to maximize with hjn()>
+> 
+> cat("\nTry to maximize through optimr()\n")
+
+Try to maximize through optimr()
+> ansmaxo<-try(optimr(xx,maxfn, method="hjn", control=list(maximize=TRUE,trace=1, maxit=10, maxfeval=2000)))
+Parameter scaling:[1] 1 1 1 1 1 1
+hjn:control$have.bounds = FALSE 
+optimr - hjn - msk:[1] 1 1 1 1 1 1
+hjn:bdmsk:[1] 1 1 1 1 1 1
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -8271   after  12   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -39591   after  23   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -203391   after  34   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -912015   after  45   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -3441015   after  56   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -11095551   after  67   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -31348791   after  78   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -79405911   after  89   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -183738015   after  100   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -394221015   after  111   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -793605231   after  122   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1513132191   after  133   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2753205831   after  144   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -4810116015   after  155   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -8109903015   after  166   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -13250542311   after  177   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -21053719791   after  188   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -32627558151   after  199   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -49441746015   after  210   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -73416612015   after  221   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -107027776791   after  232   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -153428106591   after  243   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -216588782871   after  254   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -301461393015   after  265   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -4.14163e+11   after  276   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -562186543671   after  287   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -7.54638e+11   after  298   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.002504e+12   after  309   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.318949e+12   after  320   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.719652e+12   after  331   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.223173e+12   after  342   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.851367e+12   after  353   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -3.629829e+12   after  364   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -4.5884e+12   after  375   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -5.761704e+12   after  386   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -7.18975e+12   after  397   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -8.918579e+12   after  408   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.100097e+13   after  419   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.349721e+13   after  430   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.647593e+13   after  441   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.001498e+13   after  452   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.420245e+13   after  463   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.913766e+13   after  474   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -3.49323e+13   after  485   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -4.171164e+13   after  496   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -4.961584e+13   after  507   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -5.880128e+13   after  518   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -6.944207e+13   after  529   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -8.173163e+13   after  540   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -9.588434e+13   after  551   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.121373e+14   after  562   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.307523e+14   after  573   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.520178e+14   after  584   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.76251e+14   after  595   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.038e+14   after  606   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.350466e+14   after  617   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.704084e+14   after  628   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -3.103415e+14   after  639   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -3.553434e+14   after  650   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -4.059562e+14   after  661   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -4.627692e+14   after  672   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -5.264225e+14   after  683   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -5.976104e+14   after  694   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -6.770849e+14   after  705   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -7.656596e+14   after  716   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -8.642137e+14   after  727   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -9.736958e+14   after  738   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.095129e+15   after  749   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.229614e+15   after  760   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.378337e+15   after  771   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.542569e+15   after  782   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.723678e+15   after  793   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.923129e+15   after  804   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.142491e+15   after  815   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.383447e+15   after  826   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.647791e+15   after  837   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.937445e+15   after  848   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -3.254457e+15   after  859   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -3.601015e+15   after  870   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -3.979447e+15   after  881   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -4.392234e+15   after  892   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -4.842016e+15   after  903   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -5.331601e+15   after  914   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -5.863969e+15   after  925   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -6.442286e+15   after  936   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -7.069912e+15   after  947   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -7.750408e+15   after  958   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -8.487545e+15   after  969   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -9.285318e+15   after  980   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.014795e+16   after  991   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.107992e+16   after  1002   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.208595e+16   after  1013   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.317101e+16   after  1024   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.434039e+16   after  1035   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.559962e+16   after  1046   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.695458e+16   after  1057   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.841142e+16   after  1068   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.997665e+16   after  1079   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.165711e+16   after  1090   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.345999e+16   after  1101   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.539287e+16   after  1112   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.746368e+16   after  1123   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.968079e+16   after  1134   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -3.205298e+16   after  1145   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -3.458944e+16   after  1156   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -3.729983e+16   after  1167   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -4.019427e+16   after  1178   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -4.328339e+16   after  1189   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -4.65783e+16   after  1200   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -5.009063e+16   after  1211   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -5.383257e+16   after  1222   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -5.781688e+16   after  1233   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -6.205687e+16   after  1244   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -6.656651e+16   after  1255   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -7.136034e+16   after  1266   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -7.645358e+16   after  1277   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -8.186214e+16   after  1288   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -8.760258e+16   after  1299   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -9.369222e+16   after  1310   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.001491e+17   after  1321   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.069921e+17   after  1332   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.142408e+17   after  1343   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.219156e+17   after  1354   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.300378e+17   after  1365   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.386297e+17   after  1376   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.477142e+17   after  1387   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.573155e+17   after  1398   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.674585e+17   after  1409   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.781692e+17   after  1420   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.894746e+17   after  1431   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.014029e+17   after  1442   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.139831e+17   after  1453   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.272457e+17   after  1464   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.41222e+17   after  1475   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.559448e+17   after  1486   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.71448e+17   after  1497   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.877667e+17   after  1508   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -3.049375e+17   after  1519   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -3.229983e+17   after  1530   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -3.419882e+17   after  1541   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -3.61948e+17   after  1552   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -3.829198e+17   after  1563   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -4.049472e+17   after  1574   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -4.280756e+17   after  1585   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -4.523517e+17   after  1596   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -4.77824e+17   after  1607   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -5.045427e+17   after  1618   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -5.325597e+17   after  1629   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -5.619287e+17   after  1640   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -5.927053e+17   after  1651   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -6.249468e+17   after  1662   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -6.587127e+17   after  1673   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -6.940644e+17   after  1684   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -7.310651e+17   after  1695   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -7.697805e+17   after  1706   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -8.102782e+17   after  1717   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -8.52628e+17   after  1728   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -8.969022e+17   after  1739   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -9.431752e+17   after  1750   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -9.915237e+17   after  1761   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.042027e+18   after  1772   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.094768e+18   after  1783   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.149829e+18   after  1794   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.207298e+18   after  1805   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.267266e+18   after  1816   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.329824e+18   after  1827   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.395067e+18   after  1838   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.463094e+18   after  1849   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.534007e+18   after  1860   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.607909e+18   after  1871   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.684907e+18   after  1882   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.765113e+18   after  1893   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.84864e+18   after  1904   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -1.935606e+18   after  1915   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.02613e+18   after  1926   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.120338e+18   after  1937   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.218356e+18   after  1948   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.320317e+18   after  1959   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.426354e+18   after  1970   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.536608e+18   after  1981   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -2.651222e+18   after  1992   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+Function count limit exceeded
+> print(ansmaxo)
+$par
+[1]  16654 -16652 -16652 -16652 -16651 -16651
+
+$value
+[1] -2.770119e+18
+
+$counts
+[1] 2000   NA
+
+$convergence
+[1] 1
+
+$message
+[1] NA
+
+> 
+> cat("using the negmax function should give same parameters\n")
+using the negmax function should give same parameters
+> ansnegmax<-hjn(xx,negmaxfn, control=list(trace=1, maxit=10, maxfeval=2000))
+hjn:bdmsk:[1] 1 1 1 1 1 1
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  890   after  8   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  26   after  16   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  26   after  28   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -9   after  38   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -9   after  50   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -10   after  61   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -10   after  73   maxfeval = 2000 
+Exploratory move - stepsize =  1 
+axial search with stepsize = 1   fn value =  -10   after  85   maxfeval = 2000 
+Exploratory move - stepsize =  0.1 
+axial search with stepsize = 0.1   fn value =  -10   after  97   maxfeval = 2000 
+Exploratory move - stepsize =  0.01 
+axial search with stepsize = 0.01   fn value =  -10   after  109   maxfeval = 2000 
+Exploratory move - stepsize =  0.001 
+axial search with stepsize = 0.001   fn value =  -10   after  121   maxfeval = 2000 
+Exploratory move - stepsize =  1e-04 
+axial search with stepsize = 1e-04   fn value =  -10   after  133   maxfeval = 2000 
+Exploratory move - stepsize =  1e-05 
+axial search with stepsize = 1e-05   fn value =  -10   after  145   maxfeval = 2000 
+Exploratory move - stepsize =  1e-06 
+axial search with stepsize = 1e-06   fn value =  -10   after  157   maxfeval = 2000 
+Exploratory move - stepsize =  1e-07 
+axial search with stepsize = 1e-07   fn value =  -10   after  169   maxfeval = 2000 
+> print(ansnegmax)
+$par
+[1] 1 2 3 4 5 6
+
+$value
+[1] -10
+
+$counts
+[1] 169  NA
+
+$convergence
+[1] 0
+
+> 
+> 
