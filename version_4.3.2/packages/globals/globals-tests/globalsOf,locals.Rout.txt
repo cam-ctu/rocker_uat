@@ -1,0 +1,110 @@
+
+R version 4.3.2 (2023-10-31) -- "Eye Holes"
+Copyright (C) 2023 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> source("incl/start.R")
+> 
+> message("*** globalsOf() w/ local() ...")
+*** globalsOf() w/ local() ...
+> 
+> for (locals in c(TRUE, FALSE)) {
++   message(sprintf("- locals=%s", locals))
++ 
++   f <- local({
++     a <- 42
++     function() a
++   })
++   
++   globals <- globalsOf(quote(f), locals = locals)
++   str(globals)
++   where <- attr(globals, "where")
++   if (locals) {
++     stopifnot(
++       length(globals) == 2L,
++       identical(sort(names(globals)), c("a", "f")),
++       identical(where[["a"]], environment(globals[["f"]]))
++     )
++   } else {
++     stopifnot(
++       length(globals) == 1L,
++       identical(names(globals), "f")
++     )
++   }
++   
++   message(sprintf("- locals=%s with nested local():s", locals))
++   
++   f <- local({
++     b <- 3.14
++     local({
++       a <- 42
++       function() a + b
++     })
++   })
++   
++   globals <- globalsOf(quote(f), locals = locals)
++   globals <- cleanup(globals)
++   str(globals)
++   where <- attr(globals, "where")
++   if (locals) {
++     stopifnot(
++       length(globals) == 3L,
++       identical(sort(names(globals)), c("a", "b", "f")),
++       identical(where[["a"]], environment(globals[["f"]])),
++       identical(where[["b"]], parent.env(environment(globals[["f"]])))
++     )
++   } else {
++     stopifnot(
++       length(globals) == 1L,
++       identical(names(globals), "f")
++     )
++   }
++ } # for (locals ...)
+- locals=TRUE
+List of 2
+ $ f:function ()  
+ $ a: num 42
+ - attr(*, "where")=List of 2
+  ..$ f:<environment: R_GlobalEnv> 
+  ..$ a:<environment: 0x5638b28921b0> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+- locals=TRUE with nested local():s
+List of 3
+ $ f:function ()  
+ $ a: num 42
+ $ b: num 3.14
+ - attr(*, "where")=List of 3
+  ..$ f:<environment: R_GlobalEnv> 
+  ..$ a:<environment: 0x5638b2c51b48> 
+  ..$ b:<environment: 0x5638b2c51bf0> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+- locals=FALSE
+List of 1
+ $ f:function ()  
+ - attr(*, "where")=List of 1
+  ..$ f:<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+- locals=FALSE with nested local():s
+List of 1
+ $ f:function ()  
+ - attr(*, "where")=List of 1
+  ..$ f:<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> 
+> message("*** globalsOf() w/ local() ... DONE")
+*** globalsOf() w/ local() ... DONE
+> 
+> source("incl/end.R")
+> 

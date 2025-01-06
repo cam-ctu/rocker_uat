@@ -1,0 +1,277 @@
+
+R version 4.3.2 (2023-10-31) -- "Eye Holes"
+Copyright (C) 2023 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> source("incl/start.R")
+> 
+> ## WORKAROUND: Avoid problem reported in testthat Issue #229, which
+> ## causes covr::package_coverage() to given an error. /HB 2015-02-16
+> suppressWarnings({
++   rm(list = c("a", "b", "c", "x", "y", "z", "square",
++             "pathname", "url", "filename"))
++ })
+> 
+> 
+> message("Setting up expressions")
+Setting up expressions
+> exprs <- list(
++   A = quote({
++     Sys.sleep(1)
++     x <- 0.1
++   }),
++   B = quote({ y <- 0.2 }),
++   C = quote({ z <- a + 0.3 }),
++   D = quote({ pathname <- file.path(dirname(url), filename) }),
++   E = quote({ b <- c }),
++   F = quote({
++     a <- { runif(1) }
++     b <- { rnorm(1) }
++     x <- a * b
++     abs(x)
++   }),
++   G = quote({
++     y <- square(a)
++   }),
++   H = quote({
++     b <- a
++     a <- 1
++   })
++ )
+> 
+> atleast <- list(
++   A = c(),
++   B = c(),
++   C = c("a"),
++   D = c("filename"),
++   E = c("c"),
++   F = c(),
++   G = c("a", "square"),
++   H = c() ## FIXME: Should be c("a"), cf. Issue #5.
++ )
+> 
+> not <- list(
++   A = c("x"),
++   B = c("y"),
++   C = c("z"),
++   D = c("pathname"),
++   E = c("b"),
++   F = c(),
++   G = c(),
++   H = c()
++ )
+> 
+> 
+> ## Define globals
+> a <- 3.14
+> c <- 2.71
+> square <- function(x) x ^ 2
+> filename <- "index.html"
+> # Yes, pretend we forget 'url'
+> 
+> message("Find globals")
+Find globals
+> for (kk in seq_along(exprs)) {
++   key <- names(exprs)[kk]
++   expr <- exprs[[key]]
++   cat(sprintf("Expression #%d ('%s'):\n", kk, key))
++   print(expr)
++ 
++   names <- findGlobals(expr, method = "liberal")
++   cat(sprintf("Globals: %s\n", paste(sQuote(names), collapse = ", ")))
++   stopifnot(all(atleast[[key]] %in% names))
++   stopifnot(!any(names %in% not[[key]]))
++ 
++   globals <- globalsOf(expr, method = "liberal", mustExist = FALSE)
++   cat(sprintf("Globals: %s\n", paste(sQuote(names(globals)), collapse = ", ")))
++   stopifnot(all(atleast[[key]] %in% names(globals)))
++   stopifnot(!any(names(globals) %in% not[[key]]))
++   str(globals)
++ 
++   cat("\n")
++ }
+Expression #1 ('A'):
+{
+    Sys.sleep(1)
+    x <- 0.1
+}
+Globals: ‘{’, ‘Sys.sleep’, ‘<-’
+Globals: ‘{’, ‘Sys.sleep’, ‘<-’
+List of 3
+ $ {        :.Primitive("{") 
+ $ Sys.sleep:function (time)  
+ $ <-       :.Primitive("<-") 
+ - attr(*, "where")=List of 3
+  ..$ {        :<environment: base> 
+  ..$ Sys.sleep:<environment: base> 
+  ..$ <-       :<environment: base> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+
+Expression #2 ('B'):
+{
+    y <- 0.2
+}
+Globals: ‘{’, ‘<-’
+Globals: ‘{’, ‘<-’
+List of 2
+ $ { :.Primitive("{") 
+ $ <-:.Primitive("<-") 
+ - attr(*, "where")=List of 2
+  ..$ { :<environment: base> 
+  ..$ <-:<environment: base> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+
+Expression #3 ('C'):
+{
+    z <- a + 0.3
+}
+Globals: ‘{’, ‘<-’, ‘+’, ‘a’
+Globals: ‘{’, ‘<-’, ‘+’, ‘a’
+List of 4
+ $ { :.Primitive("{") 
+ $ <-:.Primitive("<-") 
+ $ + :function (e1, e2)  
+ $ a : num 3.14
+ - attr(*, "where")=List of 4
+  ..$ { :<environment: base> 
+  ..$ <-:<environment: base> 
+  ..$ + :<environment: base> 
+  ..$ a :<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+
+Expression #4 ('D'):
+{
+    pathname <- file.path(dirname(url), filename)
+}
+Globals: ‘{’, ‘<-’, ‘file.path’, ‘dirname’, ‘url’, ‘filename’
+Globals: ‘{’, ‘<-’, ‘file.path’, ‘dirname’, ‘url’, ‘filename’
+List of 6
+ $ {        :.Primitive("{") 
+ $ <-       :.Primitive("<-") 
+ $ file.path:function (..., fsep = .Platform$file.sep)  
+ $ dirname  :function (path)  
+ $ url      :function (description, open = "", blocking = TRUE, encoding = getOption("encoding"), 
+    method = getOption("url.method", "default"), headers = NULL)  
+ $ filename : chr "index.html"
+ - attr(*, "where")=List of 6
+  ..$ {        :<environment: base> 
+  ..$ <-       :<environment: base> 
+  ..$ file.path:<environment: base> 
+  ..$ dirname  :<environment: base> 
+  ..$ url      :<environment: base> 
+  ..$ filename :<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+
+Expression #5 ('E'):
+{
+    b <- c
+}
+Globals: ‘{’, ‘<-’, ‘c’
+Globals: ‘{’, ‘<-’, ‘c’
+List of 3
+ $ { :.Primitive("{") 
+ $ <-:.Primitive("<-") 
+ $ c : num 2.71
+ - attr(*, "where")=List of 3
+  ..$ { :<environment: base> 
+  ..$ <-:<environment: base> 
+  ..$ c :<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+
+Expression #6 ('F'):
+{
+    a <- {
+        runif(1)
+    }
+    b <- {
+        rnorm(1)
+    }
+    x <- a * b
+    abs(x)
+}
+Globals: ‘{’, ‘<-’, ‘runif’, ‘rnorm’, ‘*’, ‘a’, ‘b’, ‘abs’, ‘x’
+Globals: ‘{’, ‘<-’, ‘runif’, ‘rnorm’, ‘*’, ‘a’, ‘b’, ‘abs’, ‘x’
+List of 9
+ $ {    :.Primitive("{") 
+ $ <-   :.Primitive("<-") 
+ $ runif:function (n, min = 0, max = 1)  
+ $ rnorm:function (n, mean = 0, sd = 1)  
+ $ *    :function (e1, e2)  
+ $ a    : num 3.14
+ $ b    : NULL
+ $ abs  :function (x)  
+ $ x    : NULL
+ - attr(*, "where")=List of 9
+  ..$ {    :<environment: base> 
+  ..$ <-   :<environment: base> 
+  ..$ runif:<environment: package:stats> 
+  .. ..- attr(*, "name")= chr "package:stats"
+  .. ..- attr(*, "path")= chr "/usr/local/lib/R/library/stats"
+  ..$ rnorm:<environment: package:stats> 
+  .. ..- attr(*, "name")= chr "package:stats"
+  .. ..- attr(*, "path")= chr "/usr/local/lib/R/library/stats"
+  ..$ *    :<environment: base> 
+  ..$ a    :<environment: R_GlobalEnv> 
+  ..$ b    : NULL
+  ..$ abs  :<environment: base> 
+  ..$ x    : NULL
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+
+Expression #7 ('G'):
+{
+    y <- square(a)
+}
+Globals: ‘{’, ‘<-’, ‘square’, ‘a’
+Globals: ‘{’, ‘<-’, ‘square’, ‘a’, ‘^’
+List of 5
+ $ {     :.Primitive("{") 
+ $ <-    :.Primitive("<-") 
+ $ square:function (x)  
+ $ a     : num 3.14
+ $ ^     :function (e1, e2)  
+ - attr(*, "where")=List of 5
+  ..$ {     :<environment: base> 
+  ..$ <-    :<environment: base> 
+  ..$ square:<environment: R_GlobalEnv> 
+  ..$ a     :<environment: R_GlobalEnv> 
+  ..$ ^     :<environment: base> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+
+Expression #8 ('H'):
+{
+    b <- a
+    a <- 1
+}
+Globals: ‘{’, ‘<-’, ‘a’
+Globals: ‘{’, ‘<-’, ‘a’
+List of 3
+ $ { :.Primitive("{") 
+ $ <-:.Primitive("<-") 
+ $ a : num 3.14
+ - attr(*, "where")=List of 3
+  ..$ { :<environment: base> 
+  ..$ <-:<environment: base> 
+  ..$ a :<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+
+> 
+> names <- findGlobals(exprs, method = "liberal", unlist = TRUE)
+> cat(sprintf("Globals: %s\n", paste(sQuote(names), collapse = ", ")))
+Globals: ‘{’, ‘Sys.sleep’, ‘<-’, ‘+’, ‘a’, ‘file.path’, ‘dirname’, ‘url’, ‘filename’, ‘c’, ‘runif’, ‘rnorm’, ‘*’, ‘b’, ‘abs’, ‘x’, ‘square’
+> 
+> 
+> ## Cleanup
+> source("incl/end.R")
+> 

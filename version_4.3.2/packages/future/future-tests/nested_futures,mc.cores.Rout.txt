@@ -1,0 +1,387 @@
+
+R version 4.3.2 (2023-10-31) -- "Eye Holes"
+Copyright (C) 2023 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> source("incl/start.R")
+[16:05:25.712] plan(): Setting new future strategy stack:
+[16:05:25.713] List of future strategies:
+[16:05:25.713] 1. sequential:
+[16:05:25.713]    - args: function (..., envir = parent.frame())
+[16:05:25.713]    - tweaked: FALSE
+[16:05:25.713]    - call: future::plan("sequential")
+[16:05:25.727] plan(): nbrOfWorkers() = 1
+> library("listenv")
+> options(future.debug = FALSE)
+> 
+> ## WORKAROUND: R CMD check --as-cran on Windows will report
+> ## 
+> ## * checking for detritus in the temp directory ... NOTE
+> ## Found the following files/directories:
+> ##  'Rscript171866c62e
+> ##
+> ## which I think is due to a bug in R. For details, see R-devel thread 
+> ## 'R for Windows leaves detritus in the temp directory' on 2021-06-15
+> ## <https://stat.ethz.ch/pipermail/r-devel/2021-June/080830.html>.
+> ## Until fixed, we skip the one test that triggers this bug.
+> winWorkaround <- (.Platform$OS.type == "windows" && getRversion() >= "4.0.0")
+> 
+> message("*** Nested futures - mc.cores ...")
+*** Nested futures - mc.cores ...
+> 
+> strategies <- NULL
+> ## Speed up CRAN checks: Skip on CRAN Windows 32-bit
+> if (!isWin32) strategies <- c(strategies, "multisession")
+> if (supportsMulticore()) strategies <- c(strategies, "multicore")
+> pid <- Sys.getpid()
+> cat(sprintf("Main PID: %d\n", pid))
+Main PID: 87934
+> 
+> cat("Available cores on this machine:\n")
+Available cores on this machine:
+> cores <- availableCores()
+> print(cores)
+mc.cores 
+       2 
+> 
+> for (mc in 1:2) {
++   ## Speed up CRAN checks: Skip on CRAN Windows 32-bit
++   if (!fullTest && isWin32) next
++   
++   message(sprintf("- mc.cores = %d ...", mc))
++   options(mc.cores = mc)
++   mc2 <- min(mc, cores)
++   
++   for (strategy in strategies) {
++     message(sprintf("plan(list('sequential', '%s')):", strategy))
++     plan(list('sequential', strategy))
++     a %<-% {
++       b1 %<-% Sys.getpid()
++       b2 %<-% Sys.getpid()
++       list(pid = Sys.getpid(), cores = availableCores(), pid1 = b1, pid2 = b2)
++     }
++     print(a)
++     stopifnot(a$pid == pid)
++     stopifnot((mc2 <= 1 && a$pid1 == pid) || (a$pid1 != pid))
++     stopifnot((mc2 <= 1 && a$pid2 == pid) || (a$pid2 != pid))
++     stopifnot(((mc2 <= 1 || a$cores <= 2) && a$pid2 == a$pid1) || (a$pid2 != a$pid1))
++ 
++     if (mc == 1L) {
++       message(sprintf("plan(list('sequential', '%s':2)):", strategy))
++       plan(list('sequential', tweak(strategy, workers = 2)))
++       a %<-% {
++         b1 %<-% Sys.getpid()
++         b2 %<-% Sys.getpid()
++         list(pid = Sys.getpid(), cores = availableCores(), pid1 = b1, pid2 = b2)
++       }
++       print(a)
++       stopifnot(a$pid == pid)
++       stopifnot((mc2 <= 1 && a$pid1 == pid) || (a$pid1 != pid))
++       stopifnot((mc2 <= 1 && a$pid2 == pid) || (a$pid2 != pid))
++       stopifnot((mc2 <= 1 && a$pid2 == a$pid1) || (a$pid2 != a$pid1))
++     }
++ 
++     message(sprintf("plan(list('%s', 'sequential')):", strategy))
++     plan(list(strategy, 'sequential'))
++     a %<-% {
++       b1 %<-% Sys.getpid()
++       b2 %<-% Sys.getpid()
++       list(pid = Sys.getpid(), cores = availableCores(), pid1 = b1, pid2 = b2)
++     }
++     print(a)
++     stopifnot((mc2 <= 1 && a$pid  == pid) || (a$pid  != pid))
++     stopifnot((mc2 <= 1 && a$pid1 == pid) || (a$pid1 != pid))
++     stopifnot((mc2 <= 1 && a$pid2 == pid) || (a$pid2 != pid))
++     stopifnot(a$pid2 == a$pid1)
++ 
++     message(sprintf("plan(list('%s', '%s')):", strategy, strategy))
++     plan(list(strategy, strategy))
++     a %<-% {
++       b1 %<-% { Sys.sleep(0.2); Sys.getpid() }
++       b2 %<-% Sys.getpid()
++       list(pid = Sys.getpid(), cores = availableCores(), pid1 = b1, pid2 = b2)
++     }
++     print(a)
++     stopifnot((mc2 <= 1 && a$pid  == pid) || (a$pid  != pid))
++     stopifnot((mc2 <= 1 && a$pid1 == pid) || (a$pid1 != pid))
++     stopifnot((mc2 <= 1 && a$pid2 == pid) || (a$pid2 != pid))
++     stopifnot(a$pid2 == a$pid1)
++ 
++     if (mc == 1L && !winWorkaround) {
++       message(sprintf("plan(list('%s':2, '%s':2)):", strategy, strategy))
++       plan(list(tweak(strategy, workers = 2), tweak(strategy, workers = 2)))
++       a %<-% {
++         b1 %<-% Sys.getpid()  ## This stalls
++         b2 %<-% Sys.getpid()
++         list(pid = Sys.getpid(), cores = availableCores(), pid1 = b1, pid2 = b2)
++       }
++       print(a)
++       stopifnot(a$pid  != pid)
++       stopifnot(a$pid1 != pid)
++       stopifnot(a$pid2 != pid)
++       stopifnot(a$pid2 != a$pid1)
++     }
++ 
++     ## Assert that nested the FutureRegistry is not inherited when using
++     ## nested strategies, particularly 'multicore'.
++     ## https://github.com/HenrikBengtsson/future/issues/231
++     fs <- lapply(1:2, FUN = function(i) future( value(future(TRUE)) ))
++     v <- value(fs)
++   } ## for (strategy ...)
++ 
++   message(sprintf(" - mc.cores = %d ... DONE", mc))
++ } ## for (mc ...)
+- mc.cores = 1 ...
+plan(list('sequential', 'multisession')):
+$pid
+[1] 87934
+
+$cores
+mc.cores 
+       1 
+
+$pid1
+[1] 87934
+
+$pid2
+[1] 87934
+
+plan(list('sequential', 'multisession':2)):
+Warning in checkNumberOfLocalWorkers(workers) :
+  Careful, you are setting up 2 localhost parallel workers with only 1 CPU cores available for this R process (per ‘mc.cores’), which could result in a 200% load. The soft limit is set to 100%. Overusing the CPUs has negative impact on the current R process, but also on all other processes of yours and others running on the same machine. See help("parallelly.options", package = "parallelly") for how to override the soft and hard limits
+$pid
+[1] 87934
+
+$cores
+mc.cores 
+       1 
+
+$pid1
+[1] 88001
+
+$pid2
+[1] 88002
+
+plan(list('multisession', 'sequential')):
+$pid
+[1] 87934
+
+$cores
+mc.cores 
+       1 
+
+$pid1
+[1] 87934
+
+$pid2
+[1] 87934
+
+plan(list('multisession', 'multisession')):
+$pid
+[1] 87934
+
+$cores
+mc.cores 
+       1 
+
+$pid1
+[1] 87934
+
+$pid2
+[1] 87934
+
+plan(list('multisession':2, 'multisession':2)):
+Warning in checkNumberOfLocalWorkers(workers) :
+  Careful, you are setting up 2 localhost parallel workers with only 1 CPU cores available for this R process (per ‘mc.cores’), which could result in a 200% load. The soft limit is set to 100%. Overusing the CPUs has negative impact on the current R process, but also on all other processes of yours and others running on the same machine. See help("parallelly.options", package = "parallelly") for how to override the soft and hard limits
+Warning in checkNumberOfLocalWorkers(workers) :
+  Careful, you are setting up 2 localhost parallel workers with only 1 CPU cores available for this R process (per ‘mc.cores’), which could result in a 200% load. The soft limit is set to 100%. Overusing the CPUs has negative impact on the current R process, but also on all other processes of yours and others running on the same machine. See help("parallelly.options", package = "parallelly") for how to override the soft and hard limits
+$pid
+[1] 88129
+
+$cores
+mc.cores 
+       1 
+
+$pid1
+[1] 88246
+
+$pid2
+[1] 88247
+
+Warning in checkNumberOfLocalWorkers(workers) :
+  Careful, you are setting up 2 localhost parallel workers with only 1 CPU cores available for this R process (per ‘mc.cores’), which could result in a 200% load. The soft limit is set to 100%. Overusing the CPUs has negative impact on the current R process, but also on all other processes of yours and others running on the same machine. See help("parallelly.options", package = "parallelly") for how to override the soft and hard limits
+plan(list('sequential', 'multicore')):
+$pid
+[1] 87934
+
+$cores
+mc.cores 
+       1 
+
+$pid1
+[1] 87934
+
+$pid2
+[1] 87934
+
+plan(list('sequential', 'multicore':2)):
+$pid
+[1] 87934
+
+$cores
+mc.cores 
+       1 
+
+$pid1
+[1] 88504
+
+$pid2
+[1] 88505
+
+plan(list('multicore', 'sequential')):
+$pid
+[1] 87934
+
+$cores
+mc.cores 
+       1 
+
+$pid1
+[1] 87934
+
+$pid2
+[1] 87934
+
+plan(list('multicore', 'multicore')):
+$pid
+[1] 87934
+
+$cores
+mc.cores 
+       1 
+
+$pid1
+[1] 87934
+
+$pid2
+[1] 87934
+
+plan(list('multicore':2, 'multicore':2)):
+$pid
+[1] 88534
+
+$cores
+mc.cores 
+       1 
+
+$pid1
+[1] 88535
+
+$pid2
+[1] 88536
+
+ - mc.cores = 1 ... DONE
+- mc.cores = 2 ...
+plan(list('sequential', 'multisession')):
+$pid
+[1] 87934
+
+$cores
+mc.cores 
+       2 
+
+$pid1
+[1] 88550
+
+$pid2
+[1] 88551
+
+plan(list('multisession', 'sequential')):
+$pid
+[1] 88655
+
+$cores
+mc.cores 
+       1 
+
+$pid1
+[1] 88655
+
+$pid2
+[1] 88655
+
+plan(list('multisession', 'multisession')):
+$pid
+[1] 88757
+
+$cores
+mc.cores 
+       1 
+
+$pid1
+[1] 88757
+
+$pid2
+[1] 88757
+
+plan(list('sequential', 'multicore')):
+$pid
+[1] 87934
+
+$cores
+mc.cores 
+       2 
+
+$pid1
+[1] 88897
+
+$pid2
+[1] 88902
+
+plan(list('multicore', 'sequential')):
+$pid
+[1] 88911
+
+$cores
+mc.cores 
+       1 
+
+$pid1
+[1] 88911
+
+$pid2
+[1] 88911
+
+plan(list('multicore', 'multicore')):
+$pid
+[1] 88920
+
+$cores
+mc.cores 
+       1 
+
+$pid1
+[1] 88920
+
+$pid2
+[1] 88920
+
+ - mc.cores = 2 ... DONE
+> 
+> message("*** Nested futures - mc.cores ... DONE")
+*** Nested futures - mc.cores ... DONE
+> 
+> source("incl/end.R")
+> 

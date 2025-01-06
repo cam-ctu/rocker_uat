@@ -1,0 +1,865 @@
+
+R version 4.3.2 (2023-10-31) -- "Eye Holes"
+Copyright (C) 2023 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "future"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('future')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("backtrace")
+> ### * backtrace
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: backtrace
+> ### Title: Back trace the expressions evaluated when an error was caught
+> ### Aliases: backtrace
+> 
+> ### ** Examples
+> 
+> my_log <- function(x) log(x)
+> foo <- function(...) my_log(...)
+> 
+> f <- future({ foo("a") })
+> res <- tryCatch({
++   v <- value(f)
++ }, error = function(ex) {
++   t <- backtrace(f)
++   print(t)
++ })
+[[1]]
+future({
+    foo("a")
+})
+
+[[2]]
+Future(expr, substitute = FALSE, envir = envir, lazy = TRUE, 
+    seed = seed, globals = globals, packages = packages, stdout = stdout, 
+    conditions = conditions, earlySignal = earlySignal, label = label, 
+    gc = gc, ...)
+
+[[3]]
+eval(quote({
+    foo("a")
+}), new.env())
+
+[[4]]
+foo("a")
+
+[[5]]
+my_log(...)
+
+[[6]]
+log(x)
+
+> ## Don't show: 
+> ## R CMD check: make sure any open connections are closed afterward
+> if (!inherits(plan("next"), "sequential")) plan(sequential)
+> ## End(Don't show)
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("cluster")
+> ### * cluster
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: cluster
+> ### Title: Create a cluster future whose value will be resolved
+> ###   asynchronously in a parallel process
+> ### Aliases: cluster
+> 
+> ### ** Examples
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("future")
+> ### * future
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: future
+> ### Title: Create a future
+> ### Aliases: future futureCall futureAssign %<-% %->%
+> 
+> ### ** Examples
+> 
+> ## Evaluate futures in parallel
+> plan(multisession)
+> 
+> ## Data
+> x <- rnorm(100)
+> y <- 2 * x + 0.2 + rnorm(100)
+> w <- 1 + x ^ 2
+> 
+> 
+> ## EXAMPLE: Regular assignments (evaluated sequentially)
+> fitA <- lm(y ~ x, weights = w)      ## with offset
+> fitB <- lm(y ~ x - 1, weights = w)  ## without offset
+> fitC <- {
++   w <- 1 + abs(x)  ## Different weights
++   lm(y ~ x, weights = w)
++ }
+> print(fitA)
+
+Call:
+lm(formula = y ~ x, weights = w)
+
+Coefficients:
+(Intercept)            x  
+    0.07681      2.00796  
+
+> print(fitB)
+
+Call:
+lm(formula = y ~ x - 1, weights = w)
+
+Coefficients:
+    x  
+2.017  
+
+> print(fitC)
+
+Call:
+lm(formula = y ~ x, weights = w)
+
+Coefficients:
+(Intercept)            x  
+     0.1131       1.9963  
+
+> 
+> 
+> ## EXAMPLE: Future assignments (evaluated in parallel)
+> fitA %<-% lm(y ~ x, weights = w)      ## with offset
+> fitB %<-% lm(y ~ x - 1, weights = w)  ## without offset
+> fitC %<-% {
++   w <- 1 + abs(x)
++   lm(y ~ x, weights = w)
++ }
+> print(fitA)
+
+Call:
+lm(formula = y ~ x, weights = w)
+
+Coefficients:
+(Intercept)            x  
+     0.1131       1.9963  
+
+> print(fitB)
+
+Call:
+lm(formula = y ~ x - 1, weights = w)
+
+Coefficients:
+   x  
+2.01  
+
+> print(fitC)
+
+Call:
+lm(formula = y ~ x, weights = w)
+
+Coefficients:
+(Intercept)            x  
+     0.1131       1.9963  
+
+> 
+> 
+> ## EXAMPLE: Explicitly create futures (evaluated in parallel)
+> ## and retrieve their values
+> fA <- future( lm(y ~ x, weights = w) )
+> fB <- future( lm(y ~ x - 1, weights = w) )
+> fC <- future({
++   w <- 1 + abs(x)
++   lm(y ~ x, weights = w)
++ })
+> fitA <- value(fA)
+> fitB <- value(fB)
+> fitC <- value(fC)
+> print(fitA)
+
+Call:
+lm(formula = y ~ x, weights = w)
+
+Coefficients:
+(Intercept)            x  
+     0.1131       1.9963  
+
+> print(fitB)
+
+Call:
+lm(formula = y ~ x - 1, weights = w)
+
+Coefficients:
+   x  
+2.01  
+
+> print(fitC)
+
+Call:
+lm(formula = y ~ x, weights = w)
+
+Coefficients:
+(Intercept)            x  
+     0.1131       1.9963  
+
+> 
+> ## Don't show: 
+> ## Make sure to "close" an multisession workers on Windows
+> plan(sequential)
+> ## End(Don't show)
+> ## EXAMPLE: futureCall() and do.call()
+> x <- 1:100
+> y0 <- do.call(sum, args = list(x))
+> print(y0)
+[1] 5050
+> 
+> f1 <- futureCall(sum, args = list(x))
+> y1 <- value(f1)
+> print(y1)
+[1] 5050
+> 
+> 
+> 
+> cleanEx()
+> nameEx("future.options")
+> ### * future.options
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: future.options
+> ### Title: Options used for futures
+> ### Aliases: future.options future.cmdargs .future.R future.startup.script
+> ###   R_FUTURE_STARTUP_SCRIPT future.debug R_FUTURE_DEBUG
+> ###   future.demo.mandelbrot.region R_FUTURE_DEMO_MANDELBROT_REGION
+> ###   future.demo.mandelbrot.nrow R_FUTURE_DEMO_MANDELBROT_NROW
+> ###   future.fork.multithreading.enable R_FUTURE_FORK_MULTITHREADING_ENABLE
+> ###   future.globals.maxSize R_FUTURE_GLOBALS_MAXSIZE future.globals.method
+> ###   R_FUTURE_GLOBALS_METHOD future.globals.onMissing
+> ###   R_FUTURE_GLOBALS_ONMISSING future.globals.resolve
+> ###   R_FUTURE_GLOBALS_RESOLVE future.globals.onReference
+> ###   R_FUTURE_GLOBALS_ONREFERENCE future.plan R_FUTURE_PLAN
+> ###   future.onFutureCondition.keepFuture
+> ###   R_FUTURE_ONFUTURECONDITION_KEEPFUTURE future.resolve.recursive
+> ###   R_FUTURE_RESOLVE_RECURSIVE future.globalenv.onMisuse
+> ###   R_FUTURE_GLOBALENV_ONMISUSE future.rng.onMisuse R_FUTURE_RNG_ONMISUSE
+> ###   future.wait.alpha R_FUTURE_WAIT_ALPHA future.wait.interval
+> ###   R_FUTURE_WAIT_INTERVAL future.wait.timeout R_FUTURE_WAIT_TIMEOUT
+> ###   R_FUTURE_RESOLVED_TIMEOUT future.output.windows.reencode
+> ###   R_FUTURE_OUTPUT_WINDOWS_REENCODE future.journal R_FUTURE_JOURNAL
+> 
+> ### ** Examples
+> 
+> # Allow at most 5 MB globals per futures
+> options(future.globals.maxSize = 5e6)
+> 
+> # Be strict; catch all RNG mistakes
+> options(future.rng.onMisuse = "error")
+> 
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("futureOf")
+> ### * futureOf
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: futureOf
+> ### Title: Get the future of a future variable
+> ### Aliases: futureOf
+> 
+> ### ** Examples
+> 
+> a %<-% { 1 }
+> 
+> f <- futureOf(a)
+> print(f)
+SequentialFuture:
+Label: ‘<none>’
+Expression:
+{
+    1
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: FALSE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: TRUE
+Value: 56 bytes of class ‘numeric’
+Early signaling: FALSE
+Owner process: 3e98c1cd-d645-9766-cfcb-62769dd0e286
+Class: ‘SequentialFuture’, ‘UniprocessFuture’, ‘Future’, ‘environment’
+> 
+> b %<-% { 2 }
+> 
+> f <- futureOf(b)
+> print(f)
+SequentialFuture:
+Label: ‘<none>’
+Expression:
+{
+    2
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: FALSE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: TRUE
+Value: 56 bytes of class ‘numeric’
+Early signaling: FALSE
+Owner process: 3e98c1cd-d645-9766-cfcb-62769dd0e286
+Class: ‘SequentialFuture’, ‘UniprocessFuture’, ‘Future’, ‘environment’
+> 
+> ## All futures
+> fs <- futureOf()
+> print(fs)
+$.Random.seed
+[1] NA
+attr(,"reason")
+[1] "Future (‘.Random.seed’) not found in environment ‘R_GlobalEnv’: ‘\".Random.seed\"’"
+
+$a
+SequentialFuture:
+Label: ‘<none>’
+Expression:
+{
+    1
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: FALSE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: TRUE
+Value: 56 bytes of class ‘numeric’
+Early signaling: FALSE
+Owner process: 3e98c1cd-d645-9766-cfcb-62769dd0e286
+Class: ‘SequentialFuture’, ‘UniprocessFuture’, ‘Future’, ‘environment’
+
+$b
+SequentialFuture:
+Label: ‘<none>’
+Expression:
+{
+    2
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: FALSE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: TRUE
+Value: 56 bytes of class ‘numeric’
+Early signaling: FALSE
+Owner process: 3e98c1cd-d645-9766-cfcb-62769dd0e286
+Class: ‘SequentialFuture’, ‘UniprocessFuture’, ‘Future’, ‘environment’
+
+$f
+SequentialFuture:
+Label: ‘<none>’
+Expression:
+{
+    2
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: FALSE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: TRUE
+Value: 56 bytes of class ‘numeric’
+Early signaling: FALSE
+Owner process: 3e98c1cd-d645-9766-cfcb-62769dd0e286
+Class: ‘SequentialFuture’, ‘UniprocessFuture’, ‘Future’, ‘environment’
+
+> 
+> 
+> ## Futures part of environment
+> env <- new.env()
+> env$c %<-% { 3 }
+> 
+> f <- futureOf(env$c)
+> print(f)
+SequentialFuture:
+Label: ‘<none>’
+Expression:
+{
+    3
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: FALSE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: TRUE
+Value: 56 bytes of class ‘numeric’
+Early signaling: FALSE
+Owner process: 3e98c1cd-d645-9766-cfcb-62769dd0e286
+Class: ‘SequentialFuture’, ‘UniprocessFuture’, ‘Future’, ‘environment’
+> 
+> f2 <- futureOf(c, envir = env)
+> print(f2)
+SequentialFuture:
+Label: ‘<none>’
+Expression:
+{
+    3
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: FALSE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: TRUE
+Value: 56 bytes of class ‘numeric’
+Early signaling: FALSE
+Owner process: 3e98c1cd-d645-9766-cfcb-62769dd0e286
+Class: ‘SequentialFuture’, ‘UniprocessFuture’, ‘Future’, ‘environment’
+> 
+> f3 <- futureOf("c", envir = env)
+> print(f3)
+SequentialFuture:
+Label: ‘<none>’
+Expression:
+{
+    3
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: FALSE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: TRUE
+Value: 56 bytes of class ‘numeric’
+Early signaling: FALSE
+Owner process: 3e98c1cd-d645-9766-cfcb-62769dd0e286
+Class: ‘SequentialFuture’, ‘UniprocessFuture’, ‘Future’, ‘environment’
+> 
+> fs <- futureOf(envir = env)
+> print(fs)
+$c
+SequentialFuture:
+Label: ‘<none>’
+Expression:
+{
+    3
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: FALSE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: TRUE
+Value: 56 bytes of class ‘numeric’
+Early signaling: FALSE
+Owner process: 3e98c1cd-d645-9766-cfcb-62769dd0e286
+Class: ‘SequentialFuture’, ‘UniprocessFuture’, ‘Future’, ‘environment’
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("futureSessionInfo")
+> ### * futureSessionInfo
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: futureSessionInfo
+> ### Title: Get future-specific session information and validate current
+> ###   backend
+> ### Aliases: futureSessionInfo
+> 
+> ### ** Examples
+> 
+> plan(multisession, workers = 2)
+> futureSessionInfo()
+*** Package versions
+future 1.33.1, parallelly 1.37.0, parallel 4.3.2, globals 0.16.2, listenv 0.9.1
+
+*** Allocations
+availableCores():
+system  nproc 
+     4      4 
+availableWorkers():
+$nproc
+[1] "localhost" "localhost" "localhost" "localhost"
+
+$system
+[1] "localhost" "localhost" "localhost" "localhost"
+
+
+*** Settings
+- future.plan=<not set>
+- future.fork.multithreading.enable=<not set>
+- future.globals.maxSize=5e+06
+- future.globals.onReference=<not set>
+- future.resolve.recursive=<not set>
+- future.rng.onMisuse=‘error’
+- future.wait.timeout=<not set>
+- future.wait.interval=<not set>
+- future.wait.alpha=<not set>
+- future.startup.script=<not set>
+
+*** Backends
+Number of workers: 2
+List of future strategies:
+1. multisession:
+   - args: function (..., workers = 2, envir = parent.frame())
+   - tweaked: TRUE
+   - call: plan(multisession, workers = 2)
+
+*** Basic tests
+Main R session details:
+    pid     r sysname          release
+1 79328 4.3.2   Linux 6.5.0-1025-azure
+                                              version nodename machine   login
+1 #26~22.04.1-Ubuntu SMP Thu Jul 11 22:33:04 UTC 2024  host001  x86_64 user002
+     user effective_user
+1 user001        user001
+Worker R session details:
+  worker   pid     r sysname          release
+1      1 79594 4.3.2   Linux 6.5.0-1025-azure
+2      2 79593 4.3.2   Linux 6.5.0-1025-azure
+                                              version nodename machine   login
+1 #26~22.04.1-Ubuntu SMP Thu Jul 11 22:33:04 UTC 2024  host001  x86_64 user002
+2 #26~22.04.1-Ubuntu SMP Thu Jul 11 22:33:04 UTC 2024  host001  x86_64 user002
+     user effective_user
+1 user001        user001
+2 user001        user001
+Number of unique worker PIDs: 2 (as expected)
+> plan(sequential)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("mandelbrot")
+> ### * mandelbrot
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: mandelbrot
+> ### Title: Mandelbrot convergence counts
+> ### Aliases: mandelbrot as.raster.Mandelbrot plot.Mandelbrot
+> ###   mandelbrot_tiles mandelbrot.matrix mandelbrot.numeric
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> counts <- mandelbrot(xmid = -0.75, ymid = 0, side = 3)
+> str(counts)
+ 'Mandelbrot' int [1:400, 1:400] 1 1 1 1 1 1 1 1 1 1 ...
+ - attr(*, "params")=List of 3
+  ..$ Z      : cplx [1:400, 1:400] -2.25-1.5i -2.25-1.49i -2.25-1.48i ...
+  ..$ maxIter: int 200
+  ..$ tau    : num 2
+> ## Not run: 
+> ##D plot(counts)
+> ## End(Not run)
+> 
+> ## Not run: 
+> ##D demo("mandelbrot", package = "future", ask = FALSE)
+> ## End(Not run)
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("multicore")
+> ### * multicore
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: multicore
+> ### Title: Create a multicore future whose value will be resolved
+> ###   asynchronously in a forked parallel process
+> ### Aliases: multicore
+> 
+> ### ** Examples
+> 
+> ## Use multicore futures
+> plan(multicore)
+> 
+> ## A global variable
+> a <- 0
+> 
+> ## Create future (explicitly)
+> f <- future({
++   b <- 3
++   c <- 2
++   a * b * c
++ })
+> 
+> ## A multicore future is evaluated in a separate forked
+> ## process.  Changing the value of a global variable
+> ## will not affect the result of the future.
+> a <- 7
+> print(a)
+[1] 7
+> 
+> v <- value(f)
+> print(v)
+[1] 0
+> stopifnot(v == 0)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("multisession")
+> ### * multisession
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: multisession
+> ### Title: Create a multisession future whose value will be resolved
+> ###   asynchronously in a parallel R session
+> ### Aliases: multisession
+> 
+> ### ** Examples
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("nbrOfWorkers")
+> ### * nbrOfWorkers
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: nbrOfWorkers
+> ### Title: Get the number of workers available
+> ### Aliases: nbrOfWorkers nbrOfFreeWorkers
+> 
+> ### ** Examples
+> 
+> plan(multisession)
+> nbrOfWorkers()  ## == availableCores()
+system 
+     4 
+> 
+> plan(sequential)
+> nbrOfWorkers()  ## == 1
+[1] 1
+> 
+> 
+> 
+> cleanEx()
+> nameEx("plan")
+> ### * plan
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: plan
+> ### Title: Plan how to resolve a future
+> ### Aliases: plan
+> 
+> ### ** Examples
+> 
+> a <- b <- c <- NA_real_
+> 
+> # An sequential future
+> plan(sequential)
+> f <- future({
++   a <- 7
++   b <- 3
++   c <- 2
++   a * b * c
++ })
+> y <- value(f)
+> print(y)
+[1] 42
+> str(list(a = a, b = b, c = c)) ## All NAs
+List of 3
+ $ a: num NA
+ $ b: num NA
+ $ c: num NA
+> 
+> 
+> # A sequential future with lazy evaluation
+> plan(sequential)
+> f <- future({
++   a <- 7
++   b <- 3
++   c <- 2
++   a * b * c
++ }, lazy = TRUE)
+> y <- value(f)
+> print(y)
+[1] 42
+> str(list(a = a, b = b, c = c)) ## All NAs
+List of 3
+ $ a: num NA
+ $ b: num NA
+ $ c: num NA
+> 
+> 
+> # A multicore future (specified as a string)
+> plan("multicore")
+> f <- future({
++   a <- 7
++   b <- 3
++   c <- 2
++   a * b * c
++ })
+> y <- value(f)
+> print(y)
+[1] 42
+> str(list(a = a, b = b, c = c)) ## All NAs
+List of 3
+ $ a: num NA
+ $ b: num NA
+ $ c: num NA
+> 
+> ## Multisession futures gives an error on R CMD check on
+> ## Windows (but not Linux or macOS) for unknown reasons.
+> ## The same code works in package tests.
+> 
+> 
+> ## Explicitly specifying number of workers
+> ## (default is parallelly::availableCores())
+> plan(multicore, workers = 2)
+> message("Number of parallel workers: ", nbrOfWorkers())
+Number of parallel workers: 2
+> 
+> 
+> ## Explicitly close multisession workers by switching plan
+> plan(sequential)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("resetWorkers")
+> ### * resetWorkers
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: resetWorkers
+> ### Title: Free up active background workers
+> ### Aliases: resetWorkers
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> resetWorkers(plan())
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("sequential")
+> ### * sequential
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: sequential
+> ### Title: Create a sequential future whose value will be in the current R
+> ###   session
+> ### Aliases: sequential uniprocess
+> 
+> ### ** Examples
+> 
+> ## Use sequential futures
+> plan(sequential)
+> 
+> ## A global variable
+> a <- 0
+> 
+> ## Create a sequential future
+> f <- future({
++   b <- 3
++   c <- 2
++   a * b * c
++ })
+> 
+> ## Since 'a' is a global variable in future 'f' which
+> ## is eagerly resolved (default), this global has already
+> ## been resolved / incorporated, and any changes to 'a'
+> ## at this point will _not_ affect the value of 'f'.
+> a <- 7
+> print(a)
+[1] 7
+> 
+> v <- value(f)
+> print(v)
+[1] 0
+> stopifnot(v == 0)
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  0.758 0.059 3.657 0.243 0.344 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

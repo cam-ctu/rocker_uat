@@ -1,0 +1,216 @@
+
+R version 4.3.2 (2023-10-31) -- "Eye Holes"
+Copyright (C) 2023 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(ordinal)
+> data(wine)
+> 
+> #################################
+> ## model.matrix method for clmm-objects:
+> fmm1 <- clmm(rating ~ contact + temp + (1|judge), data=wine)
+> mm <- model.matrix(fmm1)
+> stopifnot(inherits(mm, "matrix"),
++           dim(mm) == c(72, 3))
+> 
+> #################################
+> ## anova.clmm works even if formula does not have an environment:
+> fmm1 <- clmm(rating ~ temp * contact + (1|judge), data = wine)
+> fmm2 <- clmm(rating ~ temp + contact + (1|judge), data = wine)
+> environment(fmm1$formula) <- NULL
+> environment(fmm2$formula) <- NULL
+> anova(fmm1, fmm2)
+Likelihood ratio tests of cumulative link models:
+ 
+     formula:                              link: threshold:
+fmm2 rating ~ temp + contact + (1 | judge) logit flexible  
+fmm1 rating ~ temp * contact + (1 | judge) logit flexible  
+
+     no.par    AIC  logLik LR.stat df Pr(>Chisq)
+fmm2      7 177.13 -81.565                      
+fmm1      8 179.07 -81.536  0.0589  1     0.8082
+> 
+> 
+> #################################
+> ## Test that ranef, condVar and VarCorr work as they are supposed to whether or
+> ## not nlme and lme4 are loaded:
+> 
+> fm <- clmm(rating ~ temp + contact + (1|judge), data = wine)
+> fm
+Cumulative Link Mixed Model fitted with the Laplace approximation
+
+formula: rating ~ temp + contact + (1 | judge)
+data:    wine
+
+ link  threshold nobs logLik AIC    niter    max.grad
+ logit flexible  72   -81.57 177.13 332(999) 1.03e-05
+
+Random effects:
+ Groups Name        Variance Std.Dev.
+ judge  (Intercept) 1.279    1.131   
+Number of groups:  judge 9 
+
+Coefficients:
+  tempwarm contactyes 
+     3.063      1.835 
+
+Thresholds:
+   1|2    2|3    3|4    4|5 
+-1.624  1.513  4.229  6.089 
+> ranef(fm)
+$judge
+  (Intercept)
+1  1.69617816
+2 -0.56578306
+3  0.96880827
+4 -0.05954988
+5  0.23051011
+6  0.47703863
+7 -1.91097337
+8 -0.27294384
+9 -0.55467575
+
+> VarCorr(fm)
+$judge
+            (Intercept)
+(Intercept)    1.279461
+attr(,"stddev")
+(Intercept) 
+   1.131133 
+
+> condVar(fm)
+$judge
+  (Intercept)
+1   0.3067453
+2   0.3779358
+3   0.3545529
+4   0.3651870
+5   0.3566066
+6   0.3485475
+7   0.3435693
+8   0.3050453
+9   0.3183194
+
+> summary(fm)
+Cumulative Link Mixed Model fitted with the Laplace approximation
+
+formula: rating ~ temp + contact + (1 | judge)
+data:    wine
+
+ link  threshold nobs logLik AIC    niter    max.grad cond.H 
+ logit flexible  72   -81.57 177.13 332(999) 1.03e-05 2.8e+01
+
+Random effects:
+ Groups Name        Variance Std.Dev.
+ judge  (Intercept) 1.279    1.131   
+Number of groups:  judge 9 
+
+Coefficients:
+           Estimate Std. Error z value Pr(>|z|)    
+tempwarm     3.0630     0.5954   5.145 2.68e-07 ***
+contactyes   1.8349     0.5125   3.580 0.000344 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+    Estimate Std. Error z value
+1|2  -1.6237     0.6824  -2.379
+2|3   1.5134     0.6038   2.507
+3|4   4.2285     0.8090   5.227
+4|5   6.0888     0.9725   6.261
+> 
+> library(nlme)
+> ranef(fm)
+$judge
+  (Intercept)
+1  1.69617816
+2 -0.56578306
+3  0.96880827
+4 -0.05954988
+5  0.23051011
+6  0.47703863
+7 -1.91097337
+8 -0.27294384
+9 -0.55467575
+
+> VarCorr(fm)
+$judge
+            (Intercept)
+(Intercept)    1.279461
+attr(,"stddev")
+(Intercept) 
+   1.131133 
+
+> condVar(fm)
+$judge
+  (Intercept)
+1   0.3067453
+2   0.3779358
+3   0.3545529
+4   0.3651870
+5   0.3566066
+6   0.3485475
+7   0.3435693
+8   0.3050453
+9   0.3183194
+
+> library(lme4)
+Loading required package: Matrix
+
+Attaching package: ‘lme4’
+
+The following object is masked from ‘package:nlme’:
+
+    lmList
+
+> ranef(fm)
+$judge
+  (Intercept)
+1  1.69617816
+2 -0.56578306
+3  0.96880827
+4 -0.05954988
+5  0.23051011
+6  0.47703863
+7 -1.91097337
+8 -0.27294384
+9 -0.55467575
+
+> VarCorr(fm)
+$judge
+            (Intercept)
+(Intercept)    1.279461
+attr(,"stddev")
+(Intercept) 
+   1.131133 
+
+> condVar(fm)
+$judge
+  (Intercept)
+1   0.3067453
+2   0.3779358
+3   0.3545529
+4   0.3651870
+5   0.3566066
+6   0.3485475
+7   0.3435693
+8   0.3050453
+9   0.3183194
+
+> fm1 <- lmer(Reaction ~ Days + (Days | Subject), data=sleepstudy)
+Error in initializePtr() : 
+  function 'cholmod_factor_ldetA' not provided by package 'Matrix'
+Calls: lmer ... initialize -> <Anonymous> -> initializePtr -> .Call
+Execution halted

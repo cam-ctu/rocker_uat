@@ -1,0 +1,143 @@
+
+R version 4.3.2 (2023-10-31) -- "Eye Holes"
+Copyright (C) 2023 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library("listenv")
+> 
+> ovars <- ls(envir = globalenv())
+> oopts <- options(warn = 1)
+> 
+> x <- listenv()
+> length(x) <- 3L
+> names(x) <- c("a", "b", "c")
+> stopifnot(length(x) == 3L)
+> print(mapping(x))
+ a  b  c 
+NA NA NA 
+> 
+> var <- get_variable(x, "a")
+> stopifnot(!is.na(var))
+> stopifnot(length(x) == 3L)
+> print(mapping(x))
+ a  b  c 
+NA NA NA 
+> 
+> var <- get_variable(x, "b")
+> stopifnot(!is.na(var))
+> stopifnot(length(x) == 3L)
+> print(mapping(x))
+ a  b  c 
+NA NA NA 
+> 
+> var <- get_variable(x, "c")
+> stopifnot(!is.na(var))
+> stopifnot(length(x) == 3L)
+> print(mapping(x))
+ a  b  c 
+NA NA NA 
+> 
+> var <- get_variable(x, "d")
+> stopifnot(!is.na(var))
+> stopifnot(length(x) == 4L)
+> print(mapping(x))
+  a   b   c   d 
+ NA  NA  NA "d" 
+> 
+> var <- get_variable(x, 4L)
+> stopifnot(!is.na(var))
+> stopifnot(length(x) == 4L)
+> print(mapping(x))
+  a   b   c   d 
+ NA  NA  NA "d" 
+> 
+> x$b <- 2
+> var <- get_variable(x, "b")
+> stopifnot(!is.na(var))
+> stopifnot(length(x) == 4L)
+> print(mapping(x))
+  a   b   c   d 
+ NA "b"  NA "d" 
+> 
+> var <- get_variable(x, length(x) + 1L)
+> stopifnot(length(x) == 5L)
+> print(names(x))
+[1] "a" "b" "c" "d" "" 
+> print(mapping(x))
+                      a                       b                       c 
+                     NA                     "b"                      NA 
+                      d                         
+                    "d" ".listenv_var_1.000000" 
+> 
+> ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> ## Allocation
+> ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> x <- listenv()
+> length(x) <- 3L
+> print(x[[1]])
+NULL
+> print(x[[2]])
+NULL
+> print(x[[3]])
+NULL
+> 
+> ## Out-of-bound subsetting
+> res <- try(x[[0]], silent = TRUE)
+> stopifnot(inherits(res, "try-error"))
+> 
+> ## Out-of-bound subsetting
+> res <- try(x[[4]], silent = TRUE)
+> stopifnot(inherits(res, "try-error"))
+> 
+> print(get_variable(x, 1L, mustExist = FALSE))
+[1] ".listenv_var_1.000000"
+> print(get_variable(x, 2L, mustExist = FALSE))
+[1] ".listenv_var_2.000000"
+> print(get_variable(x, 3L, mustExist = FALSE))
+[1] ".listenv_var_3.000000"
+> 
+> ## Out-of-bound element
+> res <- try(var <- get_variable(x, 0L, mustExist = TRUE), silent = TRUE)
+> stopifnot(inherits(res, "try-error"))
+> 
+> ## Out-of-bound element
+> res <- try(var <- get_variable(x, length(x) + 1L, mustExist = TRUE),
++            silent = TRUE)
+> stopifnot(inherits(res, "try-error"))
+> 
+> 
+> ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> ## Exception handling
+> ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> x <- listenv()
+> length(x) <- 3L
+> names(x) <- c("a", "b", "c")
+> 
+> ## Non-existing element
+> res <- try(var <- get_variable(x, "z", mustExist = TRUE), silent = TRUE)
+> stopifnot(inherits(res, "try-error"))
+> 
+> res <- try(var <- get_variable(x, c("a", "b")), silent = TRUE)
+> stopifnot(inherits(res, "try-error"))
+> 
+> res <- try(var <- get_variable(x, 1 + 2i), silent = TRUE)
+> stopifnot(inherits(res, "try-error"))
+> 
+> 
+> 
+> ## Cleanup
+> options(oopts)
+> rm(list = setdiff(ls(envir = globalenv()), ovars), envir = globalenv())
+> 

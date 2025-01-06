@@ -1,0 +1,238 @@
+
+R version 4.3.2 (2023-10-31) -- "Eye Holes"
+Copyright (C) 2023 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "dfoptim"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('dfoptim')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("hookejeeves")
+> ### * hookejeeves
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: hjk
+> ### Title: Hooke-Jeeves derivative-free minimization algorithm
+> ### Aliases: hjk hjkb
+> ### Keywords: optimize
+> 
+> ### ** Examples
+> 
+> ##  Hooke-Jeeves solves high-dim. Rosenbrock function
+>   rosenbrock <- function(x){
++     n <- length(x)
++     sum (100*(x[1:(n-1)]^2 - x[2:n])^2 + (x[1:(n-1)] - 1)^2)
++   }
+> par0 <- rep(0, 10)
+> hjk(par0, rosenbrock)
+$par
+ [1] 1.0000000 0.9999962 0.9999924 0.9999886 0.9999771 0.9999580 0.9999161
+ [8] 0.9998360 0.9996719 0.9993439
+
+$value
+[1] 1.498801e-07
+
+$convergence
+[1] 0
+
+$feval
+[1] 7180
+
+$niter
+[1] 19
+
+> 
+> hjkb(c(0, 0, 0), rosenbrock, upper = 0.5)
+$par
+[1] 0.50000000 0.25742340 0.06626511
+
+$value
+[1] 0.8069307
+
+$convergence
+[1] 0
+
+$feval
+[1] 249
+
+$niter
+[1] 19
+
+> # $par
+> # [1] 0.50000000 0.25742722 0.06626892
+> 
+> 
+> ##  Hooke-Jeeves does not work well on non-smooth functions
+>   nsf <- function(x) {
++ 	f1 <- x[1]^2 + x[2]^2
++ 	f2 <- x[1]^2 + x[2]^2 + 10 * (-4*x[1] - x[2] + 4)
++ 	f3 <- x[1]^2 + x[2]^2 + 10 * (-x[1] - 2*x[2] + 6)
++ 	max(f1, f2, f3)
++   }
+> par0 <- c(1, 1)                                 # true min 7.2 at (1.2, 2.4)
+> hjk(par0, nsf) # fmin=8 at xmin=(2,2)
+$par
+[1] 2 2
+
+$value
+[1] 8
+
+$convergence
+[1] 0
+
+$feval
+[1] 104
+
+$niter
+[1] 19
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("mads")
+> ### * mads
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: mads
+> ### Title: Mesh Adaptive Direct Searches (MADS) algorithm for
+> ###   derivative-free and black-box optimization
+> ### Aliases: mads mads
+> ### Keywords: optimize
+> 
+> ### ** Examples
+> 
+>  rosbkext <- function(x){
++ # Extended Rosenbrock function
++  n <- length(x)
++  sum (100*(x[1:(n-1)]^2 - x[2:n])^2 + (x[1:(n-1)] - 1)^2)
++  }
+> 
+> np <- 10
+> p0 <- rnorm(np)
+> ans1 <- mads(fn=rosbkext, par=p0, lower=-10, upper=10, scale=1, control=list(trace=FALSE))
+> 
+> ### A non-smooth problem from Hock & Schittkowski #78
+> hs78 <- function(x){
++   f <- rep(NA, 3)
++   f[1] <- sum(x^2) - 10
++   f[2] <- x[2]*x[3] - 5*x[4]*x[5]
++   f[3] <- x[1]^3 + x[2]^3 + 1
++   F <- prod(x) + 10*sum(abs(f))
++   return(F)
++ }
+> 
+> p0 <- c(-2,1.5,2,-1,-1)
+> ans2 <- mads(p0, hs78, control=list(trace=FALSE)) #minimum value around -2.81
+> 
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("nmkb")
+> ### * nmkb
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: nmk
+> ### Title: Nelder-Mead optimziation algorithm for derivative-free
+> ###   optimization
+> ### Aliases: nmk nmkb
+> ### Keywords: optimize
+> 
+> ### ** Examples
+> 
+>  rosbkext <- function(x){
++ # Extended Rosenbrock function
++  n <- length(x)
++  sum (100*(x[1:(n-1)]^2 - x[2:n])^2 + (x[1:(n-1)] - 1)^2)
++  }
+> 
+> np <- 10
+> set.seed(123)
+> 
+> p0 <- rnorm(np)
+> xm1 <- nmk(fn=rosbkext, par=p0) # maximum `fevals' is not sufficient to find correct minimum
+> xm1b <- nmkb(fn=rosbkext, par=p0, lower=-2, upper=2)
+> 
+> ### A non-smooth problem
+> hald <- function(x) {
++ #Hald J & Madsen K (1981), Combined LP and quasi-Newton methods 
++ #for minimax optimization, Mathematical Programming, 20, p.42-62.
++ 	i <- 1:21
++ 	t <- -1 + (i - 1)/10
++ 	f <- (x[1] + x[2] * t) / ( 1 + x[3]*t + x[4]*t^2 + x[5]*t^3) - exp(t)
++ 	max(abs(f))
++ 	}
+> 
+> p0 <- runif(5)
+> xm2 <- nmk(fn=hald, par=p0)
+> xm2b <- nmkb(fn=hald, par=p0, lower=c(0,0,0,0,-2), upper=4)
+> 
+> ## Another non-smooth functions
+>   nsf <- function(x) {
++ 	f1 <- x[1]^2 + x[2]^2
++ 	f2 <- x[1]^2 + x[2]^2 + 10 * (-4*x[1] - x[2] + 4)
++ 	f3 <- x[1]^2 + x[2]^2 + 10 * (-x[1] - 2*x[2] + 6)
++ 	max(f1, f2, f3)
++   }
+> par0 <- c(1, 1)                                 # true min 7.2 at (1.2, 2.4)
+> nmk(par0, nsf) # fmin=8 at xmin=(2,2)
+$par
+[1] 1.199650 2.400175
+
+$value
+[1] 7.2
+
+$feval
+[1] 83
+
+$restarts
+[1] 0
+
+$convergence
+[1] 0
+
+$message
+[1] "Successful convergence"
+
+> 
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  0.995 0.033 1.028 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')
