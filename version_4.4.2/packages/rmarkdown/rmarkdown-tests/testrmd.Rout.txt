@@ -1,0 +1,145 @@
+
+R version 4.4.2 (2024-10-31) -- "Pile of Leaves"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> # only run this test on CI platforms
+> if (.Platform$OS.type == 'unix' && isTRUE(as.logical(Sys.getenv("CI"))) && rmarkdown::pandoc_available()) {
++ 
++   # test if Word documents can be rendered with a specified intermediate dir
++   # (https://github.com/rstudio/rmarkdown/issues/1431)
++   system2(rmarkdown::pandoc_exec(), '--print-default-data-file reference.docx', stdout = 'rmd/template.docx')
++   rmarkdown::render('rmd/word.Rmd', intermediates_dir = 'tmp')
++ 
++   # bib files should be copied to the intermediates dir:
++   # https://github.com/rstudio/rmarkdown/issues/1358
++   rmarkdown::render('rmd/two-bibs.Rmd', intermediates_dir = tempdir())
++ 
++   # use an absolute output_dir should not trigger a file.rename() warning
++   # (https://github.com/rstudio/rmarkdown/issues/1224)
++   withCallingHandlers(
++     rmarkdown::render(
++       'rmd/output_dir.Rmd', output_dir = file.path(tempdir(), 'output'),
++       intermediates_dir = file.path(tempdir(), 'tmp')
++     ), warning = function(e) {
++       if (identical(deparse(e$call), 'file.rename(from, to)') || grepl('cannot rename file', e$message)) {
++         stop(e)
++       }
++     }
++   )
++ 
++   # the default LaTeX template should work with multiple authors:
++   # https://github.com/rstudio/rmarkdown/issues/1716
++   rmarkdown::render('rmd/two-authors.Rmd')
++ 
++   # R code in YAML should be evaluated before YAML is passed to Pandoc:
++   # https://github.com/rstudio/rmarkdown/issues/1709
++   rmarkdown::render('rmd/yaml-r-code.Rmd')
++ 
++   # raw blocks in header-includes should work:
++   # https://github.com/rstudio/rmarkdown/issues/1729
++   rmarkdown::render('rmd/raw-header.Rmd')
++ 
++   # anchor_sections should work without Lua error
++   # https://github.com/rstudio/rmarkdown/pull/1964
++   rmarkdown::render("rmd/anchor-sections.Rmd")
++ 
++   # Finding resource in custom formats
++   # https://github.com/rstudio/rmarkdown/issues/2493
++   rmarkdown::render("rmd/clean-format.Rmd")
++ 
++ }
+
+
+processing file: word.Rmd
+1/1
+output file: /__w/rocker_uat/rocker_uat/packages/rmarkdown/rmarkdown-tests/tmp/word.knit.md
+
+/usr/bin/pandoc +RTS -K512m -RTS /__w/rocker_uat/rocker_uat/packages/rmarkdown/rmarkdown-tests/tmp/word.knit.md --to docx --from markdown+autolink_bare_uris+tex_math_single_backslash --output word.docx --lua-filter /usr/local/lib/R/site-library/rmarkdown/rmarkdown/lua/pagebreak.lua --highlight-style tango --reference-doc template.docx 
+
+Output created: word.docx
+
+
+processing file: two-bibs.Rmd
+1/3                  
+2/3 [unnamed-chunk-1]
+3/3                  
+output file: /tmp/RtmpXKiV7T/two-bibs.knit.md
+
+/usr/bin/pandoc +RTS -K512m -RTS /tmp/RtmpXKiV7T/two-bibs.knit.md --to html4 --from markdown+autolink_bare_uris+tex_math_single_backslash --output two-bibs.html --lua-filter /usr/local/lib/R/site-library/rmarkdown/rmarkdown/lua/pagebreak.lua --lua-filter /usr/local/lib/R/site-library/rmarkdown/rmarkdown/lua/latex-div.lua --lua-filter /usr/local/lib/R/site-library/rmarkdown/rmarkdown/lua/table-classes.lua --embed-resources --standalone --section-divs --template /usr/local/lib/R/site-library/rmarkdown/rmd/h/default.html --highlight-style pygments --css /usr/local/lib/R/site-library/rmarkdown/rmarkdown/templates/html_vignette/resources/vignette.css --mathjax --variable 'mathjax-url=https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML' --include-in-header /tmp/RtmpXKiV7T/rmarkdown-str14c1328552cc5.html --citeproc 
+
+Output created: two-bibs.html
+
+
+processing file: output_dir.Rmd
+1/2                  
+2/2 [unnamed-chunk-1]
+output file: /tmp/RtmpXKiV7T/tmp/output_dir.knit.md
+
+/usr/bin/pandoc +RTS -K512m -RTS /tmp/RtmpXKiV7T/tmp/output_dir.knit.md --to html4 --from markdown+autolink_bare_uris+tex_math_single_backslash --output /tmp/RtmpXKiV7T/output/output_dir.html --lua-filter /usr/local/lib/R/site-library/rmarkdown/rmarkdown/lua/pagebreak.lua --lua-filter /usr/local/lib/R/site-library/rmarkdown/rmarkdown/lua/latex-div.lua --lua-filter /usr/local/lib/R/site-library/rmarkdown/rmarkdown/lua/table-classes.lua --embed-resources --standalone --variable bs3=TRUE --section-divs --template /usr/local/lib/R/site-library/rmarkdown/rmd/h/default.html --no-highlight --variable highlightjs=1 --variable theme=bootstrap --mathjax --variable 'mathjax-url=https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML' --include-in-header /tmp/RtmpXKiV7T/rmarkdown-str14c1340197fe.html 
+
+Output created: /tmp/RtmpXKiV7T/output/output_dir.html
+
+
+processing file: two-authors.Rmd
+1/1
+output file: two-authors.knit.md
+
+/usr/bin/pandoc +RTS -K512m -RTS two-authors.knit.md --to latex --from markdown+autolink_bare_uris+tex_math_single_backslash --output two-authors.tex --lua-filter /usr/local/lib/R/site-library/rmarkdown/rmarkdown/lua/pagebreak.lua --lua-filter /usr/local/lib/R/site-library/rmarkdown/rmarkdown/lua/latex-div.lua --embed-resources --standalone --highlight-style tango --pdf-engine pdflatex --variable graphics --variable 'geometry:margin=1in' 
+
+Output created: two-authors.pdf
+
+
+processing file: yaml-r-code.Rmd
+1/1
+output file: yaml-r-code.knit.md
+
+/usr/bin/pandoc +RTS -K512m -RTS yaml-r-code.knit.md --to latex --from markdown+autolink_bare_uris+tex_math_single_backslash --output yaml-r-code.tex --lua-filter /usr/local/lib/R/site-library/rmarkdown/rmarkdown/lua/pagebreak.lua --lua-filter /usr/local/lib/R/site-library/rmarkdown/rmarkdown/lua/latex-div.lua --embed-resources --standalone --highlight-style tango --pdf-engine pdflatex --variable graphics --include-in-header /tmp/RtmpXKiV7T/rmarkdown-str14c1355a38b5b.html --variable 'geometry:margin=1in' 
+
+Output created: yaml-r-code.pdf
+
+
+processing file: raw-header.Rmd
+1/1
+output file: raw-header.knit.md
+
+/usr/bin/pandoc +RTS -K512m -RTS raw-header.knit.md --to latex --from markdown+autolink_bare_uris+tex_math_single_backslash --output raw-header.tex --lua-filter /usr/local/lib/R/site-library/rmarkdown/rmarkdown/lua/pagebreak.lua --lua-filter /usr/local/lib/R/site-library/rmarkdown/rmarkdown/lua/latex-div.lua --embed-resources --standalone --highlight-style tango --pdf-engine pdflatex --variable graphics --include-in-header /tmp/RtmpXKiV7T/rmarkdown-str14c1347f67544.html --variable 'geometry:margin=1in' 
+
+Output created: raw-header.pdf
+
+
+processing file: anchor-sections.Rmd
+1/1
+output file: anchor-sections.knit.md
+
+/usr/bin/pandoc +RTS -K512m -RTS anchor-sections.knit.md --to html4 --from markdown+autolink_bare_uris+tex_math_single_backslash --output anchor-sections.html --lua-filter /usr/local/lib/R/site-library/rmarkdown/rmarkdown/lua/pagebreak.lua --lua-filter /usr/local/lib/R/site-library/rmarkdown/rmarkdown/lua/latex-div.lua --lua-filter /usr/local/lib/R/site-library/rmarkdown/rmarkdown/lua/table-classes.lua --lua-filter /usr/local/lib/R/site-library/rmarkdown/rmarkdown/lua/anchor-sections.lua --embed-resources --standalone --variable bs3=TRUE --section-divs --template /usr/local/lib/R/site-library/rmarkdown/rmd/h/default.html --no-highlight --variable highlightjs=1 --metadata rmd_anchor_depth=2 --variable theme=bootstrap --mathjax --variable 'mathjax-url=https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML' --include-in-header /tmp/RtmpXKiV7T/rmarkdown-str14c1337b5bd42.html 
+
+Output created: anchor-sections.html
+
+
+processing file: clean-format.Rmd
+1/1
+output file: clean-format.knit.md
+
+/usr/bin/pandoc +RTS -K512m -RTS clean-format.knit.md --to html5 --from markdown+autolink_bare_uris+tex_math_single_backslash --output clean-format.html --lua-filter /usr/local/lib/R/site-library/rmarkdown/rmarkdown/lua/pagebreak.lua --lua-filter /usr/local/lib/R/site-library/rmarkdown/rmarkdown/lua/latex-div.lua --lua-filter /usr/local/lib/R/site-library/rmarkdown/rmarkdown/lua/table-classes.lua --embed-resources --standalone --variable disable-fontawesome --variable title-in-header --no-highlight --variable 'use-prism=<link href="https://unpkg.com/prismjs@latest/themes/prism.min.css" rel="stylesheet" data-external="1"/>' --template /usr/local/lib/R/site-library/cleanrmd/template/cleanrmd.html --include-in-header /tmp/RtmpXKiV7T/rmarkdown-str14c13577ac780.html 
+[WARNING] This document format requires a nonempty <title> element.
+  Defaulting to 'clean-format.knit' as the title.
+  To specify a title, use 'title' in metadata or --metadata title="...".
+
+Output created: clean-format.html
+Warning messages:
+1: The vignette title specified in \VignetteIndexEntry{} is different from the title in the YAML metadata. The former is "", and the latter is "Two bibliography entries". If that is intentional, you may set options(rmarkdown.html_vignette.check_title = FALSE) to suppress this check. 
+2: The vignette title specified in \VignetteIndexEntry{} is different from the title in the YAML metadata. The former is "", and the latter is "Two bibliography entries". If that is intentional, you may set options(rmarkdown.html_vignette.check_title = FALSE) to suppress this check. 
+> 

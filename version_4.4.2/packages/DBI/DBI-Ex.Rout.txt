@@ -463,6 +463,18 @@ Warning: Factors converted to character
 + dbDisconnect(con)
 + ## Don't show: 
 + }) # examplesIf
+> con <- dbConnect(RSQLite::SQLite(), ":memory:")
+> dbCreateTableArrow(con, "iris", iris[0, ])
+> dbAppendTableArrow(con, "iris", iris[1:5, ])
+[1] 5
+> dbReadTable(con, "iris")
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+1          5.1         3.5          1.4         0.2  setosa
+2          4.9         3.0          1.4         0.2  setosa
+3          4.7         3.2          1.3         0.2  setosa
+4          4.6         3.1          1.5         0.2  setosa
+5          5.0         3.6          1.4         0.2  setosa
+> dbDisconnect(con)
 > ## End(Don't show)
 > 
 > 
@@ -568,6 +580,34 @@ Warning: Factors converted to character
 + dbDisconnect(con)
 + ## Don't show: 
 + }) # examplesIf
+> con <- dbConnect(RSQLite::SQLite(), ":memory:")
+> dbWriteTable(con, "iris", iris)
+> iris_result <- dbSendQueryArrow(con, "SELECT * FROM iris WHERE [Petal.Width] > ?")
+> dbBindArrow(iris_result, nanoarrow::as_nanoarrow_array_stream(data.frame(2.3, 
++     fix.empty.names = FALSE)))
+> as.data.frame(dbFetchArrow(iris_result))
+  Sepal.Length Sepal.Width Petal.Length Petal.Width   Species
+1          6.3         3.3          6.0         2.5 virginica
+2          7.2         3.6          6.1         2.5 virginica
+3          5.8         2.8          5.1         2.4 virginica
+4          6.3         3.4          5.6         2.4 virginica
+5          6.7         3.1          5.6         2.4 virginica
+6          6.7         3.3          5.7         2.5 virginica
+> dbBindArrow(iris_result, nanoarrow::as_nanoarrow_array_stream(data.frame(3, 
++     fix.empty.names = FALSE)))
+> as.data.frame(dbFetchArrow(iris_result))
+[1] Sepal.Length Sepal.Width  Petal.Length Petal.Width  Species     
+<0 rows> (or 0-length row.names)
+> dbClearResult(iris_result)
+> iris_result <- dbSendStatement(con, "DELETE FROM iris WHERE [Species] = $species")
+> dbBindArrow(iris_result, nanoarrow::as_nanoarrow_array_stream(data.frame(species = c("setosa", 
++     "versicolor", "unknown"))))
+> dbGetRowsAffected(iris_result)
+[1] 100
+> dbClearResult(iris_result)
+> nrow(dbReadTable(con, "iris"))
+[1] 50
+> dbDisconnect(con)
 > ## End(Don't show)
 > 
 > 
@@ -772,6 +812,13 @@ character(0)
 + dbDisconnect(con)
 + ## Don't show: 
 + }) # examplesIf
+> con <- dbConnect(RSQLite::SQLite(), ":memory:")
+> ptype <- data.frame(a = numeric())
+> dbCreateTableArrow(con, "df", nanoarrow::infer_nanoarrow_schema(ptype))
+> dbReadTable(con, "df")
+[1] a
+<0 rows> (or 0-length row.names)
+> dbDisconnect(con)
 > ## End(Don't show)
 > 
 > 
@@ -1017,7 +1064,6 @@ Sepal.Length  Sepal.Width Petal.Length  Petal.Width      Species
 > dbExistsTable(con, "iris")
 [1] FALSE
 > dbWriteTable(con, "iris", iris)
-Warning: call dbDisconnect() when finished working with a connection
 > dbExistsTable(con, "iris")
 [1] TRUE
 > dbDisconnect(con)
@@ -1120,6 +1166,24 @@ Warning: call dbDisconnect() when finished working with a connection
 + dbDisconnect(con)
 + ## Don't show: 
 + }) # examplesIf
+> con <- dbConnect(RSQLite::SQLite(), ":memory:")
+> dbWriteTable(con, "mtcars", mtcars)
+> rs <- dbSendQueryArrow(con, "SELECT * FROM mtcars WHERE cyl = 4")
+> as.data.frame(dbFetchArrow(rs))
+    mpg cyl  disp  hp drat    wt  qsec vs am gear carb
+1  22.8   4 108.0  93 3.85 2.320 18.61  1  1    4    1
+2  24.4   4 146.7  62 3.69 3.190 20.00  1  0    4    2
+3  22.8   4 140.8  95 3.92 3.150 22.90  1  0    4    2
+4  32.4   4  78.7  66 4.08 2.200 19.47  1  1    4    1
+5  30.4   4  75.7  52 4.93 1.615 18.52  1  1    4    2
+6  33.9   4  71.1  65 4.22 1.835 19.90  1  1    4    1
+7  21.5   4 120.1  97 3.70 2.465 20.01  1  0    3    1
+8  27.3   4  79.0  66 4.08 1.935 18.90  1  1    4    1
+9  26.0   4 120.3  91 4.43 2.140 16.70  0  1    5    2
+10 30.4   4  95.1 113 3.77 1.513 16.90  1  1    5    2
+11 21.4   4 121.0 109 4.11 2.780 18.60  1  1    4    2
+> dbClearResult(rs)
+> dbDisconnect(con)
 > ## End(Don't show)
 > 
 > 
@@ -1155,6 +1219,32 @@ Warning: call dbDisconnect() when finished working with a connection
 + dbDisconnect(con)
 + ## Don't show: 
 + }) # examplesIf
+> con <- dbConnect(RSQLite::SQLite(), ":memory:")
+> dbWriteTable(con, "mtcars", mtcars)
+Warning: call dbDisconnect() when finished working with a connection
+> rs <- dbSendQueryArrow(con, "SELECT * FROM mtcars WHERE cyl = 4")
+> dbHasCompleted(rs)
+[1] FALSE
+> as.data.frame(dbFetchArrowChunk(rs))
+    mpg cyl  disp  hp drat    wt  qsec vs am gear carb
+1  22.8   4 108.0  93 3.85 2.320 18.61  1  1    4    1
+2  24.4   4 146.7  62 3.69 3.190 20.00  1  0    4    2
+3  22.8   4 140.8  95 3.92 3.150 22.90  1  0    4    2
+4  32.4   4  78.7  66 4.08 2.200 19.47  1  1    4    1
+5  30.4   4  75.7  52 4.93 1.615 18.52  1  1    4    2
+6  33.9   4  71.1  65 4.22 1.835 19.90  1  1    4    1
+7  21.5   4 120.1  97 3.70 2.465 20.01  1  0    3    1
+8  27.3   4  79.0  66 4.08 1.935 18.90  1  1    4    1
+9  26.0   4 120.3  91 4.43 2.140 16.70  0  1    5    2
+10 30.4   4  95.1 113 3.77 1.513 16.90  1  1    5    2
+11 21.4   4 121.0 109 4.11 2.780 18.60  1  1    4    2
+> dbHasCompleted(rs)
+[1] TRUE
+> as.data.frame(dbFetchArrowChunk(rs))
+ [1] mpg  cyl  disp hp   drat wt   qsec vs   am   gear carb
+<0 rows> (or 0-length row.names)
+> dbClearResult(rs)
+> dbDisconnect(con)
 > ## End(Don't show)
 > 
 > 
@@ -1349,6 +1439,14 @@ $client.version
 + dbDisconnect(con)
 + ## Don't show: 
 + }) # examplesIf
+> con <- dbConnect(RSQLite::SQLite(), ":memory:")
+> dbWriteTable(con, "mtcars", mtcars)
+> dbGetQueryArrow(con, "SELECT * FROM mtcars")
+<nanoarrow_array_stream struct<mpg: double, cyl: double, disp: double, hp: double, drat: double, wt: double, qsec: double, vs: double, am: double, gear: double, carb: double>>
+ $ get_schema:function ()  
+ $ get_next  :function (schema = x$get_schema(), validate = TRUE)  
+ $ release   :function ()  
+> dbDisconnect(con)
 > ## End(Don't show)
 > 
 > 
@@ -1881,6 +1979,14 @@ character(0)
 + dbDisconnect(con)
 + ## Don't show: 
 + }) # examplesIf
+> con <- dbConnect(RSQLite::SQLite(), ":memory:")
+> dbWriteTable(con, "mtcars", mtcars[1:10, ])
+> dbReadTableArrow(con, "mtcars")
+<nanoarrow_array_stream struct<mpg: double, cyl: double, disp: double, hp: double, drat: double, wt: double, qsec: double, vs: double, am: double, gear: double, carb: double>>
+ $ get_schema:function ()  
+ $ get_next  :function (schema = x$get_schema(), validate = TRUE)  
+ $ release   :function ()  
+> dbDisconnect(con)
 > ## End(Don't show)
 > 
 > 
@@ -2060,6 +2166,16 @@ character(0)
 + dbDisconnect(con)
 + ## Don't show: 
 + }) # examplesIf
+> con <- dbConnect(RSQLite::SQLite(), ":memory:")
+> dbWriteTable(con, "mtcars", mtcars)
+> rs <- dbSendQueryArrow(con, "SELECT * FROM mtcars WHERE cyl = 4")
+> dbFetchArrow(rs)
+<nanoarrow_array_stream struct<mpg: double, cyl: double, disp: double, hp: double, drat: double, wt: double, qsec: double, vs: double, am: double, gear: double, carb: double>>
+ $ get_schema:function ()  
+ $ get_next  :function (schema = x$get_schema(), validate = TRUE)  
+ $ release   :function ()  
+> dbClearResult(rs)
+> dbDisconnect(con)
 > ## End(Don't show)
 > 
 > 
@@ -2403,6 +2519,17 @@ character(0)
 + dbDisconnect(con)
 + ## Don't show: 
 + }) # examplesIf
+> con <- dbConnect(RSQLite::SQLite(), ":memory:")
+> dbWriteTableArrow(con, "mtcars", nanoarrow::as_nanoarrow_array_stream(mtcars[1:5, 
++     ]))
+> dbReadTable(con, "mtcars")
+   mpg cyl disp  hp drat    wt  qsec vs am gear carb
+1 21.0   6  160 110 3.90 2.620 16.46  0  1    4    4
+2 21.0   6  160 110 3.90 2.875 17.02  0  1    4    4
+3 22.8   4  108  93 3.85 2.320 18.61  1  1    4    1
+4 21.4   6  258 110 3.08 3.215 19.44  1  0    3    1
+5 18.7   8  360 175 3.15 3.440 17.02  0  0    3    2
+> dbDisconnect(con)
 > ## End(Don't show)
 > 
 > 
@@ -2841,7 +2968,7 @@ $end
 > cleanEx()
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  0.822 0.042 0.863 0 0 
+Time elapsed:  1.014 0.037 1.049 0 0 
 > grDevices::dev.off()
 null device 
           1 
