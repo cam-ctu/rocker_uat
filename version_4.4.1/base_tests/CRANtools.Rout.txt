@@ -1,0 +1,421 @@
+
+R version 4.4.1 (2024-06-14) -- "Race for Your Life"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> ### This needs a local (partial) CRAN mirror or Internet access
+> ## Specifically, needs web/packages/packages.rds and web/checks/*.rds
+> 
+> ## This may need to download, so increase the timeout.
+> options(warn = 1L, timeout = max(600, getOption('timeout')))
+> 
+> .ptime <- proc.time()
+> 
+> ## Look up CRAN mirror in the same way the functions do.
+> ## Uses R_CRAN_WEB if set, otherwise getOption('repos')["CRAN"]
+> ## then the (possibly local) 'repositories' file
+> ## and if still unset, https://CRAN.R-project.org
+> mirror <- tools:::CRAN_baseurl_for_web_area()
+> message("Using CRAN mirror ",  sQuote(mirror))
+Using CRAN mirror 'https://CRAN.R-project.org'
+> 
+> ## Sanity check: the examples use /web/packages/packages.rds and
+> ## web/checks/check_*.rds,
+> ## but partial mirrors for package installation only need src/contrib.
+> ## This would fail with a file:// mirror but provides a cheap check
+> ## of the availability of a https:// one.
+> if(!startsWith(mirror, "file://")) {
++     foo <- tryCatch(readLines(paste0(mirror, "/web/packages")),
++                     error = function(e) {
++                     message(conditionMessage(e))
++                     ## and bail out
++                     cat("Time elapsed: ", proc.time() - .ptime,"\n")
++                     q("no")
++     })
++ }
+> 
+> ## no longer conditionalized on Internet access
+> library(tools)
+> example("CRAN_package_db", run.donttest = TRUE)
+
+CRAN__> ## No test: 
+CRAN__> ## This can be rather slow  with a non-local CRAN mirror
+CRAN__> ## and might fail (slowly) without Internet access in that case.
+CRAN__> 
+CRAN__> set.seed(11)  # but the packages chosen will change as soon as CRAN does.
+
+CRAN__> pdb <- CRAN_package_db()
+
+CRAN__> dim(pdb)
+[1] 21870    69
+
+CRAN__> ## DESCRIPTION fields included:
+CRAN__> colnames(pdb)
+ [1] "Package"                 "Version"                
+ [3] "Priority"                "Depends"                
+ [5] "Imports"                 "LinkingTo"              
+ [7] "Suggests"                "Enhances"               
+ [9] "License"                 "License_is_FOSS"        
+[11] "License_restricts_use"   "OS_type"                
+[13] "Archs"                   "MD5sum"                 
+[15] "NeedsCompilation"        "Additional_repositories"
+[17] "Author"                  "Authors@R"              
+[19] "Biarch"                  "BugReports"             
+[21] "BuildKeepEmpty"          "BuildManual"            
+[23] "BuildResaveData"         "BuildVignettes"         
+[25] "Built"                   "ByteCompile"            
+[27] "Classification/ACM"      "Classification/ACM-2012"
+[29] "Classification/JEL"      "Classification/MSC"     
+[31] "Classification/MSC-2010" "Collate"                
+[33] "Collate.unix"            "Collate.windows"        
+[35] "Contact"                 "Copyright"              
+[37] "Date"                    "Date/Publication"       
+[39] "Description"             "Encoding"               
+[41] "KeepSource"              "Language"               
+[43] "LazyData"                "LazyDataCompression"    
+[45] "LazyLoad"                "MailingList"            
+[47] "Maintainer"              "Note"                   
+[49] "Packaged"                "RdMacros"               
+[51] "StagedInstall"           "SysDataCompression"     
+[53] "SystemRequirements"      "Title"                  
+[55] "Type"                    "URL"                    
+[57] "UseLTO"                  "VignetteBuilder"        
+[59] "ZipData"                 "Path"                   
+[61] "X-CRAN-Comment"          "Published"              
+[63] "Reverse depends"         "Reverse imports"        
+[65] "Reverse linking to"      "Reverse suggests"       
+[67] "Reverse enhances"        "Deadline"               
+[69] "DOI"                    
+
+CRAN__> ## Summarize publication dates:
+CRAN__> summary(as.Date(pdb$Published))
+        Min.      1st Qu.       Median         Mean      3rd Qu.         Max. 
+"2008-09-08" "2021-02-12" "2023-04-21" "2022-06-05" "2024-05-04" "2025-01-07" 
+
+CRAN__> ## Summarize numbers of packages according to maintainer:
+CRAN__> summary(lengths(split(pdb$Package, pdb$Maintainer)))
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  1.000   1.000   1.000   1.776   2.000  74.000 
+
+CRAN__> ## Packages with 'LASSO' in their Description:
+CRAN__> pdb$Package[grepl("LASSO", pdb$Description)]
+ [1] "ablasso"           "csmpv"             "emBayes"          
+ [4] "expandFunctions"   "extlasso"          "fastcmprsk"       
+ [7] "FeaLect"           "FindIt"            "frailtyMMpen"     
+[10] "gcdnet"            "glassoFast"        "glmmPen"          
+[13] "glmnetr"           "glmnetSE"          "glmvsd"           
+[16] "grpnet"            "GWRLASSO"          "hdmed"            
+[19] "higlasso"          "HTLR"              "MetabolicSurv"    
+[22] "MicrobiomeSurv"    "midasml"           "milr"             
+[25] "miselect"          "MTE"               "ncpen"            
+[28] "nets"              "pgee.mixed"        "planningML"       
+[31] "polywog"           "ppmlasso"          "pqrfe"            
+[34] "predhy"            "predhy.GUI"        "rbridge"          
+[37] "REN"               "rqPen"             "rrat"             
+[40] "SentimentAnalysis" "SGPR"              "sharp"            
+[43] "slasso"            "SparseBiplots"     "SpTe2M"           
+[46] "stR"               "SuRF.vs"           "SurvHiDim"        
+[49] "VSOLassoBag"      
+
+CRAN__> results <- CRAN_check_results()
+
+CRAN__> ## Available variables:
+CRAN__> names(results)
+ [1] "Flavor"     "Package"    "Version"    "Priority"   "Maintainer"
+ [6] "Status"     "Flags"      "T_check"    "T_install"  "T_total"   
+
+CRAN__> ## Tabulate overall check status according to flavor:
+CRAN__> with(results, table(Flavor, Status))
+                                   Status
+Flavor                                 OK  NOTE WARNING ERROR FAILURE
+  r-devel-linux-x86_64-debian-clang 17020  3774       7  1040       0
+  r-devel-linux-x86_64-debian-gcc   17029  3773      11  1028       0
+  r-devel-linux-x86_64-fedora-clang 18184  3549       6    76       0
+  r-devel-linux-x86_64-fedora-gcc   18149  3595       9    74       0
+  r-devel-windows-x86_64            17878  3845      12    84       5
+  r-oldrel-macos-arm64              17214  4443      24   138       1
+  r-oldrel-macos-x86_64             17109  4579      24   122       0
+  r-oldrel-windows-x86_64           18077  3630      22    79       0
+  r-patched-linux-x86_64            17313  4471       8    49       0
+  r-release-linux-x86_64            17316  4472       6    47       0
+  r-release-macos-arm64             16099  5615      21   103       0
+  r-release-macos-x86_64            16024  5592     150    72       0
+  r-release-windows-x86_64          16886  4865       9    56      12
+
+CRAN__> details <- CRAN_check_details()
+
+CRAN__> ## Available variables:
+CRAN__> names(details)
+[1] "Package"    "Version"    "Flavor"     "Check"      "Status"    
+[6] "Output"     "Flags"      "Maintainer"
+
+CRAN__> ## Tabulate checks according to their status:
+CRAN__> tab <- with(details, table(Check, Status))
+
+CRAN__> ## Inspect some installation problems:
+CRAN__> bad <- subset(details,
+CRAN__+               ((Check == "whether package can be installed") &
+CRAN__+                (Status != "OK")))
+
+CRAN__> ## Show a random sample of up to 6
+CRAN__> head(bad[sample(seq_len(NROW(bad)), NROW(bad)), ])
+Package: pak 0.8.0
+Flavor: r-devel-windows-x86_64
+Check: whether package can be installed, Result: WARNING
+  Found the following significant warnings:
+    lusol.h:26:41: warning: argument 2 range [18446744071562067968, 18446744073709551615] exceeds maximum object size 9223372036854775807 [-Walloc-size-larger-than=]
+  See 'd:/Rcompile/CRANpkg/local/4.5/pak.Rcheck/00install.out' for details.
+  * used C compiler: 'gcc.exe (GCC) 13.3.0'
+
+Package: imager 1.0.2
+Flavor: r-oldrel-windows-x86_64
+Check: whether package can be installed, Result: WARNING
+  Found the following significant warnings:
+    D:/rtools43/usr/lib/mxe/usr/x86_64-w64-mingw32.static.posix/include/winnt.h:8404:37: warning: ISO C++ forbids flexible array member 'Elements' [-Wpedantic]
+    D:/rtools43/usr/lib/mxe/usr/x86_64-w64-mingw32.static.posix/include/winnt.h:8667:22: warning: ISO C++ forbids flexible array member 'pEventLogRecords' [-Wpedantic]
+    D:/rtools43/usr/lib/mxe/usr/x86_64-w64-mingw32.static.posix/include/winnt.h:8673:13: warning: ISO C++ forbids flexible array member 'ulOffsets' [-Wpedantic]
+    D:/rtools43/usr/lib/mxe/usr/x86_64-w64-mingw32.static.posix/include/rpcndr.h:447:19: warning: ISO C++ forbids flexible array member 'Format' [-Wpedantic]
+    D:/rtools43/usr/lib/mxe/usr/x86_64-w64-mingw32.static.posix/include/oaidl.h:548:37: warning: ISO C++ prohibits anonymous structs [-Wpedantic]
+    D:/rtools43/usr/lib/mxe/usr/x86_64-w64-mingw32.static.posix/include/oaidl.h:499:29: warning: ISO C++ prohibits anonymous structs [-Wpedantic]
+  See 'd:/Rcompile/CRANpkg/local/4.3/imager.Rcheck/00install.out' for details.
+  * used C++ compiler: 'g++.exe (GCC) 12.3.0'
+
+Package: zoomerjoin 0.2.0
+Flavor: r-oldrel-macos-x86_64
+Check: whether package can be installed, Result: ERROR
+  Installation failed.
+  See <U+2018>/Volumes/Builds/packages/big-sur-x86_64/results/4.3/zoomerjoin.Rcheck/00install.out<U+2019> for details.
+
+Package: D4TAlink.light 2.1.17
+Flavor: r-oldrel-macos-arm64
+Check: whether package can be installed, Result: WARNING
+  Found the following significant warnings:
+    Warning: jpegReport.Rd:22: unknown macro '\abbr'
+    Warning: jpegReport.Rd:50: unknown macro '\abbr'
+    Warning: jpegReport.Rd:53: unknown macro '\abbr'
+    Warning: jpegReport.Rd:56: unknown macro '\abbr'
+    Warning: jpegReport.Rd:58: unknown macro '\abbr'
+    Warning: jpegReport.Rd:62: unknown macro '\abbr'
+    Warning: pdfReport.Rd:101: unknown macro '\abbr'
+    Warning: pngReport.Rd:22: unknown macro '\abbr'
+    Warning: pngReport.Rd:50: unknown macro '\abbr'
+    Warning: pngReport.Rd:53: unknown macro '\abbr'
+    Warning: pngReport.Rd:55: unknown macro '\abbr'
+    Warning: pngReport.Rd:59: unknown macro '\abbr'
+    Warning: readReportTable.Rd:35: unknown macro '\abbr'
+    Warning: readReportTable.Rd:167: unknown macro '\abbr'
+    Warning: scanReport.Rd:45: unknown macro '\abbr'
+    Warning: scanReport.Rd:60: unknown macro '\abbr'
+    Warning: scanReport.Rd:61: unknown macro '\abbr'
+    Warning: scanReport.Rd:162: unknown macro '\abbr'
+  See <U+2018>/Volumes/Builds/packages/big-sur-arm64/results/4.3/D4TAlink.light.Rcheck/00install.out<U+2019> for details.
+
+Package: revert 0.0.1
+Flavor: r-devel-windows-x86_64
+Check: whether package can be installed, Result: ERROR
+  Installation failed.
+  See 'd:/Rcompile/CRANpkg/local/4.5/revert.Rcheck/00install.out' for details.
+
+Package: DFD 0.2.0
+Flavor: r-release-macos-arm64
+Check: whether package can be installed, Result: ERROR
+  Installation failed.
+  See <U+2018>/Volumes/Builds/packages/big-sur-arm64/results/4.4/DFD.Rcheck/00install.out<U+2019> for details.
+
+CRAN__> issues <- CRAN_check_issues()
+
+CRAN__> head(issues)
+         Package Version kind
+1      EMCluster    <NA> 0len
+2       EmbedSOM    <NA> 0len
+3     Evacluster    <NA> 0len
+4          LOMAR    <NA> 0len
+5    LTRCforests    <NA> 0len
+6 RFpredInterval    <NA> 0len
+                                                        href
+1      https://www.stats.ox.ac.uk/pub/bdr/0len/EMCluster.out
+2       https://www.stats.ox.ac.uk/pub/bdr/0len/EmbedSOM.out
+3     https://www.stats.ox.ac.uk/pub/bdr/0len/Evacluster.out
+4          https://www.stats.ox.ac.uk/pub/bdr/0len/LOMAR.out
+5    https://www.stats.ox.ac.uk/pub/bdr/0len/LTRCforests.out
+6 https://www.stats.ox.ac.uk/pub/bdr/0len/RFpredInterval.out
+
+CRAN__> ## Show counts of issues according to kind:
+CRAN__> table(issues[, "kind"])
+
+       0len       ATLAS         C23       Intel         LTO       M1mac 
+         17           5           2          14           3          16 
+        MKL    OpenBLAS      Strict  clang-ASAN clang-UBSAN     clang19 
+          4           5           4          28          16           4 
+   donttest         gcc    gcc-ASAN   gcc-UBSAN       gcc15        noLD 
+         88           1          42          97          15           2 
+    noRemap  noSuggests        rchk       rcnst      rlibro    valgrind 
+          2          64         112           1           2           3 
+
+CRAN__> ## Summarize CRAN check status for 10 randomly-selected packages
+CRAN__> ## (reusing the information already read in):
+CRAN__> pos <- sample(seq_len(NROW(pdb)), 10L)
+
+CRAN__> summarize_CRAN_check_status(pdb[pos, "Package"],
+CRAN__+                             results, details, issues)
+Package: ggplotify
+******************
+
+Current CRAN status: OK: 13
+See: <https://CRAN.R-project.org/web/checks/check_results_ggplotify.html>
+
+Package: runstats
+*****************
+
+Current CRAN status: OK: 5, NOTE: 8
+See: <https://CRAN.R-project.org/web/checks/check_results_runstats.html>
+
+Version: 1.1.0
+Check: LazyData, Result: NOTE
+    'LazyData' is specified without a 'data' directory
+See: <https://www.r-project.org/nosvn/R.check/r-patched-linux-x86_64/runstats-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-release-linux-x86_64/runstats-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-release-macos-arm64/runstats-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-release-macos-x86_64/runstats-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-release-windows-x86_64/runstats-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-oldrel-macos-arm64/runstats-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-oldrel-macos-x86_64/runstats-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-oldrel-windows-x86_64/runstats-00check.html>
+
+Version: 1.1.0
+Check: installed package size, Result: NOTE
+    installed size is  5.2Mb
+    sub-directories of 1Mb or more:
+      doc   4.7Mb
+See: <https://www.r-project.org/nosvn/R.check/r-release-macos-arm64/runstats-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-release-macos-x86_64/runstats-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-release-windows-x86_64/runstats-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-oldrel-macos-arm64/runstats-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-oldrel-macos-x86_64/runstats-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-oldrel-windows-x86_64/runstats-00check.html>
+
+Package: fableCount
+*******************
+
+Current CRAN status: OK: 11, NOTE: 2
+See: <https://CRAN.R-project.org/web/checks/check_results_fableCount.html>
+
+Version: 0.1.0
+Check: dependencies in R code, Result: NOTE
+  Namespace in Imports field not imported from: <U+2018>tsibbledata<U+2019>
+    All declared Imports should be used.
+See: <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-fedora-clang/fableCount-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-fedora-gcc/fableCount-00check.html>
+
+Package: shinyhttr
+******************
+
+Current CRAN status: OK: 3, NOTE: 10
+See: <https://CRAN.R-project.org/web/checks/check_results_shinyhttr.html>
+
+Version: 1.1.0
+Check: dependencies in R code, Result: NOTE
+  Namespace in Imports field not imported from: <U+2018>httr<U+2019>
+    All declared Imports should be used.
+See: <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-fedora-clang/shinyhttr-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-fedora-gcc/shinyhttr-00check.html>
+
+Version: 1.1.0
+Check: LazyData, Result: NOTE
+    'LazyData' is specified without a 'data' directory
+See: <https://www.r-project.org/nosvn/R.check/r-patched-linux-x86_64/shinyhttr-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-release-linux-x86_64/shinyhttr-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-release-macos-arm64/shinyhttr-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-release-macos-x86_64/shinyhttr-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-release-windows-x86_64/shinyhttr-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-oldrel-macos-arm64/shinyhttr-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-oldrel-macos-x86_64/shinyhttr-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-oldrel-windows-x86_64/shinyhttr-00check.html>
+
+Package: mmints
+***************
+
+Current CRAN status: OK: 13
+See: <https://CRAN.R-project.org/web/checks/check_results_mmints.html>
+
+Package: predictMe
+******************
+
+Current CRAN status: OK: 13
+See: <https://CRAN.R-project.org/web/checks/check_results_predictMe.html>
+
+Package: baseballr
+******************
+
+Current CRAN status: OK: 13
+See: <https://CRAN.R-project.org/web/checks/check_results_baseballr.html>
+
+Package: effectplots
+********************
+
+Current CRAN status: OK: 13
+See: <https://CRAN.R-project.org/web/checks/check_results_effectplots.html>
+
+Package: nlcv
+*************
+
+Current CRAN status: OK: 3, NOTE: 8, ERROR: 2
+See: <https://CRAN.R-project.org/web/checks/check_results_nlcv.html>
+
+Version: 0.3.5
+Check: package dependencies, Result: ERROR
+  Package required but not available: <U+2018>MLInterfaces<U+2019>
+  
+  See section <U+2018>The DESCRIPTION file<U+2019> in the <U+2018>Writing R Extensions<U+2019>
+  manual.
+See: <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-debian-clang/nlcv-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-debian-gcc/nlcv-00check.html>
+
+Version: 0.3.5
+Check: Rd files, Result: NOTE
+  checkRd: (-1) mcrPlot.Rd:42-44: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) mcrPlot.Rd:45-47: Lost braces in \itemize; \value handles \item{}{} directly
+See: <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-fedora-clang/nlcv-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-fedora-gcc/nlcv-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-devel-windows-x86_64/nlcv-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-patched-linux-x86_64/nlcv-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-release-linux-x86_64/nlcv-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-release-macos-arm64/nlcv-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-release-macos-x86_64/nlcv-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-release-windows-x86_64/nlcv-00check.html>
+
+Version: 0.3.5
+Check: Rd cross-references, Result: NOTE
+  Found the following Rd file(s) with Rd \link{} targets missing package
+  anchors:
+    predict.pamrML.Rd: pamr.predict
+    xtable.confusionMatrix.Rd: confusionMatrix
+  Please provide package anchors for all Rd \link{} targets not in the
+  package itself and the base packages.
+See: <https://www.r-project.org/nosvn/R.check/r-devel-windows-x86_64/nlcv-00check.html>
+
+Package: specieschrom
+*********************
+
+Current CRAN status: OK: 13
+See: <https://CRAN.R-project.org/web/checks/check_results_specieschrom.html>
+
+CRAN__> ## End(No test)
+CRAN__> 
+CRAN__> 
+> 
+> cat("Time elapsed: ", proc.time() - .ptime,"\n")
+Time elapsed:  2.493 0.076 8.404 0 0 
+> 
