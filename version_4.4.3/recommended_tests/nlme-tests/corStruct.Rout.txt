@@ -1,0 +1,34 @@
+
+R version 4.4.3 (2025-02-28) -- "Trophy Case"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library("nlme")
+> 
+> ## PR#18777: corARMA() with p or q exceeding "maxLag"
+> dat3 <- data.frame(ID = gl(5, 3), visit = 0:2) # => max time diff is 2
+> csARMA22 <- corARMA(form = ~ visit | ID, p = 2, q = 2)
+> Initialize(csARMA22, dat3) # ok
+Correlation structure of class corARMA representing
+  Phi1   Phi2 Theta1 Theta2 
+     0      0      0      0 
+> csAR3 <- corARMA(form = ~ visit | ID, p = 3)
+> csMA3 <- corARMA(form = ~ visit | ID, q = 3)
+> tools::assertError(Initialize(csAR3, dat3), verbose = TRUE)
+Asserted error: "corARMA" order (3, 0) exceeds maximum lag in data (2)
+> tools::assertError(Initialize(csMA3, dat3), verbose = TRUE)
+Asserted error: "corARMA" order (0, 3) exceeds maximum lag in data (2)
+> ## both crashed with "free(): invalid next size (fast)" in nlme <= 3.1-165
+> 

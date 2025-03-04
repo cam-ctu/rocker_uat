@@ -1,0 +1,427 @@
+
+R version 4.4.3 (2025-02-28) -- "Trophy Case"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "PKI"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('PKI')
+Loading required package: base64enc
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("ASN1")
+> ### * ASN1
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: ASN1
+> ### Title: Functions for handling ASN.1 format (typically DER)
+> ### Aliases: ASN1 ASN1.decode ASN1.encode ASN1.item ASN1.type
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> # generate a small key
+> key <- PKI.genRSAkey(bits = 512L)
+> 
+> # extract private and public parts in DER format
+> prv <- PKI.save.key(key, format="DER")
+> pub <- PKI.save.key(key, private=FALSE, format="DER")
+> 
+> # parse the public key
+> x <- ASN1.decode(pub)
+> x
+[[1]]
+[[1]][[1]]
+[1] 2a 86 48 86 f7 0d 01 01 01
+attr(,"type")
+[1] 6
+
+[[1]][[2]]
+raw(0)
+attr(,"type")
+[1] 5
+
+
+[[2]]
+ [1] 30 48 02 41 00 be 36 47 14 9f cc 77 ca f8 5d 88 ea 71 b1 f0 ae 9c cc 8c 4f
+[26] df 74 0d ad 18 3f 80 1b 79 bd 91 7e 4f b0 7c d3 97 2a c6 86 14 a1 93 5e 4e
+[51] b6 c8 d1 29 50 58 7a 7f d6 88 5b eb a0 fa bf 3c d1 71 4b 02 03 01 00 01
+attr(,"type")
+[1] 3
+attr(,"padded.bits")
+[1] 0
+
+> # the second element is the actual key
+> # as a bit string that's itself in DER
+> # two integers - modulus and exponent
+> # Note that this is in fact the pure PKCS#1 key format
+> ASN1.decode(x[[2]])
+[[1]]
+ [1] 00 be 36 47 14 9f cc 77 ca f8 5d 88 ea 71 b1 f0 ae 9c cc 8c 4f df 74 0d ad
+[26] 18 3f 80 1b 79 bd 91 7e 4f b0 7c d3 97 2a c6 86 14 a1 93 5e 4e b6 c8 d1 29
+[51] 50 58 7a 7f d6 88 5b eb a0 fa bf 3c d1 71 4b
+attr(,"type")
+[1] 2
+
+[[2]]
+[1] 01 00 01
+attr(,"type")
+[1] 2
+
+> 
+> # encoding it back should yield the same representation since it is DER
+> stopifnot(identical(ASN1.encode(x), as.raw(pub)))
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("BIGNUMint")
+> ### * BIGNUMint
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: BIGNUMint
+> ### Title: Functions for BIGNUM representation of arbitrarily precise
+> ###   integers
+> ### Aliases: BIGNUMint as.BIGNUMint
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> as.BIGNUMint(65537)
+[1] 01 00 01
+> 
+> 
+> 
+> cleanEx()
+> nameEx("PKI.crypt")
+> ### * PKI.crypt
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: PKI.crypt
+> ### Title: PKI encryption/decryption functions
+> ### Aliases: PKI.crypt PKI.encrypt PKI.decrypt
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+>   key <- PKI.genRSAkey(2048)
+>   x <- charToRaw("Hello, world!")
+>   e <- PKI.encrypt(x, key)
+>   y <- PKI.decrypt(e, key)
+>   stopifnot(identical(x, y))
+>   print(rawToChar(y))
+[1] "Hello, world!"
+> 
+>   ## AES symmetric - use SHA256 to support arbitrarily long key strings
+>   key <- PKI.digest(charToRaw("hello"), "SHA256")
+>   ae <- PKI.encrypt(x, key, "aes256")
+>   ae
+ [1] 3c 9e 4a 40 d0 f5 15 15 02 a0 e0 dd 08 6c 49 5b
+>   ad <- PKI.decrypt(ae, key, "aes256")
+>   stopifnot(identical(x, ad))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("PKI.digest")
+> ### * PKI.digest
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: PKI.digest
+> ### Title: Compute digest sum based on SHA1, SHA256 or MD5 hash functions
+> ### Aliases: PKI.digest
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+>   PKI.digest(as.raw(1:10))
+ [1] c5 39 1e 30 8a f2 5b 42 d5 93 4d 6a 20 1a 34 e8 98 d2 55 c6
+> 
+> 
+> 
+> cleanEx()
+> nameEx("PKI.genpass")
+> ### * PKI.genpass
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: PKI.genpass
+> ### Title: Generate cryptographically strong pseudo-random password.
+> ### Aliases: PKI.genpass
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+>   PKI.genpass()
+[1] "LZ1/D-v9R2N-qjrPp"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("PKI.info")
+> ### * PKI.info
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: PKI.info
+> ### Title: Retrieve PKI back-end information
+> ### Aliases: PKI.info
+> ### Keywords: interface
+> 
+> ### ** Examples
+> 
+> str(PKI.info())
+List of 3
+ $ engine     : chr "openssl"
+ $ version    : num 3
+ $ description: chr "3.0.13"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("PKI.random")
+> ### * PKI.random
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: PKI.random
+> ### Title: Generate cryptographically strong pseudo-random bytes.
+> ### Aliases: PKI.random
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+>   PKI.random(10)
+ [1] f2 57 0a e4 53 4a 4f 04 b4 da
+> 
+> 
+> 
+> cleanEx()
+> nameEx("PKI.sign")
+> ### * PKI.sign
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: PKI.sign
+> ### Title: PKI: sign content or verify a signature
+> ### Aliases: PKI.sign PKI.verify
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+>   key <- PKI.genRSAkey(2048)
+>   x <- charToRaw("My message to sign")
+>   sig <- PKI.sign(x, key)
+>   stopifnot(PKI.verify(x, sig, key))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("RSA")
+> ### * RSA
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: RSA
+> ### Title: PKI functions handling RSA keys
+> ### Aliases: RSA PKI.genRSAkey PKI.load.key PKI.save.key PKI.mkRSApubkey
+> ###   PKI.load.OpenSSH.pubkey
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> # generate 2048-bit RSA key
+> key <- PKI.genRSAkey(bits = 2048L)
+> 
+> # extract private and public parts as PEM
+> priv.pem <- PKI.save.key(key)
+> pub.pem <- PKI.save.key(key, private=FALSE)
+> # load back the public key separately
+> pub.k <- PKI.load.key(pub.pem)
+> 
+> # encrypt with the public key
+> x <- PKI.encrypt(charToRaw("Hello, world!"), pub.k)
+> # decrypt with private key
+> rawToChar(PKI.decrypt(x, key))
+[1] "Hello, world!"
+> 
+> # compute SHA1 hash (fingerprint) of the public key
+> PKI.digest(PKI.save.key(key, "DER", private=FALSE))
+ [1] 54 a3 66 5d 8b 84 b6 a5 09 09 2b 16 03 15 31 8d 64 64 7c 64
+> 
+> # convert OpenSSH public key to PEM format
+> # (the example is split into multiple lines just
+> #  so it is readable in the documentation, in reality you can
+> #  simply use the full line from is_rsa.pub without gsub)
+> PKI.load.OpenSSH.pubkey(gsub("\n","",
++   "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAIEAuvOXqfZ3pJeWeqyQOIXZwmg
++ M1RBqPUmVx3XgntpA+YtOZjKfuoJSpg3LhBuI/wXx8L2QZXNFibvX4qX2qoYsb
++ Hvkz2uonA3F7HRhCR/BJURR5nT135znVqALZo328v86HDsVWYR2/JzY1X8GI2R
++ 2iKUMGXF0hVuRphdwLB735CU= foo@mycomputer"), format="PEM")
+[1] "-----BEGIN PUBLIC KEY-----"                                      
+[2] "MIGdMA0GCSqGSIb3DQEBAQUAA4GLADCBhwKBgQC685ep9nekl5Z6rJA4hdnCaAzV"
+[3] "EGo9SZXHdeCe2kD5i05mMp+6glKmDcuEG4j/BfHwvZBlc0WJu9fipfaqhixse+TP"
+[4] "a6icDcXsdGEJH8ElRFHmdPXfnOdWoAtmjfby/zocOxVZhHb8nNjVfwYjZHaIpQwZ"
+[5] "cXSFW5GmF3AsHvfkJQIBIw=="                                        
+[6] "-----END PUBLIC KEY-----"                                        
+> 
+> 
+> 
+> cleanEx()
+> nameEx("X509")
+> ### * X509
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: X509
+> ### Title: Public Key Instraftructure (X509) functions
+> ### Aliases: X509 PKI.load.cert PKI.verifyCA PKI.pubkey PKI.get.subject
+> ###   PKI.get.cert.info
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+>   (ca <- PKI.load.cert(file=system.file("certs", "RForge-ca.crt", package="PKI")))
+X509 Certificate:
+  Subject: /C=NZ/CN=ca.rforge.net/emailAddress=admin@rforge.net
+  Issuer: /C=NZ/CN=ca.rforge.net/emailAddress=admin@rforge.net
+  Fingerprint (SHA-1): ff:15:4e:4f:e3:ca:68:97:8c:7c:15:b2:9c:0b:45:2c:b3:4c:cc:49
+  Validity: 2021-08-29 01:52:49 ... 2031-08-27 01:52:49 (is CA)
+
+>   (my.cert <- PKI.load.cert(readLines(system.file("certs", "demo.crt", package="PKI"))))
+X509 Certificate:
+  Subject: /C=NZ/O=RForge Demo Cert
+  Issuer: /C=NZ/CN=ca.rforge.net/emailAddress=admin@rforge.net
+  Fingerprint (SHA-1): 01:1e:87:9a:cc:a4:19:b7:66:8a:a3:3e:0f:00:d3:5d:38:3f:98:ab
+  Validity: 2021-10-12 22:09:08 ... 2026-10-11 22:09:08
+
+>   PKI.verifyCA(my.cert, ca)
+[1] TRUE
+>   PKI.pubkey(my.cert)
+<pointer: 0x558c85921b80>
+attr(,"class")
+[1] "public.key"
+>   PKI.get.subject(my.cert)
+[1] "C = NZ, O = RForge Demo Cert"
+>   PKI.get.cert.info(my.cert)
+$subject
+[1] "/C=NZ/O=RForge Demo Cert"
+
+$issuer
+[1] "/C=NZ/CN=ca.rforge.net/emailAddress=admin@rforge.net"
+
+$fingerprint
+ [1] 01 1e 87 9a cc a4 19 b7 66 8a a3 3e 0f 00 d3 5d 38 3f 98 ab
+
+$validity
+[1] "2021-10-12 22:09:08 UTC" "2026-10-11 22:09:08 UTC"
+
+$ca
+[1] FALSE
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("oid")
+> ### * oid
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: oid
+> ### Title: OBJECT IDENTIFIER Functions
+> ### Aliases: oid as.oid as.oid.default as.oid.integer as.character.oid
+> ###   as.integer.oid is.oid Ops.oid print.oid
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> ## RSA algorithm OID:
+> ## iso(1) member-body(2) us(840) rsadsi(113549)
+> ## pkcs(1) pkcs-1(1) rsaEncryption(1)
+> o <- oid("1.2.840.113549.1.1.1")
+> as.raw(o)
+[1] 2a 86 48 86 f7 0d 01 01 01
+> as.integer(o)
+[1]      1      2    840 113549      1      1      1
+> as.character(o)
+[1] "1.2.840.113549.1.1.1"
+> as.oid(as.integer(o)) == o
+[1] TRUE
+> is.oid(o)
+[1] TRUE
+> (a <- ASN1.encode(o))
+ [1] 06 09 2a 86 48 86 f7 0d 01 01 01
+> as.oid(ASN1.decode(a)) == o
+[1] TRUE
+> 
+> 
+> 
+> cleanEx()
+> nameEx("raw2hex")
+> ### * raw2hex
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: raw2hex
+> ### Title: Convert raw vector to string hex representation
+> ### Aliases: raw2hex
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> raw2hex(PKI.digest(raw(), "SHA1"), "")
+[1] "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+> raw2hex(PKI.digest(raw(), "MD5"), ":")
+[1] "d4:1d:8c:d9:8f:00:b2:04:e9:80:09:98:ec:f8:42:7e"
+> 
+> ## this is jsut a performance comparison and a test that
+> ## raw2hex can handle long strings
+> x <- as.raw(runif(1e5) * 255.9)
+> system.time(h1 <- raw2hex(x, " "))
+   user  system elapsed 
+  0.000   0.000   0.001 
+> system.time(h2 <- paste(raw2hex(x), collapse=" "))
+   user  system elapsed 
+  0.010   0.000   0.009 
+> stopifnot(identical(h1, h2))
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  0.694 0.012 0.706 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

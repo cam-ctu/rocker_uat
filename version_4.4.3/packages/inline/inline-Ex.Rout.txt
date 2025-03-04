@@ -1,0 +1,444 @@
+
+R version 4.4.3 (2025-02-28) -- "Trophy Case"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "inline"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('inline')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("cfunction")
+> ### * cfunction
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: cfunction
+> ### Title: Inline C, C++, Fortran function calls from R
+> ### Aliases: cfunction setCMethod
+> ### Keywords: file
+> 
+> ### ** Examples
+> 
+> 
+> x <- as.numeric(1:10)
+> n <- as.integer(10)
+> 
+> ## Not run: 
+> ##D ## A simple Fortran example - n and x: assumed-size vector
+> ##D code <- "
+> ##D       integer i
+> ##D       do 1 i=1, n(1)
+> ##D     1 x(i) = x(i)**3
+> ##D "
+> ##D cubefn <- cfunction(signature(n="integer", x="numeric"), code, convention=".Fortran")
+> ##D print(cubefn)
+> ##D 
+> ##D cubefn(n, x)$x
+> ##D 
+> ##D ## Same Fortran example - now n is one number
+> ##D code2 <- "
+> ##D       integer i
+> ##D       do 1 i=1, n
+> ##D     1 x(i) = x(i)**3
+> ##D "
+> ##D cubefn2 <- cfunction(signature(n="integer", x="numeric"), implicit = "none",
+> ##D   dim = c("", "(*)"), code2, convention=".Fortran")
+> ##D 
+> ##D cubefn2(n, x)$x
+> ##D 
+> ##D ## Same in F95, now x is fixed-size vector (length = n)
+> ##D code3 <- "x = x*x*x"
+> ##D cubefn3 <- cfunction(sig = signature(n="integer", x="numeric"), implicit = "none",
+> ##D   dim = c("", "(n)"), code3, language="F95")
+> ##D cubefn3(20, 1:20)
+> ##D print(cubefn3)
+> ##D 
+> ##D ## Same example in C
+> ##D code4 <- "
+> ##D       int i;
+> ##D       for (i = 0; i < *n; i++)
+> ##D         x[i] = x[i]*x[i]*x[i];
+> ##D "
+> ##D cubefn4 <- cfunction(signature(n="integer", x="numeric"), code4, language = "C", convention = ".C")
+> ##D cubefn4(20, 1:20)
+> ##D 
+> ##D ## Give the function in the source code a name
+> ##D cubefn5 <- cfunction(signature(n="integer", x="numeric"), code4, language = "C", convention = ".C",
+> ##D   name = "cubefn")
+> ##D code(cubefn5)
+> ## End(Not run)
+> 
+>  ## use of a module in F95
+> modct <- "module modcts
++ double precision, parameter :: pi = 3.14159265358979
++ double precision, parameter :: e = 2.71828182845905
++ end"
+> 
+> getconstants <- "x(1) = pi
++ x(2) = e"
+> 
+> cgetcts <- cfunction(getconstants, module = "modcts", implicit = "none",
++   includes = modct, sig = c(x = "double"), dim = c("(2)"), language = "F95")
+> 
+> cgetcts(x = 1:2)
+$x
+[1] 3.141593 2.718282
+
+> print(cgetcts)
+An object of class 'CFunc'
+function (x) 
+.Primitive(".Fortran")(<pointer: 0x7facaf80e100>, x = as.double(x))
+<environment: 0x55c6c05b0e08>
+code:
+  1: module modcts
+  2: double precision, parameter :: pi = 3.14159265358979
+  3: double precision, parameter :: e = 2.71828182845905
+  4: end
+  5:  SUBROUTINE filedfc239aa6b4d ( x )
+  6: USE modcts
+  7: IMPLICIT none
+  8: DOUBLE PRECISION x(2)
+  9: x(1) = pi
+ 10: x(2) = e
+ 11: RETURN
+ 12: END
+ 13: 
+> 
+> ## Use of .C convention with C code
+> ## Defining two functions, one of which calls the other
+> sigSq <- signature(n="integer", x="numeric")
+> codeSq <- "
++   for (int i=0; i < *n; i++) {
++     x[i] = x[i]*x[i];
++   }"
+> sigQd <- signature(n="integer", x="numeric")
+> codeQd <- "
++   squarefn(n, x);
++   squarefn(n, x);
++ "
+> 
+> fns <- cfunction( list(squarefn=sigSq, quadfn=sigQd),
++                   list(codeSq, codeQd),
++                   convention=".C")
+> 
+> squarefn <- fns[["squarefn"]]
+> quadfn <- fns[["quadfn"]]
+> 
+> squarefn(n, x)$x
+ [1]   1   4   9  16  25  36  49  64  81 100
+> quadfn(n, x)$x
+ [1]     1    16    81   256   625  1296  2401  4096  6561 10000
+> 
+> ## Alternative declaration using 'setCMethod'
+> setCMethod(c("squarefn", "quadfn"), list(sigSq, sigQd),
++            list(codeSq, codeQd), convention=".C")
+> 
+> squarefn(n, x)$x
+ [1]   1   4   9  16  25  36  49  64  81 100
+> quadfn(n, x)$x
+ [1]     1    16    81   256   625  1296  2401  4096  6561 10000
+> 
+> ## Use of .Call convention with C code
+> ## Multyplying each image in a stack with a 2D Gaussian at a given position
+> code <- "
++   SEXP res;
++   int nprotect = 0, nx, ny, nz, x, y;
++   PROTECT(res = Rf_duplicate(a)); nprotect++;
++   nx = INTEGER(GET_DIM(a))[0];
++   ny = INTEGER(GET_DIM(a))[1];
++   nz = INTEGER(GET_DIM(a))[2];
++   double sigma2 = REAL(s)[0] * REAL(s)[0], d2 ;
++   double cx = REAL(centre)[0], cy = REAL(centre)[1], *data, *rdata;
++   for (int im = 0; im < nz; im++) {
++     data = &(REAL(a)[im*nx*ny]); rdata = &(REAL(res)[im*nx*ny]);
++     for (x = 0; x < nx; x++)
++       for (y = 0; y < ny; y++) {
++         d2 = (x-cx)*(x-cx) + (y-cy)*(y-cy);
++         rdata[x + y*nx] = data[x + y*nx] * exp(-d2/sigma2);
++       }
++   }
++   UNPROTECT(nprotect);
++   return res;
++ "
+> funx <- cfunction(signature(a="array", s="numeric", centre="numeric"), code)
+> 
+> x <- array(runif(50*50), c(50,50,1))
+> res <- funx(a=x, s=10, centre=c(25,15))
+> if (interactive()) image(res[,,1])
+> 
+> ## Same but done by registering an S4 method
+> setCMethod("funy", signature(a="array", s="numeric", centre="numeric"), code, verbose=TRUE)
+Setting PKG_CPPFLAGS to -DR_NO_REMAP 
+make cmd is
+  make -f '/usr/local/lib/R/etc/Makeconf' -f '/usr/local/lib/R/share/make/shlib.mk' SHLIB_LDFLAGS='$(SHLIB_CXXLDFLAGS)' SHLIB_LD='$(SHLIB_CXXLD)' SHLIB='filedfc218998eff.so' OBJECTS='filedfc218998eff.o'
+
+make would use
+g++ -std=gnu++17 -I"/usr/local/lib/R/include" -DNDEBUG -DR_NO_REMAP  -I/usr/local/include    -fpic  -g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2 -g   -c filedfc218998eff.cpp -o filedfc218998eff.o
+if test  "zfiledfc218998eff.o" != "z"; then \
+  echo g++ -std=gnu++17 -shared -L"/usr/local/lib/R/lib" -L/usr/local/lib -o filedfc218998eff.so filedfc218998eff.o    -L"/usr/local/lib/R/lib" -lR; \
+  g++ -std=gnu++17 -shared -L"/usr/local/lib/R/lib" -L/usr/local/lib -o filedfc218998eff.so filedfc218998eff.o    -L"/usr/local/lib/R/lib" -lR; \
+fi
+Program source:
+  1: #include <R.h>
+  2: #include <Rdefines.h>
+  3: #include <R_ext/Error.h>
+  4: 
+  5: 
+  6: 
+  7: 
+  8: extern "C" {
+  9:   SEXP funy ( SEXP a, SEXP s, SEXP centre );
+ 10: }
+ 11: 
+ 12: SEXP funy ( SEXP a, SEXP s, SEXP centre ) {
+ 13: 
+ 14:   SEXP res;
+ 15:   int nprotect = 0, nx, ny, nz, x, y;
+ 16:   PROTECT(res = Rf_duplicate(a)); nprotect++;
+ 17:   nx = INTEGER(GET_DIM(a))[0];
+ 18:   ny = INTEGER(GET_DIM(a))[1];
+ 19:   nz = INTEGER(GET_DIM(a))[2];
+ 20:   double sigma2 = REAL(s)[0] * REAL(s)[0], d2 ;
+ 21:   double cx = REAL(centre)[0], cy = REAL(centre)[1], *data, *rdata;
+ 22:   for (int im = 0; im < nz; im++) {
+ 23:     data = &(REAL(a)[im*nx*ny]); rdata = &(REAL(res)[im*nx*ny]);
+ 24:     for (x = 0; x < nx; x++)
+ 25:       for (y = 0; y < ny; y++) {
+ 26:         d2 = (x-cx)*(x-cx) + (y-cy)*(y-cy);
+ 27:         rdata[x + y*nx] = data[x + y*nx] * exp(-d2/sigma2);
+ 28:       }
+ 29:   }
+ 30:   UNPROTECT(nprotect);
+ 31:   return res;
+ 32: 
+ 33:   Rf_warning("your C program does not return anything!");
+ 34:   return R_NilValue;
+ 35: }
+
+The following methods are now defined:
+Function: funy (package .GlobalEnv)
+a="array", s="numeric", centre="numeric"
+
+> 
+> res <- funy(x, 10, c(35,35))
+> if (interactive()) { x11(); image(res[,,1]) }
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("cxxfunction")
+> ### * cxxfunction
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: cxxfunction
+> ### Title: inline C++ function
+> ### Aliases: cxxfunction rcpp
+> ### Keywords: programming interface
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D # default plugin
+> ##D fx <- cxxfunction(signature(x = "integer", y = "numeric"), 
+> ##D 	          "return Rf_ScalarReal(INTEGER(x)[0] * REAL(y)[0]);")
+> ##D fx(2L, 5)
+> ##D 
+> ##D # Rcpp plugin
+> ##D if (requireNamespace("Rcpp", quietly=TRUE)) {
+> ##D 
+> ##D     fx <- cxxfunction(signature(x = "integer", y = "numeric"), 
+> ##D                       "return wrap( as<int>(x) * as<double>(y));",
+> ##D                       plugin = "Rcpp" )
+> ##D     fx(2L, 5)
+> ##D 
+> ##D     ## equivalent shorter form using rcpp()
+> ##D     fx <- rcpp(signature(x = "integer", y = "numeric"),
+> ##D                "return wrap(as<int>(x) * as<double>(y));")
+> ##D }
+> ##D 
+> ##D # RcppArmadillo plugin
+> ##D if (requireNamespace(RcppArmadillo)) {
+> ##D 	
+> ##D     fx <- cxxfunction(signature(x = "integer", y = "numeric"),
+> ##D                       "int dim = as<int>(x);
+> ##D 		       arma::mat z = as<double>(y) * arma::eye<arma::mat>(dim, dim);
+> ##D 		       return wrap(arma::accu(z));",
+> ##D                       plugin = "RcppArmadillo")
+> ##D     fx(2L, 5)
+> ##D }
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("getDynLib")
+> ### * getDynLib
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: getDynLib-methods
+> ### Title: Retrieve the dynamic library (or DLL) associated with a package
+> ###   of a function generated by cfunction
+> ### Aliases: getDynLib getDynLib-methods getDynLib,CFunc-method
+> ###   getDynLib,character-method getDynLib,CFuncList-method
+> ### Keywords: methods
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D getDynLib( "base" )
+> ##D 
+> ##D f <- cfunction( signature() , "return R_NilValue ;" )
+> ##D getDynLib( f )
+> ##D 
+> ## End(Not run)
+> 
+> 
+> cleanEx()
+> nameEx("package.skeleton")
+> ### * package.skeleton
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: package.skeleton-methods
+> ### Title: Generate the skeleton of a package
+> ### Aliases: package.skeleton-methods package.skeleton,ANY,ANY-method
+> ###   package.skeleton,character,CFunc-method
+> ###   package.skeleton,character,CFuncList-method
+> ### Keywords: methods
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D 
+> ##D fx <- cxxfunction(signature(x = "integer", y = "numeric"),
+> ##D 	          "return Rf_ScalarReal( INTEGER(x)[0] * REAL(y)[0]);")
+> ##D package.skeleton("foo", fx)
+> ##D 
+> ##D functions <- cxxfunction(list(ff = signature(), 
+> ##D                               gg = signature(x = "integer", y = "numeric")), 
+> ##D                          c("return R_NilValue ;",
+> ##D                            "return Rf_ScalarReal(INTEGER(x)[0] * REAL(y)[0]);"))
+> ##D package.skeleton("foobar", functions)
+> ##D 
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("plugins")
+> ### * plugins
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: plugins
+> ### Title: Plugin system for cxxfunction
+> ### Aliases: getPlugin registerPlugin
+> ### Keywords: programming interface
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D getPlugin( "Rcpp" )
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("utilities")
+> ### * utilities
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: utilities
+> ### Title: Printing, reading and writing compiled function objects
+> ### Aliases: utilities moveDLL moveDLL-methods moveDLL,CFunc-method
+> ###   writeCFunc readCFunc print,CFunc-method print,CFuncList-method code
+> ###   code-methods code,character-method code,CFunc-method
+> ###   code,CFuncList-method
+> ### Keywords: file
+> 
+> ### ** Examples
+> 
+> 
+> x <- as.numeric(1:10)
+> n <- as.integer(10)
+> 
+> code <- "
++       integer i
++       do 1 i=1, n(1)
++     1 x(i) = x(i)**3
++ "
+> cubefn <- cfunction(signature(n="integer", x="numeric"), code,
++   convention=".Fortran")
+> code(cubefn)
+  1: 
+  2:        SUBROUTINE filedfc255afd433 ( n, x )
+  3:       INTEGER n(*)
+  4:       DOUBLE PRECISION x(*)
+  5: 
+  6:       integer i
+  7:       do 1 i=1, n(1)
+  8:     1 x(i) = x(i)**3
+  9: 
+ 10:       RETURN
+ 11:       END
+ 12: 
+> 
+> cubefn(n, x)$x
+ [1]    1    8   27   64  125  216  343  512  729 1000
+> 
+> ## Not run: 
+> ##D # The following code is exempted from the automated tests of example code, as
+> ##D # it writes to the users home directory.
+> ##D # The following writes the DLL, e.g. cubefn.so on Linux/Unix or cubefn.dll
+> ##D # on Windows
+> ##D moveDLL(cubefn, name = "cubefn", directory = "~")
+> ##D path <- file.path("~", "cubefn.rda")
+> ##D writeCFunc(cubefn, path)
+> ##D rm(cubefn)
+> ##D 
+> ##D # Now you can start a fresh R session and load the function
+> ##D library(inline)
+> ##D path <- file.path("~", "cubefn.rda")
+> ##D cfn <- readCFunc(path)
+> ##D cfn(3, 1:3)$x
+> ## End(Not run)
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  0.139 0.012 1.718 1.342 2.306 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

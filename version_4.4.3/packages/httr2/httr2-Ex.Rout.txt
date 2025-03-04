@@ -1,0 +1,3467 @@
+
+R version 4.4.3 (2025-02-28) -- "Trophy Case"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "httr2"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('httr2')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("curl_translate")
+> ### * curl_translate
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: curl_translate
+> ### Title: Translate curl syntax to httr2
+> ### Aliases: curl_translate curl_help
+> 
+> ### ** Examples
+> 
+> curl_translate("curl http://example.com")
+request("http://example.com/") |> 
+  req_perform()
+> curl_translate("curl http://example.com -X DELETE")
+request("http://example.com/") |> 
+  req_method("DELETE") |> 
+  req_perform()
+> curl_translate("curl http://example.com --header A:1 --header B:2")
+request("http://example.com/") |> 
+  req_headers(
+    A = "1",
+    B = "2",
+  ) |> 
+  req_perform()
+> curl_translate("curl http://example.com --verbose")
+request("http://example.com/") |> 
+  req_perform(verbosity = 1)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("is_online")
+> ### * is_online
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: is_online
+> ### Title: Is your computer currently online?
+> ### Aliases: is_online
+> 
+> ### ** Examples
+> 
+> is_online()
+[1] TRUE
+> 
+> 
+> 
+> cleanEx()
+> nameEx("iterate_with_offset")
+> ### * iterate_with_offset
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: iterate_with_offset
+> ### Title: Iteration helpers
+> ### Aliases: iterate_with_offset iterate_with_cursor iterate_with_link_url
+> 
+> ### ** Examples
+> 
+> req <- request(example_url()) |>
++   req_url_path("/iris") |>
++   req_throttle(10) |>
++   req_url_query(limit = 50)
+> 
+> # If you don't know the total number of pages in advance, you can
+> # provide a `resp_complete()` callback
+> is_complete <- function(resp) {
++   length(resp_body_json(resp)$data) == 0
++ }
+> resps <- req_perform_iterative(
++   req,
++   next_req = iterate_with_offset("page_index", resp_complete = is_complete),
++   max_reqs = Inf
++ )
+> 
+> ## Not run: 
+> ##D # Alternatively, if the response returns the total number of pages (or you
+> ##D # can easily calculate it), you can use the `resp_pages()` callback which
+> ##D # will generate a better progress bar.
+> ##D 
+> ##D resps <- req_perform_iterative(
+> ##D   req |> req_url_query(limit = 1),
+> ##D   next_req = iterate_with_offset(
+> ##D     "page_index",
+> ##D     resp_pages = function(resp) resp_body_json(resp)$pages
+> ##D   ),
+> ##D   max_reqs = Inf
+> ##D )
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("jwt_claim")
+> ### * jwt_claim
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: jwt_claim
+> ### Title: Create and encode a JWT
+> ### Aliases: jwt_claim jwt_encode_sig jwt_encode_hmac
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> claim <- jwt_claim()
+> str(claim)
+List of 4
+ $ exp: num 1.74e+09
+ $ nbf: num 1.74e+09
+ $ iat: num 1.74e+09
+ $ jti: chr "Je0AIb-7yk_1OzISfmaSyBF7EKAefV2jm2UjIONExLQ"
+ - attr(*, "class")= chr [1:2] "jwt_claim" "list"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("last_response")
+> ### * last_response
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: last_response
+> ### Title: Retrieve most recent request/response
+> ### Aliases: last_response last_request
+> 
+> ### ** Examples
+> 
+> invisible(request("http://httr2.r-lib.org") |> req_perform())
+> last_request()
+<httr2_request>
+GET http://httr2.r-lib.org
+Body: empty
+> last_response()
+<httr2_response>
+GET https://httr2.r-lib.org/
+Status: 200 OK
+Content-Type: text/html
+Body: In memory (19227 bytes)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("oauth_client")
+> ### * oauth_client
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: oauth_client
+> ### Title: Create an OAuth client
+> ### Aliases: oauth_client
+> 
+> ### ** Examples
+> 
+> oauth_client("myclient", "http://example.com/token_url", secret = "DONTLOOK")
+<httr2_oauth_client>
+name: 920903ca1274bc747bb367c6b5abe4a4
+id: myclient
+secret: <REDACTED>
+token_url: http://example.com/token_url
+auth: oauth_client_req_auth_body
+> 
+> 
+> 
+> cleanEx()
+> nameEx("oauth_client_req_auth")
+> ### * oauth_client_req_auth
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: oauth_client_req_auth
+> ### Title: OAuth client authentication
+> ### Aliases: oauth_client_req_auth oauth_client_req_auth_header
+> ###   oauth_client_req_auth_body oauth_client_req_auth_jwt_sig
+> 
+> ### ** Examples
+> 
+> # Show what the various forms of client authentication look like
+> req <- request("https://example.com/whoami")
+> 
+> client1 <- oauth_client(
++   id = "12345",
++   secret = "56789",
++   token_url = "https://example.com/oauth/access_token",
++   name = "oauth-example",
++   auth = "body" # the default
++ )
+> # calls oauth_client_req_auth_body()
+> req_dry_run(oauth_client_req_auth(req, client1))
+POST /whoami HTTP/1.1
+Host: example.com
+User-Agent: httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0
+Accept: */*
+Accept-Encoding: deflate, gzip, br, zstd
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 35
+
+client_id=12345&client_secret=56789
+> 
+> client2 <- oauth_client(
++   id = "12345",
++   secret = "56789",
++   token_url = "https://example.com/oauth/access_token",
++   name = "oauth-example",
++   auth = "header"
++ )
+> # calls oauth_client_req_auth_header()
+> req_dry_run(oauth_client_req_auth(req, client2))
+GET /whoami HTTP/1.1
+Host: example.com
+User-Agent: httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0
+Accept: */*
+Accept-Encoding: deflate, gzip, br, zstd
+Authorization: <REDACTED>
+
+> 
+> client3 <- oauth_client(
++   id = "12345",
++   key = openssl::rsa_keygen(),
++   token_url = "https://example.com/oauth/access_token",
++   name = "oauth-example",
++   auth = "jwt_sig",
++   auth_params = list(claim = jwt_claim())
++ )
+> # calls oauth_client_req_auth_header_jwt_sig()
+> req_dry_run(oauth_client_req_auth(req, client3))
+POST /whoami HTTP/1.1
+Host: example.com
+User-Agent: httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0
+Accept: */*
+Accept-Encoding: deflate, gzip, br, zstd
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 623
+
+client_assertion=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJleHAiOjE3NDEwOTAzNTksIm5iZiI6MTc0MTA5MDA1OSwiaWF0IjoxNzQxMDkwMDU5LCJqdGkiOiJTZ0d0OXRoR0laNlNZbW42a3dQcFZRMkJlM05iYXBSRmJxUWRWLVg4REU4In0.b4sK6lp8IJC75rfJ_JVSYRHKH56I9Jfhc1ujvicoIwpGdyGnk-lz4oempvcU2os7W4iwDotTLmsAaiGj5bntlE5ehK-7_CmwYuOo0RyIxN6Ew9jip3I2vFBrExAu9AvCsIrtwZAAks6M06CfcjqdKISNTWOGaW1y-fKPjPDFaZoJEPhxXuxSO0oHz4j8Yh4mZL5gLZlMZf8kHW9nDvEAV78laHWBQQpm1BLI4Q0oWOhrj2pjKE__gFqUP9gGjXYqa1VsrrAAD8TZFAj7kqDjopXOpoFmb_fMlOKJSppPPdkTXnDdHenTTr9fqb5G2tRnOpiD0GrT8Q7_7TG1jS_vKw&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer
+> 
+> 
+> 
+> cleanEx()
+> nameEx("oauth_token")
+> ### * oauth_token
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: oauth_token
+> ### Title: Create an OAuth token
+> ### Aliases: oauth_token
+> 
+> ### ** Examples
+> 
+> oauth_token("abcdef")
+<httr2_token>
+token_type: bearer
+access_token: <REDACTED>
+> oauth_token("abcdef", expires_in = 3600)
+<httr2_token>
+token_type: bearer
+access_token: <REDACTED>
+expires_at: 2025-03-04 13:07:39
+> oauth_token("abcdef", refresh_token = "ghijkl")
+<httr2_token>
+token_type: bearer
+access_token: <REDACTED>
+refresh_token: <REDACTED>
+> 
+> 
+> 
+> cleanEx()
+> nameEx("oauth_token_cached")
+> ### * oauth_token_cached
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: oauth_token_cached
+> ### Title: Retrieve an OAuth token using the cache
+> ### Aliases: oauth_token_cached
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D token <- oauth_token_cached(
+> ##D   client = example_github_client(),
+> ##D   flow = oauth_flow_auth_code,
+> ##D   flow_params = list(
+> ##D     auth_url = "https://github.com/login/oauth/authorize"
+> ##D   ),
+> ##D   cache_disk = TRUE
+> ##D )
+> ##D token
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("obfuscate")
+> ### * obfuscate
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: obfuscate
+> ### Title: Obfuscate mildly secret information
+> ### Aliases: obfuscate obfuscated
+> 
+> ### ** Examples
+> 
+> obfuscate("good morning")
+obfuscated("fJ29kNDUzsF2LUlFVUxD6tIIErUwMgEDMxyGtg")
+> 
+> # Every time you obfuscate you'll get a different value because it
+> # includes 16 bytes of random data which protects against certain types of
+> # brute force attack
+> obfuscate("good morning")
+obfuscated("nNVXWlcVZ8VZj41H5Qgk2-fGAES4dLEt4aar9Q")
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_auth_aws_v4")
+> ### * req_auth_aws_v4
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_auth_aws_v4
+> ### Title: Sign a request with the AWS SigV4 signing protocol
+> ### Aliases: req_auth_aws_v4
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (httr2:::has_paws_credentials()) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ creds <- paws.common::locate_credentials()
++ model_id <- "anthropic.claude-3-5-sonnet-20240620-v1:0"
++ req <- request("https://bedrock-runtime.us-east-1.amazonaws.com")
++ # https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_Converse.html
++ req <- req_url_path_append(req, "model", model_id, "converse")
++ req <- req_body_json(req, list(
++   messages = list(list(
++     role = "user",
++     content = list(list(text = "What's your name?"))
++   ))
++ ))
++ req <- req_auth_aws_v4(
++   req,
++   aws_access_key_id = creds$access_key_id,
++   aws_secret_access_key = creds$secret_access_key,
++   aws_session_token = creds$session_token
++ )
++ resp <- req_perform_connection(req)
++ str(resp_body_json(resp))
++ ## Don't show: 
++ }) # examplesIf
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_auth_basic")
+> ### * req_auth_basic
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_auth_basic
+> ### Title: Authenticate request with HTTP basic authentication
+> ### Aliases: req_auth_basic
+> 
+> ### ** Examples
+> 
+> req <- request("http://example.com") |> req_auth_basic("hadley", "SECRET")
+> req
+<httr2_request>
+GET http://example.com
+Headers:
+• Authorization: "<REDACTED>"
+Body: empty
+> req |> req_dry_run()
+GET / HTTP/1.1
+Host: example.com
+User-Agent: httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0
+Accept: */*
+Accept-Encoding: deflate, gzip, br, zstd
+Authorization: <REDACTED>
+
+> 
+> # httr2 does its best to redact the Authorization header so that you don't
+> # accidentally reveal confidential data. Use `redact_headers` to reveal it:
+> print(req, redact_headers = FALSE)
+<httr2_request>
+GET http://example.com
+Headers:
+• Authorization: "Basic aGFkbGV5OlNFQ1JFVA=="
+Body: empty
+> req |> req_dry_run(redact_headers = FALSE)
+GET / HTTP/1.1
+Host: example.com
+User-Agent: httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0
+Accept: */*
+Accept-Encoding: deflate, gzip, br, zstd
+Authorization: Basic aGFkbGV5OlNFQ1JFVA==
+
+> 
+> # We do this because the authorization header is not encrypted and the
+> # so password can easily be discovered:
+> rawToChar(jsonlite::base64_dec("aGFkbGV5OlNFQ1JFVA=="))
+[1] "hadley:SECRET"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_auth_bearer_token")
+> ### * req_auth_bearer_token
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_auth_bearer_token
+> ### Title: Authenticate request with bearer token
+> ### Aliases: req_auth_bearer_token
+> 
+> ### ** Examples
+> 
+> req <- request("http://example.com") |> req_auth_bearer_token("sdaljsdf093lkfs")
+> req
+<httr2_request>
+GET http://example.com
+Headers:
+• Authorization: "<REDACTED>"
+Body: empty
+> 
+> # httr2 does its best to redact the Authorization header so that you don't
+> # accidentally reveal confidential data. Use `redact_headers` to reveal it:
+> print(req, redact_headers = FALSE)
+<httr2_request>
+GET http://example.com
+Headers:
+• Authorization: "Bearer sdaljsdf093lkfs"
+Body: empty
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_body")
+> ### * req_body
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_body
+> ### Title: Send data in request body
+> ### Aliases: req_body_raw req_body_file req_body_json req_body_json_modify
+> ###   req_body_form req_body_multipart
+> 
+> ### ** Examples
+> 
+> req <- request(example_url()) |>
++   req_url_path("/post")
+> 
+> # Most APIs expect small amounts of data in either form or json encoded:
+> req |>
++   req_body_form(x = "A simple text string") |>
++   req_dry_run()
+POST /post HTTP/1.1
+Host: 127.0.0.1:42235
+User-Agent: httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0
+Accept: */*
+Accept-Encoding: deflate, gzip, br, zstd
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 28
+
+x=A%20simple%20text%20string
+> 
+> req |>
++   req_body_json(list(x = "A simple text string")) |>
++   req_dry_run()
+POST /post HTTP/1.1
+Host: 127.0.0.1:42235
+User-Agent: httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0
+Accept: */*
+Accept-Encoding: deflate, gzip, br, zstd
+Content-Type: application/json
+Content-Length: 28
+
+{"x":"A simple text string"}
+> 
+> # For total control over the body, send a string or raw vector
+> req |>
++   req_body_raw("A simple text string") |>
++   req_dry_run()
+POST /post HTTP/1.1
+Host: 127.0.0.1:42235
+User-Agent: httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0
+Accept: */*
+Accept-Encoding: deflate, gzip, br, zstd
+Content-Length: 20
+
+A simple text string
+> 
+> # There are two main ways that APIs expect entire files
+> path <- tempfile()
+> writeLines(letters[1:6], path)
+> 
+> # You can send a single file as the body:
+> req |>
++   req_body_file(path) |>
++   req_dry_run()
+POST /post HTTP/1.1
+Host: 127.0.0.1:42235
+User-Agent: httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0
+Accept: */*
+Accept-Encoding: deflate, gzip, br, zstd
+Content-Length: 12
+
+a
+b
+c
+d
+e
+f
+> 
+> # You can send multiple files, or a mix of files and data
+> # with multipart encoding
+> req |>
++   req_body_multipart(a = curl::form_file(path), b = "some data") |>
++   req_dry_run()
+POST /post HTTP/1.1
+Host: 127.0.0.1:42235
+User-Agent: httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0
+Accept: */*
+Accept-Encoding: deflate, gzip, br, zstd
+Content-Length: 334
+Content-Type: multipart/form-data; boundary=------------------------MpKDTbI2JnMd24g3SunS8u
+
+--------------------------MpKDTbI2JnMd24g3SunS8u
+Content-Disposition: form-data; name="a"; filename="filedcaa70137c69"
+Content-Type: application/octet-stream
+
+a
+b
+c
+d
+e
+f
+
+--------------------------MpKDTbI2JnMd24g3SunS8u
+Content-Disposition: form-data; name="b"
+
+some data
+--------------------------MpKDTbI2JnMd24g3SunS8u--
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_cache")
+> ### * req_cache
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_cache
+> ### Title: Automatically cache requests
+> ### Aliases: req_cache
+> 
+> ### ** Examples
+> 
+> # GitHub uses HTTP caching for all raw files.
+> url <- paste0(
++   "https://raw.githubusercontent.com/allisonhorst/palmerpenguins/",
++   "master/inst/extdata/penguins.csv"
++ )
+> # Here I set debug = TRUE so you can see what's happening
+> req <- request(url) |> req_cache(tempdir(), debug = TRUE)
+> 
+> # First request downloads the data
+> resp <- req |> req_perform()
+Pruning cache
+Saving response to cache "d5d1ddd7f99f55dbc920c63f942804c0"
+> 
+> # Second request retrieves it from the cache
+> resp <- req |> req_perform()
+Warning in .Internal(lapply(X, FUN)) :
+  closing unused connection 3 (/tmp/RtmpDpsRp2/filedcaa70137c69)
+Found url in cache "d5d1ddd7f99f55dbc920c63f942804c0"
+Cached value is fresh; using response from cache
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_cookie_preserve")
+> ### * req_cookie_preserve
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_cookie_preserve
+> ### Title: Set and preserve cookies
+> ### Aliases: req_cookie_preserve req_cookies_set
+> 
+> ### ** Examples
+> 
+> # Use `req_cookies_set()` to set client-side cookies
+> request(example_url()) |>
++   req_cookies_set(a = 1, b = 1) |>
++   req_dry_run()
+GET / HTTP/1.1
+Host: 127.0.0.1:42235
+User-Agent: httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0
+Accept: */*
+Accept-Encoding: deflate, gzip, br, zstd
+Cookie: a=1;b=1
+
+> 
+> # Use `req_cookie_preserve()` to preserve server-side cookies across requests
+> path <- tempfile()
+> 
+> # Set a server-side cookie
+> request(example_url()) |>
++   req_cookie_preserve(path) |>
++   req_template("/cookies/set/:name/:value", name = "chocolate", value = "chip") |>
++   req_perform() |>
++   resp_body_json()
+$cookies
+$cookies$chocolate
+[1] "chip"
+
+
+> 
+> # Set another sever-side cookie
+> request(example_url()) |>
++   req_cookie_preserve(path) |>
++   req_template("/cookies/set/:name/:value", name = "oatmeal", value = "raisin") |>
++   req_perform() |>
++   resp_body_json()
+$cookies
+$cookies$chocolate
+[1] "chip"
+
+$cookies$oatmeal
+[1] "raisin"
+
+
+> 
+> # Add a client side cookie
+> request(example_url()) |>
++   req_url_path("/cookies/set") |>
++   req_cookie_preserve(path) |>
++   req_cookies_set(snicker = "doodle") |>
++   req_perform() |>
++   resp_body_json()
+$cookies
+$cookies$chocolate
+[1] "chip"
+
+$cookies$oatmeal
+[1] "raisin"
+
+$cookies$snicker
+[1] "doodle"
+
+
+> 
+> # The cookie path has a straightforward format
+> cat(readChar(path, nchars = 1e4))
+# Netscape HTTP Cookie File
+# https://curl.se/docs/http-cookies.html
+# This file was generated by libcurl! Edit at your own risk.
+
+127.0.0.1	FALSE	/	FALSE	0	chocolate	chip
+127.0.0.1	FALSE	/	FALSE	0	oatmeal	raisin
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_dry_run")
+> ### * req_dry_run
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_dry_run
+> ### Title: Perform a dry run
+> ### Aliases: req_dry_run
+> 
+> ### ** Examples
+> 
+> # httr2 adds default User-Agent, Accept, and Accept-Encoding headers
+> request("http://example.com") |> req_dry_run()
+GET / HTTP/1.1
+Host: example.com
+User-Agent: httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0
+Accept: */*
+Accept-Encoding: deflate, gzip, br, zstd
+
+> 
+> # the Authorization header is automatically redacted to avoid leaking
+> # credentials on the console
+> req <- request("http://example.com") |> req_auth_basic("user", "password")
+> req |> req_dry_run()
+GET / HTTP/1.1
+Host: example.com
+User-Agent: httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0
+Accept: */*
+Accept-Encoding: deflate, gzip, br, zstd
+Authorization: <REDACTED>
+
+> 
+> # if you need to see it, use redact_headers = FALSE
+> req |> req_dry_run(redact_headers = FALSE)
+GET / HTTP/1.1
+Host: example.com
+User-Agent: httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0
+Accept: */*
+Accept-Encoding: deflate, gzip, br, zstd
+Authorization: Basic dXNlcjpwYXNzd29yZA==
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_error")
+> ### * req_error
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_error
+> ### Title: Control handling of HTTP errors
+> ### Aliases: req_error
+> 
+> ### ** Examples
+> 
+> # Performing this request usually generates an error because httr2
+> # converts HTTP errors into R errors:
+> req <- request(example_url()) |>
++   req_url_path("/status/404")
+> try(req |> req_perform())
+Error in req_perform(req) : HTTP 404 Not Found.
+> # You can still retrieve it with last_response()
+> last_response()
+<httr2_response>
+GET http://127.0.0.1:42235/status/404
+Status: 404 Not Found
+Content-Type: text/plain
+Body: None
+> 
+> # But you might want to suppress this behaviour:
+> resp <- req |>
++   req_error(is_error = \(resp) FALSE) |>
++   req_perform()
+> resp
+<httr2_response>
+GET http://127.0.0.1:42235/status/404
+Status: 404 Not Found
+Content-Type: text/plain
+Body: None
+> 
+> # Or perhaps you're working with a server that routinely uses the
+> # wrong HTTP error codes only 500s are really errors
+> request("http://example.com") |>
++   req_error(is_error = \(resp) resp_status(resp) == 500)
+<httr2_request>
+GET http://example.com
+Body: empty
+Policies:
+• error_is_error: a function
+> 
+> # Most typically you'll use req_error() to add additional information
+> # extracted from the response body (or sometimes header):
+> error_body <- function(resp) {
++   resp_body_json(resp)$error
++ }
+> request("http://example.com") |>
++   req_error(body = error_body)
+<httr2_request>
+GET http://example.com
+Body: empty
+Policies:
+• error_body: a function
+> # Learn more in https://httr2.r-lib.org/articles/wrapping-apis.html
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_headers")
+> ### * req_headers
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_headers
+> ### Title: Modify request headers
+> ### Aliases: req_headers req_headers_redacted
+> 
+> ### ** Examples
+> 
+> req <- request("http://example.com")
+> 
+> # Use req_headers() to add arbitrary additional headers to the request
+> req |>
++   req_headers(MyHeader = "MyValue") |>
++   req_dry_run()
+GET / HTTP/1.1
+Host: example.com
+User-Agent: httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0
+Accept: */*
+Accept-Encoding: deflate, gzip, br, zstd
+MyHeader: MyValue
+
+> 
+> # Repeated use overrides the previous value:
+> req |>
++   req_headers(MyHeader = "Old value") |>
++   req_headers(MyHeader = "New value") |>
++   req_dry_run()
+GET / HTTP/1.1
+Host: example.com
+User-Agent: httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0
+Accept: */*
+Accept-Encoding: deflate, gzip, br, zstd
+MyHeader: New value
+
+> 
+> # Setting Accept to NULL uses curl's default:
+> req |>
++   req_headers(Accept = NULL) |>
++   req_dry_run()
+GET / HTTP/1.1
+Host: example.com
+User-Agent: httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0
+Accept: */*
+Accept-Encoding: deflate, gzip, br, zstd
+
+> 
+> # Setting it to "" removes it:
+> req |>
++   req_headers(Accept = "") |>
++   req_dry_run()
+GET / HTTP/1.1
+Host: example.com
+User-Agent: httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0
+Accept-Encoding: deflate, gzip, br, zstd
+
+> 
+> # If you need to repeat a header, provide a vector of values
+> # (this is rarely needed, but is important in a handful of cases)
+> req |>
++   req_headers(HeaderName = c("Value 1", "Value 2", "Value 3")) |>
++   req_dry_run()
+GET / HTTP/1.1
+Host: example.com
+User-Agent: httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0
+Accept: */*
+Accept-Encoding: deflate, gzip, br, zstd
+HeaderName: Value 1
+HeaderName: Value 2
+HeaderName: Value 3
+
+> 
+> # If you have headers in a list, use !!!
+> headers <- list(HeaderOne = "one", HeaderTwo = "two")
+> req |>
++   req_headers(!!!headers, HeaderThree = "three") |>
++   req_dry_run()
+GET / HTTP/1.1
+Host: example.com
+User-Agent: httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0
+Accept: */*
+Accept-Encoding: deflate, gzip, br, zstd
+HeaderOne: one
+HeaderTwo: two
+HeaderThree: three
+
+> 
+> # Use `req_headers_redacted()`` to hide a header in the output
+> req_secret <- req |>
++   req_headers_redacted(Secret = "this-is-private") |>
++   req_headers(Public = "but-this-is-not")
+> 
+> req_secret
+<httr2_request>
+GET http://example.com
+Headers:
+• Secret: "<REDACTED>"
+• Public: "but-this-is-not"
+Body: empty
+> req_secret |> req_dry_run()
+GET / HTTP/1.1
+Host: example.com
+User-Agent: httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0
+Accept: */*
+Accept-Encoding: deflate, gzip, br, zstd
+Secret: <REDACTED>
+Public: but-this-is-not
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_method")
+> ### * req_method
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_method
+> ### Title: Set HTTP method in request
+> ### Aliases: req_method
+> 
+> ### ** Examples
+> 
+> request(example_url()) |> req_method("PATCH")
+<httr2_request>
+PATCH http://127.0.0.1:42235/
+Body: empty
+> request(example_url()) |> req_method("PUT")
+<httr2_request>
+PUT http://127.0.0.1:42235/
+Body: empty
+> request(example_url()) |> req_method("HEAD")
+<httr2_request>
+HEAD http://127.0.0.1:42235/
+Body: empty
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_oauth_auth_code")
+> ### * req_oauth_auth_code
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_oauth_auth_code
+> ### Title: OAuth with authorization code
+> ### Aliases: req_oauth_auth_code oauth_flow_auth_code
+> 
+> ### ** Examples
+> 
+> req_auth_github <- function(req) {
++   req_oauth_auth_code(
++     req,
++     client = example_github_client(),
++     auth_url = "https://github.com/login/oauth/authorize"
++   )
++ }
+> 
+> request("https://api.github.com/user") |>
++   req_auth_github()
+<httr2_request>
+GET https://api.github.com/user
+Body: empty
+Policies:
+• auth_sign: a list
+• auth_oauth: TRUE
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_oauth_bearer_jwt")
+> ### * req_oauth_bearer_jwt
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_oauth_bearer_jwt
+> ### Title: OAuth with a bearer JWT (JSON web token)
+> ### Aliases: req_oauth_bearer_jwt oauth_flow_bearer_jwt
+> 
+> ### ** Examples
+> 
+> req_auth <- function(req) {
++   req_oauth_bearer_jwt(
++     req,
++     client = oauth_client("example", "https://example.com/get_token"),
++     claim = jwt_claim()
++   )
++ }
+> 
+> request("https://example.com") |>
++  req_auth()
+<httr2_request>
+GET https://example.com
+Body: empty
+Policies:
+• auth_sign: a list
+• auth_oauth: TRUE
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_oauth_client_credentials")
+> ### * req_oauth_client_credentials
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_oauth_client_credentials
+> ### Title: OAuth with client credentials
+> ### Aliases: req_oauth_client_credentials oauth_flow_client_credentials
+> 
+> ### ** Examples
+> 
+> req_auth <- function(req) {
++   req_oauth_client_credentials(
++     req,
++     client = oauth_client("example", "https://example.com/get_token")
++   )
++ }
+> 
+> request("https://example.com") |>
++   req_auth()
+<httr2_request>
+GET https://example.com
+Body: empty
+Policies:
+• auth_sign: a list
+• auth_oauth: TRUE
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_oauth_device")
+> ### * req_oauth_device
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_oauth_device
+> ### Title: OAuth with device flow
+> ### Aliases: req_oauth_device oauth_flow_device
+> 
+> ### ** Examples
+> 
+> req_auth_github <- function(req) {
++   req_oauth_device(
++     req,
++     client = example_github_client(),
++     auth_url = "https://github.com/login/device/code"
++   )
++ }
+> 
+> request("https://api.github.com/user") |>
++   req_auth_github()
+<httr2_request>
+GET https://api.github.com/user
+Body: empty
+Policies:
+• auth_sign: a list
+• auth_oauth: TRUE
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_oauth_password")
+> ### * req_oauth_password
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_oauth_password
+> ### Title: OAuth with username and password
+> ### Aliases: req_oauth_password oauth_flow_password
+> 
+> ### ** Examples
+> 
+> req_auth <- function(req) {
++   req_oauth_password(req,
++     client = oauth_client("example", "https://example.com/get_token"),
++     username = "username"
++   )
++ }
+> if (interactive()) {
++   request("https://example.com") |>
++     req_auth()
++ }
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_oauth_refresh")
+> ### * req_oauth_refresh
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_oauth_refresh
+> ### Title: OAuth with a refresh token
+> ### Aliases: req_oauth_refresh oauth_flow_refresh
+> 
+> ### ** Examples
+> 
+> client <- oauth_client("example", "https://example.com/get_token")
+> req <- request("https://example.com")
+> req |> req_oauth_refresh(client)
+<httr2_request>
+GET https://example.com
+Body: empty
+Policies:
+• auth_sign: a list
+• auth_oauth: TRUE
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_oauth_token_exchange")
+> ### * req_oauth_token_exchange
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_oauth_token_exchange
+> ### Title: OAuth token exchange
+> ### Aliases: req_oauth_token_exchange oauth_flow_token_exchange
+> 
+> ### ** Examples
+> 
+> # List Google Cloud storage buckets using an OIDC token obtained
+> # from e.g. Microsoft Entra ID or Okta and federated to Google. (A real
+> # project ID and workforce pool would be required for this in practice.)
+> #
+> # See: https://cloud.google.com/iam/docs/workforce-obtaining-short-lived-credentials
+> oidc_token <- "an ID token from Okta"
+> request("https://storage.googleapis.com/storage/v1/b?project=123456") |>
++   req_oauth_token_exchange(
++     client = oauth_client("gcp", "https://sts.googleapis.com/v1/token"),
++     subject_token = oidc_token,
++     subject_token_type = "urn:ietf:params:oauth:token-type:id_token",
++     scope = "https://www.googleapis.com/auth/cloud-platform",
++     requested_token_type = "urn:ietf:params:oauth:token-type:access_token",
++     audience = "//iam.googleapis.com/locations/global/workforcePools/123/providers/456",
++     token_params = list(
++       options = '{"userProject":"123456"}'
++     )
++   )
+<httr2_request>
+GET https://storage.googleapis.com/storage/v1/b?project=123456
+Body: empty
+Policies:
+• auth_sign: a list
+• auth_oauth: TRUE
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_options")
+> ### * req_options
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_options
+> ### Title: Set arbitrary curl options in request
+> ### Aliases: req_options
+> 
+> ### ** Examples
+> 
+> # req_options() allows you to access curl options that are not otherwise
+> # exposed by httr2. For example, in very special cases you may need to
+> # turn off SSL verification. This is generally a bad idea so httr2 doesn't
+> # provide a convenient wrapper, but if you really know what you're doing
+> # you can still access this libcurl option:
+> req <- request("https://example.com") |>
++   req_options(ssl_verifypeer = 0)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_perform")
+> ### * req_perform
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_perform
+> ### Title: Perform a request to get a response
+> ### Aliases: req_perform
+> 
+> ### ** Examples
+> 
+> request("https://google.com") |>
++   req_perform()
+<httr2_response>
+GET https://www.google.com/
+Status: 200 OK
+Content-Type: text/html
+Body: In memory (16684 bytes)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_perform_connection")
+> ### * req_perform_connection
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_perform_connection
+> ### Title: Perform a request and return a streaming connection
+> ### Aliases: req_perform_connection
+> 
+> ### ** Examples
+> 
+> req <- request(example_url()) |>
++   req_url_path("/stream-bytes/32768")
+> resp <- req_perform_connection(req)
+> 
+> length(resp_stream_raw(resp, kb = 16))
+[1] 16384
+> length(resp_stream_raw(resp, kb = 16))
+[1] 16384
+> # When the stream has no more data, you'll get an empty result:
+> length(resp_stream_raw(resp, kb = 16))
+[1] 0
+> 
+> # Always close the response when you're done
+> close(resp)
+> 
+> # You can loop until complete with resp_stream_is_complete()
+> resp <- req_perform_connection(req)
+> while (!resp_stream_is_complete(resp)) {
++   print(length(resp_stream_raw(resp, kb = 12)))
++ }
+[1] 12288
+[1] 12288
+[1] 8192
+> close(resp)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_perform_iterative")
+> ### * req_perform_iterative
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_perform_iterative
+> ### Title: Perform requests iteratively, generating new requests from
+> ###   previous responses
+> ### Aliases: req_perform_iterative
+> 
+> ### ** Examples
+> 
+> req <- request(example_url()) |>
++   req_url_path("/iris") |>
++   req_throttle(10) |>
++   req_url_query(limit = 5)
+> 
+> resps <- req_perform_iterative(req, iterate_with_offset("page_index"))
+Iterating ■■■■■■■■■■■■■■■■                  50% | ETA:  1s
+Iterating ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■  100% | ETA:  0s
+> 
+> data <- resps |> resps_data(function(resp) {
++   data <- resp_body_json(resp)$data
++   data.frame(
++     Sepal.Length = sapply(data, `[[`, "Sepal.Length"),
++     Sepal.Width = sapply(data, `[[`, "Sepal.Width"),
++     Petal.Length = sapply(data, `[[`, "Petal.Length"),
++     Petal.Width = sapply(data, `[[`, "Petal.Width"),
++     Species = sapply(data, `[[`, "Species")
++   )
++ })
+> str(data)
+'data.frame':	100 obs. of  5 variables:
+ $ Sepal.Length: num  5.1 4.9 4.7 4.6 5 5.4 4.6 5 4.4 4.9 ...
+ $ Sepal.Width : num  3.5 3 3.2 3.1 3.6 3.9 3.4 3.4 2.9 3.1 ...
+ $ Petal.Length: num  1.4 1.4 1.3 1.5 1.4 1.7 1.4 1.5 1.4 1.5 ...
+ $ Petal.Width : num  0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
+ $ Species     : chr  "setosa" "setosa" "setosa" "setosa" ...
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_perform_parallel")
+> ### * req_perform_parallel
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_perform_parallel
+> ### Title: Perform a list of requests in parallel
+> ### Aliases: req_perform_parallel
+> 
+> ### ** Examples
+> 
+> # Requesting these 4 pages one at a time would take 2 seconds:
+> request_base <- request(example_url())
+> reqs <- list(
++   request_base |> req_url_path("/delay/0.5"),
++   request_base |> req_url_path("/delay/0.5"),
++   request_base |> req_url_path("/delay/0.5"),
++   request_base |> req_url_path("/delay/0.5")
++ )
+> # But it's much faster if you request in parallel
+> system.time(resps <- req_perform_parallel(reqs))
+Iterating ■■■■■■■■■■■■■■■■                  50% | ETA:  1s
+Iterating ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■  100% | ETA:  0s
+   user  system elapsed 
+  0.424   0.647   1.071 
+> 
+> # req_perform_parallel() will fail on error
+> reqs <- list(
++   request_base |> req_url_path("/status/200"),
++   request_base |> req_url_path("/status/400"),
++   request("FAILURE")
++ )
+> try(resps <- req_perform_parallel(reqs))
+Error in req_perform_parallel(reqs) : 
+  Couldn't resolve host name [FAILURE]: Could not resolve host: FAILURE
+> 
+> # but can use on_error to capture all successful results
+> resps <- req_perform_parallel(reqs, on_error = "continue")
+> 
+> # Inspect the successful responses
+> resps |> resps_successes()
+[[1]]
+<httr2_response>
+GET http://127.0.0.1:42235/status/200
+Status: 200 OK
+Content-Type: text/plain
+Body: None
+
+> 
+> # And the failed responses
+> resps |> resps_failures() |> resps_requests()
+[[1]]
+<httr2_request>
+GET http://127.0.0.1:42235/status/400
+Body: empty
+
+[[2]]
+<httr2_request>
+GET FAILURE
+Body: empty
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_perform_promise")
+> ### * req_perform_promise
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_perform_promise
+> ### Title: Perform request asynchronously using the promises package
+> ### Aliases: req_perform_promise
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D library(promises)
+> ##D request_base <- request(example_url()) |> req_url_path_append("delay")
+> ##D 
+> ##D p <- request_base |> req_url_path_append(2) |> req_perform_promise()
+> ##D 
+> ##D # A promise object, not particularly useful on its own
+> ##D p
+> ##D 
+> ##D # Use promise chaining functions to access results
+> ##D p %...>%
+> ##D   resp_body_json() %...>%
+> ##D   print()
+> ##D 
+> ##D 
+> ##D # Can run two requests at the same time
+> ##D p1 <- request_base |> req_url_path_append(2) |> req_perform_promise()
+> ##D p2 <- request_base |> req_url_path_append(1) |> req_perform_promise()
+> ##D 
+> ##D p1 %...>%
+> ##D   resp_url_path %...>%
+> ##D   paste0(., " finished") %...>%
+> ##D   print()
+> ##D 
+> ##D p2 %...>%
+> ##D   resp_url_path %...>%
+> ##D   paste0(., " finished") %...>%
+> ##D   print()
+> ##D 
+> ##D # See the [promises package documentation](https://rstudio.github.io/promises/)
+> ##D # for more information on working with promises
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_perform_sequential")
+> ### * req_perform_sequential
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_perform_sequential
+> ### Title: Perform multiple requests in sequence
+> ### Aliases: req_perform_sequential
+> 
+> ### ** Examples
+> 
+> # One use of req_perform_sequential() is if the API allows you to request
+> # data for multiple objects, you want data for more objects than can fit
+> # in one request.
+> req <- request("https://api.restful-api.dev/objects")
+> 
+> # Imagine we have 50 ids:
+> ids <- sort(sample(100, 50))
+> 
+> # But the API only allows us to request 10 at time. So we first use split
+> # and some modulo arithmetic magic to generate chunks of length 10
+> chunks <- unname(split(ids, (seq_along(ids) - 1) %/% 10))
+> 
+> # Then we use lapply to generate one request for each chunk:
+> reqs <- chunks |> lapply(\(idx) req |> req_url_query(id = idx, .multi = "comma"))
+> 
+> # Then we can perform them all and get the results
+> ## Not run: 
+> ##D resps <- reqs |> req_perform_sequential()
+> ##D resps_data(resps, \(resp) resp_body_json(resp))
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_perform_stream")
+> ### * req_perform_stream
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_perform_stream
+> ### Title: Perform a request and handle data as it streams back
+> ### Aliases: req_perform_stream req_stream
+> 
+> ### ** Examples
+> 
+> show_bytes <- function(x) {
++   cat("Got ", length(x), " bytes\n", sep = "")
++   TRUE
++ }
+> resp <- request(example_url()) |>
++   req_url_path("/stream-bytes/100000") |>
++   req_perform_stream(show_bytes, buffer_kb = 32)
+Got 32768 bytes
+Got 32768 bytes
+Got 32768 bytes
+Got 1696 bytes
+> resp
+<httr2_response>
+GET http://127.0.0.1:42235/stream-bytes/100000
+Status: 200 OK
+Content-Type: application/octet-stream
+Body: None
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_progress")
+> ### * req_progress
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_progress
+> ### Title: Add a progress bar to long downloads or uploads
+> ### Aliases: req_progress
+> 
+> ### ** Examples
+> 
+> req <- request("https://r4ds.s3.us-west-2.amazonaws.com/seattle-library-checkouts.csv") |>
++   req_progress()
+> 
+> ## Not run: 
+> ##D path <- tempfile()
+> ##D req |> req_perform(path = path)
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_proxy")
+> ### * req_proxy
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_proxy
+> ### Title: Use a proxy for a request
+> ### Aliases: req_proxy
+> 
+> ### ** Examples
+> 
+> # Proxy from https://www.proxynova.com/proxy-server-list/
+> ## Not run: 
+> ##D request("http://hadley.nz") |>
+> ##D   req_proxy("20.116.130.70", 3128) |>
+> ##D   req_perform()
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_retry")
+> ### * req_retry
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_retry
+> ### Title: Automatically retry a request on failure
+> ### Aliases: req_retry
+> 
+> ### ** Examples
+> 
+> # google APIs assume that a 500 is also a transient error
+> request("http://google.com") |>
++   req_retry(is_transient = \(resp) resp_status(resp) %in% c(429, 500, 503))
+Setting `max_tries = 2`.
+<httr2_request>
+GET http://google.com
+Body: empty
+Policies:
+• retry_max_tries: 2
+• retry_on_failure: FALSE
+• retry_is_transient: a function
+• retry_failure_threshold: Inf
+• retry_failure_timeout: 30
+• retry_realm: "google.com"
+> 
+> # use a constant 10s delay after every failure
+> request("http://example.com") |>
++   req_retry(backoff = \(resp) 10)
+Setting `max_tries = 2`.
+<httr2_request>
+GET http://example.com
+Body: empty
+Policies:
+• retry_max_tries: 2
+• retry_on_failure: FALSE
+• retry_backoff: a function
+• retry_failure_threshold: Inf
+• retry_failure_timeout: 30
+• retry_realm: "example.com"
+> 
+> # When rate-limited, GitHub's API returns a 403 with
+> # `X-RateLimit-Remaining: 0` and an Unix time stored in the
+> # `X-RateLimit-Reset` header. This takes a bit more work to handle:
+> github_is_transient <- function(resp) {
++   resp_status(resp) == 403 &&
++     identical(resp_header(resp, "X-RateLimit-Remaining"), "0")
++ }
+> github_after <- function(resp) {
++   time <- as.numeric(resp_header(resp, "X-RateLimit-Reset"))
++   time - unclass(Sys.time())
++ }
+> request("http://api.github.com") |>
++   req_retry(
++     is_transient = github_is_transient,
++     after = github_after
++   )
+Setting `max_tries = 2`.
+<httr2_request>
+GET http://api.github.com
+Body: empty
+Policies:
+• retry_max_tries: 2
+• retry_on_failure: FALSE
+• retry_is_transient: a function
+• retry_after: a function
+• retry_failure_threshold: Inf
+• retry_failure_timeout: 30
+• retry_realm: "api.github.com"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_template")
+> ### * req_template
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_template
+> ### Title: Set request method/path from a template
+> ### Aliases: req_template
+> 
+> ### ** Examples
+> 
+> httpbin <- request(example_url())
+> 
+> # You can supply template parameters in `...`
+> httpbin |> req_template("GET /bytes/{n}", n = 100)
+<httr2_request>
+GET http://127.0.0.1:42235/bytes/100
+Body: empty
+> 
+> # or you retrieve from the current environment
+> n <- 200
+> httpbin |> req_template("GET /bytes/{n}")
+<httr2_request>
+GET http://127.0.0.1:42235/bytes/200
+Body: empty
+> 
+> # Existing path is preserved:
+> httpbin_test <- request(example_url()) |> req_url_path("/test")
+> name <- "id"
+> value <- "a3fWa"
+> httpbin_test |> req_template("GET /set/{name}/{value}")
+<httr2_request>
+GET http://127.0.0.1:42235/test/set/id/a3fWa
+Body: empty
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_throttle")
+> ### * req_throttle
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_throttle
+> ### Title: Rate limit a request by automatically adding a delay
+> ### Aliases: req_throttle
+> 
+> ### ** Examples
+> 
+> # Ensure we never send more than 30 requests a minute
+> req <- request(example_url()) |>
++   req_throttle(rate = 30 / 60)
+> 
+> resp <- req_perform(req)
+> throttle_status()
+      realm        last_request
+1 127.0.0.1 2025-03-04 12:07:44
+> resp <- req_perform(req)
+Waiting 2s for throttling delay ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■  
+> throttle_status()
+      realm        last_request
+1 127.0.0.1 2025-03-04 12:07:46
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_timeout")
+> ### * req_timeout
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_timeout
+> ### Title: Set time limit for a request
+> ### Aliases: req_timeout
+> 
+> ### ** Examples
+> 
+> # Give up after at most 10 seconds
+> request("http://example.com") |> req_timeout(10)
+<httr2_request>
+GET http://example.com
+Body: empty
+Options:
+• timeout_ms: 10000
+• connecttimeout: 0
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_url")
+> ### * req_url
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_url
+> ### Title: Modify request URL
+> ### Aliases: req_url req_url_relative req_url_query req_url_path
+> ###   req_url_path_append
+> 
+> ### ** Examples
+> 
+> # Change complete url
+> req <- request("http://example.com")
+> req |> req_url("http://google.com")
+<httr2_request>
+GET http://google.com
+Body: empty
+> 
+> # Use a relative url
+> req <- request("http://example.com/a/b/c")
+> req |> req_url_relative("..")
+<httr2_request>
+GET http://example.com/a/
+Body: empty
+> req |> req_url_relative("/d/e/f")
+<httr2_request>
+GET http://example.com/d/e/f
+Body: empty
+> 
+> # Change url components
+> req |>
++   req_url_path_append("a") |>
++   req_url_path_append("b") |>
++   req_url_path_append("search.html") |>
++   req_url_query(q = "the cool ice")
+<httr2_request>
+GET http://example.com/a/b/c/a/b/search.html?q=the%20cool%20ice
+Body: empty
+> 
+> # Modify individual query parameters
+> req <- request("http://example.com?a=1&b=2")
+> req |> req_url_query(a = 10)
+<httr2_request>
+GET http://example.com/?b=2&a=10
+Body: empty
+> req |> req_url_query(a = NULL)
+<httr2_request>
+GET http://example.com/?b=2
+Body: empty
+> req |> req_url_query(c = 3)
+<httr2_request>
+GET http://example.com/?a=1&b=2&c=3
+Body: empty
+> 
+> # Use .multi to control what happens with vector parameters:
+> req |> req_url_query(id = 100:105, .multi = "comma")
+<httr2_request>
+GET http://example.com/?a=1&b=2&id=100,101,102,103,104,105
+Body: empty
+> req |> req_url_query(id = 100:105, .multi = "explode")
+<httr2_request>
+GET http://example.com/?a=1&b=2&id=100&id=101&id=102&id=103&id=104&id=105
+Body: empty
+> 
+> # If you have query parameters in a list, use !!!
+> params <- list(a = "1", b = "2")
+> req |>
++   req_url_query(!!!params, c = "3")
+<httr2_request>
+GET http://example.com/?a=1&b=2&c=3
+Body: empty
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_user_agent")
+> ### * req_user_agent
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_user_agent
+> ### Title: Set user-agent for a request
+> ### Aliases: req_user_agent
+> 
+> ### ** Examples
+> 
+> # Default user-agent:
+> request("http://example.com") |> req_dry_run()
+GET / HTTP/1.1
+Host: example.com
+User-Agent: httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0
+Accept: */*
+Accept-Encoding: deflate, gzip, br, zstd
+
+> 
+> request("http://example.com") |> req_user_agent("MyString") |> req_dry_run()
+GET / HTTP/1.1
+Host: example.com
+User-Agent: MyString
+Accept: */*
+Accept-Encoding: deflate, gzip, br, zstd
+
+> 
+> # If you're wrapping in an API in a package, it's polite to set the
+> # user agent to identify your package.
+> request("http://example.com") |>
++   req_user_agent("MyPackage (http://mypackage.com)") |>
++   req_dry_run()
+GET / HTTP/1.1
+Host: example.com
+User-Agent: MyPackage (http://mypackage.com)
+Accept: */*
+Accept-Encoding: deflate, gzip, br, zstd
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("req_verbose")
+> ### * req_verbose
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: req_verbose
+> ### Title: Show extra output when request is performed
+> ### Aliases: req_verbose
+> 
+> ### ** Examples
+> 
+> # Use `req_verbose()` to see the headers that are sent back and forth when
+> # making a request
+> resp <- request("https://httr2.r-lib.org") |>
++   req_verbose() |>
++   req_perform()
+-> GET / HTTP/2
+-> Host: httr2.r-lib.org
+-> User-Agent: httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0
+-> Accept: */*
+-> Accept-Encoding: deflate, gzip, br, zstd
+-> 
+<- HTTP/2 200 
+<- server: GitHub.com
+<- content-type: text/html; charset=utf-8
+<- last-modified: Mon, 24 Feb 2025 22:24:31 GMT
+<- access-control-allow-origin: *
+<- etag: W/"67bcf19f-4b1b"
+<- expires: Tue, 04 Mar 2025 12:17:38 GMT
+<- cache-control: max-age=600
+<- content-encoding: gzip
+<- x-proxy-cache: MISS
+<- x-github-request-id: 29BD:3A410B:10D67F:13C14A:67C6ED0A
+<- accept-ranges: bytes
+<- date: Tue, 04 Mar 2025 12:07:46 GMT
+<- via: 1.1 varnish
+<- age: 8
+<- x-served-by: cache-iad-kcgs7200113-IAD
+<- x-cache: HIT
+<- x-cache-hits: 1
+<- x-timer: S1741090066.420380,VS0,VE1
+<- vary: Accept-Encoding
+<- x-fastly-request-id: 12e1a8eed16dcb2afed75b137f2a3d559b78e020
+<- content-length: 4736
+<- 
+> 
+> # Or use one of the convenient shortcuts:
+> resp <- request("https://httr2.r-lib.org") |>
++   req_perform(verbosity = 1)
+-> GET / HTTP/2
+-> Host: httr2.r-lib.org
+-> User-Agent: httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0
+-> Accept: */*
+-> Accept-Encoding: deflate, gzip, br, zstd
+-> 
+<- HTTP/2 200 
+<- server: GitHub.com
+<- content-type: text/html; charset=utf-8
+<- last-modified: Mon, 24 Feb 2025 22:24:31 GMT
+<- access-control-allow-origin: *
+<- etag: W/"67bcf19f-4b1b"
+<- expires: Tue, 04 Mar 2025 12:17:38 GMT
+<- cache-control: max-age=600
+<- content-encoding: gzip
+<- x-proxy-cache: MISS
+<- x-github-request-id: 29BD:3A410B:10D67F:13C14A:67C6ED0A
+<- accept-ranges: bytes
+<- date: Tue, 04 Mar 2025 12:07:46 GMT
+<- via: 1.1 varnish
+<- age: 8
+<- x-served-by: cache-iad-kcgs7200113-IAD
+<- x-cache: HIT
+<- x-cache-hits: 2
+<- x-timer: S1741090066.437876,VS0,VE0
+<- vary: Accept-Encoding
+<- x-fastly-request-id: be5788f0dd346f804aeefa565aa824e153dd5333
+<- content-length: 4736
+<- 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("request")
+> ### * request
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: request
+> ### Title: Create a new HTTP request
+> ### Aliases: request
+> 
+> ### ** Examples
+> 
+> request("http://r-project.org")
+<httr2_request>
+GET http://r-project.org
+Body: empty
+> 
+> 
+> 
+> cleanEx()
+> nameEx("resp_body_raw")
+> ### * resp_body_raw
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: resp_body_raw
+> ### Title: Extract body from response
+> ### Aliases: resp_body_raw resp_has_body resp_body_string resp_body_json
+> ###   resp_body_html resp_body_xml
+> 
+> ### ** Examples
+> 
+> resp <- request("https://httr2.r-lib.org") |> req_perform()
+> resp
+<httr2_response>
+GET https://httr2.r-lib.org/
+Status: 200 OK
+Content-Type: text/html
+Body: In memory (19227 bytes)
+> 
+> resp |> resp_has_body()
+[1] TRUE
+> resp |> resp_body_raw()
+    [1] 3c 21 44 4f 43 54 59 50 45 20 68 74 6d 6c 3e 0a 3c 21 2d 2d 20 47 65 6e
+   [25] 65 72 61 74 65 64 20 62 79 20 70 6b 67 64 6f 77 6e 3a 20 64 6f 20 6e 6f
+   [49] 74 20 65 64 69 74 20 62 79 20 68 61 6e 64 20 2d 2d 3e 3c 68 74 6d 6c 20
+   [73] 6c 61 6e 67 3d 22 65 6e 22 3e 0a 3c 68 65 61 64 3e 0a 3c 6d 65 74 61 20
+   [97] 68 74 74 70 2d 65 71 75 69 76 3d 22 43 6f 6e 74 65 6e 74 2d 54 79 70 65
+  [121] 22 20 63 6f 6e 74 65 6e 74 3d 22 74 65 78 74 2f 68 74 6d 6c 3b 20 63 68
+  [145] 61 72 73 65 74 3d 55 54 46 2d 38 22 3e 0a 3c 6d 65 74 61 20 63 68 61 72
+  [169] 73 65 74 3d 22 75 74 66 2d 38 22 3e 0a 3c 6d 65 74 61 20 68 74 74 70 2d
+  [193] 65 71 75 69 76 3d 22 58 2d 55 41 2d 43 6f 6d 70 61 74 69 62 6c 65 22 20
+  [217] 63 6f 6e 74 65 6e 74 3d 22 49 45 3d 65 64 67 65 22 3e 0a 3c 6d 65 74 61
+  [241] 20 6e 61 6d 65 3d 22 76 69 65 77 70 6f 72 74 22 20 63 6f 6e 74 65 6e 74
+  [265] 3d 22 77 69 64 74 68 3d 64 65 76 69 63 65 2d 77 69 64 74 68 2c 20 69 6e
+  [289] 69 74 69 61 6c 2d 73 63 61 6c 65 3d 31 2c 20 73 68 72 69 6e 6b 2d 74 6f
+  [313] 2d 66 69 74 3d 6e 6f 22 3e 0a 3c 74 69 74 6c 65 3e 50 65 72 66 6f 72 6d
+  [337] 20 48 54 54 50 20 52 65 71 75 65 73 74 73 20 61 6e 64 20 50 72 6f 63 65
+  [361] 73 73 20 74 68 65 20 52 65 73 70 6f 6e 73 65 73 20 e2 80 a2 20 68 74 74
+  [385] 72 32 3c 2f 74 69 74 6c 65 3e 0a 3c 21 2d 2d 20 66 61 76 69 63 6f 6e 73
+  [409] 20 2d 2d 3e 3c 6c 69 6e 6b 20 72 65 6c 3d 22 69 63 6f 6e 22 20 74 79 70
+  [433] 65 3d 22 69 6d 61 67 65 2f 70 6e 67 22 20 73 69 7a 65 73 3d 22 31 36 78
+  [457] 31 36 22 20 68 72 65 66 3d 22 66 61 76 69 63 6f 6e 2d 31 36 78 31 36 2e
+  [481] 70 6e 67 22 3e 0a 3c 6c 69 6e 6b 20 72 65 6c 3d 22 69 63 6f 6e 22 20 74
+  [505] 79 70 65 3d 22 69 6d 61 67 65 2f 70 6e 67 22 20 73 69 7a 65 73 3d 22 33
+  [529] 32 78 33 32 22 20 68 72 65 66 3d 22 66 61 76 69 63 6f 6e 2d 33 32 78 33
+  [553] 32 2e 70 6e 67 22 3e 0a 3c 6c 69 6e 6b 20 72 65 6c 3d 22 61 70 70 6c 65
+  [577] 2d 74 6f 75 63 68 2d 69 63 6f 6e 22 20 74 79 70 65 3d 22 69 6d 61 67 65
+  [601] 2f 70 6e 67 22 20 73 69 7a 65 73 3d 22 31 38 30 78 31 38 30 22 20 68 72
+  [625] 65 66 3d 22 61 70 70 6c 65 2d 74 6f 75 63 68 2d 69 63 6f 6e 2e 70 6e 67
+  [649] 22 3e 0a 3c 6c 69 6e 6b 20 72 65 6c 3d 22 61 70 70 6c 65 2d 74 6f 75 63
+  [673] 68 2d 69 63 6f 6e 22 20 74 79 70 65 3d 22 69 6d 61 67 65 2f 70 6e 67 22
+  [697] 20 73 69 7a 65 73 3d 22 31 32 30 78 31 32 30 22 20 68 72 65 66 3d 22 61
+  [721] 70 70 6c 65 2d 74 6f 75 63 68 2d 69 63 6f 6e 2d 31 32 30 78 31 32 30 2e
+  [745] 70 6e 67 22 3e 0a 3c 6c 69 6e 6b 20 72 65 6c 3d 22 61 70 70 6c 65 2d 74
+  [769] 6f 75 63 68 2d 69 63 6f 6e 22 20 74 79 70 65 3d 22 69 6d 61 67 65 2f 70
+  [793] 6e 67 22 20 73 69 7a 65 73 3d 22 37 36 78 37 36 22 20 68 72 65 66 3d 22
+  [817] 61 70 70 6c 65 2d 74 6f 75 63 68 2d 69 63 6f 6e 2d 37 36 78 37 36 2e 70
+  [841] 6e 67 22 3e 0a 3c 6c 69 6e 6b 20 72 65 6c 3d 22 61 70 70 6c 65 2d 74 6f
+  [865] 75 63 68 2d 69 63 6f 6e 22 20 74 79 70 65 3d 22 69 6d 61 67 65 2f 70 6e
+  [889] 67 22 20 73 69 7a 65 73 3d 22 36 30 78 36 30 22 20 68 72 65 66 3d 22 61
+  [913] 70 70 6c 65 2d 74 6f 75 63 68 2d 69 63 6f 6e 2d 36 30 78 36 30 2e 70 6e
+  [937] 67 22 3e 0a 3c 73 63 72 69 70 74 20 73 72 63 3d 22 64 65 70 73 2f 6a 71
+  [961] 75 65 72 79 2d 33 2e 36 2e 30 2f 6a 71 75 65 72 79 2d 33 2e 36 2e 30 2e
+  [985] 6d 69 6e 2e 6a 73 22 3e 3c 2f 73 63 72 69 70 74 3e 3c 6d 65 74 61 20 6e
+ [1009] 61 6d 65 3d 22 76 69 65 77 70 6f 72 74 22 20 63 6f 6e 74 65 6e 74 3d 22
+ [1033] 77 69 64 74 68 3d 64 65 76 69 63 65 2d 77 69 64 74 68 2c 20 69 6e 69 74
+ [1057] 69 61 6c 2d 73 63 61 6c 65 3d 31 2c 20 73 68 72 69 6e 6b 2d 74 6f 2d 66
+ [1081] 69 74 3d 6e 6f 22 3e 0a 3c 6c 69 6e 6b 20 68 72 65 66 3d 22 64 65 70 73
+ [1105] 2f 62 6f 6f 74 73 74 72 61 70 2d 35 2e 33 2e 31 2f 62 6f 6f 74 73 74 72
+ [1129] 61 70 2e 6d 69 6e 2e 63 73 73 22 20 72 65 6c 3d 22 73 74 79 6c 65 73 68
+ [1153] 65 65 74 22 3e 0a 3c 73 63 72 69 70 74 20 73 72 63 3d 22 64 65 70 73 2f
+ [1177] 62 6f 6f 74 73 74 72 61 70 2d 35 2e 33 2e 31 2f 62 6f 6f 74 73 74 72 61
+ [1201] 70 2e 62 75 6e 64 6c 65 2e 6d 69 6e 2e 6a 73 22 3e 3c 2f 73 63 72 69 70
+ [1225] 74 3e 3c 6c 69 6e 6b 20 68 72 65 66 3d 22 64 65 70 73 2f 53 6f 75 72 63
+ [1249] 65 5f 53 61 6e 73 5f 50 72 6f 2d 30 2e 34 2e 39 2f 66 6f 6e 74 2e 63 73
+ [1273] 73 22 20 72 65 6c 3d 22 73 74 79 6c 65 73 68 65 65 74 22 3e 0a 3c 6c 69
+ [1297] 6e 6b 20 68 72 65 66 3d 22 64 65 70 73 2f 53 6f 75 72 63 65 5f 43 6f 64
+ [1321] 65 5f 50 72 6f 2d 30 2e 34 2e 39 2f 66 6f 6e 74 2e 63 73 73 22 20 72 65
+ [1345] 6c 3d 22 73 74 79 6c 65 73 68 65 65 74 22 3e 0a 3c 6c 69 6e 6b 20 68 72
+ [1369] 65 66 3d 22 64 65 70 73 2f 66 6f 6e 74 2d 61 77 65 73 6f 6d 65 2d 36 2e
+ [1393] 35 2e 32 2f 63 73 73 2f 61 6c 6c 2e 6d 69 6e 2e 63 73 73 22 20 72 65 6c
+ [1417] 3d 22 73 74 79 6c 65 73 68 65 65 74 22 3e 0a 3c 6c 69 6e 6b 20 68 72 65
+ [1441] 66 3d 22 64 65 70 73 2f 66 6f 6e 74 2d 61 77 65 73 6f 6d 65 2d 36 2e 35
+ [1465] 2e 32 2f 63 73 73 2f 76 34 2d 73 68 69 6d 73 2e 6d 69 6e 2e 63 73 73 22
+ [1489] 20 72 65 6c 3d 22 73 74 79 6c 65 73 68 65 65 74 22 3e 0a 3c 73 63 72 69
+ [1513] 70 74 20 73 72 63 3d 22 64 65 70 73 2f 68 65 61 64 72 6f 6f 6d 2d 30 2e
+ [1537] 31 31 2e 30 2f 68 65 61 64 72 6f 6f 6d 2e 6d 69 6e 2e 6a 73 22 3e 3c 2f
+ [1561] 73 63 72 69 70 74 3e 3c 73 63 72 69 70 74 20 73 72 63 3d 22 64 65 70 73
+ [1585] 2f 68 65 61 64 72 6f 6f 6d 2d 30 2e 31 31 2e 30 2f 6a 51 75 65 72 79 2e
+ [1609] 68 65 61 64 72 6f 6f 6d 2e 6d 69 6e 2e 6a 73 22 3e 3c 2f 73 63 72 69 70
+ [1633] 74 3e 3c 73 63 72 69 70 74 20 73 72 63 3d 22 64 65 70 73 2f 62 6f 6f 74
+ [1657] 73 74 72 61 70 2d 74 6f 63 2d 31 2e 30 2e 31 2f 62 6f 6f 74 73 74 72 61
+ [1681] 70 2d 74 6f 63 2e 6d 69 6e 2e 6a 73 22 3e 3c 2f 73 63 72 69 70 74 3e 3c
+ [1705] 73 63 72 69 70 74 20 73 72 63 3d 22 64 65 70 73 2f 63 6c 69 70 62 6f 61
+ [1729] 72 64 2e 6a 73 2d 32 2e 30 2e 31 31 2f 63 6c 69 70 62 6f 61 72 64 2e 6d
+ [1753] 69 6e 2e 6a 73 22 3e 3c 2f 73 63 72 69 70 74 3e 3c 73 63 72 69 70 74 20
+ [1777] 73 72 63 3d 22 64 65 70 73 2f 73 65 61 72 63 68 2d 31 2e 30 2e 30 2f 61
+ [1801] 75 74 6f 63 6f 6d 70 6c 65 74 65 2e 6a 71 75 65 72 79 2e 6d 69 6e 2e 6a
+ [1825] 73 22 3e 3c 2f 73 63 72 69 70 74 3e 3c 73 63 72 69 70 74 20 73 72 63 3d
+ [1849] 22 64 65 70 73 2f 73 65 61 72 63 68 2d 31 2e 30 2e 30 2f 66 75 73 65 2e
+ [1873] 6d 69 6e 2e 6a 73 22 3e 3c 2f 73 63 72 69 70 74 3e 3c 73 63 72 69 70 74
+ [1897] 20 73 72 63 3d 22 64 65 70 73 2f 73 65 61 72 63 68 2d 31 2e 30 2e 30 2f
+ [1921] 6d 61 72 6b 2e 6d 69 6e 2e 6a 73 22 3e 3c 2f 73 63 72 69 70 74 3e 3c 21
+ [1945] 2d 2d 20 70 6b 67 64 6f 77 6e 20 2d 2d 3e 3c 73 63 72 69 70 74 20 73 72
+ [1969] 63 3d 22 70 6b 67 64 6f 77 6e 2e 6a 73 22 3e 3c 2f 73 63 72 69 70 74 3e
+ [1993] 3c 6d 65 74 61 20 70 72 6f 70 65 72 74 79 3d 22 6f 67 3a 74 69 74 6c 65
+ [2017] 22 20 63 6f 6e 74 65 6e 74 3d 22 50 65 72 66 6f 72 6d 20 48 54 54 50 20
+ [2041] 52 65 71 75 65 73 74 73 20 61 6e 64 20 50 72 6f 63 65 73 73 20 74 68 65
+ [2065] 20 52 65 73 70 6f 6e 73 65 73 22 3e 0a 3c 6d 65 74 61 20 6e 61 6d 65 3d
+ [2089] 22 64 65 73 63 72 69 70 74 69 6f 6e 22 20 63 6f 6e 74 65 6e 74 3d 22 54
+ [2113] 6f 6f 6c 73 20 66 6f 72 20 63 72 65 61 74 69 6e 67 20 61 6e 64 20 6d 6f
+ [2137] 64 69 66 79 69 6e 67 20 48 54 54 50 20 72 65 71 75 65 73 74 73 2c 20 74
+ [2161] 68 65 6e 20 70 65 72 66 6f 72 6d 69 6e 67 20 74 68 65 6d 20 61 6e 64 20
+ [2185] 70 72 6f 63 65 73 73 69 6e 67 20 74 68 65 20 72 65 73 75 6c 74 73 2e 20
+ [2209] 68 74 74 72 32 20 69 73 20 61 20 6d 6f 64 65 72 6e 20 72 65 2d 69 6d 61
+ [2233] 67 69 6e 69 6e 67 20 6f 66 20 68 74 74 72 20 74 68 61 74 20 75 73 65 73
+ [2257] 20 61 20 70 69 70 65 2d 62 61 73 65 64 20 69 6e 74 65 72 66 61 63 65 20
+ [2281] 61 6e 64 20 73 6f 6c 76 65 73 20 6d 6f 72 65 20 6f 66 20 74 68 65 20 70
+ [2305] 72 6f 62 6c 65 6d 73 20 74 68 61 74 20 41 50 49 20 77 72 61 70 70 69 6e
+ [2329] 67 20 70 61 63 6b 61 67 65 73 20 66 61 63 65 2e 22 3e 0a 3c 6d 65 74 61
+ [2353] 20 70 72 6f 70 65 72 74 79 3d 22 6f 67 3a 64 65 73 63 72 69 70 74 69 6f
+ [2377] 6e 22 20 63 6f 6e 74 65 6e 74 3d 22 54 6f 6f 6c 73 20 66 6f 72 20 63 72
+ [2401] 65 61 74 69 6e 67 20 61 6e 64 20 6d 6f 64 69 66 79 69 6e 67 20 48 54 54
+ [2425] 50 20 72 65 71 75 65 73 74 73 2c 20 74 68 65 6e 20 70 65 72 66 6f 72 6d
+ [2449] 69 6e 67 20 74 68 65 6d 20 61 6e 64 20 70 72 6f 63 65 73 73 69 6e 67 20
+ [2473] 74 68 65 20 72 65 73 75 6c 74 73 2e 20 68 74 74 72 32 20 69 73 20 61 20
+ [2497] 6d 6f 64 65 72 6e 20 72 65 2d 69 6d 61 67 69 6e 69 6e 67 20 6f 66 20 68
+ [2521] 74 74 72 20 74 68 61 74 20 75 73 65 73 20 61 20 70 69 70 65 2d 62 61 73
+ [2545] 65 64 20 69 6e 74 65 72 66 61 63 65 20 61 6e 64 20 73 6f 6c 76 65 73 20
+ [2569] 6d 6f 72 65 20 6f 66 20 74 68 65 20 70 72 6f 62 6c 65 6d 73 20 74 68 61
+ [2593] 74 20 41 50 49 20 77 72 61 70 70 69 6e 67 20 70 61 63 6b 61 67 65 73 20
+ [2617] 66 61 63 65 2e 22 3e 0a 3c 6d 65 74 61 20 70 72 6f 70 65 72 74 79 3d 22
+ [2641] 6f 67 3a 69 6d 61 67 65 22 20 63 6f 6e 74 65 6e 74 3d 22 68 74 74 70 73
+ [2665] 3a 2f 2f 68 74 74 72 32 2e 72 2d 6c 69 62 2e 6f 72 67 2f 6c 6f 67 6f 2e
+ [2689] 70 6e 67 22 3e 0a 3c 73 63 72 69 70 74 20 64 65 66 65 72 20 64 61 74 61
+ [2713] 2d 64 6f 6d 61 69 6e 3d 22 68 74 74 72 32 2e 72 2d 6c 69 62 2e 6f 72 67
+ [2737] 2c 61 6c 6c 2e 74 69 64 79 76 65 72 73 65 2e 6f 72 67 22 20 73 72 63 3d
+ [2761] 22 68 74 74 70 73 3a 2f 2f 70 6c 61 75 73 69 62 6c 65 2e 69 6f 2f 6a 73
+ [2785] 2f 70 6c 61 75 73 69 62 6c 65 2e 6a 73 22 3e 3c 2f 73 63 72 69 70 74 3e
+ [2809] 0a 3c 2f 68 65 61 64 3e 0a 3c 62 6f 64 79 3e 0a 20 20 20 20 3c 61 20 68
+ [2833] 72 65 66 3d 22 23 63 6f 6e 74 61 69 6e 65 72 22 20 63 6c 61 73 73 3d 22
+ [2857] 76 69 73 75 61 6c 6c 79 2d 68 69 64 64 65 6e 2d 66 6f 63 75 73 61 62 6c
+ [2881] 65 22 3e 53 6b 69 70 20 74 6f 20 63 6f 6e 74 65 6e 74 3c 2f 61 3e 0a 0a
+ [2905] 0a 20 20 20 20 3c 6e 61 76 20 63 6c 61 73 73 3d 22 6e 61 76 62 61 72 20
+ [2929] 6e 61 76 62 61 72 2d 65 78 70 61 6e 64 2d 6c 67 20 66 69 78 65 64 2d 74
+ [2953] 6f 70 20 62 67 2d 6e 6f 6e 65 22 20 64 61 74 61 2d 62 73 2d 74 68 65 6d
+ [2977] 65 3d 22 6c 69 67 68 74 22 20 61 72 69 61 2d 6c 61 62 65 6c 3d 22 53 69
+ [3001] 74 65 20 6e 61 76 69 67 61 74 69 6f 6e 22 3e 3c 64 69 76 20 63 6c 61 73
+ [3025] 73 3d 22 63 6f 6e 74 61 69 6e 65 72 22 3e 0a 0a 20 20 20 20 3c 61 20 63
+ [3049] 6c 61 73 73 3d 22 6e 61 76 62 61 72 2d 62 72 61 6e 64 20 6d 65 2d 32 22
+ [3073] 20 68 72 65 66 3d 22 69 6e 64 65 78 2e 68 74 6d 6c 22 3e 68 74 74 72 32
+ [3097] 3c 2f 61 3e 0a 0a 20 20 20 20 3c 73 6d 61 6c 6c 20 63 6c 61 73 73 3d 22
+ [3121] 6e 61 76 2d 74 65 78 74 20 74 65 78 74 2d 6d 75 74 65 64 20 6d 65 2d 61
+ [3145] 75 74 6f 22 20 64 61 74 61 2d 62 73 2d 74 6f 67 67 6c 65 3d 22 74 6f 6f
+ [3169] 6c 74 69 70 22 20 64 61 74 61 2d 62 73 2d 70 6c 61 63 65 6d 65 6e 74 3d
+ [3193] 22 62 6f 74 74 6f 6d 22 20 74 69 74 6c 65 3d 22 52 65 6c 65 61 73 65 64
+ [3217] 20 76 65 72 73 69 6f 6e 22 3e 31 2e 31 2e 30 3c 2f 73 6d 61 6c 6c 3e 0a
+ [3241] 0a 0a 20 20 20 20 3c 62 75 74 74 6f 6e 20 63 6c 61 73 73 3d 22 6e 61 76
+ [3265] 62 61 72 2d 74 6f 67 67 6c 65 72 22 20 74 79 70 65 3d 22 62 75 74 74 6f
+ [3289] 6e 22 20 64 61 74 61 2d 62 73 2d 74 6f 67 67 6c 65 3d 22 63 6f 6c 6c 61
+ [3313] 70 73 65 22 20 64 61 74 61 2d 62 73 2d 74 61 72 67 65 74 3d 22 23 6e 61
+ [3337] 76 62 61 72 22 20 61 72 69 61 2d 63 6f 6e 74 72 6f 6c 73 3d 22 6e 61 76
+ [3361] 62 61 72 22 20 61 72 69 61 2d 65 78 70 61 6e 64 65 64 3d 22 66 61 6c 73
+ [3385] 65 22 20 61 72 69 61 2d 6c 61 62 65 6c 3d 22 54 6f 67 67 6c 65 20 6e 61
+ [3409] 76 69 67 61 74 69 6f 6e 22 3e 0a 20 20 20 20 20 20 3c 73 70 61 6e 20 63
+ [3433] 6c 61 73 73 3d 22 6e 61 76 62 61 72 2d 74 6f 67 67 6c 65 72 2d 69 63 6f
+ [3457] 6e 22 3e 3c 2f 73 70 61 6e 3e 0a 20 20 20 20 3c 2f 62 75 74 74 6f 6e 3e
+ [3481] 0a 0a 20 20 20 20 3c 64 69 76 20 69 64 3d 22 6e 61 76 62 61 72 22 20 63
+ [3505] 6c 61 73 73 3d 22 63 6f 6c 6c 61 70 73 65 20 6e 61 76 62 61 72 2d 63 6f
+ [3529] 6c 6c 61 70 73 65 20 6d 73 2d 33 22 3e 0a 20 20 20 20 20 20 3c 75 6c 20
+ [3553] 63 6c 61 73 73 3d 22 6e 61 76 62 61 72 2d 6e 61 76 20 6d 65 2d 61 75 74
+ [3577] 6f 22 3e 0a 3c 6c 69 20 63 6c 61 73 73 3d 22 6e 61 76 2d 69 74 65 6d 22
+ [3601] 3e 3c 61 20 63 6c 61 73 73 3d 22 6e 61 76 2d 6c 69 6e 6b 22 20 68 72 65
+ [3625] 66 3d 22 61 72 74 69 63 6c 65 73 2f 68 74 74 72 32 2e 68 74 6d 6c 22 3e
+ [3649] 47 65 74 20 73 74 61 72 74 65 64 3c 2f 61 3e 3c 2f 6c 69 3e 0a 3c 6c 69
+ [3673] 20 63 6c 61 73 73 3d 22 6e 61 76 2d 69 74 65 6d 22 3e 3c 61 20 63 6c 61
+ [3697] 73 73 3d 22 6e 61 76 2d 6c 69 6e 6b 22 20 68 72 65 66 3d 22 72 65 66 65
+ [3721] 72 65 6e 63 65 2f 69 6e 64 65 78 2e 68 74 6d 6c 22 3e 52 65 66 65 72 65
+ [3745] 6e 63 65 3c 2f 61 3e 3c 2f 6c 69 3e 0a 3c 6c 69 20 63 6c 61 73 73 3d 22
+ [3769] 6e 61 76 2d 69 74 65 6d 20 64 72 6f 70 64 6f 77 6e 22 3e 0a 20 20 3c 62
+ [3793] 75 74 74 6f 6e 20 63 6c 61 73 73 3d 22 6e 61 76 2d 6c 69 6e 6b 20 64 72
+ [3817] 6f 70 64 6f 77 6e 2d 74 6f 67 67 6c 65 22 20 74 79 70 65 3d 22 62 75 74
+ [3841] 74 6f 6e 22 20 69 64 3d 22 64 72 6f 70 64 6f 77 6e 2d 61 72 74 69 63 6c
+ [3865] 65 73 22 20 64 61 74 61 2d 62 73 2d 74 6f 67 67 6c 65 3d 22 64 72 6f 70
+ [3889] 64 6f 77 6e 22 20 61 72 69 61 2d 65 78 70 61 6e 64 65 64 3d 22 66 61 6c
+ [3913] 73 65 22 20 61 72 69 61 2d 68 61 73 70 6f 70 75 70 3d 22 74 72 75 65 22
+ [3937] 3e 41 72 74 69 63 6c 65 73 3c 2f 62 75 74 74 6f 6e 3e 0a 20 20 3c 75 6c
+ [3961] 20 63 6c 61 73 73 3d 22 64 72 6f 70 64 6f 77 6e 2d 6d 65 6e 75 22 20 61
+ [3985] 72 69 61 2d 6c 61 62 65 6c 6c 65 64 62 79 3d 22 64 72 6f 70 64 6f 77 6e
+ [4009] 2d 61 72 74 69 63 6c 65 73 22 3e 0a 3c 6c 69 3e 3c 61 20 63 6c 61 73 73
+ [4033] 3d 22 64 72 6f 70 64 6f 77 6e 2d 69 74 65 6d 22 20 68 72 65 66 3d 22 61
+ [4057] 72 74 69 63 6c 65 73 2f 77 72 61 70 70 69 6e 67 2d 61 70 69 73 2e 68 74
+ [4081] 6d 6c 22 3e 57 72 61 70 70 69 6e 67 20 41 50 49 73 3c 2f 61 3e 3c 2f 6c
+ [4105] 69 3e 0a 20 20 20 20 3c 6c 69 3e 3c 61 20 63 6c 61 73 73 3d 22 64 72 6f
+ [4129] 70 64 6f 77 6e 2d 69 74 65 6d 22 20 68 72 65 66 3d 22 61 72 74 69 63 6c
+ [4153] 65 73 2f 6f 61 75 74 68 2e 68 74 6d 6c 22 3e 4f 41 75 74 68 3c 2f 61 3e
+ [4177] 3c 2f 6c 69 3e 0a 20 20 3c 2f 75 6c 3e 0a 3c 2f 6c 69 3e 0a 3c 6c 69 20
+ [4201] 63 6c 61 73 73 3d 22 6e 61 76 2d 69 74 65 6d 20 64 72 6f 70 64 6f 77 6e
+ [4225] 22 3e 0a 20 20 3c 62 75 74 74 6f 6e 20 63 6c 61 73 73 3d 22 6e 61 76 2d
+ [4249] 6c 69 6e 6b 20 64 72 6f 70 64 6f 77 6e 2d 74 6f 67 67 6c 65 22 20 74 79
+ [4273] 70 65 3d 22 62 75 74 74 6f 6e 22 20 69 64 3d 22 64 72 6f 70 64 6f 77 6e
+ [4297] 2d 6e 65 77 73 22 20 64 61 74 61 2d 62 73 2d 74 6f 67 67 6c 65 3d 22 64
+ [4321] 72 6f 70 64 6f 77 6e 22 20 61 72 69 61 2d 65 78 70 61 6e 64 65 64 3d 22
+ [4345] 66 61 6c 73 65 22 20 61 72 69 61 2d 68 61 73 70 6f 70 75 70 3d 22 74 72
+ [4369] 75 65 22 3e 4e 65 77 73 3c 2f 62 75 74 74 6f 6e 3e 0a 20 20 3c 75 6c 20
+ [4393] 63 6c 61 73 73 3d 22 64 72 6f 70 64 6f 77 6e 2d 6d 65 6e 75 22 20 61 72
+ [4417] 69 61 2d 6c 61 62 65 6c 6c 65 64 62 79 3d 22 64 72 6f 70 64 6f 77 6e 2d
+ [4441] 6e 65 77 73 22 3e 0a 3c 6c 69 3e 3c 68 36 20 63 6c 61 73 73 3d 22 64 72
+ [4465] 6f 70 64 6f 77 6e 2d 68 65 61 64 65 72 22 20 64 61 74 61 2d 74 6f 63 2d
+ [4489] 73 6b 69 70 3e 52 65 6c 65 61 73 65 73 3c 2f 68 36 3e 3c 2f 6c 69 3e 0a
+ [4513] 20 20 20 20 3c 6c 69 3e 3c 61 20 63 6c 61 73 73 3d 22 65 78 74 65 72 6e
+ [4537] 61 6c 2d 6c 69 6e 6b 20 64 72 6f 70 64 6f 77 6e 2d 69 74 65 6d 22 20 68
+ [4561] 72 65 66 3d 22 68 74 74 70 73 3a 2f 2f 77 77 77 2e 74 69 64 79 76 65 72
+ [4585] 73 65 2e 6f 72 67 2f 62 6c 6f 67 2f 32 30 32 35 2f 30 31 2f 68 74 74 72
+ [4609] 32 2d 31 2d 31 2d 30 2f 22 3e 68 74 74 72 32 20 31 2e 31 2e 30 3c 2f 61
+ [4633] 3e 3c 2f 6c 69 3e 0a 20 20 20 20 3c 6c 69 3e 3c 61 20 63 6c 61 73 73 3d
+ [4657] 22 65 78 74 65 72 6e 61 6c 2d 6c 69 6e 6b 20 64 72 6f 70 64 6f 77 6e 2d
+ [4681] 69 74 65 6d 22 20 68 72 65 66 3d 22 68 74 74 70 73 3a 2f 2f 77 77 77 2e
+ [4705] 74 69 64 79 76 65 72 73 65 2e 6f 72 67 2f 62 6c 6f 67 2f 32 30 32 33 2f
+ [4729] 31 31 2f 68 74 74 72 32 2d 31 2d 30 2d 30 2f 22 3e 68 74 74 72 32 20 31
+ [4753] 2e 30 2e 30 3c 2f 61 3e 3c 2f 6c 69 3e 0a 20 20 20 20 3c 6c 69 3e 3c 68
+ [4777] 72 20 63 6c 61 73 73 3d 22 64 72 6f 70 64 6f 77 6e 2d 64 69 76 69 64 65
+ [4801] 72 22 3e 3c 2f 6c 69 3e 0a 20 20 20 20 3c 6c 69 3e 3c 61 20 63 6c 61 73
+ [4825] 73 3d 22 64 72 6f 70 64 6f 77 6e 2d 69 74 65 6d 22 20 68 72 65 66 3d 22
+ [4849] 6e 65 77 73 2f 69 6e 64 65 78 2e 68 74 6d 6c 22 3e 43 68 61 6e 67 65 6c
+ [4873] 6f 67 3c 2f 61 3e 3c 2f 6c 69 3e 0a 20 20 3c 2f 75 6c 3e 0a 3c 2f 6c 69
+ [4897] 3e 0a 20 20 20 20 20 20 3c 2f 75 6c 3e 0a 3c 75 6c 20 63 6c 61 73 73 3d
+ [4921] 22 6e 61 76 62 61 72 2d 6e 61 76 22 3e 0a 3c 6c 69 20 63 6c 61 73 73 3d
+ [4945] 22 6e 61 76 2d 69 74 65 6d 22 3e 3c 66 6f 72 6d 20 63 6c 61 73 73 3d 22
+ [4969] 66 6f 72 6d 2d 69 6e 6c 69 6e 65 22 20 72 6f 6c 65 3d 22 73 65 61 72 63
+ [4993] 68 22 3e 0a 20 3c 69 6e 70 75 74 20 63 6c 61 73 73 3d 22 66 6f 72 6d 2d
+ [5017] 63 6f 6e 74 72 6f 6c 22 20 74 79 70 65 3d 22 73 65 61 72 63 68 22 20 6e
+ [5041] 61 6d 65 3d 22 73 65 61 72 63 68 2d 69 6e 70 75 74 22 20 69 64 3d 22 73
+ [5065] 65 61 72 63 68 2d 69 6e 70 75 74 22 20 61 75 74 6f 63 6f 6d 70 6c 65 74
+ [5089] 65 3d 22 6f 66 66 22 20 61 72 69 61 2d 6c 61 62 65 6c 3d 22 53 65 61 72
+ [5113] 63 68 20 73 69 74 65 22 20 70 6c 61 63 65 68 6f 6c 64 65 72 3d 22 53 65
+ [5137] 61 72 63 68 20 66 6f 72 22 20 64 61 74 61 2d 73 65 61 72 63 68 2d 69 6e
+ [5161] 64 65 78 3d 22 73 65 61 72 63 68 2e 6a 73 6f 6e 22 3e 0a 3c 2f 66 6f 72
+ [5185] 6d 3e 3c 2f 6c 69 3e 0a 3c 6c 69 20 63 6c 61 73 73 3d 22 6e 61 76 2d 69
+ [5209] 74 65 6d 22 3e 3c 61 20 63 6c 61 73 73 3d 22 65 78 74 65 72 6e 61 6c 2d
+ [5233] 6c 69 6e 6b 20 6e 61 76 2d 6c 69 6e 6b 22 20 68 72 65 66 3d 22 68 74 74
+ [5257] 70 73 3a 2f 2f 67 69 74 68 75 62 2e 63 6f 6d 2f 72 2d 6c 69 62 2f 68 74
+ [5281] 74 72 32 2f 22 20 61 72 69 61 2d 6c 61 62 65 6c 3d 22 47 69 74 48 75 62
+ [5305] 22 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 66 61 20 66 61 62 20 66 61
+ [5329] 2d 67 69 74 68 75 62 20 66 61 2d 6c 67 22 3e 3c 2f 73 70 61 6e 3e 3c 2f
+ [5353] 61 3e 3c 2f 6c 69 3e 0a 20 20 20 20 20 20 3c 2f 75 6c 3e 0a 3c 2f 64 69
+ [5377] 76 3e 0a 0a 0a 20 20 3c 2f 64 69 76 3e 0a 3c 2f 6e 61 76 3e 3c 64 69 76
+ [5401] 20 63 6c 61 73 73 3d 22 63 6f 6e 74 61 69 6e 65 72 20 74 65 6d 70 6c 61
+ [5425] 74 65 2d 68 6f 6d 65 22 20 69 64 3d 22 63 6f 6e 74 61 69 6e 65 72 22 3e
+ [5449] 0a 3c 64 69 76 20 63 6c 61 73 73 3d 22 72 6f 77 22 3e 0a 20 20 3c 6d 61
+ [5473] 69 6e 20 69 64 3d 22 6d 61 69 6e 22 20 63 6c 61 73 73 3d 22 63 6f 6c 2d
+ [5497] 6d 64 2d 39 22 3e 3c 64 69 76 20 63 6c 61 73 73 3d 22 73 65 63 74 69 6f
+ [5521] 6e 20 6c 65 76 65 6c 31 22 3e 0a 3c 64 69 76 20 63 6c 61 73 73 3d 22 70
+ [5545] 61 67 65 2d 68 65 61 64 65 72 22 3e 0a 3c 69 6d 67 20 73 72 63 3d 22 6c
+ [5569] 6f 67 6f 2e 70 6e 67 22 20 63 6c 61 73 73 3d 22 6c 6f 67 6f 22 20 61 6c
+ [5593] 74 3d 22 22 3e 3c 68 31 20 69 64 3d 22 68 74 74 72 32 2d 22 3e 68 74 74
+ [5617] 72 32 20 0a 3c 61 20 63 6c 61 73 73 3d 22 61 6e 63 68 6f 72 22 20 61 72
+ [5641] 69 61 2d 6c 61 62 65 6c 3d 22 61 6e 63 68 6f 72 22 20 68 72 65 66 3d 22
+ [5665] 23 68 74 74 72 32 2d 22 3e 3c 2f 61 3e 0a 3c 2f 68 31 3e 0a 3c 2f 64 69
+ [5689] 76 3e 0a 3c 21 2d 2d 20 62 61 64 67 65 73 3a 20 73 74 61 72 74 20 2d 2d
+ [5713] 3e 0a 0a 3c 70 3e 68 74 74 72 32 20 28 70 72 6f 6e 6f 75 6e 63 65 64 20
+ [5737] e2 80 9c 68 69 74 74 65 72 32 e2 80 9d 29 20 69 73 20 61 20 63 6f 6d 70
+ [5761] 72 65 68 65 6e 73 69 76 65 20 48 54 54 50 20 63 6c 69 65 6e 74 20 74 68
+ [5785] 61 74 20 70 72 6f 76 69 64 65 73 20 61 20 6d 6f 64 65 72 6e 2c 20 70 69
+ [5809] 70 65 61 62 6c 65 20 41 50 49 20 66 6f 72 20 77 6f 72 6b 69 6e 67 20 77
+ [5833] 69 74 68 20 77 65 62 20 41 50 49 73 2e 20 49 74 20 62 75 69 6c 64 73 20
+ [5857] 6f 6e 20 74 6f 70 20 6f 66 20 3c 61 20 68 72 65 66 3d 22 68 74 74 70 73
+ [5881] 3a 2f 2f 6a 65 72 6f 65 6e 2e 72 2d 75 6e 69 76 65 72 73 65 2e 64 65 76
+ [5905] 2f 63 75 72 6c 22 20 63 6c 61 73 73 3d 22 65 78 74 65 72 6e 61 6c 2d 6c
+ [5929] 69 6e 6b 22 3e 7b 63 75 72 6c 7d 3c 2f 61 3e 20 74 6f 20 70 72 6f 76 69
+ [5953] 64 65 20 66 65 61 74 75 72 65 73 20 6c 69 6b 65 20 65 78 70 6c 69 63 69
+ [5977] 74 20 72 65 71 75 65 73 74 20 6f 62 6a 65 63 74 73 2c 20 62 75 69 6c 74
+ [6001] 2d 69 6e 20 72 61 74 65 20 6c 69 6d 69 74 69 6e 67 20 26 61 6d 70 3b 20
+ [6025] 72 65 74 72 79 20 74 6f 6f 6c 69 6e 67 2c 20 63 6f 6d 70 72 65 68 65 6e
+ [6049] 73 69 76 65 20 4f 41 75 74 68 20 73 75 70 70 6f 72 74 2c 20 61 6e 64 20
+ [6073] 73 65 63 75 72 65 20 68 61 6e 64 6c 69 6e 67 20 6f 66 20 73 65 63 72 65
+ [6097] 74 73 20 61 6e 64 20 63 72 65 64 65 6e 74 69 61 6c 73 2e 3c 2f 70 3e 0a
+ [6121] 3c 64 69 76 20 63 6c 61 73 73 3d 22 73 65 63 74 69 6f 6e 20 6c 65 76 65
+ [6145] 6c 32 22 3e 0a 3c 68 32 20 69 64 3d 22 69 6e 73 74 61 6c 6c 61 74 69 6f
+ [6169] 6e 22 3e 49 6e 73 74 61 6c 6c 61 74 69 6f 6e 3c 61 20 63 6c 61 73 73 3d
+ [6193] 22 61 6e 63 68 6f 72 22 20 61 72 69 61 2d 6c 61 62 65 6c 3d 22 61 6e 63
+ [6217] 68 6f 72 22 20 68 72 65 66 3d 22 23 69 6e 73 74 61 6c 6c 61 74 69 6f 6e
+ [6241] 22 3e 3c 2f 61 3e 0a 3c 2f 68 32 3e 0a 3c 70 3e 59 6f 75 20 63 61 6e 20
+ [6265] 69 6e 73 74 61 6c 6c 20 68 74 74 72 32 20 66 72 6f 6d 20 43 52 41 4e 20
+ [6289] 77 69 74 68 3a 3c 2f 70 3e 0a 3c 64 69 76 20 63 6c 61 73 73 3d 22 73 6f
+ [6313] 75 72 63 65 43 6f 64 65 22 20 69 64 3d 22 63 62 31 22 3e 3c 70 72 65 20
+ [6337] 63 6c 61 73 73 3d 22 64 6f 77 6e 6c 69 74 20 73 6f 75 72 63 65 43 6f 64
+ [6361] 65 20 72 22 3e 0a 3c 63 6f 64 65 20 63 6c 61 73 73 3d 22 73 6f 75 72 63
+ [6385] 65 43 6f 64 65 20 52 22 3e 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61
+ [6409] 73 73 3d 22 66 75 22 3e 3c 61 20 68 72 65 66 3d 22 68 74 74 70 73 3a 2f
+ [6433] 2f 72 64 72 72 2e 69 6f 2f 72 2f 75 74 69 6c 73 2f 69 6e 73 74 61 6c 6c
+ [6457] 2e 70 61 63 6b 61 67 65 73 2e 68 74 6d 6c 22 20 63 6c 61 73 73 3d 22 65
+ [6481] 78 74 65 72 6e 61 6c 2d 6c 69 6e 6b 22 3e 69 6e 73 74 61 6c 6c 2e 70 61
+ [6505] 63 6b 61 67 65 73 3c 2f 61 3e 3c 2f 73 70 61 6e 3e 3c 73 70 61 6e 20 63
+ [6529] 6c 61 73 73 3d 22 6f 70 22 3e 28 3c 2f 73 70 61 6e 3e 3c 73 70 61 6e 20
+ [6553] 63 6c 61 73 73 3d 22 73 74 22 3e 22 68 74 74 72 32 22 3c 2f 73 70 61 6e
+ [6577] 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 6f 70 22 3e 29 3c 2f 73 70 61
+ [6601] 6e 3e 3c 2f 73 70 61 6e 3e 3c 2f 63 6f 64 65 3e 3c 2f 70 72 65 3e 3c 2f
+ [6625] 64 69 76 3e 0a 3c 2f 64 69 76 3e 0a 3c 64 69 76 20 63 6c 61 73 73 3d 22
+ [6649] 73 65 63 74 69 6f 6e 20 6c 65 76 65 6c 32 22 3e 0a 3c 68 32 20 69 64 3d
+ [6673] 22 75 73 61 67 65 22 3e 55 73 61 67 65 3c 61 20 63 6c 61 73 73 3d 22 61
+ [6697] 6e 63 68 6f 72 22 20 61 72 69 61 2d 6c 61 62 65 6c 3d 22 61 6e 63 68 6f
+ [6721] 72 22 20 68 72 65 66 3d 22 23 75 73 61 67 65 22 3e 3c 2f 61 3e 0a 3c 2f
+ [6745] 68 32 3e 0a 3c 70 3e 54 6f 20 75 73 65 20 68 74 74 72 32 2c 20 73 74 61
+ [6769] 72 74 20 62 79 20 63 72 65 61 74 69 6e 67 20 61 20 3c 73 74 72 6f 6e 67
+ [6793] 3e 72 65 71 75 65 73 74 3c 2f 73 74 72 6f 6e 67 3e 3a 3c 2f 70 3e 0a 3c
+ [6817] 64 69 76 20 63 6c 61 73 73 3d 22 73 6f 75 72 63 65 43 6f 64 65 22 20 69
+ [6841] 64 3d 22 63 62 32 22 3e 3c 70 72 65 20 63 6c 61 73 73 3d 22 64 6f 77 6e
+ [6865] 6c 69 74 20 73 6f 75 72 63 65 43 6f 64 65 20 72 22 3e 0a 3c 63 6f 64 65
+ [6889] 20 63 6c 61 73 73 3d 22 73 6f 75 72 63 65 43 6f 64 65 20 52 22 3e 3c 73
+ [6913] 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 6b 77 22 3e 3c 61 20
+ [6937] 68 72 65 66 3d 22 68 74 74 70 73 3a 2f 2f 72 64 72 72 2e 69 6f 2f 72 2f
+ [6961] 62 61 73 65 2f 6c 69 62 72 61 72 79 2e 68 74 6d 6c 22 20 63 6c 61 73 73
+ [6985] 3d 22 65 78 74 65 72 6e 61 6c 2d 6c 69 6e 6b 22 3e 6c 69 62 72 61 72 79
+ [7009] 3c 2f 61 3e 3c 2f 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22
+ [7033] 6f 70 22 3e 28 3c 2f 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d
+ [7057] 22 76 61 22 3e 3c 61 20 68 72 65 66 3d 22 68 74 74 70 73 3a 2f 2f 68 74
+ [7081] 74 72 32 2e 72 2d 6c 69 62 2e 6f 72 67 22 3e 68 74 74 72 32 3c 2f 61 3e
+ [7105] 3c 2f 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 6f 70 22 3e
+ [7129] 29 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 2f
+ [7153] 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d
+ [7177] 22 76 61 22 3e 72 65 71 3c 2f 73 70 61 6e 3e 20 3c 73 70 61 6e 20 63 6c
+ [7201] 61 73 73 3d 22 6f 70 22 3e 26 6c 74 3b 2d 3c 2f 73 70 61 6e 3e 20 3c 73
+ [7225] 70 61 6e 20 63 6c 61 73 73 3d 22 66 75 22 3e 3c 61 20 68 72 65 66 3d 22
+ [7249] 72 65 66 65 72 65 6e 63 65 2f 72 65 71 75 65 73 74 2e 68 74 6d 6c 22 3e
+ [7273] 72 65 71 75 65 73 74 3c 2f 61 3e 3c 2f 73 70 61 6e 3e 3c 73 70 61 6e 20
+ [7297] 63 6c 61 73 73 3d 22 6f 70 22 3e 28 3c 2f 73 70 61 6e 3e 3c 73 70 61 6e
+ [7321] 20 63 6c 61 73 73 3d 22 73 74 22 3e 22 68 74 74 70 73 3a 2f 2f 72 2d 70
+ [7345] 72 6f 6a 65 63 74 2e 6f 72 67 22 3c 2f 73 70 61 6e 3e 3c 73 70 61 6e 20
+ [7369] 63 6c 61 73 73 3d 22 6f 70 22 3e 29 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61
+ [7393] 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 76 61
+ [7417] 22 3e 72 65 71 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61
+ [7441] 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 63 6f 22 3e 23 26 67 74 3b
+ [7465] 20 26 6c 74 3b 68 74 74 72 32 5f 72 65 71 75 65 73 74 26 67 74 3b 3c 2f
+ [7489] 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e
+ [7513] 20 63 6c 61 73 73 3d 22 63 6f 22 3e 23 26 67 74 3b 20 47 45 54 20 68 74
+ [7537] 74 70 73 3a 2f 2f 72 2d 70 72 6f 6a 65 63 74 2e 6f 72 67 3c 2f 73 70 61
+ [7561] 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c
+ [7585] 61 73 73 3d 22 63 6f 22 3e 23 26 67 74 3b 20 42 6f 64 79 3a 20 65 6d 70
+ [7609] 74 79 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 3c 2f 63 6f 64 65 3e 3c
+ [7633] 2f 70 72 65 3e 3c 2f 64 69 76 3e 0a 3c 70 3e 59 6f 75 20 63 61 6e 20 74
+ [7657] 61 69 6c 6f 72 20 74 68 69 73 20 72 65 71 75 65 73 74 20 77 69 74 68 20
+ [7681] 74 68 65 20 3c 63 6f 64 65 3e 72 65 71 5f 3c 2f 63 6f 64 65 3e 20 66 61
+ [7705] 6d 69 6c 79 20 6f 66 20 66 75 6e 63 74 69 6f 6e 73 3a 3c 2f 70 3e 0a 3c
+ [7729] 64 69 76 20 63 6c 61 73 73 3d 22 73 6f 75 72 63 65 43 6f 64 65 22 20 69
+ [7753] 64 3d 22 63 62 33 22 3e 3c 70 72 65 20 63 6c 61 73 73 3d 22 64 6f 77 6e
+ [7777] 6c 69 74 20 73 6f 75 72 63 65 43 6f 64 65 20 72 22 3e 0a 3c 63 6f 64 65
+ [7801] 20 63 6c 61 73 73 3d 22 73 6f 75 72 63 65 43 6f 64 65 20 52 22 3e 3c 73
+ [7825] 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 63 6f 22 3e 23 20 41
+ [7849] 64 64 20 63 75 73 74 6f 6d 20 68 65 61 64 65 72 73 3c 2f 73 70 61 6e 3e
+ [7873] 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73
+ [7897] 73 3d 22 76 61 22 3e 72 65 71 3c 2f 73 70 61 6e 3e 20 3c 73 70 61 6e 20
+ [7921] 63 6c 61 73 73 3d 22 6f 70 22 3e 7c 26 67 74 3b 3c 2f 73 70 61 6e 3e 20
+ [7945] 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 66 75 22 3e 3c 61 20 68 72 65 66
+ [7969] 3d 22 72 65 66 65 72 65 6e 63 65 2f 72 65 71 5f 68 65 61 64 65 72 73 2e
+ [7993] 68 74 6d 6c 22 3e 72 65 71 5f 68 65 61 64 65 72 73 3c 2f 61 3e 3c 2f 73
+ [8017] 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 6f 70 22 3e 28 3c 2f
+ [8041] 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 73 74 22 3e 22 41
+ [8065] 63 63 65 70 74 22 3c 2f 73 70 61 6e 3e 20 3c 73 70 61 6e 20 63 6c 61 73
+ [8089] 73 3d 22 6f 70 22 3e 3d 3c 2f 73 70 61 6e 3e 20 3c 73 70 61 6e 20 63 6c
+ [8113] 61 73 73 3d 22 73 74 22 3e 22 61 70 70 6c 69 63 61 74 69 6f 6e 2f 6a 73
+ [8137] 6f 6e 22 3c 2f 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 6f
+ [8161] 70 22 3e 29 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e
+ [8185] 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 63 6f 22 3e 23 26 67 74 3b 20
+ [8209] 26 6c 74 3b 68 74 74 72 32 5f 72 65 71 75 65 73 74 26 67 74 3b 3c 2f 73
+ [8233] 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20
+ [8257] 63 6c 61 73 73 3d 22 63 6f 22 3e 23 26 67 74 3b 20 47 45 54 20 68 74 74
+ [8281] 70 73 3a 2f 2f 72 2d 70 72 6f 6a 65 63 74 2e 6f 72 67 3c 2f 73 70 61 6e
+ [8305] 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61
+ [8329] 73 73 3d 22 63 6f 22 3e 23 26 67 74 3b 20 48 65 61 64 65 72 73 3a 3c 2f
+ [8353] 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e
+ [8377] 20 63 6c 61 73 73 3d 22 63 6f 22 3e 23 26 67 74 3b 20 e2 80 a2 20 41 63
+ [8401] 63 65 70 74 3a 20 22 61 70 70 6c 69 63 61 74 69 6f 6e 2f 6a 73 6f 6e 22
+ [8425] 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70
+ [8449] 61 6e 20 63 6c 61 73 73 3d 22 63 6f 22 3e 23 26 67 74 3b 20 42 6f 64 79
+ [8473] 3a 20 65 6d 70 74 79 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73
+ [8497] 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20
+ [8521] 63 6c 61 73 73 3d 22 63 6f 22 3e 23 20 41 64 64 20 61 20 62 6f 64 79 2c
+ [8545] 20 74 75 72 6e 69 6e 67 20 69 74 20 69 6e 74 6f 20 61 20 50 4f 53 54 3c
+ [8569] 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61
+ [8593] 6e 20 63 6c 61 73 73 3d 22 76 61 22 3e 72 65 71 3c 2f 73 70 61 6e 3e 20
+ [8617] 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 6f 70 22 3e 7c 26 67 74 3b 3c 2f
+ [8641] 73 70 61 6e 3e 20 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 66 75 22 3e 3c
+ [8665] 61 20 68 72 65 66 3d 22 72 65 66 65 72 65 6e 63 65 2f 72 65 71 5f 62 6f
+ [8689] 64 79 2e 68 74 6d 6c 22 3e 72 65 71 5f 62 6f 64 79 5f 6a 73 6f 6e 3c 2f
+ [8713] 61 3e 3c 2f 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 6f 70
+ [8737] 22 3e 28 3c 2f 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 66
+ [8761] 75 22 3e 3c 61 20 68 72 65 66 3d 22 68 74 74 70 73 3a 2f 2f 72 64 72 72
+ [8785] 2e 69 6f 2f 72 2f 62 61 73 65 2f 6c 69 73 74 2e 68 74 6d 6c 22 20 63 6c
+ [8809] 61 73 73 3d 22 65 78 74 65 72 6e 61 6c 2d 6c 69 6e 6b 22 3e 6c 69 73 74
+ [8833] 3c 2f 61 3e 3c 2f 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22
+ [8857] 6f 70 22 3e 28 3c 2f 73 70 61 6e 3e 78 20 3c 73 70 61 6e 20 63 6c 61 73
+ [8881] 73 3d 22 6f 70 22 3e 3d 3c 2f 73 70 61 6e 3e 20 3c 73 70 61 6e 20 63 6c
+ [8905] 61 73 73 3d 22 66 6c 22 3e 31 3c 2f 73 70 61 6e 3e 2c 20 79 20 3c 73 70
+ [8929] 61 6e 20 63 6c 61 73 73 3d 22 6f 70 22 3e 3d 3c 2f 73 70 61 6e 3e 20 3c
+ [8953] 73 70 61 6e 20 63 6c 61 73 73 3d 22 66 6c 22 3e 32 3c 2f 73 70 61 6e 3e
+ [8977] 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 6f 70 22 3e 29 3c 2f 73 70 61 6e
+ [9001] 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 6f 70 22 3e 29 3c 2f 73 70 61
+ [9025] 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c
+ [9049] 61 73 73 3d 22 63 6f 22 3e 23 26 67 74 3b 20 26 6c 74 3b 68 74 74 72 32
+ [9073] 5f 72 65 71 75 65 73 74 26 67 74 3b 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61
+ [9097] 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 63 6f
+ [9121] 22 3e 23 26 67 74 3b 20 50 4f 53 54 20 68 74 74 70 73 3a 2f 2f 72 2d 70
+ [9145] 72 6f 6a 65 63 74 2e 6f 72 67 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e
+ [9169] 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 63 6f 22 3e
+ [9193] 23 26 67 74 3b 20 42 6f 64 79 3a 20 6a 73 6f 6e 20 65 6e 63 6f 64 65 64
+ [9217] 20 64 61 74 61 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61
+ [9241] 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c
+ [9265] 61 73 73 3d 22 63 6f 22 3e 23 20 4d 6f 64 69 66 79 20 74 68 65 20 70 61
+ [9289] 74 68 20 69 6e 20 74 68 65 20 75 72 6c 3c 2f 73 70 61 6e 3e 3c 2f 73 70
+ [9313] 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 76
+ [9337] 61 22 3e 72 65 71 3c 2f 73 70 61 6e 3e 20 3c 73 70 61 6e 20 63 6c 61 73
+ [9361] 73 3d 22 6f 70 22 3e 7c 26 67 74 3b 3c 2f 73 70 61 6e 3e 20 3c 73 70 61
+ [9385] 6e 20 63 6c 61 73 73 3d 22 66 75 22 3e 3c 61 20 68 72 65 66 3d 22 72 65
+ [9409] 66 65 72 65 6e 63 65 2f 72 65 71 5f 75 72 6c 2e 68 74 6d 6c 22 3e 72 65
+ [9433] 71 5f 75 72 6c 5f 70 61 74 68 3c 2f 61 3e 3c 2f 73 70 61 6e 3e 3c 73 70
+ [9457] 61 6e 20 63 6c 61 73 73 3d 22 6f 70 22 3e 28 3c 2f 73 70 61 6e 3e 70 61
+ [9481] 74 68 20 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 6f 70 22 3e 3d 3c 2f 73
+ [9505] 70 61 6e 3e 20 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 73 74 22 3e 22 70
+ [9529] 61 74 68 2f 74 6f 2f 6d 79 2f 66 69 6c 65 22 3c 2f 73 70 61 6e 3e 3c 73
+ [9553] 70 61 6e 20 63 6c 61 73 73 3d 22 6f 70 22 3e 29 3c 2f 73 70 61 6e 3e 3c
+ [9577] 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73
+ [9601] 3d 22 63 6f 22 3e 23 26 67 74 3b 20 26 6c 74 3b 68 74 74 72 32 5f 72 65
+ [9625] 71 75 65 73 74 26 67 74 3b 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a
+ [9649] 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 63 6f 22 3e 23
+ [9673] 26 67 74 3b 20 47 45 54 20 68 74 74 70 73 3a 2f 2f 72 2d 70 72 6f 6a 65
+ [9697] 63 74 2e 6f 72 67 2f 70 61 74 68 2f 74 6f 2f 6d 79 2f 66 69 6c 65 3c 2f
+ [9721] 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e
+ [9745] 20 63 6c 61 73 73 3d 22 63 6f 22 3e 23 26 67 74 3b 20 42 6f 64 79 3a 20
+ [9769] 65 6d 70 74 79 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61
+ [9793] 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c
+ [9817] 61 73 73 3d 22 63 6f 22 3e 23 20 41 75 74 6f 6d 61 74 69 63 61 6c 6c 79
+ [9841] 20 72 65 74 72 79 20 69 66 20 74 68 65 20 72 65 71 75 65 73 74 20 66 61
+ [9865] 69 6c 73 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e
+ [9889] 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 76 61 22 3e 72 65 71 3c 2f 73 70
+ [9913] 61 6e 3e 20 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 6f 70 22 3e 7c 26 67
+ [9937] 74 3b 3c 2f 73 70 61 6e 3e 20 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 66
+ [9961] 75 22 3e 3c 61 20 68 72 65 66 3d 22 72 65 66 65 72 65 6e 63 65 2f 72 65
+ [9985] 71 5f 72 65 74 72 79 2e 68 74 6d 6c 22 3e 72 65 71 5f 72 65 74 72 79 3c
+[10009] 2f 61 3e 3c 2f 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 6f
+[10033] 70 22 3e 28 3c 2f 73 70 61 6e 3e 6d 61 78 5f 74 72 69 65 73 20 3c 73 70
+[10057] 61 6e 20 63 6c 61 73 73 3d 22 6f 70 22 3e 3d 3c 2f 73 70 61 6e 3e 20 3c
+[10081] 73 70 61 6e 20 63 6c 61 73 73 3d 22 66 6c 22 3e 35 3c 2f 73 70 61 6e 3e
+[10105] 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 6f 70 22 3e 29 3c 2f 73 70 61 6e
+[10129] 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61
+[10153] 73 73 3d 22 63 6f 22 3e 23 26 67 74 3b 20 26 6c 74 3b 68 74 74 72 32 5f
+[10177] 72 65 71 75 65 73 74 26 67 74 3b 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e
+[10201] 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 63 6f 22
+[10225] 3e 23 26 67 74 3b 20 47 45 54 20 68 74 74 70 73 3a 2f 2f 72 2d 70 72 6f
+[10249] 6a 65 63 74 2e 6f 72 67 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c
+[10273] 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 63 6f 22 3e 23 26
+[10297] 67 74 3b 20 42 6f 64 79 3a 20 65 6d 70 74 79 3c 2f 73 70 61 6e 3e 3c 2f
+[10321] 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d
+[10345] 22 63 6f 22 3e 23 26 67 74 3b 20 50 6f 6c 69 63 69 65 73 3a 3c 2f 73 70
+[10369] 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63
+[10393] 6c 61 73 73 3d 22 63 6f 22 3e 23 26 67 74 3b 20 e2 80 a2 20 72 65 74 72
+[10417] 79 5f 6d 61 78 5f 74 72 69 65 73 3a 20 35 3c 2f 73 70 61 6e 3e 3c 2f 73
+[10441] 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22
+[10465] 63 6f 22 3e 23 26 67 74 3b 20 e2 80 a2 20 72 65 74 72 79 5f 6f 6e 5f 66
+[10489] 61 69 6c 75 72 65 3a 20 46 41 4c 53 45 3c 2f 73 70 61 6e 3e 3c 2f 73 70
+[10513] 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 63
+[10537] 6f 22 3e 23 26 67 74 3b 20 e2 80 a2 20 72 65 74 72 79 5f 66 61 69 6c 75
+[10561] 72 65 5f 74 68 72 65 73 68 6f 6c 64 3a 20 49 6e 66 3c 2f 73 70 61 6e 3e
+[10585] 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73
+[10609] 73 3d 22 63 6f 22 3e 23 26 67 74 3b 20 e2 80 a2 20 72 65 74 72 79 5f 66
+[10633] 61 69 6c 75 72 65 5f 74 69 6d 65 6f 75 74 3a 20 33 30 3c 2f 73 70 61 6e
+[10657] 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61
+[10681] 73 73 3d 22 63 6f 22 3e 23 26 67 74 3b 20 e2 80 a2 20 72 65 74 72 79 5f
+[10705] 72 65 61 6c 6d 3a 20 22 72 2d 70 72 6f 6a 65 63 74 2e 6f 72 67 22 3c 2f
+[10729] 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 2f 73 70 61
+[10753] 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 63 6f
+[10777] 22 3e 23 20 43 68 61 6e 67 65 20 74 68 65 20 48 54 54 50 20 6d 65 74 68
+[10801] 6f 64 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c
+[10825] 73 70 61 6e 20 63 6c 61 73 73 3d 22 76 61 22 3e 72 65 71 3c 2f 73 70 61
+[10849] 6e 3e 20 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 6f 70 22 3e 7c 26 67 74
+[10873] 3b 3c 2f 73 70 61 6e 3e 20 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 66 75
+[10897] 22 3e 3c 61 20 68 72 65 66 3d 22 72 65 66 65 72 65 6e 63 65 2f 72 65 71
+[10921] 5f 6d 65 74 68 6f 64 2e 68 74 6d 6c 22 3e 72 65 71 5f 6d 65 74 68 6f 64
+[10945] 3c 2f 61 3e 3c 2f 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22
+[10969] 6f 70 22 3e 28 3c 2f 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d
+[10993] 22 73 74 22 3e 22 50 41 54 43 48 22 3c 2f 73 70 61 6e 3e 3c 73 70 61 6e
+[11017] 20 63 6c 61 73 73 3d 22 6f 70 22 3e 29 3c 2f 73 70 61 6e 3e 3c 2f 73 70
+[11041] 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 63
+[11065] 6f 22 3e 23 26 67 74 3b 20 26 6c 74 3b 68 74 74 72 32 5f 72 65 71 75 65
+[11089] 73 74 26 67 74 3b 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70
+[11113] 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 63 6f 22 3e 23 26 67 74
+[11137] 3b 20 50 41 54 43 48 20 68 74 74 70 73 3a 2f 2f 72 2d 70 72 6f 6a 65 63
+[11161] 74 2e 6f 72 67 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61
+[11185] 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 63 6f 22 3e 23 26 67 74 3b
+[11209] 20 42 6f 64 79 3a 20 65 6d 70 74 79 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61
+[11233] 6e 3e 3c 2f 63 6f 64 65 3e 3c 2f 70 72 65 3e 3c 2f 64 69 76 3e 0a 3c 70
+[11257] 3e 41 6e 64 20 73 65 65 20 65 78 61 63 74 6c 79 20 77 68 61 74 20 68 74
+[11281] 74 72 32 20 77 69 6c 6c 20 73 65 6e 64 20 74 6f 20 74 68 65 20 73 65 72
+[11305] 76 65 72 20 77 69 74 68 20 3c 63 6f 64 65 3e 3c 61 20 68 72 65 66 3d 22
+[11329] 72 65 66 65 72 65 6e 63 65 2f 72 65 71 5f 64 72 79 5f 72 75 6e 2e 68 74
+[11353] 6d 6c 22 3e 72 65 71 5f 64 72 79 5f 72 75 6e 28 29 3c 2f 61 3e 3c 2f 63
+[11377] 6f 64 65 3e 3a 3c 2f 70 3e 0a 3c 64 69 76 20 63 6c 61 73 73 3d 22 73 6f
+[11401] 75 72 63 65 43 6f 64 65 22 20 69 64 3d 22 63 62 34 22 3e 3c 70 72 65 20
+[11425] 63 6c 61 73 73 3d 22 64 6f 77 6e 6c 69 74 20 73 6f 75 72 63 65 43 6f 64
+[11449] 65 20 72 22 3e 0a 3c 63 6f 64 65 20 63 6c 61 73 73 3d 22 73 6f 75 72 63
+[11473] 65 43 6f 64 65 20 52 22 3e 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61
+[11497] 73 73 3d 22 76 61 22 3e 72 65 71 3c 2f 73 70 61 6e 3e 20 3c 73 70 61 6e
+[11521] 20 63 6c 61 73 73 3d 22 6f 70 22 3e 7c 26 67 74 3b 3c 2f 73 70 61 6e 3e
+[11545] 20 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 66 75 22 3e 3c 61 20 68 72 65
+[11569] 66 3d 22 72 65 66 65 72 65 6e 63 65 2f 72 65 71 5f 64 72 79 5f 72 75 6e
+[11593] 2e 68 74 6d 6c 22 3e 72 65 71 5f 64 72 79 5f 72 75 6e 3c 2f 61 3e 3c 2f
+[11617] 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 6f 70 22 3e 28 3c
+[11641] 2f 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 6f 70 22 3e 29
+[11665] 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70
+[11689] 61 6e 20 63 6c 61 73 73 3d 22 63 6f 22 3e 23 26 67 74 3b 20 47 45 54 20
+[11713] 2f 20 48 54 54 50 2f 31 2e 31 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e
+[11737] 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 63 6f 22 3e
+[11761] 23 26 67 74 3b 20 48 6f 73 74 3a 20 72 2d 70 72 6f 6a 65 63 74 2e 6f 72
+[11785] 67 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73
+[11809] 70 61 6e 20 63 6c 61 73 73 3d 22 63 6f 22 3e 23 26 67 74 3b 20 55 73 65
+[11833] 72 2d 41 67 65 6e 74 3a 20 68 74 74 72 32 2f 31 2e 30 2e 37 2e 39 30 30
+[11857] 30 20 72 2d 63 75 72 6c 2f 36 2e 31 2e 30 20 6c 69 62 63 75 72 6c 2f 38
+[11881] 2e 37 2e 31 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e
+[11905] 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 63 6f 22 3e 23 26 67 74 3b 20
+[11929] 41 63 63 65 70 74 3a 20 2a 2f 2a 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e
+[11953] 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 63 6f 22
+[11977] 3e 23 26 67 74 3b 20 41 63 63 65 70 74 2d 45 6e 63 6f 64 69 6e 67 3a 20
+[12001] 67 7a 69 70 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 3c 2f 63 6f 64 65
+[12025] 3e 3c 2f 70 72 65 3e 3c 2f 64 69 76 3e 0a 3c 70 3e 55 73 65 20 3c 63 6f
+[12049] 64 65 3e 3c 61 20 68 72 65 66 3d 22 72 65 66 65 72 65 6e 63 65 2f 72 65
+[12073] 71 5f 70 65 72 66 6f 72 6d 2e 68 74 6d 6c 22 3e 72 65 71 5f 70 65 72 66
+[12097] 6f 72 6d 28 29 3c 2f 61 3e 3c 2f 63 6f 64 65 3e 20 74 6f 20 70 65 72 66
+[12121] 6f 72 6d 20 74 68 65 20 72 65 71 75 65 73 74 2c 20 72 65 74 72 69 65 76
+[12145] 69 6e 67 20 61 20 3c 73 74 72 6f 6e 67 3e 72 65 73 70 6f 6e 73 65 3c 2f
+[12169] 73 74 72 6f 6e 67 3e 3a 3c 2f 70 3e 0a 3c 64 69 76 20 63 6c 61 73 73 3d
+[12193] 22 73 6f 75 72 63 65 43 6f 64 65 22 20 69 64 3d 22 63 62 35 22 3e 3c 70
+[12217] 72 65 20 63 6c 61 73 73 3d 22 64 6f 77 6e 6c 69 74 20 73 6f 75 72 63 65
+[12241] 43 6f 64 65 20 72 22 3e 0a 3c 63 6f 64 65 20 63 6c 61 73 73 3d 22 73 6f
+[12265] 75 72 63 65 43 6f 64 65 20 52 22 3e 3c 73 70 61 6e 3e 3c 73 70 61 6e 20
+[12289] 63 6c 61 73 73 3d 22 76 61 22 3e 72 65 73 70 3c 2f 73 70 61 6e 3e 20 3c
+[12313] 73 70 61 6e 20 63 6c 61 73 73 3d 22 6f 70 22 3e 26 6c 74 3b 2d 3c 2f 73
+[12337] 70 61 6e 3e 20 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 66 75 22 3e 3c 61
+[12361] 20 68 72 65 66 3d 22 72 65 66 65 72 65 6e 63 65 2f 72 65 71 5f 70 65 72
+[12385] 66 6f 72 6d 2e 68 74 6d 6c 22 3e 72 65 71 5f 70 65 72 66 6f 72 6d 3c 2f
+[12409] 61 3e 3c 2f 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 6f 70
+[12433] 22 3e 28 3c 2f 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 76
+[12457] 61 22 3e 72 65 71 3c 2f 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73
+[12481] 3d 22 6f 70 22 3e 29 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73
+[12505] 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 76 61 22 3e 72 65 73
+[12529] 70 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73
+[12553] 70 61 6e 20 63 6c 61 73 73 3d 22 63 6f 22 3e 23 26 67 74 3b 20 26 6c 74
+[12577] 3b 68 74 74 72 32 5f 72 65 73 70 6f 6e 73 65 26 67 74 3b 3c 2f 73 70 61
+[12601] 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c
+[12625] 61 73 73 3d 22 63 6f 22 3e 23 26 67 74 3b 20 47 45 54 20 68 74 74 70 73
+[12649] 3a 2f 2f 77 77 77 2e 72 2d 70 72 6f 6a 65 63 74 2e 6f 72 67 2f 3c 2f 73
+[12673] 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20
+[12697] 63 6c 61 73 73 3d 22 63 6f 22 3e 23 26 67 74 3b 20 53 74 61 74 75 73 3a
+[12721] 20 32 30 30 20 4f 4b 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73
+[12745] 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 63 6f 22 3e 23 26 67
+[12769] 74 3b 20 43 6f 6e 74 65 6e 74 2d 54 79 70 65 3a 20 74 65 78 74 2f 68 74
+[12793] 6d 6c 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c
+[12817] 73 70 61 6e 20 63 6c 61 73 73 3d 22 63 6f 22 3e 23 26 67 74 3b 20 42 6f
+[12841] 64 79 3a 20 49 6e 20 6d 65 6d 6f 72 79 20 28 36 37 37 34 20 62 79 74 65
+[12865] 73 29 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 3c 2f 63 6f 64 65 3e 3c
+[12889] 2f 70 72 65 3e 3c 2f 64 69 76 3e 0a 3c 70 3e 54 68 65 20 3c 63 6f 64 65
+[12913] 3e 72 65 73 70 5f 3c 2f 63 6f 64 65 3e 20 66 75 6e 63 74 69 6f 6e 73 20
+[12937] 68 65 6c 70 20 79 6f 75 20 65 78 74 72 61 63 74 20 76 61 72 69 6f 75 73
+[12961] 20 75 73 65 66 75 6c 20 63 6f 6d 70 6f 6e 65 6e 74 73 20 6f 66 20 74 68
+[12985] 65 20 72 65 73 70 6f 6e 73 65 3a 3c 2f 70 3e 0a 3c 64 69 76 20 63 6c 61
+[13009] 73 73 3d 22 73 6f 75 72 63 65 43 6f 64 65 22 20 69 64 3d 22 63 62 36 22
+[13033] 3e 3c 70 72 65 20 63 6c 61 73 73 3d 22 64 6f 77 6e 6c 69 74 20 73 6f 75
+[13057] 72 63 65 43 6f 64 65 20 72 22 3e 0a 3c 63 6f 64 65 20 63 6c 61 73 73 3d
+[13081] 22 73 6f 75 72 63 65 43 6f 64 65 20 52 22 3e 3c 73 70 61 6e 3e 3c 73 70
+[13105] 61 6e 20 63 6c 61 73 73 3d 22 76 61 22 3e 72 65 73 70 3c 2f 73 70 61 6e
+[13129] 3e 20 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 6f 70 22 3e 7c 26 67 74 3b
+[13153] 3c 2f 73 70 61 6e 3e 20 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 66 75 22
+[13177] 3e 3c 61 20 68 72 65 66 3d 22 72 65 66 65 72 65 6e 63 65 2f 72 65 73 70
+[13201] 5f 63 6f 6e 74 65 6e 74 5f 74 79 70 65 2e 68 74 6d 6c 22 3e 72 65 73 70
+[13225] 5f 63 6f 6e 74 65 6e 74 5f 74 79 70 65 3c 2f 61 3e 3c 2f 73 70 61 6e 3e
+[13249] 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 6f 70 22 3e 28 3c 2f 73 70 61 6e
+[13273] 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 6f 70 22 3e 29 3c 2f 73 70 61
+[13297] 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c
+[13321] 61 73 73 3d 22 63 6f 22 3e 23 26 67 74 3b 20 5b 31 5d 20 22 74 65 78 74
+[13345] 2f 68 74 6d 6c 22 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70
+[13369] 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 76 61 22 3e 72 65 73 70
+[13393] 3c 2f 73 70 61 6e 3e 20 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 6f 70 22
+[13417] 3e 7c 26 67 74 3b 3c 2f 73 70 61 6e 3e 20 3c 73 70 61 6e 20 63 6c 61 73
+[13441] 73 3d 22 66 75 22 3e 3c 61 20 68 72 65 66 3d 22 72 65 66 65 72 65 6e 63
+[13465] 65 2f 72 65 73 70 5f 73 74 61 74 75 73 2e 68 74 6d 6c 22 3e 72 65 73 70
+[13489] 5f 73 74 61 74 75 73 5f 64 65 73 63 3c 2f 61 3e 3c 2f 73 70 61 6e 3e 3c
+[13513] 73 70 61 6e 20 63 6c 61 73 73 3d 22 6f 70 22 3e 28 3c 2f 73 70 61 6e 3e
+[13537] 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 6f 70 22 3e 29 3c 2f 73 70 61 6e
+[13561] 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61
+[13585] 73 73 3d 22 63 6f 22 3e 23 26 67 74 3b 20 5b 31 5d 20 22 4f 4b 22 3c 2f
+[13609] 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e
+[13633] 20 63 6c 61 73 73 3d 22 76 61 22 3e 72 65 73 70 3c 2f 73 70 61 6e 3e 20
+[13657] 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 6f 70 22 3e 7c 26 67 74 3b 3c 2f
+[13681] 73 70 61 6e 3e 20 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 66 75 22 3e 3c
+[13705] 61 20 68 72 65 66 3d 22 72 65 66 65 72 65 6e 63 65 2f 72 65 73 70 5f 62
+[13729] 6f 64 79 5f 72 61 77 2e 68 74 6d 6c 22 3e 72 65 73 70 5f 62 6f 64 79 5f
+[13753] 68 74 6d 6c 3c 2f 61 3e 3c 2f 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61
+[13777] 73 73 3d 22 6f 70 22 3e 28 3c 2f 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c
+[13801] 61 73 73 3d 22 6f 70 22 3e 29 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e
+[13825] 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 63 6f 22 3e
+[13849] 23 26 67 74 3b 20 7b 68 74 6d 6c 5f 64 6f 63 75 6d 65 6e 74 7d 3c 2f 73
+[13873] 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20
+[13897] 63 6c 61 73 73 3d 22 63 6f 22 3e 23 26 67 74 3b 20 26 6c 74 3b 68 74 6d
+[13921] 6c 20 6c 61 6e 67 3d 22 65 6e 22 26 67 74 3b 3c 2f 73 70 61 6e 3e 3c 2f
+[13945] 73 70 61 6e 3e 0a 3c 73 70 61 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d
+[13969] 22 63 6f 22 3e 23 26 67 74 3b 20 5b 31 5d 20 26 6c 74 3b 68 65 61 64 26
+[13993] 67 74 3b 5c 6e 26 6c 74 3b 6d 65 74 61 20 68 74 74 70 2d 65 71 75 69 76
+[14017] 3d 22 43 6f 6e 74 65 6e 74 2d 54 79 70 65 22 20 63 6f 6e 74 65 6e 74 3d
+[14041] 22 74 65 78 74 2f 68 74 6d 6c 3b 20 63 68 61 72 73 65 74 3d 55 54 46 2d
+[14065] 38 20 2e 2e 2e 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 0a 3c 73 70 61
+[14089] 6e 3e 3c 73 70 61 6e 20 63 6c 61 73 73 3d 22 63 6f 22 3e 23 26 67 74 3b
+[14113] 20 5b 32 5d 20 26 6c 74 3b 62 6f 64 79 26 67 74 3b 5c 6e 20 20 20 20 26
+[14137] 6c 74 3b 64 69 76 20 63 6c 61 73 73 3d 22 63 6f 6e 74 61 69 6e 65 72 20
+[14161] 70 61 67 65 22 26 67 74 3b 5c 6e 20 20 20 20 20 20 26 6c 74 3b 64 69 76
+[14185] 20 63 6c 61 73 73 3d 22 72 6f 77 22 26 67 74 3b 5c 6e 20 20 20 20 20 20
+[14209] 20 2e 2e 2e 3c 2f 73 70 61 6e 3e 3c 2f 73 70 61 6e 3e 3c 2f 63 6f 64 65
+[14233] 3e 3c 2f 70 72 65 3e 3c 2f 64 69 76 3e 0a 3c 2f 64 69 76 3e 0a 3c 64 69
+[14257] 76 20 63 6c 61 73 73 3d 22 73 65 63 74 69 6f 6e 20 6c 65 76 65 6c 32 22
+[14281] 3e 0a 3c 68 32 20 69 64 3d 22 6d 61 6a 6f 72 2d 64 69 66 66 65 72 65 6e
+[14305] 63 65 73 2d 74 6f 2d 68 74 74 72 22 3e 4d 61 6a 6f 72 20 64 69 66 66 65
+[14329] 72 65 6e 63 65 73 20 74 6f 20 68 74 74 72 3c 61 20 63 6c 61 73 73 3d 22
+[14353] 61 6e 63 68 6f 72 22 20 61 72 69 61 2d 6c 61 62 65 6c 3d 22 61 6e 63 68
+[14377] 6f 72 22 20 68 72 65 66 3d 22 23 6d 61 6a 6f 72 2d 64 69 66 66 65 72 65
+[14401] 6e 63 65 73 2d 74 6f 2d 68 74 74 72 22 3e 3c 2f 61 3e 0a 3c 2f 68 32 3e
+[14425] 0a 3c 75 6c 3e 0a 3c 6c 69 3e 3c 70 3e 59 6f 75 20 63 61 6e 20 6e 6f 77
+[14449] 20 63 72 65 61 74 65 20 61 6e 64 20 6d 6f 64 69 66 79 20 61 20 72 65 71
+[14473] 75 65 73 74 20 77 69 74 68 6f 75 74 20 70 65 72 66 6f 72 6d 69 6e 67 20
+[14497] 69 74 2e 20 54 68 69 73 20 6d 65 61 6e 73 20 74 68 61 74 20 74 68 65 72
+[14521] 65 e2 80 99 73 20 6e 6f 77 20 61 20 73 69 6e 67 6c 65 20 66 75 6e 63 74
+[14545] 69 6f 6e 20 74 6f 20 70 65 72 66 6f 72 6d 20 74 68 65 20 72 65 71 75 65
+[14569] 73 74 20 61 6e 64 20 66 65 74 63 68 20 74 68 65 20 72 65 73 75 6c 74 3a
+[14593] 20 3c 63 6f 64 65 3e 3c 61 20 68 72 65 66 3d 22 72 65 66 65 72 65 6e 63
+[14617] 65 2f 72 65 71 5f 70 65 72 66 6f 72 6d 2e 68 74 6d 6c 22 3e 72 65 71 5f
+[14641] 70 65 72 66 6f 72 6d 28 29 3c 2f 61 3e 3c 2f 63 6f 64 65 3e 2e 20 3c 63
+[14665] 6f 64 65 3e 3c 61 20 68 72 65 66 3d 22 72 65 66 65 72 65 6e 63 65 2f 72
+[14689] 65 71 5f 70 65 72 66 6f 72 6d 2e 68 74 6d 6c 22 3e 72 65 71 5f 70 65 72
+[14713] 66 6f 72 6d 28 29 3c 2f 61 3e 3c 2f 63 6f 64 65 3e 20 72 65 70 6c 61 63
+[14737] 65 73 20 3c 63 6f 64 65 3e 3c 61 20 68 72 65 66 3d 22 68 74 74 70 73 3a
+[14761] 2f 2f 68 74 74 72 2e 72 2d 6c 69 62 2e 6f 72 67 2f 72 65 66 65 72 65 6e
+[14785] 63 65 2f 47 45 54 2e 68 74 6d 6c 22 20 63 6c 61 73 73 3d 22 65 78 74 65
+[14809] 72 6e 61 6c 2d 6c 69 6e 6b 22 3e 68 74 74 72 3a 3a 47 45 54 28 29 3c 2f
+[14833] 61 3e 3c 2f 63 6f 64 65 3e 2c 20 3c 63 6f 64 65 3e 3c 61 20 68 72 65 66
+[14857] 3d 22 68 74 74 70 73 3a 2f 2f 68 74 74 72 2e 72 2d 6c 69 62 2e 6f 72 67
+[14881] 2f 72 65 66 65 72 65 6e 63 65 2f 50 4f 53 54 2e 68 74 6d 6c 22 20 63 6c
+[14905] 61 73 73 3d 22 65 78 74 65 72 6e 61 6c 2d 6c 69 6e 6b 22 3e 68 74 74 72
+[14929] 3a 3a 50 4f 53 54 28 29 3c 2f 61 3e 3c 2f 63 6f 64 65 3e 2c 20 3c 63 6f
+[14953] 64 65 3e 3c 61 20 68 72 65 66 3d 22 68 74 74 70 73 3a 2f 2f 68 74 74 72
+[14977] 2e 72 2d 6c 69 62 2e 6f 72 67 2f 72 65 66 65 72 65 6e 63 65 2f 44 45 4c
+[15001] 45 54 45 2e 68 74 6d 6c 22 20 63 6c 61 73 73 3d 22 65 78 74 65 72 6e 61
+[15025] 6c 2d 6c 69 6e 6b 22 3e 68 74 74 72 3a 3a 44 45 4c 45 54 45 28 29 3c 2f
+[15049] 61 3e 3c 2f 63 6f 64 65 3e 2c 20 61 6e 64 20 6d 6f 72 65 2e 3c 2f 70 3e
+[15073] 3c 2f 6c 69 3e 0a 3c 6c 69 3e 3c 70 3e 48 54 54 50 20 65 72 72 6f 72 73
+[15097] 20 61 72 65 20 61 75 74 6f 6d 61 74 69 63 61 6c 6c 79 20 63 6f 6e 76 65
+[15121] 72 74 65 64 20 69 6e 74 6f 20 52 20 65 72 72 6f 72 73 2e 20 55 73 65 20
+[15145] 3c 63 6f 64 65 3e 3c 61 20 68 72 65 66 3d 22 72 65 66 65 72 65 6e 63 65
+[15169] 2f 72 65 71 5f 65 72 72 6f 72 2e 68 74 6d 6c 22 3e 72 65 71 5f 65 72 72
+[15193] 6f 72 28 29 3c 2f 61 3e 3c 2f 63 6f 64 65 3e 20 74 6f 20 6f 76 65 72 72
+[15217] 69 64 65 20 74 68 65 20 64 65 66 61 75 6c 74 73 20 28 77 68 69 63 68 20
+[15241] 74 75 72 6e 20 61 6c 6c 20 34 78 78 20 61 6e 64 20 35 78 78 20 72 65 73
+[15265] 70 6f 6e 73 65 73 20 69 6e 74 6f 20 65 72 72 6f 72 73 29 20 6f 72 20 74
+[15289] 6f 20 61 64 64 20 61 64 64 69 74 69 6f 6e 61 6c 20 64 65 74 61 69 6c 73
+[15313] 20 74 6f 20 74 68 65 20 65 72 72 6f 72 20 6d 65 73 73 61 67 65 2e 3c 2f
+[15337] 70 3e 3c 2f 6c 69 3e 0a 3c 6c 69 3e 3c 70 3e 59 6f 75 20 63 61 6e 20 61
+[15361] 75 74 6f 6d 61 74 69 63 61 6c 6c 79 20 72 65 74 72 79 20 69 66 20 74 68
+[15385] 65 20 72 65 71 75 65 73 74 20 66 61 69 6c 73 20 6f 72 20 65 6e 63 6f 75
+[15409] 6e 74 65 72 73 20 61 20 74 72 61 6e 73 69 65 6e 74 20 48 54 54 50 20 65
+[15433] 72 72 6f 72 20 28 65 2e 67 2e c2 a0 61 20 34 32 39 20 72 61 74 65 20 6c
+[15457] 69 6d 69 74 20 72 65 71 75 65 73 74 29 2e 20 3c 63 6f 64 65 3e 3c 61 20
+[15481] 68 72 65 66 3d 22 72 65 66 65 72 65 6e 63 65 2f 72 65 71 5f 72 65 74 72
+[15505] 79 2e 68 74 6d 6c 22 3e 72 65 71 5f 72 65 74 72 79 28 29 3c 2f 61 3e 3c
+[15529] 2f 63 6f 64 65 3e 20 64 65 66 69 6e 65 73 20 74 68 65 20 6d 61 78 69 6d
+[15553] 75 6d 20 6e 75 6d 62 65 72 20 6f 66 20 72 65 74 72 69 65 73 2c 20 77 68
+[15577] 69 63 68 20 65 72 72 6f 72 73 20 61 72 65 20 74 72 61 6e 73 69 65 6e 74
+[15601] 2c 20 61 6e 64 20 68 6f 77 20 6c 6f 6e 67 20 74 6f 20 77 61 69 74 20 62
+[15625] 65 74 77 65 65 6e 20 74 72 69 65 73 2e 3c 2f 70 3e 3c 2f 6c 69 3e 0a 3c
+[15649] 6c 69 3e 3c 70 3e 4f 41 75 74 68 20 73 75 70 70 6f 72 74 20 68 61 73 20
+[15673] 62 65 65 6e 20 74 6f 74 61 6c 6c 79 20 6f 76 65 72 68 61 75 6c 65 64 20
+[15697] 74 6f 20 64 69 72 65 63 74 6c 79 20 73 75 70 70 6f 72 74 20 6d 61 6e 79
+[15721] 20 6d 6f 72 65 20 66 6c 6f 77 73 20 61 6e 64 20 74 6f 20 6d 61 6b 65 20
+[15745] 69 74 20 6d 75 63 68 20 65 61 73 69 65 72 20 74 6f 20 62 6f 74 68 20 63
+[15769] 75 73 74 6f 6d 69 73 65 20 74 68 65 20 62 75 69 6c 74 2d 69 6e 20 66 6c
+[15793] 6f 77 73 20 61 6e 64 20 74 6f 20 63 72 65 61 74 65 20 79 6f 75 72 20 6f
+[15817] 77 6e 2e 3c 2f 70 3e 3c 2f 6c 69 3e 0a 3c 6c 69 3e 3c 70 3e 59 6f 75 20
+[15841] 63 61 6e 20 6d 61 6e 61 67 65 20 73 65 63 72 65 74 73 20 28 6f 66 74 65
+[15865] 6e 20 6e 65 65 64 65 64 20 66 6f 72 20 74 65 73 74 69 6e 67 29 20 77 69
+[15889] 74 68 20 3c 63 6f 64 65 3e 3c 61 20 68 72 65 66 3d 22 72 65 66 65 72 65
+[15913] 6e 63 65 2f 73 65 63 72 65 74 73 2e 68 74 6d 6c 22 3e 73 65 63 72 65 74
+[15937] 5f 65 6e 63 72 79 70 74 28 29 3c 2f 61 3e 3c 2f 63 6f 64 65 3e 20 61 6e
+[15961] 64 20 66 72 69 65 6e 64 73 2e 20 59 6f 75 20 63 61 6e 20 6f 62 66 75 73
+[15985] 63 61 74 65 20 6d 69 6c 64 6c 79 20 63 6f 6e 66 69 64 65 6e 74 69 61 6c
+[16009] 20 64 61 74 61 20 77 69 74 68 20 3c 63 6f 64 65 3e 3c 61 20 68 72 65 66
+[16033] 3d 22 72 65 66 65 72 65 6e 63 65 2f 6f 62 66 75 73 63 61 74 65 2e 68 74
+[16057] 6d 6c 22 3e 6f 62 66 75 73 63 61 74 65 28 29 3c 2f 61 3e 3c 2f 63 6f 64
+[16081] 65 3e 2c 20 70 72 65 76 65 6e 74 69 6e 67 20 69 74 20 66 72 6f 6d 20 62
+[16105] 65 69 6e 67 20 73 63 72 61 70 65 64 20 66 72 6f 6d 20 70 75 62 6c 69 73
+[16129] 68 65 64 20 63 6f 64 65 2e 3c 2f 70 3e 3c 2f 6c 69 3e 0a 3c 6c 69 3e 3c
+[16153] 70 3e 59 6f 75 20 63 61 6e 20 61 75 74 6f 6d 61 74 69 63 61 6c 6c 79 20
+[16177] 63 61 63 68 65 20 61 6c 6c 20 63 61 63 68 65 61 62 6c 65 20 72 65 73 75
+[16201] 6c 74 73 20 77 69 74 68 20 3c 63 6f 64 65 3e 3c 61 20 68 72 65 66 3d 22
+[16225] 72 65 66 65 72 65 6e 63 65 2f 72 65 71 5f 63 61 63 68 65 2e 68 74 6d 6c
+[16249] 22 3e 72 65 71 5f 63 61 63 68 65 28 29 3c 2f 61 3e 3c 2f 63 6f 64 65 3e
+[16273] 2e 20 52 65 6c 61 74 69 76 65 6c 79 20 66 65 77 20 41 50 49 20 72 65 73
+[16297] 70 6f 6e 73 65 73 20 61 72 65 20 63 61 63 68 65 61 62 6c 65 2c 20 62 75
+[16321] 74 20 77 68 65 6e 20 74 68 65 79 20 61 72 65 20 69 74 20 74 79 70 69 63
+[16345] 61 6c 6c 79 20 6d 61 6b 65 73 20 61 20 62 69 67 20 64 69 66 66 65 72 65
+[16369] 6e 63 65 2e 3c 2f 70 3e 3c 2f 6c 69 3e 0a 3c 2f 75 6c 3e 0a 3c 2f 64 69
+[16393] 76 3e 0a 3c 64 69 76 20 63 6c 61 73 73 3d 22 73 65 63 74 69 6f 6e 20 6c
+[16417] 65 76 65 6c 32 22 3e 0a 3c 68 32 20 69 64 3d 22 61 63 6b 6e 6f 77 6c 65
+[16441] 64 67 65 6d 65 6e 74 73 22 3e 41 63 6b 6e 6f 77 6c 65 64 67 65 6d 65 6e
+[16465] 74 73 3c 61 20 63 6c 61 73 73 3d 22 61 6e 63 68 6f 72 22 20 61 72 69 61
+[16489] 2d 6c 61 62 65 6c 3d 22 61 6e 63 68 6f 72 22 20 68 72 65 66 3d 22 23 61
+[16513] 63 6b 6e 6f 77 6c 65 64 67 65 6d 65 6e 74 73 22 3e 3c 2f 61 3e 0a 3c 2f
+[16537] 68 32 3e 0a 3c 70 3e 68 74 74 72 32 20 77 6f 75 6c 64 6e e2 80 99 74 20
+[16561] 62 65 20 70 6f 73 73 69 62 6c 65 20 77 69 74 68 6f 75 74 20 3c 61 20 68
+[16585] 72 65 66 3d 22 68 74 74 70 73 3a 2f 2f 63 72 61 6e 2e 64 65 76 2f 63 75
+[16609] 72 6c 2f 22 20 63 6c 61 73 73 3d 22 65 78 74 65 72 6e 61 6c 2d 6c 69 6e
+[16633] 6b 22 3e 63 75 72 6c 3c 2f 61 3e 2c 20 3c 61 20 68 72 65 66 3d 22 68 74
+[16657] 74 70 73 3a 2f 2f 63 72 61 6e 2e 64 65 76 2f 6f 70 65 6e 73 73 6c 2f 22
+[16681] 20 63 6c 61 73 73 3d 22 65 78 74 65 72 6e 61 6c 2d 6c 69 6e 6b 22 3e 6f
+[16705] 70 65 6e 73 73 6c 3c 2f 61 3e 2c 20 3c 61 20 68 72 65 66 3d 22 68 74 74
+[16729] 70 73 3a 2f 2f 63 72 61 6e 2e 64 65 76 2f 6a 73 6f 6e 6c 69 74 65 2f 22
+[16753] 20 63 6c 61 73 73 3d 22 65 78 74 65 72 6e 61 6c 2d 6c 69 6e 6b 22 3e 6a
+[16777] 73 6f 6e 6c 69 74 65 3c 2f 61 3e 2c 20 61 6e 64 20 3c 61 20 68 72 65 66
+[16801] 3d 22 68 74 74 70 73 3a 2f 2f 67 69 74 68 75 62 2e 63 6f 6d 2f 72 2d 6c
+[16825] 69 62 2f 6a 6f 73 65 2f 22 20 63 6c 61 73 73 3d 22 65 78 74 65 72 6e 61
+[16849] 6c 2d 6c 69 6e 6b 22 3e 6a 6f 73 65 3c 2f 61 3e 2c 20 77 68 69 63 68 20
+[16873] 61 72 65 20 61 6c 6c 20 6d 61 69 6e 74 61 69 6e 65 64 20 62 79 20 3c 61
+[16897] 20 68 72 65 66 3d 22 68 74 74 70 73 3a 2f 2f 67 69 74 68 75 62 2e 63 6f
+[16921] 6d 2f 6a 65 72 6f 65 6e 22 20 63 6c 61 73 73 3d 22 65 78 74 65 72 6e 61
+[16945] 6c 2d 6c 69 6e 6b 22 3e 4a 65 72 6f 65 6e 20 4f 6f 6d 73 3c 2f 61 3e 2e
+[16969] 20 41 20 62 69 67 20 74 68 61 6e 6b 73 20 61 6c 73 6f 20 67 6f 20 74 6f
+[16993] 20 3c 61 20 68 72 65 66 3d 22 68 74 74 70 73 3a 2f 2f 6a 65 6e 6e 79 62
+[17017] 72 79 61 6e 2e 6f 72 67 22 20 63 6c 61 73 73 3d 22 65 78 74 65 72 6e 61
+[17041] 6c 2d 6c 69 6e 6b 22 3e 4a 65 6e 6e 79 20 42 72 79 61 6e 3c 2f 61 3e 20
+[17065] 61 6e 64 20 3c 61 20 68 72 65 66 3d 22 68 74 74 70 73 3a 2f 2f 77 77 77
+[17089] 2e 63 72 61 69 67 63 69 74 72 6f 2e 6f 72 67 22 20 63 6c 61 73 73 3d 22
+[17113] 65 78 74 65 72 6e 61 6c 2d 6c 69 6e 6b 22 3e 43 72 61 69 67 20 43 69 74
+[17137] 72 6f 3c 2f 61 3e 20 77 68 6f 20 68 61 76 65 20 67 69 76 65 6e 20 6d 65
+[17161] 20 6d 75 63 68 20 75 73 65 66 75 6c 20 66 65 65 64 62 61 63 6b 20 6f 6e
+[17185] 20 62 6f 74 68 20 74 68 65 20 64 65 73 69 67 6e 20 6f 66 20 74 68 65 20
+[17209] 69 6e 74 65 72 6e 61 6c 73 20 61 6e 64 20 74 68 65 20 75 73 65 72 20 66
+[17233] 61 63 69 6e 67 20 41 50 49 2e 3c 2f 70 3e 0a 3c 2f 64 69 76 3e 0a 3c 2f
+[17257] 64 69 76 3e 0a 20 20 3c 2f 6d 61 69 6e 3e 3c 61 73 69 64 65 20 63 6c 61
+[17281] 73 73 3d 22 63 6f 6c 2d 6d 64 2d 33 22 3e 3c 64 69 76 20 63 6c 61 73 73
+[17305] 3d 22 6c 69 6e 6b 73 22 3e 0a 3c 68 32 20 64 61 74 61 2d 74 6f 63 2d 73
+[17329] 6b 69 70 3e 4c 69 6e 6b 73 3c 2f 68 32 3e 0a 3c 75 6c 20 63 6c 61 73 73
+[17353] 3d 22 6c 69 73 74 2d 75 6e 73 74 79 6c 65 64 22 3e 0a 3c 6c 69 3e 3c 61
+[17377] 20 68 72 65 66 3d 22 68 74 74 70 73 3a 2f 2f 63 6c 6f 75 64 2e 72 2d 70
+[17401] 72 6f 6a 65 63 74 2e 6f 72 67 2f 70 61 63 6b 61 67 65 3d 68 74 74 72 32
+[17425] 22 20 63 6c 61 73 73 3d 22 65 78 74 65 72 6e 61 6c 2d 6c 69 6e 6b 22 3e
+[17449] 56 69 65 77 20 6f 6e 20 43 52 41 4e 3c 2f 61 3e 3c 2f 6c 69 3e 0a 3c 6c
+[17473] 69 3e 3c 61 20 68 72 65 66 3d 22 68 74 74 70 73 3a 2f 2f 67 69 74 68 75
+[17497] 62 2e 63 6f 6d 2f 72 2d 6c 69 62 2f 68 74 74 72 32 2f 22 20 63 6c 61 73
+[17521] 73 3d 22 65 78 74 65 72 6e 61 6c 2d 6c 69 6e 6b 22 3e 42 72 6f 77 73 65
+[17545] 20 73 6f 75 72 63 65 20 63 6f 64 65 3c 2f 61 3e 3c 2f 6c 69 3e 0a 3c 6c
+[17569] 69 3e 3c 61 20 68 72 65 66 3d 22 68 74 74 70 73 3a 2f 2f 67 69 74 68 75
+[17593] 62 2e 63 6f 6d 2f 72 2d 6c 69 62 2f 68 74 74 72 32 2f 69 73 73 75 65 73
+[17617] 22 20 63 6c 61 73 73 3d 22 65 78 74 65 72 6e 61 6c 2d 6c 69 6e 6b 22 3e
+[17641] 52 65 70 6f 72 74 20 61 20 62 75 67 3c 2f 61 3e 3c 2f 6c 69 3e 0a 3c 2f
+[17665] 75 6c 3e 0a 3c 2f 64 69 76 3e 0a 0a 3c 64 69 76 20 63 6c 61 73 73 3d 22
+[17689] 6c 69 63 65 6e 73 65 22 3e 0a 3c 68 32 20 64 61 74 61 2d 74 6f 63 2d 73
+[17713] 6b 69 70 3e 4c 69 63 65 6e 73 65 3c 2f 68 32 3e 0a 3c 75 6c 20 63 6c 61
+[17737] 73 73 3d 22 6c 69 73 74 2d 75 6e 73 74 79 6c 65 64 22 3e 0a 3c 6c 69 3e
+[17761] 3c 61 20 68 72 65 66 3d 22 4c 49 43 45 4e 53 45 2e 68 74 6d 6c 22 3e 46
+[17785] 75 6c 6c 20 6c 69 63 65 6e 73 65 3c 2f 61 3e 3c 2f 6c 69 3e 0a 3c 6c 69
+[17809] 3e 3c 73 6d 61 6c 6c 3e 3c 61 20 68 72 65 66 3d 22 68 74 74 70 73 3a 2f
+[17833] 2f 6f 70 65 6e 73 6f 75 72 63 65 2e 6f 72 67 2f 6c 69 63 65 6e 73 65 73
+[17857] 2f 6d 69 74 2d 6c 69 63 65 6e 73 65 2e 70 68 70 22 20 63 6c 61 73 73 3d
+[17881] 22 65 78 74 65 72 6e 61 6c 2d 6c 69 6e 6b 22 3e 4d 49 54 3c 2f 61 3e 20
+[17905] 2b 20 66 69 6c 65 20 3c 61 20 68 72 65 66 3d 22 4c 49 43 45 4e 53 45 2d
+[17929] 74 65 78 74 2e 68 74 6d 6c 22 3e 4c 49 43 45 4e 53 45 3c 2f 61 3e 3c 2f
+[17953] 73 6d 61 6c 6c 3e 3c 2f 6c 69 3e 0a 3c 2f 75 6c 3e 0a 3c 2f 64 69 76 3e
+[17977] 0a 0a 0a 3c 64 69 76 20 63 6c 61 73 73 3d 22 63 69 74 61 74 69 6f 6e 22
+[18001] 3e 0a 3c 68 32 20 64 61 74 61 2d 74 6f 63 2d 73 6b 69 70 3e 43 69 74 61
+[18025] 74 69 6f 6e 3c 2f 68 32 3e 0a 3c 75 6c 20 63 6c 61 73 73 3d 22 6c 69 73
+[18049] 74 2d 75 6e 73 74 79 6c 65 64 22 3e 0a 3c 6c 69 3e 3c 61 20 68 72 65 66
+[18073] 3d 22 61 75 74 68 6f 72 73 2e 68 74 6d 6c 23 63 69 74 61 74 69 6f 6e 22
+[18097] 3e 43 69 74 69 6e 67 20 68 74 74 72 32 3c 2f 61 3e 3c 2f 6c 69 3e 0a 3c
+[18121] 2f 75 6c 3e 0a 3c 2f 64 69 76 3e 0a 0a 3c 64 69 76 20 63 6c 61 73 73 3d
+[18145] 22 64 65 76 65 6c 6f 70 65 72 73 22 3e 0a 3c 68 32 20 64 61 74 61 2d 74
+[18169] 6f 63 2d 73 6b 69 70 3e 44 65 76 65 6c 6f 70 65 72 73 3c 2f 68 32 3e 0a
+[18193] 3c 75 6c 20 63 6c 61 73 73 3d 22 6c 69 73 74 2d 75 6e 73 74 79 6c 65 64
+[18217] 22 3e 0a 3c 6c 69 3e 0a 3c 61 20 68 72 65 66 3d 22 68 74 74 70 73 3a 2f
+[18241] 2f 68 61 64 6c 65 79 2e 6e 7a 22 20 63 6c 61 73 73 3d 22 65 78 74 65 72
+[18265] 6e 61 6c 2d 6c 69 6e 6b 22 3e 48 61 64 6c 65 79 20 57 69 63 6b 68 61 6d
+[18289] 3c 2f 61 3e 20 3c 62 72 3e 3c 73 6d 61 6c 6c 20 63 6c 61 73 73 3d 22 72
+[18313] 6f 6c 65 73 22 3e 20 41 75 74 68 6f 72 2c 20 6d 61 69 6e 74 61 69 6e 65
+[18337] 72 20 3c 2f 73 6d 61 6c 6c 3e 20 20 3c 2f 6c 69 3e 0a 3c 6c 69 3e 0a 3c
+[18361] 61 20 68 72 65 66 3d 22 68 74 74 70 73 3a 2f 2f 77 77 77 2e 70 6f 73 69
+[18385] 74 2e 63 6f 22 20 63 6c 61 73 73 3d 22 65 78 74 65 72 6e 61 6c 2d 6c 69
+[18409] 6e 6b 22 3e 3c 69 6d 67 20 73 72 63 3d 22 68 74 74 70 73 3a 2f 2f 77 77
+[18433] 77 2e 74 69 64 79 76 65 72 73 65 2e 6f 72 67 2f 70 6f 73 69 74 2d 6c 6f
+[18457] 67 6f 2e 73 76 67 22 20 61 6c 74 3d 22 50 6f 73 69 74 22 20 68 65 69 67
+[18481] 68 74 3d 22 31 36 22 20 77 69 64 74 68 3d 22 36 32 22 20 73 74 79 6c 65
+[18505] 3d 22 6d 61 72 67 69 6e 2d 62 6f 74 74 6f 6d 3a 20 33 70 78 3b 22 3e 3c
+[18529] 2f 61 3e 20 3c 62 72 3e 3c 73 6d 61 6c 6c 20 63 6c 61 73 73 3d 22 72 6f
+[18553] 6c 65 73 22 3e 20 43 6f 70 79 72 69 67 68 74 20 68 6f 6c 64 65 72 2c 20
+[18577] 66 75 6e 64 65 72 20 3c 2f 73 6d 61 6c 6c 3e 20 20 3c 2f 6c 69 3e 0a 3c
+[18601] 6c 69 3e 3c 61 20 68 72 65 66 3d 22 61 75 74 68 6f 72 73 2e 68 74 6d 6c
+[18625] 22 3e 4d 6f 72 65 20 61 62 6f 75 74 20 61 75 74 68 6f 72 73 2e 2e 2e 3c
+[18649] 2f 61 3e 3c 2f 6c 69 3e 0a 3c 2f 75 6c 3e 0a 3c 2f 64 69 76 3e 0a 0a 0a
+[18673] 0a 20 20 3c 2f 61 73 69 64 65 3e 0a 3c 2f 64 69 76 3e 0a 0a 0a 20 20 20
+[18697] 3c 2f 64 69 76 3e 0a 20 20 3c 66 6f 6f 74 65 72 3e 3c 64 69 76 20 63 6c
+[18721] 61 73 73 3d 22 63 6f 6e 74 61 69 6e 65 72 22 3e 0a 20 20 3c 64 69 76 20
+[18745] 63 6c 61 73 73 3d 22 70 6b 67 64 6f 77 6e 2d 66 6f 6f 74 65 72 2d 6c 65
+[18769] 66 74 22 3e 0a 20 20 3c 70 3e 44 65 76 65 6c 6f 70 65 64 20 62 79 20 3c
+[18793] 61 20 68 72 65 66 3d 22 68 74 74 70 73 3a 2f 2f 68 61 64 6c 65 79 2e 6e
+[18817] 7a 22 20 63 6c 61 73 73 3d 22 65 78 74 65 72 6e 61 6c 2d 6c 69 6e 6b 22
+[18841] 3e 48 61 64 6c 65 79 20 57 69 63 6b 68 61 6d 3c 2f 61 3e 2c 20 3c 61 20
+[18865] 68 72 65 66 3d 22 68 74 74 70 73 3a 2f 2f 77 77 77 2e 70 6f 73 69 74 2e
+[18889] 63 6f 22 20 63 6c 61 73 73 3d 22 65 78 74 65 72 6e 61 6c 2d 6c 69 6e 6b
+[18913] 22 3e 3c 69 6d 67 20 73 72 63 3d 22 68 74 74 70 73 3a 2f 2f 77 77 77 2e
+[18937] 74 69 64 79 76 65 72 73 65 2e 6f 72 67 2f 70 6f 73 69 74 2d 6c 6f 67 6f
+[18961] 2e 73 76 67 22 20 61 6c 74 3d 22 50 6f 73 69 74 22 20 68 65 69 67 68 74
+[18985] 3d 22 31 36 22 20 77 69 64 74 68 3d 22 36 32 22 20 73 74 79 6c 65 3d 22
+[19009] 6d 61 72 67 69 6e 2d 62 6f 74 74 6f 6d 3a 20 33 70 78 3b 22 3e 3c 2f 61
+[19033] 3e 2e 3c 2f 70 3e 0a 3c 2f 64 69 76 3e 0a 0a 3c 64 69 76 20 63 6c 61 73
+[19057] 73 3d 22 70 6b 67 64 6f 77 6e 2d 66 6f 6f 74 65 72 2d 72 69 67 68 74 22
+[19081] 3e 0a 20 20 3c 70 3e 53 69 74 65 20 62 75 69 6c 74 20 77 69 74 68 20 3c
+[19105] 61 20 68 72 65 66 3d 22 68 74 74 70 73 3a 2f 2f 70 6b 67 64 6f 77 6e 2e
+[19129] 72 2d 6c 69 62 2e 6f 72 67 2f 22 20 63 6c 61 73 73 3d 22 65 78 74 65 72
+[19153] 6e 61 6c 2d 6c 69 6e 6b 22 3e 70 6b 67 64 6f 77 6e 3c 2f 61 3e 20 32 2e
+[19177] 31 2e 31 2e 3c 2f 70 3e 0a 3c 2f 64 69 76 3e 0a 0a 20 20 3c 2f 64 69 76
+[19201] 3e 3c 2f 66 6f 6f 74 65 72 3e 0a 3c 2f 62 6f 64 79 3e 0a 3c 2f 68 74 6d
+[19225] 6c 3e 0a
+> resp |> resp_body_string()
+[1] "<!DOCTYPE html>\n<!-- Generated by pkgdown: do not edit by hand --><html lang=\"en\">\n<head>\n<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\n<meta charset=\"utf-8\">\n<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\">\n<title>Perform HTTP Requests and Process the Responses • httr2</title>\n<!-- favicons --><link rel=\"icon\" type=\"image/png\" sizes=\"16x16\" href=\"favicon-16x16.png\">\n<link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"favicon-32x32.png\">\n<link rel=\"apple-touch-icon\" type=\"image/png\" sizes=\"180x180\" href=\"apple-touch-icon.png\">\n<link rel=\"apple-touch-icon\" type=\"image/png\" sizes=\"120x120\" href=\"apple-touch-icon-120x120.png\">\n<link rel=\"apple-touch-icon\" type=\"image/png\" sizes=\"76x76\" href=\"apple-touch-icon-76x76.png\">\n<link rel=\"apple-touch-icon\" type=\"image/png\" sizes=\"60x60\" href=\"apple-touch-icon-60x60.png\">\n<script src=\"deps/jquery-3.6.0/jquery-3.6.0.min.js\"></script><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\">\n<link href=\"deps/bootstrap-5.3.1/bootstrap.min.css\" rel=\"stylesheet\">\n<script src=\"deps/bootstrap-5.3.1/bootstrap.bundle.min.js\"></script><link href=\"deps/Source_Sans_Pro-0.4.9/font.css\" rel=\"stylesheet\">\n<link href=\"deps/Source_Code_Pro-0.4.9/font.css\" rel=\"stylesheet\">\n<link href=\"deps/font-awesome-6.5.2/css/all.min.css\" rel=\"stylesheet\">\n<link href=\"deps/font-awesome-6.5.2/css/v4-shims.min.css\" rel=\"stylesheet\">\n<script src=\"deps/headroom-0.11.0/headroom.min.js\"></script><script src=\"deps/headroom-0.11.0/jQuery.headroom.min.js\"></script><script src=\"deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js\"></script><script src=\"deps/clipboard.js-2.0.11/clipboard.min.js\"></script><script src=\"deps/search-1.0.0/autocomplete.jquery.min.js\"></script><script src=\"deps/search-1.0.0/fuse.min.js\"></script><script src=\"deps/search-1.0.0/mark.min.js\"></script><!-- pkgdown --><script src=\"pkgdown.js\"></script><meta property=\"og:title\" content=\"Perform HTTP Requests and Process the Responses\">\n<meta name=\"description\" content=\"Tools for creating and modifying HTTP requests, then performing them and processing the results. httr2 is a modern re-imagining of httr that uses a pipe-based interface and solves more of the problems that API wrapping packages face.\">\n<meta property=\"og:description\" content=\"Tools for creating and modifying HTTP requests, then performing them and processing the results. httr2 is a modern re-imagining of httr that uses a pipe-based interface and solves more of the problems that API wrapping packages face.\">\n<meta property=\"og:image\" content=\"https://httr2.r-lib.org/logo.png\">\n<script defer data-domain=\"httr2.r-lib.org,all.tidyverse.org\" src=\"https://plausible.io/js/plausible.js\"></script>\n</head>\n<body>\n    <a href=\"#container\" class=\"visually-hidden-focusable\">Skip to content</a>\n\n\n    <nav class=\"navbar navbar-expand-lg fixed-top bg-none\" data-bs-theme=\"light\" aria-label=\"Site navigation\"><div class=\"container\">\n\n    <a class=\"navbar-brand me-2\" href=\"index.html\">httr2</a>\n\n    <small class=\"nav-text text-muted me-auto\" data-bs-toggle=\"tooltip\" data-bs-placement=\"bottom\" title=\"Released version\">1.1.0</small>\n\n\n    <button class=\"navbar-toggler\" type=\"button\" data-bs-toggle=\"collapse\" data-bs-target=\"#navbar\" aria-controls=\"navbar\" aria-expanded=\"false\" aria-label=\"Toggle navigation\">\n      <span class=\"navbar-toggler-icon\"></span>\n    </button>\n\n    <div id=\"navbar\" class=\"collapse navbar-collapse ms-3\">\n      <ul class=\"navbar-nav me-auto\">\n<li class=\"nav-item\"><a class=\"nav-link\" href=\"articles/httr2.html\">Get started</a></li>\n<li class=\"nav-item\"><a class=\"nav-link\" href=\"reference/index.html\">Reference</a></li>\n<li class=\"nav-item dropdown\">\n  <button class=\"nav-link dropdown-toggle\" type=\"button\" id=\"dropdown-articles\" data-bs-toggle=\"dropdown\" aria-expanded=\"false\" aria-haspopup=\"true\">Articles</button>\n  <ul class=\"dropdown-menu\" aria-labelledby=\"dropdown-articles\">\n<li><a class=\"dropdown-item\" href=\"articles/wrapping-apis.html\">Wrapping APIs</a></li>\n    <li><a class=\"dropdown-item\" href=\"articles/oauth.html\">OAuth</a></li>\n  </ul>\n</li>\n<li class=\"nav-item dropdown\">\n  <button class=\"nav-link dropdown-toggle\" type=\"button\" id=\"dropdown-news\" data-bs-toggle=\"dropdown\" aria-expanded=\"false\" aria-haspopup=\"true\">News</button>\n  <ul class=\"dropdown-menu\" aria-labelledby=\"dropdown-news\">\n<li><h6 class=\"dropdown-header\" data-toc-skip>Releases</h6></li>\n    <li><a class=\"external-link dropdown-item\" href=\"https://www.tidyverse.org/blog/2025/01/httr2-1-1-0/\">httr2 1.1.0</a></li>\n    <li><a class=\"external-link dropdown-item\" href=\"https://www.tidyverse.org/blog/2023/11/httr2-1-0-0/\">httr2 1.0.0</a></li>\n    <li><hr class=\"dropdown-divider\"></li>\n    <li><a class=\"dropdown-item\" href=\"news/index.html\">Changelog</a></li>\n  </ul>\n</li>\n      </ul>\n<ul class=\"navbar-nav\">\n<li class=\"nav-item\"><form class=\"form-inline\" role=\"search\">\n <input class=\"form-control\" type=\"search\" name=\"search-input\" id=\"search-input\" autocomplete=\"off\" aria-label=\"Search site\" placeholder=\"Search for\" data-search-index=\"search.json\">\n</form></li>\n<li class=\"nav-item\"><a class=\"external-link nav-link\" href=\"https://github.com/r-lib/httr2/\" aria-label=\"GitHub\"><span class=\"fa fab fa-github fa-lg\"></span></a></li>\n      </ul>\n</div>\n\n\n  </div>\n</nav><div class=\"container template-home\" id=\"container\">\n<div class=\"row\">\n  <main id=\"main\" class=\"col-md-9\"><div class=\"section level1\">\n<div class=\"page-header\">\n<img src=\"logo.png\" class=\"logo\" alt=\"\"><h1 id=\"httr2-\">httr2 \n<a class=\"anchor\" aria-label=\"anchor\" href=\"#httr2-\"></a>\n</h1>\n</div>\n<!-- badges: start -->\n\n<p>httr2 (pronounced “hitter2”) is a comprehensive HTTP client that provides a modern, pipeable API for working with web APIs. It builds on top of <a href=\"https://jeroen.r-universe.dev/curl\" class=\"external-link\">{curl}</a> to provide features like explicit request objects, built-in rate limiting &amp; retry tooling, comprehensive OAuth support, and secure handling of secrets and credentials.</p>\n<div class=\"section level2\">\n<h2 id=\"installation\">Installation<a class=\"anchor\" aria-label=\"anchor\" href=\"#installation\"></a>\n</h2>\n<p>You can install httr2 from CRAN with:</p>\n<div class=\"sourceCode\" id=\"cb1\"><pre class=\"downlit sourceCode r\">\n<code class=\"sourceCode R\"><span><span class=\"fu\"><a href=\"https://rdrr.io/r/utils/install.packages.html\" class=\"external-link\">install.packages</a></span><span class=\"op\">(</span><span class=\"st\">\"httr2\"</span><span class=\"op\">)</span></span></code></pre></div>\n</div>\n<div class=\"section level2\">\n<h2 id=\"usage\">Usage<a class=\"anchor\" aria-label=\"anchor\" href=\"#usage\"></a>\n</h2>\n<p>To use httr2, start by creating a <strong>request</strong>:</p>\n<div class=\"sourceCode\" id=\"cb2\"><pre class=\"downlit sourceCode r\">\n<code class=\"sourceCode R\"><span><span class=\"kw\"><a href=\"https://rdrr.io/r/base/library.html\" class=\"external-link\">library</a></span><span class=\"op\">(</span><span class=\"va\"><a href=\"https://httr2.r-lib.org\">httr2</a></span><span class=\"op\">)</span></span>\n<span></span>\n<span><span class=\"va\">req</span> <span class=\"op\">&lt;-</span> <span class=\"fu\"><a href=\"reference/request.html\">request</a></span><span class=\"op\">(</span><span class=\"st\">\"https://r-project.org\"</span><span class=\"op\">)</span></span>\n<span><span class=\"va\">req</span></span>\n<span><span class=\"co\">#&gt; &lt;httr2_request&gt;</span></span>\n<span><span class=\"co\">#&gt; GET https://r-project.org</span></span>\n<span><span class=\"co\">#&gt; Body: empty</span></span></code></pre></div>\n<p>You can tailor this request with the <code>req_</code> family of functions:</p>\n<div class=\"sourceCode\" id=\"cb3\"><pre class=\"downlit sourceCode r\">\n<code class=\"sourceCode R\"><span><span class=\"co\"># Add custom headers</span></span>\n<span><span class=\"va\">req</span> <span class=\"op\">|&gt;</span> <span class=\"fu\"><a href=\"reference/req_headers.html\">req_headers</a></span><span class=\"op\">(</span><span class=\"st\">\"Accept\"</span> <span class=\"op\">=</span> <span class=\"st\">\"application/json\"</span><span class=\"op\">)</span></span>\n<span><span class=\"co\">#&gt; &lt;httr2_request&gt;</span></span>\n<span><span class=\"co\">#&gt; GET https://r-project.org</span></span>\n<span><span class=\"co\">#&gt; Headers:</span></span>\n<span><span class=\"co\">#&gt; • Accept: \"application/json\"</span></span>\n<span><span class=\"co\">#&gt; Body: empty</span></span>\n<span></span>\n<span><span class=\"co\"># Add a body, turning it into a POST</span></span>\n<span><span class=\"va\">req</span> <span class=\"op\">|&gt;</span> <span class=\"fu\"><a href=\"reference/req_body.html\">req_body_json</a></span><span class=\"op\">(</span><span class=\"fu\"><a href=\"https://rdrr.io/r/base/list.html\" class=\"external-link\">list</a></span><span class=\"op\">(</span>x <span class=\"op\">=</span> <span class=\"fl\">1</span>, y <span class=\"op\">=</span> <span class=\"fl\">2</span><span class=\"op\">)</span><span class=\"op\">)</span></span>\n<span><span class=\"co\">#&gt; &lt;httr2_request&gt;</span></span>\n<span><span class=\"co\">#&gt; POST https://r-project.org</span></span>\n<span><span class=\"co\">#&gt; Body: json encoded data</span></span>\n<span></span>\n<span><span class=\"co\"># Modify the path in the url</span></span>\n<span><span class=\"va\">req</span> <span class=\"op\">|&gt;</span> <span class=\"fu\"><a href=\"reference/req_url.html\">req_url_path</a></span><span class=\"op\">(</span>path <span class=\"op\">=</span> <span class=\"st\">\"path/to/my/file\"</span><span class=\"op\">)</span></span>\n<span><span class=\"co\">#&gt; &lt;httr2_request&gt;</span></span>\n<span><span class=\"co\">#&gt; GET https://r-project.org/path/to/my/file</span></span>\n<span><span class=\"co\">#&gt; Body: empty</span></span>\n<span></span>\n<span><span class=\"co\"># Automatically retry if the request fails</span></span>\n<span><span class=\"va\">req</span> <span class=\"op\">|&gt;</span> <span class=\"fu\"><a href=\"reference/req_retry.html\">req_retry</a></span><span class=\"op\">(</span>max_tries <span class=\"op\">=</span> <span class=\"fl\">5</span><span class=\"op\">)</span></span>\n<span><span class=\"co\">#&gt; &lt;httr2_request&gt;</span></span>\n<span><span class=\"co\">#&gt; GET https://r-project.org</span></span>\n<span><span class=\"co\">#&gt; Body: empty</span></span>\n<span><span class=\"co\">#&gt; Policies:</span></span>\n<span><span class=\"co\">#&gt; • retry_max_tries: 5</span></span>\n<span><span class=\"co\">#&gt; • retry_on_failure: FALSE</span></span>\n<span><span class=\"co\">#&gt; • retry_failure_threshold: Inf</span></span>\n<span><span class=\"co\">#&gt; • retry_failure_timeout: 30</span></span>\n<span><span class=\"co\">#&gt; • retry_realm: \"r-project.org\"</span></span>\n<span></span>\n<span><span class=\"co\"># Change the HTTP method</span></span>\n<span><span class=\"va\">req</span> <span class=\"op\">|&gt;</span> <span class=\"fu\"><a href=\"reference/req_method.html\">req_method</a></span><span class=\"op\">(</span><span class=\"st\">\"PATCH\"</span><span class=\"op\">)</span></span>\n<span><span class=\"co\">#&gt; &lt;httr2_request&gt;</span></span>\n<span><span class=\"co\">#&gt; PATCH https://r-project.org</span></span>\n<span><span class=\"co\">#&gt; Body: empty</span></span></code></pre></div>\n<p>And see exactly what httr2 will send to the server with <code><a href=\"reference/req_dry_run.html\">req_dry_run()</a></code>:</p>\n<div class=\"sourceCode\" id=\"cb4\"><pre class=\"downlit sourceCode r\">\n<code class=\"sourceCode R\"><span><span class=\"va\">req</span> <span class=\"op\">|&gt;</span> <span class=\"fu\"><a href=\"reference/req_dry_run.html\">req_dry_run</a></span><span class=\"op\">(</span><span class=\"op\">)</span></span>\n<span><span class=\"co\">#&gt; GET / HTTP/1.1</span></span>\n<span><span class=\"co\">#&gt; Host: r-project.org</span></span>\n<span><span class=\"co\">#&gt; User-Agent: httr2/1.0.7.9000 r-curl/6.1.0 libcurl/8.7.1</span></span>\n<span><span class=\"co\">#&gt; Accept: */*</span></span>\n<span><span class=\"co\">#&gt; Accept-Encoding: gzip</span></span></code></pre></div>\n<p>Use <code><a href=\"reference/req_perform.html\">req_perform()</a></code> to perform the request, retrieving a <strong>response</strong>:</p>\n<div class=\"sourceCode\" id=\"cb5\"><pre class=\"downlit sourceCode r\">\n<code class=\"sourceCode R\"><span><span class=\"va\">resp</span> <span class=\"op\">&lt;-</span> <span class=\"fu\"><a href=\"reference/req_perform.html\">req_perform</a></span><span class=\"op\">(</span><span class=\"va\">req</span><span class=\"op\">)</span></span>\n<span><span class=\"va\">resp</span></span>\n<span><span class=\"co\">#&gt; &lt;httr2_response&gt;</span></span>\n<span><span class=\"co\">#&gt; GET https://www.r-project.org/</span></span>\n<span><span class=\"co\">#&gt; Status: 200 OK</span></span>\n<span><span class=\"co\">#&gt; Content-Type: text/html</span></span>\n<span><span class=\"co\">#&gt; Body: In memory (6774 bytes)</span></span></code></pre></div>\n<p>The <code>resp_</code> functions help you extract various useful components of the response:</p>\n<div class=\"sourceCode\" id=\"cb6\"><pre class=\"downlit sourceCode r\">\n<code class=\"sourceCode R\"><span><span class=\"va\">resp</span> <span class=\"op\">|&gt;</span> <span class=\"fu\"><a href=\"reference/resp_content_type.html\">resp_content_type</a></span><span class=\"op\">(</span><span class=\"op\">)</span></span>\n<span><span class=\"co\">#&gt; [1] \"text/html\"</span></span>\n<span><span class=\"va\">resp</span> <span class=\"op\">|&gt;</span> <span class=\"fu\"><a href=\"reference/resp_status.html\">resp_status_desc</a></span><span class=\"op\">(</span><span class=\"op\">)</span></span>\n<span><span class=\"co\">#&gt; [1] \"OK\"</span></span>\n<span><span class=\"va\">resp</span> <span class=\"op\">|&gt;</span> <span class=\"fu\"><a href=\"reference/resp_body_raw.html\">resp_body_html</a></span><span class=\"op\">(</span><span class=\"op\">)</span></span>\n<span><span class=\"co\">#&gt; {html_document}</span></span>\n<span><span class=\"co\">#&gt; &lt;html lang=\"en\"&gt;</span></span>\n<span><span class=\"co\">#&gt; [1] &lt;head&gt;\\n&lt;meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8 ...</span></span>\n<span><span class=\"co\">#&gt; [2] &lt;body&gt;\\n    &lt;div class=\"container page\"&gt;\\n      &lt;div class=\"row\"&gt;\\n       ...</span></span></code></pre></div>\n</div>\n<div class=\"section level2\">\n<h2 id=\"major-differences-to-httr\">Major differences to httr<a class=\"anchor\" aria-label=\"anchor\" href=\"#major-differences-to-httr\"></a>\n</h2>\n<ul>\n<li><p>You can now create and modify a request without performing it. This means that there’s now a single function to perform the request and fetch the result: <code><a href=\"reference/req_perform.html\">req_perform()</a></code>. <code><a href=\"reference/req_perform.html\">req_perform()</a></code> replaces <code><a href=\"https://httr.r-lib.org/reference/GET.html\" class=\"external-link\">httr::GET()</a></code>, <code><a href=\"https://httr.r-lib.org/reference/POST.html\" class=\"external-link\">httr::POST()</a></code>, <code><a href=\"https://httr.r-lib.org/reference/DELETE.html\" class=\"external-link\">httr::DELETE()</a></code>, and more.</p></li>\n<li><p>HTTP errors are automatically converted into R errors. Use <code><a href=\"reference/req_error.html\">req_error()</a></code> to override the defaults (which turn all 4xx and 5xx responses into errors) or to add additional details to the error message.</p></li>\n<li><p>You can automatically retry if the request fails or encounters a transient HTTP error (e.g. a 429 rate limit request). <code><a href=\"reference/req_retry.html\">req_retry()</a></code> defines the maximum number of retries, which errors are transient, and how long to wait between tries.</p></li>\n<li><p>OAuth support has been totally overhauled to directly support many more flows and to make it much easier to both customise the built-in flows and to create your own.</p></li>\n<li><p>You can manage secrets (often needed for testing) with <code><a href=\"reference/secrets.html\">secret_encrypt()</a></code> and friends. You can obfuscate mildly confidential data with <code><a href=\"reference/obfuscate.html\">obfuscate()</a></code>, preventing it from being scraped from published code.</p></li>\n<li><p>You can automatically cache all cacheable results with <code><a href=\"reference/req_cache.html\">req_cache()</a></code>. Relatively few API responses are cacheable, but when they are it typically makes a big difference.</p></li>\n</ul>\n</div>\n<div class=\"section level2\">\n<h2 id=\"acknowledgements\">Acknowledgements<a class=\"anchor\" aria-label=\"anchor\" href=\"#acknowledgements\"></a>\n</h2>\n<p>httr2 wouldn’t be possible without <a href=\"https://cran.dev/curl/\" class=\"external-link\">curl</a>, <a href=\"https://cran.dev/openssl/\" class=\"external-link\">openssl</a>, <a href=\"https://cran.dev/jsonlite/\" class=\"external-link\">jsonlite</a>, and <a href=\"https://github.com/r-lib/jose/\" class=\"external-link\">jose</a>, which are all maintained by <a href=\"https://github.com/jeroen\" class=\"external-link\">Jeroen Ooms</a>. A big thanks also go to <a href=\"https://jennybryan.org\" class=\"external-link\">Jenny Bryan</a> and <a href=\"https://www.craigcitro.org\" class=\"external-link\">Craig Citro</a> who have given me much useful feedback on both the design of the internals and the user facing API.</p>\n</div>\n</div>\n  </main><aside class=\"col-md-3\"><div class=\"links\">\n<h2 data-toc-skip>Links</h2>\n<ul class=\"list-unstyled\">\n<li><a href=\"https://cloud.r-project.org/package=httr2\" class=\"external-link\">View on CRAN</a></li>\n<li><a href=\"https://github.com/r-lib/httr2/\" class=\"external-link\">Browse source code</a></li>\n<li><a href=\"https://github.com/r-lib/httr2/issues\" class=\"external-link\">Report a bug</a></li>\n</ul>\n</div>\n\n<div class=\"license\">\n<h2 data-toc-skip>License</h2>\n<ul class=\"list-unstyled\">\n<li><a href=\"LICENSE.html\">Full license</a></li>\n<li><small><a href=\"https://opensource.org/licenses/mit-license.php\" class=\"external-link\">MIT</a> + file <a href=\"LICENSE-text.html\">LICENSE</a></small></li>\n</ul>\n</div>\n\n\n<div class=\"citation\">\n<h2 data-toc-skip>Citation</h2>\n<ul class=\"list-unstyled\">\n<li><a href=\"authors.html#citation\">Citing httr2</a></li>\n</ul>\n</div>\n\n<div class=\"developers\">\n<h2 data-toc-skip>Developers</h2>\n<ul class=\"list-unstyled\">\n<li>\n<a href=\"https://hadley.nz\" class=\"external-link\">Hadley Wickham</a> <br><small class=\"roles\"> Author, maintainer </small>  </li>\n<li>\n<a href=\"https://www.posit.co\" class=\"external-link\"><img src=\"https://www.tidyverse.org/posit-logo.svg\" alt=\"Posit\" height=\"16\" width=\"62\" style=\"margin-bottom: 3px;\"></a> <br><small class=\"roles\"> Copyright holder, funder </small>  </li>\n<li><a href=\"authors.html\">More about authors...</a></li>\n</ul>\n</div>\n\n\n\n  </aside>\n</div>\n\n\n   </div>\n  <footer><div class=\"container\">\n  <div class=\"pkgdown-footer-left\">\n  <p>Developed by <a href=\"https://hadley.nz\" class=\"external-link\">Hadley Wickham</a>, <a href=\"https://www.posit.co\" class=\"external-link\"><img src=\"https://www.tidyverse.org/posit-logo.svg\" alt=\"Posit\" height=\"16\" width=\"62\" style=\"margin-bottom: 3px;\"></a>.</p>\n</div>\n\n<div class=\"pkgdown-footer-right\">\n  <p>Site built with <a href=\"https://pkgdown.r-lib.org/\" class=\"external-link\">pkgdown</a> 2.1.1.</p>\n</div>\n\n  </div></footer>\n</body>\n</html>\n"
+> 
+> if (requireNamespace("xml2", quietly = TRUE)) {
++   resp |> resp_body_html()
++ }
+{html_document}
+<html lang="en">
+[1] <head>\n<meta http-equiv="Content-Type" content="text/html; charset=UTF-8 ...
+[2] <body>\n    <a href="#container" class="visually-hidden-focusable">Skip t ...
+> 
+> 
+> 
+> cleanEx()
+> nameEx("resp_check_content_type")
+> ### * resp_check_content_type
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: resp_check_content_type
+> ### Title: Check the content type of a response
+> ### Aliases: resp_check_content_type
+> 
+> ### ** Examples
+> 
+> resp <- response(headers = list(`content-type` = "application/json"))
+> resp_check_content_type(resp, "application/json")
+> try(resp_check_content_type(resp, "application/xml"))
+Error : Unexpected content type "application/json".
+• Expecting type "application/xml"
+> 
+> # `types` can also specify multiple valid types
+> resp_check_content_type(resp, c("application/xml", "application/json"))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("resp_content_type")
+> ### * resp_content_type
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: resp_content_type
+> ### Title: Extract response content type and encoding
+> ### Aliases: resp_content_type resp_encoding
+> 
+> ### ** Examples
+> 
+> resp <- response(headers = "Content-type: text/html; charset=utf-8")
+> resp |> resp_content_type()
+[1] "text/html"
+> resp |> resp_encoding()
+[1] "utf-8"
+> 
+> # No Content-Type header
+> resp <- response()
+> resp |> resp_content_type()
+[1] NA
+> resp |> resp_encoding()
+[1] "UTF-8"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("resp_date")
+> ### * resp_date
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: resp_date
+> ### Title: Extract request date from response
+> ### Aliases: resp_date
+> 
+> ### ** Examples
+> 
+> resp <- response(headers = "Date: Wed, 01 Jan 2020 09:23:15 UTC")
+> resp |> resp_date()
+[1] "2020-01-01 09:23:15 UTC"
+> 
+> # If server doesn't add header (unusual), you get the time the request
+> # was created:
+> resp <- response()
+> resp |> resp_date()
+[1] "2020-01-01 UTC"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("resp_headers")
+> ### * resp_headers
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: resp_headers
+> ### Title: Extract headers from a response
+> ### Aliases: resp_headers resp_header resp_header_exists
+> 
+> ### ** Examples
+> 
+> resp <- request("https://httr2.r-lib.org") |> req_perform()
+> resp |> resp_headers()
+<httr2_headers>
+server: GitHub.com
+content-type: text/html; charset=utf-8
+last-modified: Mon, 24 Feb 2025 22:24:31 GMT
+access-control-allow-origin: *
+etag: W/"67bcf19f-4b1b"
+expires: Tue, 04 Mar 2025 12:17:38 GMT
+cache-control: max-age=600
+content-encoding: gzip
+x-proxy-cache: MISS
+x-github-request-id: 29BD:3A410B:10D67F:13C14A:67C6ED0A
+accept-ranges: bytes
+date: Tue, 04 Mar 2025 12:07:46 GMT
+via: 1.1 varnish
+age: 8
+x-served-by: cache-iad-kcgs7200113-IAD
+x-cache: HIT
+x-cache-hits: 4
+x-timer: S1741090067.561461,VS0,VE0
+vary: Accept-Encoding
+x-fastly-request-id: 776ebbd60abd9f251c9539faa7a38963bd2f2446
+content-length: 4736
+> resp |> resp_headers("x-")
+<httr2_headers>
+x-proxy-cache: MISS
+x-github-request-id: 29BD:3A410B:10D67F:13C14A:67C6ED0A
+x-served-by: cache-iad-kcgs7200113-IAD
+x-cache: HIT
+x-cache-hits: 4
+x-timer: S1741090067.561461,VS0,VE0
+x-fastly-request-id: 776ebbd60abd9f251c9539faa7a38963bd2f2446
+> 
+> resp |> resp_header_exists("server")
+[1] TRUE
+> resp |> resp_header("server")
+[1] "GitHub.com"
+> # Headers are case insensitive
+> resp |> resp_header("SERVER")
+[1] "GitHub.com"
+> 
+> # Returns NULL if header doesn't exist
+> resp |> resp_header("this-header-doesnt-exist")
+NULL
+> 
+> 
+> 
+> cleanEx()
+> nameEx("resp_link_url")
+> ### * resp_link_url
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: resp_link_url
+> ### Title: Parse link URL from a response
+> ### Aliases: resp_link_url
+> 
+> ### ** Examples
+> 
+> # Simulate response from GitHub code search
+> resp <- response(headers = paste0("Link: ",
++   '<https://api.github.com/search/code?q=addClass+user%3Amozilla&page=2>; rel="next",',
++   '<https://api.github.com/search/code?q=addClass+user%3Amozilla&page=34>; rel="last"'
++ ))
+> 
+> resp_link_url(resp, "next")
+[1] "https://api.github.com/search/code?q=addClass+user%3Amozilla&page=2"
+> resp_link_url(resp, "last")
+[1] "https://api.github.com/search/code?q=addClass+user%3Amozilla&page=34"
+> resp_link_url(resp, "prev")
+NULL
+> 
+> 
+> 
+> cleanEx()
+> nameEx("resp_raw")
+> ### * resp_raw
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: resp_raw
+> ### Title: Show the raw response
+> ### Aliases: resp_raw
+> 
+> ### ** Examples
+> 
+> resp <- request(example_url()) |>
++   req_url_path("/json") |>
++   req_perform()
+> resp |> resp_raw()
+HTTP/1.1 200 OK
+Date: Tue, 04 Mar 2025 12:07:46 GMT
+Content-Type: application/json
+Content-Length: 407
+ETag: "de760e6d"
+
+{
+  "firstName": "John",
+  "lastName": "Smith",
+  "isAlive": true,
+  "age": 27,
+  "address": {
+    "streetAddress": "21 2nd Street",
+    "city": "New York",
+    "state": "NY",
+    "postalCode": "10021-3100"
+  },
+  "phoneNumbers": [
+    {
+      "type": "home",
+      "number": "212 555-1234"
+    },
+    {
+      "type": "office",
+      "number": "646 555-4567"
+    }
+  ],
+  "children": [],
+  "spouse": null
+}
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("resp_request")
+> ### * resp_request
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: resp_request
+> ### Title: Find the request responsible for a response
+> ### Aliases: resp_request
+> 
+> ### ** Examples
+> 
+> req <- request(example_url())
+> resp <- req_perform(req)
+> resp_request(resp)
+<httr2_request>
+GET http://127.0.0.1:42235/
+Body: empty
+> 
+> 
+> 
+> cleanEx()
+> nameEx("resp_retry_after")
+> ### * resp_retry_after
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: resp_retry_after
+> ### Title: Extract wait time from a response
+> ### Aliases: resp_retry_after
+> 
+> ### ** Examples
+> 
+> resp <- response(headers = "Retry-After: 30")
+> resp |> resp_retry_after()
+[1] 30
+> 
+> resp <- response(headers = "Retry-After: Mon, 20 Sep 2025 21:44:05 UTC")
+> resp |> resp_retry_after()
+[1] 180567845
+> 
+> 
+> 
+> cleanEx()
+> nameEx("resp_status")
+> ### * resp_status
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: resp_status
+> ### Title: Extract HTTP status from response
+> ### Aliases: resp_status resp_status_desc resp_is_error resp_check_status
+> 
+> ### ** Examples
+> 
+> # An HTTP status code you're unlikely to see in the wild:
+> resp <- response(418)
+> resp |> resp_is_error()
+[1] TRUE
+> resp |> resp_status()
+[1] 418
+> resp |> resp_status_desc()
+[1] "I'm a teapot"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("resp_stream_raw")
+> ### * resp_stream_raw
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: resp_stream_raw
+> ### Title: Read a streaming body a chunk at a time
+> ### Aliases: resp_stream_raw resp_stream_lines resp_stream_sse
+> ###   resp_stream_aws close.httr2_response resp_stream_is_complete
+> 
+> ### ** Examples
+> 
+> req <- request(example_url()) |>
++   req_template("GET /stream/:n", n = 5)
+> 
+> con <- req |> req_perform_connection()
+> while (!resp_stream_is_complete(con)) {
++   lines <- con |> resp_stream_lines(2)
++   cat(length(lines), " lines received\n", sep = "")
++ }
+2 lines received
+2 lines received
+1 lines received
+> close(con)
+> 
+> # You can also see what's happening by setting verbosity
+> con <- req |> req_perform_connection(verbosity = 2)
+-> GET /stream/5 HTTP/1.1
+-> Host: 127.0.0.1:42235
+-> User-Agent: httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0
+-> Accept: */*
+-> Accept-Encoding: deflate, gzip, br, zstd
+-> 
+<- HTTP/1.1 200 OK
+<- Date: Tue, 04 Mar 2025 12:07:46 GMT
+<- Content-Type: application/json
+<- Transfer-Encoding: chunked
+<- 
+> while (!resp_stream_is_complete(con)) {
++   lines <- con |> resp_stream_lines(2)
++ }
+<< {"url":"http://127.0.0.1:42235/stream/5","args":{},"headers":{"Host":"127.0.0.1:42235","User-Agent":"httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0","Accept":"*/*","Accept-Encoding":"deflate, gzip, br, zstd"},"origin":"127.0.0.1","id":0}<< {"url":"http://127.0.0.1:42235/stream/5","args":{},"headers":{"Host":"127.0.0.1:42235","User-Agent":"httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0","Accept":"*/*","Accept-Encoding":"deflate, gzip, br, zstd"},"origin":"127.0.0.1","id":1}
+
+<< {"url":"http://127.0.0.1:42235/stream/5","args":{},"headers":{"Host":"127.0.0.1:42235","User-Agent":"httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0","Accept":"*/*","Accept-Encoding":"deflate, gzip, br, zstd"},"origin":"127.0.0.1","id":2}<< {"url":"http://127.0.0.1:42235/stream/5","args":{},"headers":{"Host":"127.0.0.1:42235","User-Agent":"httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0","Accept":"*/*","Accept-Encoding":"deflate, gzip, br, zstd"},"origin":"127.0.0.1","id":3}
+
+<< {"url":"http://127.0.0.1:42235/stream/5","args":{},"headers":{"Host":"127.0.0.1:42235","User-Agent":"httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0","Accept":"*/*","Accept-Encoding":"deflate, gzip, br, zstd"},"origin":"127.0.0.1","id":4}
+
+> close(con)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("resp_url")
+> ### * resp_url
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: resp_url
+> ### Title: Get URL/components from the response
+> ### Aliases: resp_url resp_url_path resp_url_query resp_url_queries
+> 
+> ### ** Examples
+> 
+> resp <- request(example_url()) |>
++   req_url_path("/get?hello=world") |>
++   req_perform()
+> 
+> resp |> resp_url()
+[1] "http://127.0.0.1:42235/get?hello=world"
+> resp |> resp_url_path()
+[1] "/get"
+> resp |> resp_url_queries()
+$hello
+[1] "world"
+
+> resp |> resp_url_query("hello")
+[1] "world"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("response")
+> ### * response
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: response
+> ### Title: Create a new HTTP response
+> ### Aliases: response response_json
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> response()
+<httr2_response>
+GET https://example.com
+Status: 200 OK
+Body: None
+> response(404, method = "POST")
+<httr2_response>
+POST https://example.com
+Status: 404 Not Found
+Body: None
+> response(headers = c("Content-Type: text/html", "Content-Length: 300"))
+<httr2_response>
+GET https://example.com
+Status: 200 OK
+Content-Type: text/html
+Body: None
+> 
+> 
+> 
+> cleanEx()
+> nameEx("resps_successes")
+> ### * resps_successes
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: resps_successes
+> ### Title: Tools for working with lists of responses
+> ### Aliases: resps_successes resps_failures resps_requests resps_data
+> 
+> ### ** Examples
+> 
+> reqs <- list(
++   request(example_url()) |> req_url_path("/ip"),
++   request(example_url()) |> req_url_path("/user-agent"),
++   request(example_url()) |> req_template("/status/:status", status = 404),
++   request("INVALID")
++ )
+> resps <- req_perform_parallel(reqs, on_error = "continue")
+> 
+> # find successful responses
+> resps |> resps_successes()
+[[1]]
+<httr2_response>
+GET http://127.0.0.1:42235/ip
+Status: 200 OK
+Content-Type: application/json
+Body: In memory (27 bytes)
+
+[[2]]
+<httr2_response>
+GET http://127.0.0.1:42235/user-agent
+Status: 200 OK
+Content-Type: application/json
+Body: In memory (60 bytes)
+
+> 
+> # collect all their data
+> resps |>
++   resps_successes() |>
++   resps_data(\(resp) resp_body_json(resp))
+$origin
+[1] "127.0.0.1"
+
+$`user-agent`
+[1] "httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0"
+
+> 
+> # find requests corresponding to failure responses
+> resps |>
++   resps_failures() |>
++   resps_requests()
+[[1]]
+<httr2_request>
+GET http://127.0.0.1:42235/status/404
+Body: empty
+
+[[2]]
+<httr2_request>
+GET INVALID
+Body: empty
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("secrets")
+> ### * secrets
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: secrets
+> ### Title: Secret management
+> ### Aliases: secret_make_key secret_encrypt secret_decrypt secret_write_rds
+> ###   secret_read_rds secret_decrypt_file secret_encrypt_file
+> ###   secret_has_key
+> 
+> ### ** Examples
+> 
+> key <- secret_make_key()
+> 
+> path <- tempfile()
+> secret_write_rds(mtcars, path, key = key)
+> secret_read_rds(path, key)
+                     mpg cyl  disp  hp drat    wt  qsec vs am gear carb
+Mazda RX4           21.0   6 160.0 110 3.90 2.620 16.46  0  1    4    4
+Mazda RX4 Wag       21.0   6 160.0 110 3.90 2.875 17.02  0  1    4    4
+Datsun 710          22.8   4 108.0  93 3.85 2.320 18.61  1  1    4    1
+Hornet 4 Drive      21.4   6 258.0 110 3.08 3.215 19.44  1  0    3    1
+Hornet Sportabout   18.7   8 360.0 175 3.15 3.440 17.02  0  0    3    2
+Valiant             18.1   6 225.0 105 2.76 3.460 20.22  1  0    3    1
+Duster 360          14.3   8 360.0 245 3.21 3.570 15.84  0  0    3    4
+Merc 240D           24.4   4 146.7  62 3.69 3.190 20.00  1  0    4    2
+Merc 230            22.8   4 140.8  95 3.92 3.150 22.90  1  0    4    2
+Merc 280            19.2   6 167.6 123 3.92 3.440 18.30  1  0    4    4
+Merc 280C           17.8   6 167.6 123 3.92 3.440 18.90  1  0    4    4
+Merc 450SE          16.4   8 275.8 180 3.07 4.070 17.40  0  0    3    3
+Merc 450SL          17.3   8 275.8 180 3.07 3.730 17.60  0  0    3    3
+Merc 450SLC         15.2   8 275.8 180 3.07 3.780 18.00  0  0    3    3
+Cadillac Fleetwood  10.4   8 472.0 205 2.93 5.250 17.98  0  0    3    4
+Lincoln Continental 10.4   8 460.0 215 3.00 5.424 17.82  0  0    3    4
+Chrysler Imperial   14.7   8 440.0 230 3.23 5.345 17.42  0  0    3    4
+Fiat 128            32.4   4  78.7  66 4.08 2.200 19.47  1  1    4    1
+Honda Civic         30.4   4  75.7  52 4.93 1.615 18.52  1  1    4    2
+Toyota Corolla      33.9   4  71.1  65 4.22 1.835 19.90  1  1    4    1
+Toyota Corona       21.5   4 120.1  97 3.70 2.465 20.01  1  0    3    1
+Dodge Challenger    15.5   8 318.0 150 2.76 3.520 16.87  0  0    3    2
+AMC Javelin         15.2   8 304.0 150 3.15 3.435 17.30  0  0    3    2
+Camaro Z28          13.3   8 350.0 245 3.73 3.840 15.41  0  0    3    4
+Pontiac Firebird    19.2   8 400.0 175 3.08 3.845 17.05  0  0    3    2
+Fiat X1-9           27.3   4  79.0  66 4.08 1.935 18.90  1  1    4    1
+Porsche 914-2       26.0   4 120.3  91 4.43 2.140 16.70  0  1    5    2
+Lotus Europa        30.4   4  95.1 113 3.77 1.513 16.90  1  1    5    2
+Ford Pantera L      15.8   8 351.0 264 4.22 3.170 14.50  0  1    5    4
+Ferrari Dino        19.7   6 145.0 175 3.62 2.770 15.50  0  1    5    6
+Maserati Bora       15.0   8 301.0 335 3.54 3.570 14.60  0  1    5    8
+Volvo 142E          21.4   4 121.0 109 4.11 2.780 18.60  1  1    4    2
+> 
+> # While you can manage the key explicitly in a variable, it's much
+> # easier to store in an environment variable. In real life, you should
+> # NEVER use `Sys.setenv()` to create this env var because you will
+> # also store the secret in your `.Rhistory`. Instead add it to your
+> # .Renviron using `usethis::edit_r_environ()` or similar.
+> Sys.setenv("MY_KEY" = key)
+> 
+> x <- secret_encrypt("This is a secret", "MY_KEY")
+> x
+[1] "mMfqzs3EXabs-Z0WWVpJS1pj9iN5oMIYt6JTFF7rE0Q"
+> secret_decrypt(x, "MY_KEY")
+[1] "This is a secret"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("url_modify")
+> ### * url_modify
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: url_modify
+> ### Title: Modify a URL
+> ### Aliases: url_modify url_modify_relative url_modify_query
+> 
+> ### ** Examples
+> 
+> url_modify("http://hadley.nz", path = "about")
+[1] "http://hadley.nz/about"
+> url_modify("http://hadley.nz", scheme = "https")
+[1] "https://hadley.nz/"
+> url_modify("http://hadley.nz/abc", path = "/cde")
+[1] "http://hadley.nz/cde"
+> url_modify("http://hadley.nz/abc", path = "")
+[1] "http://hadley.nz/"
+> url_modify("http://hadley.nz?a=1", query = "b=2")
+[1] "http://hadley.nz/?b=2"
+> url_modify("http://hadley.nz?a=1", query = list(c = 3))
+[1] "http://hadley.nz/?c=3"
+> 
+> url_modify_query("http://hadley.nz?a=1&b=2", c = 3)
+[1] "http://hadley.nz/?a=1&b=2&c=3"
+> url_modify_query("http://hadley.nz?a=1&b=2", b = NULL)
+[1] "http://hadley.nz/?a=1"
+> url_modify_query("http://hadley.nz?a=1&b=2", a = 100)
+[1] "http://hadley.nz/?b=2&a=100"
+> 
+> url_modify_relative("http://hadley.nz/a/b/c.html", "/d.html")
+[1] "http://hadley.nz/d.html"
+> url_modify_relative("http://hadley.nz/a/b/c.html", "d.html")
+[1] "http://hadley.nz/a/b/d.html"
+> url_modify_relative("http://hadley.nz/a/b/c.html", "../d.html")
+[1] "http://hadley.nz/a/d.html"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("url_parse")
+> ### * url_parse
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: url_parse
+> ### Title: Parse a URL into its component pieces
+> ### Aliases: url_parse
+> 
+> ### ** Examples
+> 
+> url_parse("http://google.com/")
+<httr2_url> http://google.com/
+• scheme: http
+• hostname: google.com
+• path: /
+> url_parse("http://google.com:80/")
+<httr2_url> http://google.com:80/
+• scheme: http
+• hostname: google.com
+• port: 80
+• path: /
+> url_parse("http://google.com:80/?a=1&b=2")
+<httr2_url> http://google.com:80/?a=1&b=2
+• scheme: http
+• hostname: google.com
+• port: 80
+• path: /
+• query:
+  • a: 1
+  • b: 2
+> url_parse("http://username@google.com:80/path;test?a=1&b=2#40")
+<httr2_url> http://username@google.com:80/path;test?a=1&b=2#40
+• scheme: http
+• hostname: google.com
+• username: username
+• port: 80
+• path: /path;test
+• query:
+  • a: 1
+  • b: 2
+• fragment: 40
+> 
+> # You can parse a relative URL if you also provide a base url
+> url_parse("foo", "http://google.com/bar/")
+<httr2_url> http://google.com/bar/foo
+• scheme: http
+• hostname: google.com
+• path: /bar/foo
+> url_parse("..", "http://google.com/bar/")
+<httr2_url> http://google.com/
+• scheme: http
+• hostname: google.com
+• path: /
+> 
+> 
+> 
+> cleanEx()
+> nameEx("url_query_parse")
+> ### * url_query_parse
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: url_query_parse
+> ### Title: Parse query parameters and/or build a string
+> ### Aliases: url_query_parse url_query_build
+> 
+> ### ** Examples
+> 
+> str(url_query_parse("a=1&b=2"))
+List of 2
+ $ a: chr "1"
+ $ b: chr "2"
+> 
+> url_query_build(list(x = 1, y = "z"))
+[1] "x=1&y=z"
+> url_query_build(list(x = 1, y = 1:2), .multi = "explode")
+[1] "x=1&y=1&y=2"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("with_mocked_responses")
+> ### * with_mocked_responses
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: with_mocked_responses
+> ### Title: Temporarily mock requests
+> ### Aliases: with_mocked_responses with_mock local_mocked_responses
+> ###   local_mock
+> 
+> ### ** Examples
+> 
+> # This function should perform a response against google.com:
+> google <- function() {
++   request("http://google.com") |>
++     req_perform()
++ }
+> 
+> # But I can use a mock to instead return my own made up response:
+> my_mock <- function(req) {
++   response(status_code = 403)
++ }
+> try(with_mock(my_mock, google()))
+Error : `with_mock()` was deprecated in httr2 1.1.0 and is now defunct.
+ℹ Please use `with_mocked_responses()` instead.
+> 
+> 
+> 
+> cleanEx()
+> nameEx("with_verbosity")
+> ### * with_verbosity
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: with_verbosity
+> ### Title: Temporarily set verbosity for all requests
+> ### Aliases: with_verbosity
+> 
+> ### ** Examples
+> 
+> fun <- function() {
++   request("https://httr2.r-lib.org") |> req_perform()
++ }
+> with_verbosity(fun())
+-> GET / HTTP/2
+-> Host: httr2.r-lib.org
+-> User-Agent: httr2/1.1.0 r-curl/6.2.1 libcurl/8.5.0
+-> Accept: */*
+-> Accept-Encoding: deflate, gzip, br, zstd
+-> 
+<- HTTP/2 200 
+<- server: GitHub.com
+<- content-type: text/html; charset=utf-8
+<- last-modified: Mon, 24 Feb 2025 22:24:31 GMT
+<- access-control-allow-origin: *
+<- etag: W/"67bcf19f-4b1b"
+<- expires: Tue, 04 Mar 2025 12:17:38 GMT
+<- cache-control: max-age=600
+<- content-encoding: gzip
+<- x-proxy-cache: MISS
+<- x-github-request-id: 29BD:3A410B:10D67F:13C14A:67C6ED0A
+<- accept-ranges: bytes
+<- date: Tue, 04 Mar 2025 12:07:47 GMT
+<- via: 1.1 varnish
+<- age: 9
+<- x-served-by: cache-iad-kcgs7200113-IAD
+<- x-cache: HIT
+<- x-cache-hits: 5
+<- x-timer: S1741090067.024404,VS0,VE0
+<- vary: Accept-Encoding
+<- x-fastly-request-id: 650391a1285b96b8af3cabb15296d5364e3ce238
+<- content-length: 4736
+<- 
+<httr2_response>
+GET https://httr2.r-lib.org/
+Status: 200 OK
+Content-Type: text/html
+Body: In memory (19227 bytes)
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  3.699 0.849 10.17 0.002 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

@@ -1,0 +1,222 @@
+
+R version 4.4.3 (2025-02-28) -- "Trophy Case"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "foreach"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('foreach')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("foreach")
+> ### * foreach
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: foreach
+> ### Title: foreach
+> ### Aliases: foreach %:% when %do% %dopar% times
+> ### Keywords: utilities
+> 
+> ### ** Examples
+> 
+> # equivalent to rnorm(3)
+> times(3) %do% rnorm(1)
+[1] -0.6264538  0.1836433 -0.8356286
+> 
+> # equivalent to lapply(1:3, sqrt)
+> foreach(i=1:3) %do%
++   sqrt(i)
+[[1]]
+[1] 1
+
+[[2]]
+[1] 1.414214
+
+[[3]]
+[1] 1.732051
+
+> 
+> # multiple ... arguments
+> foreach(i=1:4, j=1:10) %do%
++ 	sqrt(i+j)
+[[1]]
+[1] 1.414214
+
+[[2]]
+[1] 2
+
+[[3]]
+[1] 2.44949
+
+[[4]]
+[1] 2.828427
+
+> 
+> # equivalent to colMeans(m)
+> m <- matrix(rnorm(9), 3, 3)
+> foreach(i=1:ncol(m), .combine=c) %do%
++   mean(m[,i])
+[1] 0.3681067 0.6005117 0.5320787
+> 
+> # normalize the rows of a matrix in parallel, with parenthesis used to
+> # force proper operator precedence
+> # Need to register a parallel backend before this example will run
+> # in parallel
+> foreach(i=1:nrow(m), .combine=rbind) %dopar%
++   (m[i,] / mean(m[i,]))
+Warning: executing %dopar% sequentially: no parallel backend registered
+               [,1]       [,2]       [,3]
+result.1   2.692728  0.8227477 -0.5154752
+result.2   0.383206  0.8586457  1.7581484
+result.3 -16.956941 11.8998982  8.0570425
+> 
+> # simple (and inefficient) parallel matrix multiply
+> library(iterators)
+> a <- matrix(1:16, 4, 4)
+> b <- t(a)
+> foreach(b=iter(b, by='col'), .combine=cbind) %dopar%
++   (a %*% b)
+     [,1] [,2] [,3] [,4]
+[1,]  276  304  332  360
+[2,]  304  336  368  400
+[3,]  332  368  404  440
+[4,]  360  400  440  480
+> 
+> # split a data frame by row, and put them back together again without
+> # changing anything
+> d <- data.frame(x=1:10, y=rnorm(10))
+> s <- foreach(d=iter(d, by='row'), .combine=rbind) %dopar% d
+> identical(s, d)
+[1] TRUE
+> 
+> # a quick sort function
+> qsort <- function(x) {
++   n <- length(x)
++   if (n == 0) {
++     x
++   } else {
++     p <- sample(n, 1)
++     smaller <- foreach(y=x[-p], .combine=c) %:% when(y <= x[p]) %do% y
++     larger  <- foreach(y=x[-p], .combine=c) %:% when(y >  x[p]) %do% y
++     c(qsort(smaller), x[p], qsort(larger))
++   }
++ }
+> qsort(runif(12))
+ [1] 0.02333120 0.07067905 0.09946616 0.24479728 0.43809711 0.47723007
+ [7] 0.47761962 0.52971958 0.69273156 0.73231374 0.78935623 0.86120948
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:iterators’
+
+> nameEx("getDoParWorkers")
+> ### * getDoParWorkers
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: getDoParWorkers
+> ### Title: Functions Providing Information on the doPar Backend
+> ### Aliases: getDoParWorkers getDoParRegistered getDoParName
+> ###   getDoParVersion
+> ### Keywords: utilities
+> 
+> ### ** Examples
+> 
+> cat(sprintf('%s backend is registered\n',
++             if(getDoParRegistered()) 'A' else 'No'))
+No backend is registered
+> cat(sprintf('Running with %d worker(s)\n', getDoParWorkers()))
+Running with 1 worker(s)
+> (name <- getDoParName())
+NULL
+> (ver <- getDoParVersion())
+NULL
+> if (getDoParRegistered())
++   cat(sprintf('Currently using %s [%s]\n', name, ver))
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("getDoSeqWorkers")
+> ### * getDoSeqWorkers
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: getDoSeqWorkers
+> ### Title: Functions Providing Information on the doSeq Backend
+> ### Aliases: getDoSeqWorkers getDoSeqRegistered getDoSeqName
+> ###   getDoSeqVersion
+> ### Keywords: utilities
+> 
+> ### ** Examples
+> 
+> cat(sprintf('%s backend is registered\n',
++             if(getDoSeqRegistered()) 'A' else 'No'))
+No backend is registered
+> cat(sprintf('Running with %d worker(s)\n', getDoSeqWorkers()))
+Running with 1 worker(s)
+> (name <- getDoSeqName())
+NULL
+> (ver <- getDoSeqVersion())
+NULL
+> if (getDoSeqRegistered())
++   cat(sprintf('Currently using %s [%s]\n', name, ver))
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("registerDoSEQ")
+> ### * registerDoSEQ
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: registerDoSEQ
+> ### Title: registerDoSEQ
+> ### Aliases: registerDoSEQ
+> ### Keywords: utilities
+> 
+> ### ** Examples
+> 
+> # specify that %dopar% should run sequentially
+> registerDoSEQ()
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  0.119 0.012 0.13 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')
