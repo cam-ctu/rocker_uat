@@ -14,15 +14,23 @@ index <- grep("\\d\\.\\d\\.\\d", df$name)
 df <- df[index,]
 names(df) <- c("version", "date","digest")
 
-jsonlite::toJSON(df, dataframe="columns") |>
-  write(file="versions/versions.json")
+jsonlite::toJSON(df, dataframe = "columns") |>
+  write(file = "versions/versions.json")
 
+# needs to work with revisions and new rows
+index <- match(current$version, df$version)
+#new rows
+extra <- df[-index,]
 
-comp <- current!=df 
-index <- apply(comp,1, any)
+#revised rows
+df <- df[index,]
+comp <- current != df
+index <- apply(comp, 1, any)
+revisions <- df[index, ]
 
-if( any(index)){
-  jsonlite::toJSON(df[index,], dataframe="columns") |>
-    write(file="versions/change_versions.json")
+if ( nrow(extra) || nrow(revisions)) {
+  rbind( revisions, extra) |> 
+  jsonlite::toJSON( dataframe = "columns") |>
+   write(file = "versions/change_versions.json")
 }
 
