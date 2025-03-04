@@ -120,7 +120,7 @@ Type 'q()' to quit R.
 > ##D   set_names(paste0("sim", 1:5)) |>
 > ##D   map(\(l) accumulate(l, \(acc, nxt) .05 + acc + nxt)) |>
 > ##D   map(\(x) tibble(value = x, step = 1:100)) |>
-> ##D   list_rbind(id = "simulation") |>
+> ##D   list_rbind(names_to = "simulation") |>
 > ##D   ggplot(aes(x = step, y = value)) +
 > ##D     geom_line(aes(color = simulation)) +
 > ##D     ggtitle("Simulations of a random walk with drift")
@@ -275,31 +275,31 @@ x + 1
 > as_mapper(1)
 function (x, ...) 
 pluck_raw(x, list(1), .default = NULL)
-<environment: 0x56241112dd00>
+<environment: 0x5630b73d4d10>
 > 
 > as_mapper(c("a", "b", "c"))
 function (x, ...) 
 pluck_raw(x, list("a", "b", "c"), .default = NULL)
-<environment: 0x562411158b98>
+<environment: 0x5630b73c4ae8>
 > # Equivalent to function(x) x[["a"]][["b"]][["c"]]
 > 
 > as_mapper(list(1, "a", 2))
 function (x, ...) 
 pluck_raw(x, list(1, "a", 2), .default = NULL)
-<environment: 0x562411194fd8>
+<environment: 0x5630b73af2f8>
 > # Equivalent to function(x) x[[1]][["a"]][[2]]
 > 
 > as_mapper(list(1, attr_getter("a")))
 function (x, ...) 
 pluck_raw(x, list(1, function (x) 
 attr(x, attr, exact = TRUE)), .default = NULL)
-<environment: 0x5624111e0f70>
+<environment: 0x5630b7340fa0>
 > # Equivalent to function(x) attr(x[[1]], "a")
 > 
 > as_mapper(c("a", "b", "c"), .default = NA)
 function (x, ...) 
 pluck_raw(x, list("a", "b", "c"), .default = NA)
-<environment: 0x56241126a5b0>
+<environment: 0x5630b72ef9a0>
 > 
 > 
 > 
@@ -921,7 +921,7 @@ integer(0)
 > 
 > ### Name: imap
 > ### Title: Apply a function to each element of a vector, and its index
-> ### Aliases: imap imap_lgl imap_chr imap_int imap_dbl iwalk
+> ### Aliases: imap imap_lgl imap_chr imap_int imap_dbl imap_vec iwalk
 > 
 > ### ** Examples
 > 
@@ -1302,18 +1302,18 @@ $d
 > ### ** Examples
 > 
 > x <- c(a = 1, b = 2, cat = 10, dog = 15, elephant = 5, e = 10)
-> x %>% keep_at(letters)
+> x |> keep_at(letters)
  a  b  e 
  1  2 10 
-> x %>% discard_at(letters)
+> x |> discard_at(letters)
      cat      dog elephant 
       10       15        5 
 > 
 > # Can also use a function
-> x %>% keep_at(~ nchar(.x) == 3)
+> x |> keep_at(~ nchar(.x) == 3)
 cat dog 
  10  15 
-> x %>% discard_at(~ nchar(.x) == 3)
+> x |> discard_at(~ nchar(.x) == 3)
        a        b elephant        e 
        1        2        5       10 
 > 
@@ -1428,6 +1428,7 @@ List of 4
   ..$ a: num 1
   ..$ b: num 2
  $ a: num 1
+> 
 > # Replace values
 > str(list_assign(x, z = 5))
 List of 3
@@ -1439,14 +1440,14 @@ List of 3
  $ x: int [1:10] 1 2 3 4 5 6 7 8 9 10
  $ y: num 4
  $ z: NULL
-> 
 > str(list_assign(x, z = list(a = 1:5)))
 List of 3
  $ x: int [1:10] 1 2 3 4 5 6 7 8 9 10
  $ y: num 4
  $ z:List of 1
   ..$ a: int [1:5] 1 2 3 4 5
-> # replace recursively, leaving the other elements of z alone
+> 
+> # Replace recursively with list_modify(), leaving the other elements of z alone
 > str(list_modify(x, z = list(a = 1:5)))
 List of 3
  $ x: int [1:10] 1 2 3 4 5 6 7 8 9 10
@@ -1757,6 +1758,14 @@ $y[[1]]
 
 $y[[2]]
 NULL
+
+
+$z
+$z[[1]]
+NULL
+
+$z[[2]]
+[1] "deux"
 
 
 > ll |> list_transpose(template = c("x", "y", "z"))
@@ -2308,6 +2317,39 @@ List of 2
 1    39.57120 -5.647025
 2    28.40884 -2.780106
 3    23.86803 -2.192438
+> 
+> # for certain pathological inputs `map_dfr()` and `map_dfc()` actually
+> # both combine the list by column
+> df <- data.frame(
++   x = c(" 13", "  15 "),
++   y = c("  34",  " 67 ")
++ )
+> 
+> # Was:
+> map_dfr(df, trimws)
+# A tibble: 2 × 2
+  x     y    
+  <chr> <chr>
+1 13    34   
+2 15    67   
+> map_dfc(df, trimws)
+# A tibble: 2 × 2
+  x     y    
+  <chr> <chr>
+1 13    34   
+2 15    67   
+> 
+> # But list_rbind()/list_cbind() fail because they require data frame inputs
+> try(map(df, trimws) |> list_rbind())
+Error in list_rbind(map(df, trimws)) : 
+  Each element of `x` must be either a data frame or `NULL`.
+ℹ Elements 1 and 2 are not.
+> 
+> # Instead, use modify() to apply a function to each column of a data frame
+> modify(df, trimws)
+   x  y
+1 13 34
+2 15 67
 > 
 > # map2 ---------------------------------------------
 > 
@@ -3969,7 +4011,7 @@ $z
 > 
 > ### ** Examples
 > 
-> 1:10 %>%
+> 1:10 |>
 +   when(
 +     sum(.) <=  50 ~ sum(.),
 +     sum(.) <= 100 ~ sum(.)/2,
@@ -3997,7 +4039,7 @@ Warning: `when()` was deprecated in purrr 1.0.0.
 > cleanEx()
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  1.305 0.041 5.092 0 0 
+Time elapsed:  1.311 0.052 5.109 0 0 
 > grDevices::dev.off()
 null device 
           1 

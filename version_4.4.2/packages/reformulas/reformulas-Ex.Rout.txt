@@ -1,0 +1,705 @@
+
+R version 4.4.2 (2024-10-31) -- "Pile of Leaves"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "reformulas"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('reformulas')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("RHSForm")
+> ### * RHSForm
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: RHSForm
+> ### Title: extract right-hand side of a formula
+> ### Aliases: RHSForm
+> 
+> ### ** Examples
+> 
+> RHSForm(y ~ x + (1|g))
+x + (1 | g)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("anySpecial")
+> ### * anySpecial
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: anySpecial
+> ### Title: Detect whether there are any 'specials' in a formula term
+> ### Aliases: anySpecial
+> 
+> ### ** Examples
+> 
+> ## should only detect s as the head of a function, s(...)
+> anySpecial(~diag(1))
+[1] TRUE
+> anySpecial(~diag)
+[1] FALSE
+> anySpecial(~diag[[1]])
+[1] FALSE
+> anySpecial(~diag[1])
+[1] FALSE
+> anySpecial(~s)
+[1] FALSE
+> anySpecial(~s(hello+goodbye,whatever))
+[1] TRUE
+> 
+> 
+> 
+> cleanEx()
+> nameEx("formfuns")
+> ### * formfuns
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: expandDoubleVert
+> ### Title: expand double-bar RE notation by splitting
+> ### Aliases: expandDoubleVert RHSForm<- sumTerms reOnly makeOp addForm0
+> ###   addForm expandAllGrpVar findbars_x findbars inForm extractForm
+> ###   dropHead drop.special replaceForm
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> f <- y ~ 1 + x
+> RHSForm(f) <- quote(2+x^2)
+> print(f)
+y ~ 2 + x^2
+> reOnly(~ 1 + x + y + (1|f) + (1|g))
+~(us(1 | f)) + (us(1 | g))
+> addForm0(y~x,~1)
+y ~ x + 1
+> addForm0(~x,~y)
+~x + y
+> ff <- findbars_x(y~1+(x|f/g))
+> expandAllGrpVar(ff)
+[[1]]
+us(x | g:f)
+
+[[2]]
+us(x | f)
+
+> expandAllGrpVar(quote(1|(f/g)/h))
+[[1]]
+1 | h:g:f
+
+[[2]]
+1 | g:f
+
+[[3]]
+1 | f
+
+> expandAllGrpVar(quote(1|f/g/h))
+[[1]]
+1 | h:g:f
+
+[[2]]
+1 | g:f
+
+[[3]]
+1 | f
+
+> expandAllGrpVar(quote(1|f*g))
+[[1]]
+1 | f
+
+[[2]]
+1 | g
+
+[[3]]
+1 | f:g
+
+> expandAllGrpVar(quote(1|f+g))
+[[1]]
+1 | f
+
+[[2]]
+1 | g
+
+> expandAllGrpVar(quote(a+b|f+g+h*i))
+[[1]]
+a + b | f
+
+[[2]]
+a + b | g
+
+[[3]]
+a + b | h
+
+[[4]]
+a + b | i
+
+[[5]]
+a + b | h:i
+
+> expandAllGrpVar(quote(s(log(d), k = 4)))
+[[1]]
+s(log(d), k = 4)
+
+> expandAllGrpVar(quote(s(log(d+1))))
+[[1]]
+s(log(d + 1))
+
+> splitForm(quote(us(x,n=2)))
+$fixedFormula
+~1
+<environment: 0x55d9555092c0>
+
+$reTrmFormulas
+$reTrmFormulas[[1]]
+x
+
+
+$reTrmAddArgs
+$reTrmAddArgs[[1]]
+us(n = 2)
+
+
+$reTrmClasses
+[1] "us"
+
+> findbars_x(~ 1 + (x + y || g), expand_doublevert_method = "diag_special")
+[[1]]
+diag(x + y | g)
+
+> findbars_x(~ 1 + (x + y || g), expand_doublevert_method = "split")
+[[1]]
+us(1 | g)
+
+[[2]]
+us(0 + x | g)
+
+[[3]]
+us(0 + y | g)
+
+> findbars_x(~ 1 + (1 | f) + (1 | g))
+[[1]]
+us(1 | f)
+
+[[2]]
+us(1 | g)
+
+> findbars_x(~ 1 + (1 | f) + (1 | g))
+[[1]]
+us(1 | f)
+
+[[2]]
+us(1 | g)
+
+> findbars_x(~ 1 + (1|h) + (x + y || g), expand_doublevert_method = "split")
+[[1]]
+us(1 | h)
+
+[[2]]
+us(1 | g)
+
+[[3]]
+us(0 + x | g)
+
+[[4]]
+us(0 + y | g)
+
+> findbars_x(~ 1 + (1|Subject))
+[[1]]
+us(1 | Subject)
+
+> findbars_x(~ (1||Subject))
+[[1]]
+diag(1 | Subject)
+
+> findbars_x(~ (1|Subject))
+[[1]]
+us(1 | Subject)
+
+> findbars_x(~ (1|Subject), default.special = NULL)
+[[1]]
+1 | Subject
+
+> findbars_x(~ 1 + x)
+NULL
+> findbars_x(~ s(x, bs = "tp"))
+NULL
+> findbars_x(y ~ a + log(b) + s(x, bs = "tp") + s(y, bs = "gp"),
++    target = "s", default.special = NULL)
+[[1]]
+s(x, bs = "tp")
+
+[[2]]
+s(y, bs = "gp")
+
+> inForm(z~.,quote(.))
+[1] TRUE
+> inForm(z~y,quote(.))
+[1] FALSE
+> inForm(z~a+b+c,quote(c))
+[1] TRUE
+> inForm(z~a+b+(d+e),quote(c))
+[1] FALSE
+> f <- ~ a + offset(x)
+> f2 <- z ~ a
+> inForm(f,quote(offset))
+[1] TRUE
+> inForm(f2,quote(offset))
+[1] FALSE
+> extractForm(~a+offset(b),quote(offset))
+[[1]]
+offset(b)
+
+> extractForm(~c,quote(offset))
+NULL
+> extractForm(~a+offset(b)+offset(c),quote(offset))
+[[1]]
+offset(b)
+
+[[2]]
+offset(c)
+
+> extractForm(~offset(x),quote(offset))
+[[1]]
+offset(x)
+
+> dropHead(~a+offset(b),quote(offset))
+a + b
+> dropHead(~a+poly(x+z,3)+offset(b),quote(offset))
+a + poly(x + z, 3) + b
+> drop.special(x~a + b+ offset(z))
+x ~ a + b
+> replaceForm(quote(a(b+x*c(y,z))),quote(y),quote(R))
+a(b + x * c(R, z))
+> ss <- ~(1 | cask:batch) + (1 | batch)
+> replaceForm(ss,quote(cask:batch),quote(batch:cask))
+~(1 | batch:cask) + (1 | batch)
+> replaceForm(ss, quote(`:`), quote(`%:%`))
+~(1 | cask %:% batch) + (1 | batch)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("isNested")
+> ### * isNested
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: isNested
+> ### Title: Is f1 nested within f2?
+> ### Aliases: isNested
+> 
+> ### ** Examples
+> 
+> if (requireNamespace("lme4")) {
++    data("Pastes", package = "lme4")
++    with(Pastes, isNested(cask, batch))   ## => FALSE
++    with(Pastes, isNested(sample, batch))  ## => TRUE
++ }
+Loading required namespace: lme4
+[1] TRUE
+> 
+> 
+> 
+> cleanEx()
+> nameEx("no_specials")
+> ### * no_specials
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: no_specials
+> ### Title: Drop 'specials' from a formula
+> ### Aliases: no_specials
+> 
+> ### ** Examples
+> 
+> no_specials(findbars_x(~ 1 + s(x) + (f|g) + diag(x|y)))
+[[1]]
+f | g
+
+[[2]]
+x | y
+
+> no_specials(~us(f|g))
+f | g
+> 
+> 
+> 
+> cleanEx()
+> nameEx("nobars")
+> ### * nobars
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: nobars
+> ### Title: Omit terms separated by vertical bars in a formula
+> ### Aliases: nobars nobars_
+> ### Keywords: models utilities
+> 
+> ### ** Examples
+> 
+> nobars(Reaction ~ Days + (Days|Subject)) ## => Reaction ~ Days
+Reaction ~ Days
+> 
+> 
+> 
+> cleanEx()
+> nameEx("splitForm")
+> ### * splitForm
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: splitForm
+> ### Title: Split formula containing special random effect terms
+> ### Aliases: splitForm noSpecials
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> splitForm(~x+y)                     ## no specials or RE
+$fixedFormula
+~x + y
+
+$reTrmFormulas
+NULL
+
+$reTrmAddArgs
+NULL
+
+$reTrmClasses
+NULL
+
+> splitForm(~x+y+(f|g))               ## no specials
+$fixedFormula
+~x + y
+
+$reTrmFormulas
+$reTrmFormulas[[1]]
+f | g
+
+
+$reTrmAddArgs
+$reTrmAddArgs[[1]]
+us()
+
+
+$reTrmClasses
+[1] "us"
+
+> splitForm(~x+y+diag(f|g))           ## one special
+$fixedFormula
+~x + y
+
+$reTrmFormulas
+$reTrmFormulas[[1]]
+f | g
+
+
+$reTrmAddArgs
+$reTrmAddArgs[[1]]
+diag()
+
+
+$reTrmClasses
+[1] "diag"
+
+> splitForm(~x+y+(diag(f|g)))         ## 'hidden' special
+$fixedFormula
+~x + y
+
+$reTrmFormulas
+$reTrmFormulas[[1]]
+f | g
+
+
+$reTrmAddArgs
+$reTrmAddArgs[[1]]
+diag()
+
+
+$reTrmClasses
+[1] "diag"
+
+> splitForm(~x+y+(f|g)+cs(1|g))       ## combination
+$fixedFormula
+~x + y
+
+$reTrmFormulas
+$reTrmFormulas[[1]]
+f | g
+
+$reTrmFormulas[[2]]
+1 | g
+
+
+$reTrmAddArgs
+$reTrmAddArgs[[1]]
+us()
+
+$reTrmAddArgs[[2]]
+cs()
+
+
+$reTrmClasses
+[1] "us" "cs"
+
+> splitForm(~x+y+(1|f/g))             ## 'slash'; term
+$fixedFormula
+~x + y
+
+$reTrmFormulas
+$reTrmFormulas[[1]]
+1 | g:f
+
+$reTrmFormulas[[2]]
+1 | f
+
+
+$reTrmAddArgs
+$reTrmAddArgs[[1]]
+us()
+
+$reTrmAddArgs[[2]]
+us()
+
+
+$reTrmClasses
+[1] "us" "us"
+
+> splitForm(~x+y+(1|f/g/h))             ## 'slash'; term
+$fixedFormula
+~x + y
+
+$reTrmFormulas
+$reTrmFormulas[[1]]
+1 | h:g:f
+
+$reTrmFormulas[[2]]
+1 | g:f
+
+$reTrmFormulas[[3]]
+1 | f
+
+
+$reTrmAddArgs
+$reTrmAddArgs[[1]]
+us()
+
+$reTrmAddArgs[[2]]
+us()
+
+$reTrmAddArgs[[3]]
+us()
+
+
+$reTrmClasses
+[1] "us" "us" "us"
+
+> splitForm(~x+y+(1|(f/g)/h))             ## 'slash'; term
+$fixedFormula
+~x + y
+
+$reTrmFormulas
+$reTrmFormulas[[1]]
+1 | h:g:f
+
+$reTrmFormulas[[2]]
+1 | g:f
+
+$reTrmFormulas[[3]]
+1 | f
+
+
+$reTrmAddArgs
+$reTrmAddArgs[[1]]
+us()
+
+$reTrmAddArgs[[2]]
+us()
+
+$reTrmAddArgs[[3]]
+us()
+
+
+$reTrmClasses
+[1] "us" "us" "us"
+
+> splitForm(~x+y+(f|g)+cs(1|g)+cs(a|b,stuff))  ## complex special
+$fixedFormula
+~x + y
+
+$reTrmFormulas
+$reTrmFormulas[[1]]
+f | g
+
+$reTrmFormulas[[2]]
+1 | g
+
+$reTrmFormulas[[3]]
+a | b
+
+
+$reTrmAddArgs
+$reTrmAddArgs[[1]]
+us()
+
+$reTrmAddArgs[[2]]
+cs()
+
+$reTrmAddArgs[[3]]
+cs(stuff)
+
+
+$reTrmClasses
+[1] "us" "cs" "cs"
+
+> splitForm(~(((x+y))))               ## lots of parentheses
+$fixedFormula
+~(((x + y)))
+
+$reTrmFormulas
+NULL
+
+$reTrmAddArgs
+NULL
+
+$reTrmClasses
+NULL
+
+> splitForm(~1+rr(f|g,n=2))
+$fixedFormula
+~1
+
+$reTrmFormulas
+$reTrmFormulas[[1]]
+f | g
+
+
+$reTrmAddArgs
+$reTrmAddArgs[[1]]
+rr(n = 2)
+
+
+$reTrmClasses
+[1] "rr"
+
+> splitForm(~1+s(x, bs = "tp"))
+$fixedFormula
+~1
+
+$reTrmFormulas
+$reTrmFormulas[[1]]
+x
+
+
+$reTrmAddArgs
+$reTrmAddArgs[[1]]
+s(bs = "tp")
+
+
+$reTrmClasses
+[1] "s"
+
+> 
+> noSpecials(y~1+us(1|f))
+y ~ 1
+> noSpecials(y~1+us(1|f),delete=FALSE)
+y ~ 1 + (1 | f)
+> noSpecials(y~us(1|f))
+y ~ 1
+> noSpecials(y~us(1|f), delete=FALSE)
+y ~ (1 | f)
+> noSpecials(y~us(1|f), debug=TRUE)
+y ~ us(1 | f)
+[1] "not special"
+y
+us(1 | f)
+term[[3]] NULL
+y ~ 1
+> noSpecials(y~us+1)  ## should *not* delete unless head of a function
+y ~ us + 1
+> noSpecials(~us(1|f)+1)   ## should work on a one-sided formula!
+~1
+> noSpecials(~s(stuff) + a + b, specials = "s")
+~a + b
+> noSpecials(cbind(b1, 20-b1) ~ s(x, bs = "tp"))
+cbind(b1, 20 - b1) ~ 1
+> 
+> 
+> 
+> cleanEx()
+> nameEx("sub_specials")
+> ### * sub_specials
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: sub_specials
+> ### Title: Substitute safe chars (+) for specials (for use in
+> ###   'model.frame') (Generalized from 'lme4"s 'subbars' function.)
+> ### Aliases: sub_specials
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> sub_specials( ~ s(a, k=4))
+~+a
+> sub_specials( ~ (1|x) + (a + b || y) + s(a, k=4))
+~(1 + x) + (a + b + y) + +a
+> sub_specials(Reaction ~ s(Days) + (1 + Subject))
+Reaction ~ +Days + (1 + Subject)
+> sub_specials(~ s(cos((y^2*3)/2), bs = "tp"))
+~+cos((y^2 * 3)/2)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("subbars")
+> ### * subbars
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: subbars
+> ### Title: "Substitute bars"
+> ### Aliases: subbars
+> ### Keywords: models utilities
+> 
+> ### ** Examples
+> 
+> subbars(Reaction ~ Days + (Days|Subject)) ## => Reaction ~ Days + (Days + Subject)
+Reaction ~ Days + (Days + Subject)
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  0.885 0.081 0.966 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')
