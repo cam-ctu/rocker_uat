@@ -1,0 +1,753 @@
+
+R version 4.5.0 (2025-04-11) -- "How About a Twenty-Six"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "MLEcens"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('MLEcens')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("actg181")
+> ### * actg181
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: actg181
+> ### Title: Data from the Aids Clinical Trials Group protocol ACTG 181
+> ### Aliases: actg181
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> # Load the data
+> data(actg181)
+> 
+> # Compute the MLE
+> mle <- computeMLE(R=actg181, B=c(1,1,1,1))
+> 
+> # Create CDF plots of the MLE: 
+> # (Maximal intersections are denoted in red)
+> par(mfrow=c(2,2))
+> 
+> # Lower bound for bivariate CDF
+> plotCDF2(mle, bound="l", xlim=c(-1,101), ylim=c(-1,101),
++  n.key=5, main="Bivariate CDF (lower bound)", 
++  xlab="time to CMV shedding (months)", 
++  ylab="time to MAC colonization (months)")
+> plotRects(mle$rects, border="red", add=TRUE)
+> 
+> # Upper bound for bivariate CDF
+> plotCDF2(mle, bound="u", xlim=c(-1,101), ylim=c(-1,101),
++  n.key=5, main="Bivariate CDF (upper bound)", 
++  xlab="time to CMV shedding (months)", 
++  ylab="time to MAC colonization (months)")
+> plotRects(mle$rects, border="red", add=TRUE)
+> 
+> # Marginal CDF for X
+> plotCDF1(mle, margin=1, xlim=c(0,90), 
++  main="CDF for time to CMV shedding",   
++  xlab="t (months)", ylab="P(time to CMV shedding <= t)")
+> 
+> # Marginal CDF for Y
+> plotCDF1(mle, margin=2, xlim=c(0,90), 
++  main="CDF for time to MAC colonization", 
++  xlab="t (months)",  ylab="P(time to MAC colonization <= t)")
+> 
+> # Note that the difference between the upper and lower bound 
+> # of the MLE (because of representational non-uniqueness)
+> # is large, especially for the time to MAC colonization. 
+> 
+> 
+> 
+> graphics::par(get("par.postscript", pos = 'CheckExEnv'))
+> cleanEx()
+> nameEx("actg181Mod")
+> ### * actg181Mod
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: actg181Mod
+> ### Title: Modified data from the Aids Clinical Trials Group protocol ACTG
+> ###   181
+> ### Aliases: actg181Mod
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> # Load the data
+> data(actg181Mod)
+> 
+> # Compute the MLE
+> mle <- computeMLE(R=actg181Mod, B=c(1,1,1,1))
+> 
+> # Create density plots
+> par(mfrow=c(2,2))
+> 
+> # Bivariate density plot
+> plotDens2(mle, main="Bivariate density",
++  xlab="time to CMV shedding (months)", 
++  ylab="time to MAC colonization (months)")
+> 
+> # Marginal density plot for time to MAC colonization
+> plotDens1(mle, margin=2, main="Density for time
++  to MAC colonization", xlab="t (months)", 
++  ylab="density")
+> 
+> # Marginal density plot for time to CMV shedding
+> plotDens1(mle, margin=1, main="Density for time 
++  to CMV shedding", xlab="t (months)", 
++  ylab="density")
+> 
+> # Note that many maximal intersections extend to 
+> # infinity, and hence the value of the density is
+> # not very meaningful. 
+> 
+> 
+> 
+> graphics::par(get("par.postscript", pos = 'CheckExEnv'))
+> cleanEx()
+> nameEx("canon2real")
+> ### * canon2real
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: canon2real
+> ### Title: Transform (intersections of) canonical rectangles back to their
+> ###   original coordinates
+> ### Aliases: canon2real
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> # An example with 3 arbitrarily chosen observation rectangles
+> R <- rbind(c(3.5, 4.2, 3.3, 9.1),    # first rectangle
++            c(4.2, 4.9, 3, 4.5),      # second rectangle
++            c(3.8, 5.1, 8.1, 9.5))    # third rectangle
+> 
+> # Plot the rectangles
+> par(mfrow=c(2,2))
+> plotRects(R, lwd=2, main="Original rectangles")
+> 
+> # Transform rectangles into canonical rectangles
+> res1 <- real2canon(R, c(0,1))   
+> plotRects(res1, grid=TRUE, lwd=2, main="Canonical rectangles")
+> 
+> # Transform canonical rectangles back to original coordinates   
+> res2 <- canon2real(res1, R, c(0,1))
+> plotRects(res2$rects, lwd=2, main="Original rectangles")
+>    
+> # Only transform rectangle (2,3)x(4,5), which is the  
+> # the intersection of the canonical rectangles R1 and R3. 
+> # The result is the intersection of the original rectangles R1 and R3. 
+> R.1.3 <- matrix(c(2,3,4,5),nrow=1)
+> res3 <- canon2real(R.1.3, R, c(0,1))
+> res3$rects
+     [,1] [,2] [,3] [,4]
+[1,]  3.8  4.2  8.1  9.1
+>  
+> # Note that the algorithm keeps track of the boundaries of the rectangles:
+> B <- rbind(c(1,0,1,0),
++            c(1,1,1,1),
++            c(0,1,0,1))
+> res4 <- canon2real(R.1.3, R, B)
+> res4$bounds    
+     [,1] [,2] [,3] [,4]
+[1,]    0    0    0    0
+> 
+> 
+> 
+> graphics::par(get("par.postscript", pos = 'CheckExEnv'))
+> cleanEx()
+> nameEx("computeMLE")
+> ### * computeMLE
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: computeMLE
+> ### Title: Compute the MLE for bivariate censored data
+> ### Aliases: computeMLE
+> ### Keywords: survival nonparametric optimize iteration
+> 
+> ### ** Examples
+> 
+> # Load example data:
+> data(ex)
+> mle <- computeMLE(ex)
+> par(mfrow=c(2,2))
+> 
+> #### Bivariate density plots of the MLE:
+> 
+> # The colors represent the density=p/(area of maximal intersection)
+> plotDens2(mle, xlim=range(ex[,1:2]), ylim=range(ex[,3:4]), 
++  main="Bivariate density plot of the MLE")
+> plotRects(ex, add=TRUE)
+> 
+> # Alternative: numbers represent the mass p in the maximal intersections
+> plotDens2(mle, xlim=range(ex[,1:2]), ylim=range(ex[,3:4]), 
++  col="lightgray", main="Bivariate density plot of the MLE", 
++  key=FALSE, numbers=TRUE)
+> plotRects(ex, add=TRUE)
+> 
+> #### Univariate density plots of the MLE:
+> 
+> # Plot univariate density for X
+> plotDens1(mle, margin=1, xlim=range(ex[,1:2]), 
++  main="Marginal density plot, 
++  x-margin", xlab="x", ylab=expression(f[X](x)))
+> 
+> # Plot univariate density for Y
+> plotDens1(mle, margin=2, xlim=range(ex[,3:4]), 
++  main="Marginal density plot, 
++  y-margin", xlab="y", ylab=expression(f[Y](y))) 
+> 
+> ### Bivariate CDF plots of the MLE:
+> 
+> # Plot lower bound for representational non-uniqueness
+> plotCDF2(mle, xlim=c(min(ex[,1])-1,max(ex[,2])+1), 
++  ylim=c(min(ex[,3])-1, max(ex[,4])+1), bound="l", n.key=4,
++  main="Bivariate CDF plot of the MLE,
++  lower bound")
+> 
+> # Add observation rectangles and shaded maximal intersections
+> plotRects(ex, add=TRUE) 
+> plotRects(mle$rects, density=20, border=NA, add=TRUE) 
+> 
+> # Plot upper bound for representational non-uniqueness
+> plotCDF2(mle, xlim=c(min(ex[,1])-1,max(ex[,2])+1), 
++  ylim=c(min(ex[,3])-1, max(ex[,4])+1), bound="u", n.key=4,
++  main="Bivariate CDF plot of the MLE, 
++  upper bound")
+> 
+> # Add observation rectangles and shaded maximal intersections
+> plotRects(ex, add=TRUE)
+> plotRects(mle$rects, density=20, border=NA, add=TRUE)
+> 
+> ### Marginal CDF plots of the MLE:
+> 
+> # Plot marginal CDF for X
+> plotCDF1(mle, margin=1, xlim=c(min(ex[,1])-1,max(ex[,2])+1), 
++  bound="b", xlab="x", ylab="P(X<=x)", main="MLE for P(X<=x)")
+> 
+> # Plot marginal CDF for Y
+> plotCDF1(mle, margin=2, xlim=c(min(ex[,3])-1,max(ex[,4])+1), 
++  bound="b", xlab="y", ylab="P(Y<=y)", main="MLE for P(Y<=y)")
+> 
+> 
+> 
+> graphics::par(get("par.postscript", pos = 'CheckExEnv'))
+> cleanEx()
+> nameEx("cosmesis")
+> ### * cosmesis
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: cosmesis
+> ### Title: Breast cosmesis data
+> ### Aliases: cosmesis
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> data(cosmesis)
+> 
+> # Split data according to treatment group
+> cosmesis0 <- cosmesis[cosmesis[,3]==0, 1:2]
+> cosmesis1 <- cosmesis[cosmesis[,3]==1, 1:2]
+> n0 <- nrow(cosmesis0)
+> n1 <- nrow(cosmesis1)
+> 
+> # Add dummy y-intervals (0,1)
+> cosmesis0 <- cbind(cosmesis0, rep(0,times=n0), rep(1,times=n0))
+> cosmesis1 <- cbind(cosmesis1, rep(0,times=n1), rep(1,times=n1))
+> 
+> # Compute MLEs in both treatment groups
+> mle0 <- computeMLE(cosmesis0)
+> mle1 <- computeMLE(cosmesis1)
+> 
+> # Plot MLEs
+> par(mfrow=c(2,2))
+> 
+> # Density for women who were treated with radio theorapy alone
+> plotDens1(mle0, margin=1, col="black", main="Density for time to breast   
++  retraction (RT alone)", xlab="time (months)", ylab="density")
+> 
+> # Density for women who were treated with radio therapy + chemo therapy
+> plotDens1(mle1, margin=1, col="red", main="Density for time to breast
++  retraction (RT+CT)", xlab="time (months)", ylab="density")
+> 
+> # Survival functions for both groups, plus legend
+> plotCDF1(mle0, margin=1, surv=TRUE, col="black", 
++  main="Survival functions", xlab="time (months)", ylab="probability")
+> plotCDF1(mle1, margin=1, surv=TRUE, col="red", add=TRUE)
+> legend(3,.3,c("RT alone","RT+CT"), lty=1, col=c("black","red"))
+> 
+> 
+> 
+> graphics::par(get("par.postscript", pos = 'CheckExEnv'))
+> cleanEx()
+> nameEx("ex")
+> ### * ex
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: ex
+> ### Title: Example data set (artificial)
+> ### Aliases: ex
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> # Load the data
+> data(ex)
+> 
+> # Plot the rectangles
+> par(mfrow=c(1,1))
+> plotRects(ex)
+> 
+> 
+> 
+> graphics::par(get("par.postscript", pos = 'CheckExEnv'))
+> cleanEx()
+> nameEx("menopause")
+> ### * menopause
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: menopause
+> ### Title: Menopause data
+> ### Aliases: menopause
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> # Load the data
+> data(menopause)
+> 
+> # Compute the MLE
+> mle <- computeMLE(R=menopause, B=c(0,1,1,1))
+> 
+> # Plot first sub-distribution function P(X<=x, 0.5<Y<=1.5) = P(X<=x, Y=1)
+> par(mfrow=c(1,1))
+> plotCDF1(mle, margin=1, bound="b", int=c(0.5,1.5), col="red", ylim=c(0,1),
++  xlab="x", main="P(X<=x, Y=k), k=1,2")
+> 
+> # Plot second sub-distribution function P(X<=x, 1.5<Y<=2.5) = P(X<=x, Y=2)
+> plotCDF1(mle, margin=1, bound="b", int=c(1.5,2.5), col="black", add=TRUE)
+> 
+> # Add legend
+> legend(0,1,c("k=1: operative","k=2: natural"), col=c("red","black"), lty=1)
+> 
+> # Plot marginal distribution of the failure cause Y
+> plotCDF1(mle, margin=2, bound="u", col="black", xlim=c(0,3), 
++  xlab="y", main="P(Y<=y)")
+> 
+> 
+> 
+> graphics::par(get("par.postscript", pos = 'CheckExEnv'))
+> cleanEx()
+> nameEx("menopauseMod")
+> ### * menopauseMod
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: menopauseMod
+> ### Title: Modified menopause data
+> ### Aliases: menopauseMod
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> # Load the data
+> data(menopauseMod)
+> 
+> # Compute the MLE
+> mle <- computeMLE(menopauseMod)
+> 
+> # Create density plot
+> par(mfrow=c(1,1))
+> plotDens2(mle, xlim=c(0,100), border="black", xlab="age in years", 
++  ylab="cause of menopause (1=operative, 2=natural)", 
++  main="Density plot of the MLE for the menopause data")
+> 
+> 
+> 
+> graphics::par(get("par.postscript", pos = 'CheckExEnv'))
+> cleanEx()
+> nameEx("plotCDF1")
+> ### * plotCDF1
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: plotCDF1
+> ### Title: Create a marginal CDF (or survival function) plot of the MLE
+> ### Aliases: plotCDF1
+> ### Keywords: hplot dplot aplot
+> 
+> ### ** Examples
+> 
+> # Load example data:
+> data(ex)
+> 
+> # Compute the MLE:
+> mle <- computeMLE(ex)
+> 
+> # Plot marginal CDF for X
+> par(mfrow=c(2,2))
+> plotCDF1(mle, margin=1, xlim=c(min(ex[,1])-1,max(ex[,2])+1), 
++  bound="b", xlab="x", ylab="P(X<=x)", main="MLE for P(X<=x)")
+> 
+> # Plot marginal survival function for X
+> plotCDF1(mle, margin=1, surv=TRUE, xlim=c(min(ex[,1])-1,max(ex[,2])+1), 
++  bound="b", xlab="x", ylab="P(X>x)", main="MLE for P(X>x)")
+> 
+> # Plot marginal CDF for Y
+> plotCDF1(mle, margin=2, xlim=c(min(ex[,3])-1,max(ex[,4])+1), 
++  bound="b", xlab="y", ylab="P(Y<=y)", main="MLE for P(Y<=y)")
+> 
+> # Plot marginal survival function for Y
+> plotCDF1(mle, margin=2, surv=TRUE, xlim=c(min(ex[,3])-1,max(ex[,4])+1), 
++  bound="b", xlab="y", ylab="P(Y>y)", main="MLE for P(Y>y)")
+> 
+> 
+> 
+> graphics::par(get("par.postscript", pos = 'CheckExEnv'))
+> cleanEx()
+> nameEx("plotCDF2")
+> ### * plotCDF2
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: plotCDF2
+> ### Title: Create a bivariate CDF (or survival function) plot of the MLE
+> ### Aliases: plotCDF2
+> ### Keywords: hplot dplot
+> 
+> ### ** Examples
+> 
+> # Load example data:
+> data(ex)
+> 
+> # Compute the MLE:
+> mle <- computeMLE(ex)
+> 
+> ### Bivariate CDF plot of the MLE
+> 
+> # Plot lower bound for representational non-uniqueness
+> par(mfrow=c(1,1))
+> plotCDF2(mle, xlim=c(min(ex[,1])-1,max(ex[,2])+1), 
++  ylim=c(min(ex[,3])-1, max(ex[,4])+1), bound="l", n.key=4,
++  main="Bivariate CDF plot of the MLE,
++  lower bound")
+> 
+> # Add observation rectangles and shaded maximal intersections
+> plotRects(ex, add=TRUE) 
+> plotRects(mle$rects, density=20, border=NA, add=TRUE) 
+> 
+> # Plot upper bound for representational non-uniqueness
+> plotCDF2(mle, xlim=c(min(ex[,1])-1,max(ex[,2])+1), 
++  ylim=c(min(ex[,3])-1, max(ex[,4])+1), bound="u", n.key=4,
++  main="Bivariate CDF plot of the MLE,
++  upper bound")
+> 
+> # Add observation rectangles and shaded maximal intersections
+> plotRects(ex, add=TRUE)
+> plotRects(mle$rects, density=20, border=NA, add=TRUE)
+> 
+> 
+> 
+> graphics::par(get("par.postscript", pos = 'CheckExEnv'))
+> cleanEx()
+> nameEx("plotCM")
+> ### * plotCM
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: plotCM
+> ### Title: Plot a clique matrix
+> ### Aliases: plotCM
+> ### Keywords: hplot
+> 
+> ### ** Examples
+> 
+> # Load example data and plot observation rectangles
+> data(ex)
+> par(mfrow=c(2,1))
+> plotRects(ex,main="Rectangles and maximal intersections")
+> 
+> # Perform reduction step and plot maximal intersections (shaded)
+> res<-reduc(ex, cm=TRUE)
+> plotRects(res$rects, density=15, border=NA, add=TRUE)
+> 
+> # Plot clique matrix
+> plotCM(res$cm, main="Clique matrix")
+> 
+> 
+> 
+> graphics::par(get("par.postscript", pos = 'CheckExEnv'))
+> cleanEx()
+> nameEx("plotDens1")
+> ### * plotDens1
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: plotDens1
+> ### Title: Create a univariate density plot of the MLE
+> ### Aliases: plotDens1
+> ### Keywords: hplot dplot aplot
+> 
+> ### ** Examples
+> 
+> # Load example data:
+> data(ex)
+> 
+> # Compute the MLE:
+> mle <- computeMLE(ex)
+> 
+> # Bivariate density plot of the MLE:
+> # (Numbers represent the mass p in the maximal intersections)
+> par(mfrow=c(2,2))
+> plotDens2(mle, xlim=range(ex[,1:2]), ylim=range(ex[,3:4]), 
++  col="lightgray", main="Bivariate density plot of the MLE", 
++  key=FALSE, numbers=TRUE)
+> plotRects(ex, add=TRUE)
+> 
+> ### Univariate density plots of the MLE:
+> 
+> # Plot of the marginal density of Y
+> plotDens1(mle, margin=2, xlim=range(ex[,3:4]), 
++  main="Marginal density plot, 
++  y-margin", xlab="y", ylab=expression(f[Y](y))) 
+> 
+> # Plot of the marginal density of X 
+> plotDens1(mle, margin=1, xlim=range(ex[,1:2]), 
++  main="Marginal density plot, 
++  x-margin", xlab="x", ylab=expression(f[X](x)))
+> 
+> 
+> 
+> graphics::par(get("par.postscript", pos = 'CheckExEnv'))
+> cleanEx()
+> nameEx("plotDens2")
+> ### * plotDens2
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: plotDens2
+> ### Title: Create a bivariate density plot of the MLE
+> ### Aliases: plotDens2
+> ### Keywords: hplot dplot
+> 
+> ### ** Examples
+> 
+> # Load example data:
+> data(ex)
+> 
+> # Compute the MLE:
+> mle <- computeMLE(ex)
+> 
+> ### Bivariate density plots of the MLE:
+> 
+> # (The colors represent the density=p/(area of maximal intersection))
+> par(mfrow=c(1,1))
+> plotDens2(mle, xlim=range(ex[,1:2]), ylim=range(ex[,3:4]), 
++  main="Plot of the MLE. Colors represent the density.")
+> plotRects(ex, add=TRUE)
+> 
+> # Alternative: numbers show the amount of mass in each maximal intersection
+> plotDens2(mle, col="lightgray", xlim=range(ex[,1:2]), 
++  ylim=range(ex[,3:4]), numbers=TRUE, key=FALSE, 
++  main="Plot of the MLE")
+> plotRects(ex, add=TRUE)
+> 
+> 
+> 
+> graphics::par(get("par.postscript", pos = 'CheckExEnv'))
+> cleanEx()
+> nameEx("plotHM")
+> ### * plotHM
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: plotHM
+> ### Title: Plot a height map
+> ### Aliases: plotHM
+> ### Keywords: hplot
+> 
+> ### ** Examples
+> 
+> # Load example data
+> data(ex)
+> 
+> # Perform reduction step
+> res <- reduc(ex, hm=TRUE)
+> 
+> # Plot the height map:
+> par(mfrow=c(1,1))
+> plotHM(res$hm, ex, main="Height map")
+> 
+> # Add observation rectangles in black:
+> plotRects(ex, add=TRUE, border="black")
+> 
+> # Add shaded maximal intersections:
+> plotRects(res$rects, add=TRUE, border=NA, density=15)
+> 
+> # Compute heightmap of the canonical rectangles:
+> canon <- real2canon(ex)
+> res2 <- reduc(canon, hm=TRUE)
+> # Note that res$hm and res2$hm are identical. So we only need to change
+> # the x- and y-coordinates of the height map.
+> 
+> # Plot height map of the canonical rectangles
+> plotHM(res$hm, canon, key=FALSE, numbers=TRUE, main="Canonical height map")
+> 
+> # Add canonical rectangles in black:
+> plotRects(canon, add=TRUE, border="black")
+> 
+> # Add canonical maximal intersections (local maxima of height map) in red:
+> plotRects(res2$rects, add=TRUE, border="red")
+> 
+> 
+> 
+> graphics::par(get("par.postscript", pos = 'CheckExEnv'))
+> cleanEx()
+> nameEx("plotRects")
+> ### * plotRects
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: plotRects
+> ### Title: Plot a set of rectangles
+> ### Aliases: plotRects
+> ### Keywords: hplot aplot
+> 
+> ### ** Examples
+> 
+> n <- 10
+> x <- c(0:(n-1))
+> R <- cbind(x,x+3,x,x+3)  # first rectangle is (0,3)x(0,3), 
+>                          # second rectangle is (1,4)x(1,4), etc...
+> par(mfrow=c(1,1))
+> plotRects(R,main="Example")
+> 
+> 
+> 
+> graphics::par(get("par.postscript", pos = 'CheckExEnv'))
+> cleanEx()
+> nameEx("real2canon")
+> ### * real2canon
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: real2canon
+> ### Title: Transform a set of rectangles into canonical rectangles
+> ### Aliases: real2canon
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> # An example with 3 arbitrarily chosen observation rectangles
+> R <- rbind(c(3.5, 4.2, 3.3, 9.1),   # first rectangle
++            c(4.2, 4.9, 3, 4.5),     # second rectangle
++            c(3.8, 5.1, 8.1, 9.5))   # third rectangle
+> 
+> # Plot the rectangles
+> par(mfrow=c(2,2))
+> plotRects(R, lwd=2, main="Original rectangles")
+> 
+> # Transform rectangles to canonical rectangles. Since the 
+> # boundaries of R1 and R2 coincide, it matters which boundaries
+> # we define to be open or closed. 
+> 
+> # With boundary structure c(0,1), R1 and R2 do *not* overlap:
+> res1 <- real2canon(R, c(0,1))    
+> plotRects(res1, grid=TRUE, lwd=2, main="Canonical rectangles
++ boundary c(0,1)")
+> 
+> # But with boundary structure c(1,1), R1 and R2 *do* overlap:
+> res2<-real2canon(R, c(1,1))
+> plotRects(res2, grid=TRUE, lwd=2, main="Canonical rectangles
++ boundary c(1,1)")
+> 
+> 
+> 
+> graphics::par(get("par.postscript", pos = 'CheckExEnv'))
+> cleanEx()
+> nameEx("reduc")
+> ### * reduc
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: reduc
+> ### Title: Determine areas of possible mass support of the MLE
+> ### Aliases: reduc
+> ### Keywords: survival nonparametric manip optimize
+> 
+> ### ** Examples
+> 
+> # Load example data:
+> data(ex)
+> par(mfrow=c(1,1))
+> 
+> # Plot the observation rectangles
+> plotRects(ex,main="Example")
+> 
+> # Perform the reduction step
+> res<-reduc(ex, hm=TRUE, cm=TRUE)
+> 
+> # Shade the maximal intersections
+> plotRects(res$rects, density=15, add=TRUE, border=NA)
+> 
+> # Plot the height map, together with the observation 
+> # rectangles (in black) and the maximal intersections (shaded)
+> plotHM(res$hm, ex)
+> plotRects(ex, add=TRUE, border="black")
+> plotRects(res$rects, add=TRUE, border=NA, density=15)
+> 
+> # Print the clique matrix 
+> res$cm
+     [,1] [,2] [,3] [,4] [,5] [,6]
+[1,]    0    1    0    1    0    0
+[2,]    1    1    1    0    0    0
+[3,]    0    0    0    1    1    0
+[4,]    0    0    1    0    1    0
+[5,]    0    0    0    0    0    1
+> 
+> # Make a plot of the clique matrix (useful for large data sets)
+> plotCM(res$cm)
+> 
+> 
+> 
+> graphics::par(get("par.postscript", pos = 'CheckExEnv'))
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  0.267 0.018 0.286 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

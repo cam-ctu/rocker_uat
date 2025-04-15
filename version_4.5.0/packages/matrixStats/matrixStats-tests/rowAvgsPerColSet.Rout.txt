@@ -1,0 +1,292 @@
+
+R version 4.5.0 (2025-04-11) -- "How About a Twenty-Six"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library("matrixStats")
+> 
+> X <- matrix(rnorm(20 * 6), nrow = 20, ncol = 6)
+> rownames(X) <- LETTERS[1:nrow(X)]
+> colnames(X) <- letters[1:ncol(X)]
+> print(X)
+            a           b           c           d          e             f
+A -0.68386348 -1.86231217  0.09361767  0.36991492 -0.6253729  0.5462637446
+B -0.79907325  1.70041798  0.46792951 -1.66508112 -1.0016085 -1.5551218131
+C  0.48981120 -0.05730091  0.92666646 -0.08694783 -0.6849104  0.2746615530
+D -0.08653657 -0.05910442 -2.78490736 -0.31444920  0.6437535  1.1597895522
+E -0.79789530 -1.16916020 -1.71994192  0.28247842 -0.3108021  0.1375948293
+F  0.83345476 -0.34600064 -1.19474931 -0.89047550  0.9454743 -2.2842173544
+G  0.21223243 -0.10285969  0.29719444 -0.20343540 -0.2082102 -1.4229068848
+H  0.39015114 -0.14880683  0.09499538 -0.46713508 -0.1759159 -0.0066131773
+I -0.56578810  0.86116976 -0.43268713  0.03946019 -1.1065561  0.0225998794
+J  1.55163438  1.03098257 -0.19664422  0.86602802 -0.3235145  0.0007838345
+K -0.98136342 -0.37897767  0.29409801  0.42842971  1.3586800  0.0410234250
+L -0.55860095 -0.12049687 -0.41710286 -1.48377758 -2.8361916  2.1750715479
+M  0.89545008 -0.18961590  0.15210064  0.20103483  1.5331154  0.0384794676
+N  0.21501609 -0.55802090 -0.47773995  0.28809248  0.5667550  0.2520243644
+O  1.61714552  0.74265332  2.31818483  0.06753427  1.3296662 -0.0387340942
+P  0.15387632  1.56393154  2.13013831 -2.16896809 -1.1640666  0.3557858597
+Q -2.32538273 -0.31452536 -0.85069983  1.14853209  1.1877989 -0.6099534622
+R  0.72788989 -0.43478795  1.05781477 -3.05251708  0.1252883 -0.1293580044
+S  0.10705525  0.79163873 -0.30249736  0.44232495 -0.2130370  2.1025584099
+T -0.44675318 -0.79434629  1.22176402  0.36595218  1.2960772  0.5236653735
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Apply rowMeans() for 3 sets of 2 columns
+> # - - - - - - - - - - - - - - - - - - - - - - - - - -
+> nbr_of_sets <- 3L
+> S <- matrix(1:ncol(X), ncol = nbr_of_sets)
+> colnames(S) <- sprintf("s%d", 1:nbr_of_sets)
+> print(S)
+     s1 s2 s3
+[1,]  1  3  5
+[2,]  2  4  6
+> 
+> Z <- rowAvgsPerColSet(X, S = S)
+> print(Z)
+           s1          s2           s3
+A -1.27308782  0.23176630 -0.039554567
+B  0.45067237 -0.59857581 -1.278365168
+C  0.21625514  0.41985931 -0.205124423
+D -0.07282050 -1.54967828  0.901771523
+E -0.98352775 -0.71873175 -0.086603639
+F  0.24372706 -1.04261240 -0.669371549
+G  0.05468637  0.04687952 -0.815558555
+H  0.12067216 -0.18606985 -0.091264519
+I  0.14769083 -0.19661347 -0.541978130
+J  1.29130848  0.33469190 -0.161365344
+K -0.68017054  0.36126386  0.699851720
+L -0.33954891 -0.95044022 -0.330560025
+M  0.35291709  0.17656774  0.785797444
+N -0.17150241 -0.09482374  0.409389693
+O  1.17989942  1.19285955  0.645466052
+P  0.85890393 -0.01941489 -0.404140381
+Q -1.31995405  0.14891613  0.288922728
+R  0.14655097 -0.99735115 -0.002034835
+S  0.44934699  0.06991379  0.944760698
+T -0.62054974  0.79385810  0.909871275
+> 
+> # Validation
+> Z0 <- cbind(s1 = rowMeans(X[, 1:2]), s2 = rowMeans(X[, 3:4]),
++             s3 = rowMeans(X[, 5:6]))
+> stopifnot(identical(drop(Z), Z0))
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Apply colMeans() for 5 sets of 4 rows
+> # - - - - - - - - - - - - - - - - - - - - - - - - - -
+> nbr_of_sets <- 5L
+> S <- matrix(1:nrow(X), ncol = nbr_of_sets)
+> colnames(S) <- sprintf("s%d", 1:nbr_of_sets)
+> print(S)
+     s1 s2 s3 s4 s5
+[1,]  1  5  9 13 17
+[2,]  2  6 10 14 18
+[3,]  3  7 11 15 19
+[4,]  4  8 12 16 20
+> 
+> Z <- colAvgsPerRowSet(X, S = S)
+> print(Z)
+            a           b          c           d           e          f
+s1 -0.2699155 -0.06957488 -0.3241734 -0.42414081 -0.41703458  0.1063983
+s2  0.1594858 -0.44170684 -0.6306254 -0.31964189  0.06263652 -0.8940356
+s3 -0.1385295  0.34816945 -0.1880841 -0.03746491 -0.72689556  0.5598697
+s4  0.7203720  0.38973701  1.0306710 -0.40307663  0.56636750  0.1518889
+s5 -0.4842977 -0.18800522  0.2815954 -0.27392696  0.59903185  0.4717281
+> 
+> # Validation
+> Z0 <- rbind(s1 = colMeans(X[1:4, ]), s2 = colMeans(X[5:8, ]),
++             s3 = colMeans(X[9:12, ]), s4 = colMeans(X[13:16, ]),
++             s5 = colMeans(X[17:20, ]))
+> stopifnot(identical(drop(Z), Z0))
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # When there is only one "complete" set
+> # - - - - - - - - - - - - - - - - - - - - - - - - - -
+> nbr_of_sets <- 1L
+> S <- matrix(1:ncol(X), ncol = nbr_of_sets)
+> colnames(S) <- sprintf("s%d", 1:nbr_of_sets)
+> print(S)
+     s1
+[1,]  1
+[2,]  2
+[3,]  3
+[4,]  4
+[5,]  5
+[6,]  6
+> 
+> Z <- rowAvgsPerColSet(X, S = S, FUN = rowMeans)
+> print(Z)
+           s1
+A -0.36029203
+B -0.47542287
+C  0.14366334
+D -0.24024242
+E -0.59628771
+F -0.48941897
+G -0.23799756
+H -0.05222074
+I -0.19696692
+J  0.48821168
+K  0.12698168
+L -0.54018305
+M  0.43842742
+N  0.04768785
+O  1.00607501
+P  0.14511622
+Q -0.29403840
+R -0.28427834
+S  0.48800716
+T  0.36105988
+> 
+> Z0 <- rowMeans(X)
+> stopifnot(identical(drop(Z), Z0))
+> 
+> 
+> nbr_of_sets <- 1L
+> S <- matrix(1:nrow(X), ncol = nbr_of_sets)
+> colnames(S) <- sprintf("s%d", 1:nbr_of_sets)
+> print(S)
+      s1
+ [1,]  1
+ [2,]  2
+ [3,]  3
+ [4,]  4
+ [5,]  5
+ [6,]  6
+ [7,]  7
+ [8,]  8
+ [9,]  9
+[10,] 10
+[11,] 11
+[12,] 12
+[13,] 13
+[14,] 14
+[15,] 15
+[16,] 16
+[17,] 17
+[18,] 18
+[19,] 19
+[20,] 20
+> 
+> Z <- colAvgsPerRowSet(X, S = S, FUN = colMeans)
+> print(Z)
+              a           b         c          d          e          f
+s1 -0.002576996 0.007723905 0.0338767 -0.2916502 0.01682115 0.07916985
+> 
+> Z0 <- colMeans(X)
+> stopifnot(identical(drop(Z), Z0))
+> 
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Use weights
+> # - - - - - - - - - - - - - - - - - - - - - - - - - -
+> nbr_of_sets <- 3L
+> S <- matrix(1:ncol(X), ncol = nbr_of_sets)
+> colnames(S) <- sprintf("s%d", 1:nbr_of_sets)
+> print(S)
+     s1 s2 s3
+[1,]  1  3  5
+[2,]  2  4  6
+> 
+> W <- matrix(runif(length(X)), nrow = nrow(X), ncol = ncol(X))
+> Z1 <- rowAvgsPerColSet(X, W = W, S = S, FUN = rowWeightedMeans)
+> print(Z1)
+           s1          s2           s3
+A -1.27308782  0.23176630 -0.039554567
+B  0.45067237 -0.59857581 -1.278365168
+C  0.21625514  0.41985931 -0.205124423
+D -0.07282050 -1.54967828  0.901771523
+E -0.98352775 -0.71873175 -0.086603639
+F  0.24372706 -1.04261240 -0.669371549
+G  0.05468637  0.04687952 -0.815558555
+H  0.12067216 -0.18606985 -0.091264519
+I  0.14769083 -0.19661347 -0.541978130
+J  1.29130848  0.33469190 -0.161365344
+K -0.68017054  0.36126386  0.699851720
+L -0.33954891 -0.95044022 -0.330560025
+M  0.35291709  0.17656774  0.785797444
+N -0.17150241 -0.09482374  0.409389693
+O  1.17989942  1.19285955  0.645466052
+P  0.85890393 -0.01941489 -0.404140381
+Q -1.31995405  0.14891613  0.288922728
+R  0.14655097 -0.99735115 -0.002034835
+S  0.44934699  0.06991379  0.944760698
+T -0.62054974  0.79385810  0.909871275
+> Z2 <- colAvgsPerRowSet(X, W = W, S = S, FUN = colWeightedMeans)
+> print(Z2)
+             a           b          c          d           e          f
+s1 -0.74146836 -0.08094709  0.2807736 -0.6475831 -0.81349070 -0.5044290
+s2  0.20163731 -0.05820267 -0.9291205 -0.2006985 -0.02057845  0.7172256
+s3  0.01777973 -0.75758042 -1.4573456 -0.3039985  0.31733607 -1.0733113
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Result should always be a matrix, including when nrow(X) <= 1
+> # (https://github.com/HenrikBengtsson/matrixStats/issues/108)
+> # - - - - - - - - - - - - - - - - - - - - - - - - - -
+> X <- matrix(1:3, nrow = 1L, ncol = 3L)
+> S <- matrix(1, nrow = 1L, ncol = 1L)
+> Z1 <- rowAvgsPerColSet(X, S = S)
+> stopifnot(is.matrix(Z1))
+> Z2 <- rowAvgsPerColSet(X, S = S, rows = 0)
+> stopifnot(is.matrix(Z2))
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Works with many, one or zero columns / rows
+> # (https://github.com/HenrikBengtsson/matrixStats/issues/172)
+> # - - - - - - - - - - - - - - - - - - - - - - - - - -
+> S <- cbind(1:2, 3:4, 5:6)
+> X <- matrix(rnorm(2 * 6), nrow = 6, ncol = 2)
+> Z2 <- colAvgsPerRowSet(X, S = S, FUN = colSums2)
+> Z2_ref <- rbind(colSums2(X[S[,1], ,drop=FALSE]),
++                 colSums2(X[S[,2], ,drop=FALSE]),
++                 colSums2(X[S[,3], ,drop=FALSE]))
+> stopifnot(identical(Z2, Z2_ref))
+> X <- matrix(rnorm(6), nrow = 6, ncol = 1)
+> Z1 <- colAvgsPerRowSet(X, S = S, FUN = colSums2)
+> Z1_ref <- rbind(colSums2(X[S[,1], ,drop=FALSE]),
++                 colSums2(X[S[,2], ,drop=FALSE]),
++                 colSums2(X[S[,3], ,drop=FALSE]))
+> stopifnot(identical(Z1, Z1_ref))
+> X <- matrix(numeric(0), nrow = 6, ncol = 0)
+> Z0 <- colAvgsPerRowSet(X, S = S, FUN = colSums2)
+> Z0_ref <- matrix(numeric(0), nrow = ncol(S), ncol = 0)
+> stopifnot(identical(Z0, unname(Z0_ref)))
+> 
+> 
+> S <- rbind(1:4, 5:8)
+> X <- matrix(rnorm(n = 2 * 8), nrow = 2, ncol = 8)
+> Z2 <- rowAvgsPerColSet(X, S = S, FUN = rowMeans2)
+> Z2_ref <- cbind(rowMeans2(X[,S[,1],drop=FALSE]),
++                 rowMeans2(X[,S[,2],drop=FALSE]),
++                 rowMeans2(X[,S[,3],drop=FALSE]),
++                 rowMeans2(X[,S[,4],drop=FALSE]))
+> stopifnot(identical(Z2, Z2_ref))
+> X <- matrix(rnorm(n = 8), nrow = 1, ncol = 8)
+> Z1 <- rowAvgsPerColSet(X, S = S, FUN = rowMeans2)
+> Z1_ref <- cbind(rowMeans2(X[,S[,1],drop=FALSE]),
++                 rowMeans2(X[,S[,2],drop=FALSE]),
++                 rowMeans2(X[,S[,3],drop=FALSE]),
++                 rowMeans2(X[,S[,4],drop=FALSE]))
+> stopifnot(identical(Z1, Z1_ref))
+> X <- matrix(numeric(0), nrow = 0, ncol = 8)
+> Z0 <- rowAvgsPerColSet(X, S = S, FUN = rowMeans2)
+> Z0_ref <- matrix(numeric(0), nrow = 0, ncol = ncol(S))
+> stopifnot(identical(Z0, Z0_ref))
+> 

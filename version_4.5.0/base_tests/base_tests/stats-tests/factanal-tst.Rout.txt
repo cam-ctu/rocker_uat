@@ -1,0 +1,109 @@
+
+R version 4.5.0 (2025-04-11) -- "How About a Twenty-Six"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> ## Subject: [Bug 18417] factanal returns useless SS loading values
+> ## Date: Sat, 22 Mar 2025 23:21:10 +0000
+> ## --- Comment #21 from Coen Bernaards
+> 
+> ## create unrotated loadings matrix
+> data(ability.cov, package="datasets")
+> res <- factanal(covmat = ability.cov$cov, factors = 3, rotation = "none")
+> 
+> if(FALSE) {
++     ## create the output from oblimin of GPArotation as a list;
++     require(GPArotation)
++     set.seed(100)
++     obli100 <- oblimin(res$loadings, Tmat = Random.Start(3), eps = 1e-8, maxit = 10000)
++     ## keep only what's needed:
++     obli100[setdiff(names(obli100),c("loadings", "Phi", "Th", "orthogonal"))] <- NULL
++     saveRDS(obli100, "obli100.rds")
++ }
+> 
+> obli100 <- readRDS("obli100.rds") # in ../stats/tests/
+> if(getRversion() >= "4.6") { ## perform the factanal using this oblimin rotation [ rotation now may be _function_
++   resO100 <- factanal(covmat = ability.cov$cov, factors = 3, rotation = \(...) obli100)
++ } else { ## old R:
++   obli_FN <- function(...) obli100
++   resO100 <- factanal(covmat = ability.cov$cov, factors = 3, rotation = "obli_FN")
++ }
+> resO100 # print.factanal(..)  --> print.loadings(..)
+
+Call:
+factanal(factors = 3, covmat = ability.cov$cov, rotation = "obli_FN")
+
+Uniquenesses:
+general picture  blocks    maze reading   vocab 
+  0.441   0.217   0.329   0.580   0.040   0.336 
+
+Loadings:
+        Factor1 Factor2 Factor3
+general  0.410   0.245   0.302 
+picture          0.894         
+blocks           0.363   0.544 
+maze            -0.116   0.702 
+reading  1.003                 
+vocab    0.792                 
+
+            Factor1 Factor2 Factor3
+SS loadings   1.896   1.124   1.037
+
+Factor Correlations:
+        Factor1 Factor2 Factor3
+Factor1   1.000   0.341   0.391
+Factor2   0.341   1.000   0.496
+Factor3   0.391   0.496   1.000
+
+The degrees of freedom for the model is 0 and the fit was 0 
+> 
+> oriL <-   res     $ loadings
+> ldns   <- resO100 $ loadings
+> rotmat <- resO100 $ rotmat
+> # no longer can the unrotated matrix be recreated. the max abs diff between
+> # unrotated and recreated unrotated loadings should be near zero but is not:
+> print.default(dev <- ldns %*% solve(rotmat) - oriL)
+                 [,1]          [,2]          [,3]
+general  2.129519e-12 -3.187117e-12 -1.001643e-12
+picture  3.390455e-12 -2.012945e-12 -2.192690e-13
+blocks   3.348377e-12 -1.913247e-12 -4.857226e-13
+maze     1.996903e-12 -1.078193e-12 -5.045964e-13
+reading -1.280642e-12 -4.263243e-12 -7.034512e-13
+vocab    4.329870e-13 -4.262667e-12 -1.066328e-12
+attr(,"class")
+[1] "loadings"
+> stopifnot(max(abs(dev)) < 1e-9) # max|dev| was 2.000982 (R <= 4.4.x), now 2.22e-16 [Lnx x86_64, gcc]; 6e-12 on M1mac
+> 
+> ldns # prints loadings too
+
+Loadings:
+        Factor1 Factor2 Factor3
+general  0.410   0.245   0.302 
+picture          0.894         
+blocks           0.363   0.544 
+maze            -0.116   0.702 
+reading  1.003                 
+vocab    0.792                 
+
+            Factor1 Factor2 Factor3
+SS loadings   1.896   1.124   1.037
+> ## check the "SS loadings .... " line
+> L <- ldns
+> Phi <- attr(L, "covariance")
+> (SSld <- diag(Phi %*% crossprod(L)))
+[1] 1.896492 1.124306 1.037336
+> ##      1.896492 1.124306 1.037336
+> stopifnot(all.equal(c(1.8964924541, 1.1243062406, 1.0373362639), SSld)) # seen  8.49e-12
+> 

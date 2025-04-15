@@ -1,0 +1,98 @@
+
+R version 4.5.0 (2025-04-11) -- "How About a Twenty-Six"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library("matrixStats")
+> 
+> rowMins_R <- function(x, ..., useNames = TRUE) {
++   suppressWarnings({
++     res <- apply(x, MARGIN = 1L, FUN = min, ...)
++   })
++   if (!useNames) names(res) <- NULL
++   res
++ } # rowMins_R()
+> 
+> rowMaxs_R <- function(x, ..., useNames = TRUE) {
++   suppressWarnings({
++     res <- apply(x, MARGIN = 1L, FUN = max, ...)
++   })
++   if (!useNames) names(res) <- NULL
++   res
++ } # rowMaxs_R()
+> 
+> rowRanges_R <- function(x, ..., useNames = TRUE) {
++   suppressWarnings({
++     ans <- t(apply(x, MARGIN = 1L, FUN = range, ...))
++   })
++ 
++   # Preserve rownames attribute
++   dim <- c(dim(x)[1], 2L)
++   if (!isTRUE(all.equal(dim(ans), dim))) {
++     dim(ans) <- dim
++     rownames <- rownames(x)
++     if (!is.null(dimnames)) rownames(ans) <- rownames
++   }
++   if (!useNames) dimnames(ans) <- NULL
++   ans
++ } # rowRanges_R()
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Subsetted tests
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> source("utils/validateIndicesFramework.R")
+> x <- matrix(runif(6 * 6, min = -6, max = 6), nrow = 6, ncol = 6)
+> storage.mode(x) <- "integer"
+> 
+> # To check rownames/names attributes
+> dimnames <- list(letters[1:6], LETTERS[1:6])
+> 
+> # Test with and without dimnames on x
+> for (setDimnames in c(TRUE, FALSE)) {
++   if (setDimnames) dimnames(x) <- dimnames
++   else dimnames(x) <- NULL
++   
++   count <- 0L
++   for (rows in index_cases) {
++     for (cols in index_cases) {
++       count <- count + 1L
++       na.rm <- c(TRUE, FALSE)[count %% 2 + 1]
++       useNames <- c(TRUE, FALSE)
++       useNames <- useNames[count %% length(useNames) + 1]
++ 
++       validateIndicesTestMatrix(x, rows, cols,
++                                 ftest = rowRanges, fsure = rowRanges_R,
++                                 na.rm = na.rm, useNames = useNames)
++       validateIndicesTestMatrix(x, rows, cols,
++                                 ftest = rowMins, fsure = rowMins_R,
++                                 na.rm = na.rm, useNames = useNames)
++       validateIndicesTestMatrix(x, rows, cols,
++                                 ftest = rowMaxs, fsure = rowMaxs_R,
++                                 na.rm = na.rm, useNames = useNames)
++ 
++       validateIndicesTestMatrix(x, rows, cols,
++                                 fcoltest = colRanges, fsure = rowRanges_R,
++                                 na.rm = na.rm, useNames = useNames)
++       validateIndicesTestMatrix(x, rows, cols,
++                                 fcoltest = colMins, fsure = rowMins_R,
++                                 na.rm = na.rm, useNames = useNames)
++       validateIndicesTestMatrix(x, rows, cols,
++                                 fcoltest = colMaxs, fsure = rowMaxs_R,
++                                 na.rm = na.rm, useNames = useNames)
++     }
++   }
++ }
+> 

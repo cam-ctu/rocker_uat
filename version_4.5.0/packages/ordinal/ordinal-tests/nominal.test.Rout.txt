@@ -1,0 +1,401 @@
+
+R version 4.5.0 (2025-04-11) -- "How About a Twenty-Six"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(ordinal)
+> 
+> if(require(MASS)) {
++     fm1 <- clm(Sat ~ Infl + Type + Cont, data=housing, weights=Freq)
++     scale_test(fm1)
++     nominal_test(fm1)
++ 
++     fm2 <- update(fm1, scale=~Cont)
++     scale_test(fm2)
++     nominal_test(fm2)
++     fm3 <- update(fm1, nominal=~ Cont)
++     fm3$Theta
++     anova(fm2, fm3)
++     fm3$alpha.mat
++     summary(fm3)
++ }
+Loading required package: MASS
+formula: Sat ~ Infl + Type + Cont
+nominal: ~Cont
+data:    housing
+
+ link  threshold nobs logLik   AIC     niter max.grad cond.H 
+ logit flexible  1681 -1738.35 3494.70 4(0)  1.31e-07 6.3e+01
+
+Coefficients: (1 not defined because of singularities)
+              Estimate Std. Error z value Pr(>|z|)    
+InflMedium      0.5695     0.1048   5.436 5.45e-08 ***
+InflHigh        1.2884     0.1271  10.137  < 2e-16 ***
+TypeApartment  -0.5706     0.1192  -4.788 1.68e-06 ***
+TypeAtrium     -0.3643     0.1552  -2.348   0.0189 *  
+TypeTerrace    -1.0980     0.1516  -7.242 4.43e-13 ***
+ContHigh            NA         NA      NA       NA    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+                        Estimate Std. Error z value
+Low|Medium.(Intercept)   -0.4494     0.1279  -3.515
+Medium|High.(Intercept)   0.6480     0.1279   5.066
+Low|Medium.ContHigh      -0.4440     0.1095  -4.056
+Medium|High.ContHigh     -0.2861     0.1063  -2.691
+> 
+> #################################
+> ### Testing nominal_test and scale_test:
+> fm1 <- clm(rating ~ temp * contact, data=wine)
+> ## names(fm1)
+> fm2 <- clm(rating ~ temp * contact, data=wine, nominal=~contact)
+> (an <- anova(fm1, fm2))
+Likelihood ratio tests of cumulative link models:
+ 
+    formula:                nominal: link: threshold:
+fm1 rating ~ temp * contact ~1       logit flexible  
+fm2 rating ~ temp * contact ~contact logit flexible  
+
+    no.par    AIC  logLik LR.stat df Pr(>Chisq)
+fm1      7 186.83 -86.416                      
+fm2     10 192.17 -86.083  0.6669  3      0.881
+> (nm <- nominal_test(fm1))
+Tests of nominal effects
+
+formula: rating ~ temp * contact
+             Df  logLik    AIC     LRT Pr(>Chi)
+<none>          -86.416 186.83                 
+temp          3 -84.874 189.75 3.08352   0.3789
+contact       3 -86.083 192.16 0.66691   0.8810
+temp:contact                                   
+> stopifnot(isTRUE(all.equal(an[2, 6], nm["contact", 5])))
+> 
+> fm2 <- clm(rating ~ temp * contact, data=wine, scale=~contact)
+> (an <- anova(fm1, fm2))
+Likelihood ratio tests of cumulative link models:
+ 
+    formula:                scale:   link: threshold:
+fm1 rating ~ temp * contact ~1       logit flexible  
+fm2 rating ~ temp * contact ~contact logit flexible  
+
+    no.par    AIC  logLik LR.stat df Pr(>Chisq)
+fm1      7 186.83 -86.416                      
+fm2      8 188.60 -86.300  0.2325  1     0.6297
+> (sc <- scale_test(fm1))
+Tests of scale effects
+
+formula: rating ~ temp * contact
+             Df  logLik    AIC     LRT Pr(>Chi)
+<none>          -86.416 186.83                 
+temp          1 -86.326 188.65 0.18061   0.6709
+contact       1 -86.300 188.60 0.23252   0.6297
+temp:contact  3 -86.259 192.52 0.31391   0.9574
+> stopifnot(isTRUE(all.equal(an[2, 6], sc["contact", "Pr(>Chi)"])))
+> 
+> fm1 <- clm(rating ~ temp + contact,
++            nominal=~temp + contact, data=wine)
+Warning message:
+(1) Hessian is numerically singular: parameters are not uniquely determined 
+In addition: Absolute convergence criterion was met, but relative criterion was not met 
+> fm1
+formula: rating ~ temp + contact
+nominal: ~temp + contact
+data:    wine
+
+ link  threshold nobs logLik AIC    niter max.grad cond.H 
+ logit flexible  72   -84.61 193.22 20(0) 4.36e-09 5.0e+10
+
+Coefficients: (2 not defined because of singularities)
+  tempwarm contactyes 
+        NA         NA 
+
+Threshold coefficients:
+            1|2     2|3     3|4     4|5    
+(Intercept)  -1.226   1.033   3.946  24.553
+tempwarm    -21.118  -2.111  -2.940 -22.432
+contactyes   -1.659  -1.343  -1.693  -1.162
+> try(nominal_test(fm1), silent=TRUE)[1] ## gives error OK
+
+no additional terms to add to nominal
+
+       Df
+<none>   
+> scale_test(fm1)
+Tests of scale effects
+
+formula: rating ~ temp + contact
+nominal: ~temp + contact
+        Df  logLik    AIC       LRT Pr(>Chi)
+<none>     -84.611 193.22                   
+temp     1 -84.604 195.21 0.0129568   0.9094
+contact  1 -84.610 195.22 0.0012219   0.9721
+Warning messages:
+1: (1) Hessian is numerically singular: parameters are not uniquely determined 
+In addition: Absolute convergence criterion was met, but relative criterion was not met 
+2: (1) Hessian is numerically singular: parameters are not uniquely determined 
+In addition: Absolute convergence criterion was met, but relative criterion was not met 
+> fm1 <- clm(rating ~ temp + contact,
++            scale=~temp + contact, data=wine)
+> fm1
+formula: rating ~ temp + contact
+scale:   ~temp + contact
+data:    wine
+
+ link  threshold nobs logLik AIC    niter max.grad cond.H 
+ logit flexible  72   -86.34 188.68 8(0)  7.40e-09 2.0e+02
+
+Coefficients:
+  tempwarm contactyes 
+     2.446      1.482 
+
+log-scale coefficients:
+  tempwarm contactyes 
+   0.05008   -0.11418 
+
+Threshold coefficients:
+   1|2    2|3    3|4    4|5 
+-1.303  1.219  3.377  4.872 
+> try(scale_test(fm1), silent=TRUE)[1] ## gives error OK
+
+no relevant terms to add to scale
+
+       Df
+<none>   
+> nominal_test(fm1)
+Tests of nominal effects
+
+formula: rating ~ temp + contact
+scale:   ~temp + contact
+        Df  logLik    AIC     LRT Pr(>Chi)
+<none>     -86.342 188.69                 
+temp     3 -84.851 191.70 2.98202   0.3944
+contact  3 -86.008 194.02 0.66808   0.8807
+> 
+> 
+> ## Using weights:
+> set.seed(123454321)
+> wt <- runif(nrow(wine))
+> fm1 <- clm(rating ~ temp * contact, data=wine, weigths=wt)
+> nominal_test(fm1)
+Tests of nominal effects
+
+formula: rating ~ temp * contact
+             Df  logLik    AIC     LRT Pr(>Chi)
+<none>          -86.416 186.83                 
+temp          3 -84.874 189.75 3.08352   0.3789
+contact       3 -86.083 192.16 0.66691   0.8810
+temp:contact                                   
+> scale_test(fm1)
+Tests of scale effects
+
+formula: rating ~ temp * contact
+             Df  logLik    AIC     LRT Pr(>Chi)
+<none>          -86.416 186.83                 
+temp          1 -86.326 188.65 0.18061   0.6709
+contact       1 -86.300 188.60 0.23252   0.6297
+temp:contact  3 -86.259 192.52 0.31391   0.9574
+> 
+> ## No nominal test for judge since that model is not identifiable:
+> fm1 <- clm(rating ~ judge + temp + contact, data=wine)
+> nominal_test(fm1)
+Tests of nominal effects
+
+formula: rating ~ judge + temp + contact
+        Df  logLik    AIC     LRT Pr(>Chi)
+<none>     -70.921 169.84                 
+judge                                     
+temp     3 -69.900 173.80 2.04253   0.5636
+contact  3 -70.708 175.42 0.42612   0.9348
+> scale_test(fm1)
+Tests of scale effects
+
+formula: rating ~ judge + temp + contact
+        Df  logLik    AIC     LRT Pr(>Chi)
+<none>     -70.921 169.84                 
+judge    8 -64.731 173.46 12.3790   0.1351
+temp     1 -70.897 171.79  0.0474   0.8276
+contact  1 -70.870 171.74  0.1018   0.7497
+> fm1 <- clm(rating ~ judge + temp, nominal=~contact, data=wine)
+> nominal_test(fm1)
+Tests of nominal effects
+
+formula: rating ~ judge + temp
+nominal: ~contact
+       Df  logLik    AIC    LRT Pr(>Chi)
+<none>    -70.708 175.42                
+judge                                   
+temp    3 -69.707 179.41 2.0015   0.5721
+> summary(fm1)
+formula: rating ~ judge + temp
+nominal: ~contact
+data:    wine
+
+ link  threshold nobs logLik AIC    niter max.grad cond.H 
+ logit flexible  72   -70.71 175.42 6(0)  8.07e-08 9.9e+01
+
+Coefficients:
+         Estimate Std. Error z value Pr(>|z|)    
+judge2    -3.2395     1.0683  -3.032  0.00243 ** 
+judge3    -0.9556     0.9699  -0.985  0.32452    
+judge4    -2.4613     1.0321  -2.385  0.01709 *  
+judge5    -2.0248     1.0093  -2.006  0.04484 *  
+judge6    -1.6379     0.9770  -1.677  0.09364 .  
+judge7    -5.2222     1.1381  -4.589 4.46e-06 ***
+judge8    -2.7648     0.9776  -2.828  0.00468 ** 
+judge9    -3.1751     1.0028  -3.166  0.00154 ** 
+tempwarm   3.3309     0.6174   5.395 6.87e-08 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+                Estimate Std. Error z value
+1|2.(Intercept)  -4.1549     0.9897  -4.198
+2|3.(Intercept)  -0.7354     0.7920  -0.928
+3|4.(Intercept)   2.3388     0.8909   2.625
+4|5.(Intercept)   3.8873     1.0352   3.755
+1|2.contactyes   -2.0216     1.3072  -1.547
+2|3.contactyes   -1.9865     0.6904  -2.877
+3|4.contactyes   -2.1825     0.7774  -2.807
+4|5.contactyes   -1.5077     1.0044  -1.501
+> 
+> ## A continuous variable:
+> set.seed(123454321)
+> x <- rnorm(nrow(wine), sd=1)
+> fm <- clm(rating ~ temp, nominal=~contact * x, data=wine)
+Warning message:
+(1) Hessian is numerically singular: parameters are not uniquely determined 
+In addition: Absolute convergence criterion was met, but relative criterion was not met 
+> nominal_test(fm)
+Tests of nominal effects
+
+formula: rating ~ temp
+nominal: ~contact * x
+       Df  logLik    AIC  LRT Pr(>Chi)
+<none>    -77.858 189.72              
+temp    3 -76.738 193.48 2.24   0.5241
+> scale_test(fm)
+Tests of scale effects
+
+formula: rating ~ temp
+nominal: ~contact * x
+       Df  logLik    AIC     LRT Pr(>Chi)
+<none>    -77.858 189.72                 
+temp    1 -77.684 191.37 0.34804   0.5552
+Warning message:
+(1) Hessian is numerically singular: parameters are not uniquely determined 
+In addition: Absolute convergence criterion was met, but relative criterion was not met 
+> fm <- clm(rating ~ temp + x, nominal=~contact, data=wine)
+> nominal_test(fm)
+Tests of nominal effects
+
+formula: rating ~ temp + x
+nominal: ~contact
+       Df  logLik    AIC    LRT Pr(>Chi)
+<none>    -84.949 189.90                
+temp    3 -83.421 192.84 3.0560   0.3831
+x       3 -84.333 194.67 1.2322   0.7453
+> scale_test(fm)
+Tests of scale effects
+
+formula: rating ~ temp + x
+nominal: ~contact
+       Df  logLik    AIC     LRT Pr(>Chi)
+<none>    -84.949 189.90                 
+temp    1 -84.737 191.47 0.42504   0.5144
+x       1 -84.896 191.79 0.10781   0.7426
+> ## poly:
+> fm <- clm(rating ~ temp + poly(x, 2), nominal=~contact, data=wine)
+> nominal_test(fm)
+Tests of nominal effects
+
+formula: rating ~ temp + poly(x, 2)
+nominal: ~contact
+           Df  logLik    AIC    LRT Pr(>Chi)
+<none>        -84.079 190.16                
+temp        3 -82.694 193.39 2.7693   0.4286
+poly(x, 2)  6 -80.941 195.88 6.2762   0.3930
+> scale_test(fm)
+Tests of scale effects
+
+formula: rating ~ temp + poly(x, 2)
+nominal: ~contact
+           Df  logLik    AIC     LRT Pr(>Chi)
+<none>        -84.079 190.16                 
+temp        1 -84.020 192.04 0.11784   0.7314
+poly(x, 2)  2 -83.314 192.63 1.53017   0.4653
+> ## another combination:
+> fm1 <- clm(SURENESS ~ PRODID + DAY + SOUPTYPE + SOUPFREQ,
++            scale=~PROD,
++            nominal=~ DAY*GENDER, data=soup)
+> fm1
+formula: SURENESS ~ PRODID + DAY + SOUPTYPE + SOUPFREQ
+scale:   ~PROD
+nominal: ~DAY * GENDER
+data:    soup
+
+ link  threshold nobs logLik   AIC     niter max.grad cond.H 
+ logit flexible  1847 -2657.84 5375.68 8(2)  3.50e-07 4.0e+03
+
+Coefficients: (1 not defined because of singularities)
+          PRODID2           PRODID3           PRODID4           PRODID5 
+           1.0780            1.5090            0.9482            1.4910 
+          PRODID6              DAY2    SOUPTYPECanned   SOUPTYPEDry-mix 
+           1.8174                NA           -0.2337            0.1832 
+SOUPFREQ1-4/month  SOUPFREQ<1/month 
+          -0.0954           -0.1137 
+
+log-scale coefficients:
+PRODTest 
+  0.1427 
+
+Threshold coefficients:
+                  1|2      2|3      3|4      4|5      5|6     
+(Intercept)       -1.65979 -0.75912 -0.36903  0.02374  0.66929
+DAY2              -0.22291  0.13711  0.16406  0.10279  0.23721
+GENDERFemale       0.06531  0.06089 -0.01938 -0.13670 -0.01594
+DAY2:GENDERFemale  0.36194  0.25429  0.25482  0.23375  0.05243
+> nominal_test(fm1)
+Tests of nominal effects
+
+formula: SURENESS ~ PRODID + DAY + SOUPTYPE + SOUPFREQ
+scale:   ~PROD
+nominal: ~DAY * GENDER
+         Df  logLik    AIC     LRT  Pr(>Chi)    
+<none>      -2657.8 5375.7                      
+PRODID   20 -2644.7 5389.4 26.2387 0.1580707    
+SOUPTYPE  8 -2654.0 5384.1  7.5969 0.4738067    
+SOUPFREQ  8 -2644.6 5365.1 26.5587 0.0008423 ***
+PROD      4 -2654.7 5377.5  6.2011 0.1846258    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> scale_test(fm1)
+Tests of scale effects
+
+formula: SURENESS ~ PRODID + DAY + SOUPTYPE + SOUPFREQ
+scale:   ~PROD
+nominal: ~DAY * GENDER
+         Df  logLik    AIC     LRT Pr(>Chi)   
+<none>      -2657.8 5375.7                    
+PRODID    4 -2657.3 5382.5  1.1526 0.885842   
+DAY       1 -2655.9 5373.8  3.8544 0.049616 * 
+SOUPTYPE  2 -2657.6 5379.1  0.5416 0.762771   
+SOUPFREQ  2 -2652.7 5369.3 10.3447 0.005671 **
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> 
+> #################################
+> 
+> 

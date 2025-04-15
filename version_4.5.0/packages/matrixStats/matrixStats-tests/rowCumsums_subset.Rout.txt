@@ -1,0 +1,61 @@
+
+R version 4.5.0 (2025-04-11) -- "How About a Twenty-Six"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library("matrixStats")
+> 
+> rowCumsums_R <- function(x, ..., useNames = TRUE) {
++   suppressWarnings({
++     y <- t(apply(x, MARGIN = 1L, FUN = cumsum))
++   })
++   
++   # Preserve dimnames attribute?
++   dim(y) <- dim(x)
++   dimnames(y) <- if (useNames) dimnames(x) else NULL
++ 
++   y
++ }
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Subsetted tests
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> source("utils/validateIndicesFramework.R")
+> x <- matrix(runif(6 * 6, min = -3, max = 3), nrow = 6, ncol = 6)
+> storage.mode(x) <- "integer"
+> 
+> # To check dimnames attribute
+> dimnames <- list(letters[1:6], LETTERS[1:6])
+> 
+> # Test with and without dimnames on x
+> for (setDimnames in c(TRUE, FALSE)) {
++   if (setDimnames) dimnames(x) <- dimnames
++   else dimnames(x) <- NULL
++   for (rows in index_cases) {
++     for (cols in index_cases) {
++       # Check names attribute
++       for (useNames in c(TRUE, FALSE)) {
++         validateIndicesTestMatrix(x, rows, cols,
++                                   ftest = rowCumsums, fsure = rowCumsums_R, useNames = useNames)
++         validateIndicesTestMatrix(x, rows, cols,
++                                   ftest = function(x, rows, cols, ..., useNames) {
++           t(colCumsums(t(x), rows = cols, cols = rows, useNames = useNames))
++         }, fsure = rowCumsums_R, useNames = useNames)
++       }
++     }
++   }
++ }
+> 

@@ -1,0 +1,115 @@
+
+R version 4.5.0 (2025-04-11) -- "How About a Twenty-Six"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(ordinal)
+> options(contrasts = c("contr.treatment", "contr.poly"))
+> 
+> ## More manageable data set:
+> (tab26 <- with(soup, table("Product" = PROD, "Response" = SURENESS)))
+       Response
+Product   1   2   3   4   5   6
+   Ref  132 161  65  41 121 219
+   Test  96  99  50  57 156 650
+> dimnames(tab26)[[2]] <- c("Sure", "Not Sure", "Guess", "Guess", "Not Sure", "Sure")
+> dat26 <- expand.grid(sureness = as.factor(1:6), prod = c("Ref", "Test"))
+> dat26$wghts <- c(t(tab26))
+> m1 <- clm(sureness ~ prod, scale = ~prod, data = dat26,
++           weights = wghts, link = "logit")
+> 
+> ## anova
+> m2 <- update(m1, scale = ~1)
+> anova(m1, m2)
+Likelihood ratio tests of cumulative link models:
+ 
+   formula:        scale: link: threshold:
+m2 sureness ~ prod ~1     logit flexible  
+m1 sureness ~ prod ~prod  logit flexible  
+
+   no.par    AIC  logLik LR.stat df Pr(>Chisq)  
+m2      6 5392.7 -2690.3                        
+m1      7 5389.5 -2687.7  5.1749  1    0.02292 *
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> mN1 <- clm(sureness ~ 1, nominal = ~prod, data = dat26,
++            link = "logit")
+> anova(m1, mN1)
+Likelihood ratio tests of cumulative link models:
+ 
+    formula:        nominal: scale: link: threshold:
+m1  sureness ~ prod ~1       ~prod  logit flexible  
+mN1 sureness ~ 1    ~prod    ~1     logit flexible  
+
+    no.par      AIC    logLik LR.stat df Pr(>Chisq)    
+m1       7 5389.489 -2687.745                          
+mN1     10   63.002   -21.501  5332.5  3  < 2.2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> anova(m1, m2, mN1)
+Likelihood ratio tests of cumulative link models:
+ 
+    formula:        nominal: scale: link: threshold:
+m2  sureness ~ prod ~1       ~1     logit flexible  
+m1  sureness ~ prod ~1       ~prod  logit flexible  
+mN1 sureness ~ 1    ~prod    ~1     logit flexible  
+
+    no.par      AIC    logLik   LR.stat df Pr(>Chisq)    
+m2       6 5392.664 -2690.332                            
+m1       7 5389.489 -2687.745    5.1749  1    0.02292 *  
+mN1     10   63.002   -21.501 5332.4869  3    < 2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> 
+> ## dropterm
+> if(require(MASS)) {
++     dropterm(m1, test = "Chi")
++     mB1 <- clm(SURENESS ~ PROD + GENDER + SOUPTYPE,
++                scale = ~ COLD, data = soup, link = "probit")
++     dropterm(mB1, test = "Chi")       # or
++ 
++     ## addterm
++     addterm(mB1, scope = ~.^2, test = "Chi")
++     ## addterm(mB1, scope = ~ . + AGEGROUP + SOUPFREQ,
++     ##         test = "Chi", which = "location")
++     ## addterm(mB1, scope = ~ . + GENDER + SOUPTYPE,
++     ##         test = "Chi", which = "scale")
++ 
++     ## Fit model from polr example:
++     ## data(housing, package = "MASS")
++ 
++     fm1 <- clm(Sat ~ Infl + Type + Cont, weights = Freq, data = housing)
++     ## addterm(fm1, ~ Infl + Type + Cont, test= "Chisq", which = "scale")
++     dropterm(fm1, test = "Chisq")
++     fm2 <- update(fm1, scale =~ Cont)
++     fm3 <- update(fm1, formula =~.-Cont, nominal =~ Cont)
++     anova(fm1, fm2, fm3)
++ }
+Loading required package: MASS
+Likelihood ratio tests of cumulative link models:
+ 
+    formula:                 nominal: scale: link: threshold:
+fm1 Sat ~ Infl + Type + Cont ~1       ~1     logit flexible  
+fm2 Sat ~ Infl + Type + Cont ~1       ~Cont  logit flexible  
+fm3 Sat ~ Infl + Type        ~Cont    ~1     logit flexible  
+
+    no.par    AIC  logLik LR.stat df Pr(>Chisq)  
+fm1      8 3495.1 -1739.6                        
+fm2      9 3491.5 -1736.7  5.6559  1     0.0174 *
+fm3      9 3494.7 -1738.4 -3.2113  0             
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> 
+> 
