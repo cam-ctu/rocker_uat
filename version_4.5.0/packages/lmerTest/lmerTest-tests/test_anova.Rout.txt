@@ -1,0 +1,804 @@
+
+R version 4.5.0 (2025-04-11) -- "How About a Twenty-Six"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> # test_anova.R
+> library(lmerTest)
+Loading required package: lme4
+Loading required package: Matrix
+
+Attaching package: ‘lmerTest’
+
+The following object is masked from ‘package:lme4’:
+
+    lmer
+
+The following object is masked from ‘package:stats’:
+
+    step
+
+> 
+> # WRE says "using if(requireNamespace("pkgname")) is preferred, if possible."
+> # even in tests:
+> assertError <- function(expr, ...)
++   if(requireNamespace("tools")) tools::assertError(expr, ...) else invisible()
+> assertWarning <- function(expr, ...)
++   if(requireNamespace("tools")) tools::assertWarning(expr, ...) else invisible()
+> 
+> # Kenward-Roger only available with pbkrtest and only then validated in R >= 3.3.3
+> # (faulty results for R < 3.3.3 may be due to unstated dependencies in pbkrtest)
+> has_pbkrtest <- requireNamespace("pbkrtest", quietly = TRUE) && getRversion() >= "3.3.3"
+> 
+> data("sleepstudy", package="lme4")
+> TOL <- 1e-4
+> 
+> ####################################
+> ## Basic anova tests
+> ####################################
+> 
+> m <- lmer(Reaction ~ Days + (Days | Subject), sleepstudy)
+> 
+> ####### ddf argument:
+> (an1 <- anova(m)) # Also testing print method.
+Type III Analysis of Variance Table with Satterthwaite's method
+     Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+Days  30031   30031     1    17  45.853 3.264e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an2 <- anova(m, ddf="Satterthwaite"))
+Type III Analysis of Variance Table with Satterthwaite's method
+     Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+Days  30031   30031     1    17  45.853 3.264e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an2b <- anova(m, ddf="Satterthwaite", type=3))
+Type III Analysis of Variance Table with Satterthwaite's method
+     Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+Days  30031   30031     1    17  45.853 3.264e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an2c <- anova(m, ddf="Satterthwaite", type=2))
+Type II Analysis of Variance Table with Satterthwaite's method
+     Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+Days  30031   30031     1    17  45.853 3.264e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> stopifnot(isTRUE(
++   all.equal(an1, an2, tolerance=TOL)
++ ))
+> (an3 <- anova(m, ddf="Sat")) ## Abbreviated argument
+Type III Analysis of Variance Table with Satterthwaite's method
+     Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+Days  30031   30031     1    17  45.853 3.264e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> stopifnot(isTRUE(
++   all.equal(an1, an3, tolerance=TOL)
++ ))
+> if(has_pbkrtest) {
++   (anova(m, ddf="Kenward-Roger"))
++   (anova(m, ddf="Kenward-Roger", type=3))
++ }
+Type III Analysis of Variance Table with Kenward-Roger's method
+     Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+Days  30031   30031     1    17  45.853 3.264e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an1 <- anova(m, ddf="lme4"))
+Analysis of Variance Table
+     npar Sum Sq Mean Sq F value
+Days    1  30031   30031  45.853
+> (an2 <- anova(m, ddf="lme4", type=3)) # 'type' is ignored with ddf="lme4"
+Analysis of Variance Table
+     npar Sum Sq Mean Sq F value
+Days    1  30031   30031  45.853
+> stopifnot(isTRUE(
++   all.equal(an1, an2, tolerance=TOL)
++ ))
+> res <- assertError(anova(m, ddf="KR")) ## Error on incorrect arg.
+> stopifnot(
++   grepl("'arg' should be one of ", unlist(res[[1]])$message)
++ )
+> 
+> ## lme4 method:
+> an1 <- anova(m, ddf="lme4")
+> an2 <- anova(as(m, "lmerMod"))
+> stopifnot(isTRUE(
++   all.equal(an1, an2, tolerance=TOL)
++ ))
+> 
+> ###### type argument:
+> (an1 <- anova(m, type="1")) # valid type arg.
+Type I Analysis of Variance Table with Satterthwaite's method
+     Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+Days  30031   30031     1    17  45.853 3.264e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an2 <- anova(m, type="I")) # same
+Type I Analysis of Variance Table with Satterthwaite's method
+     Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+Days  30031   30031     1    17  45.853 3.264e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> stopifnot(isTRUE(
++   all.equal(an1, an2, tolerance=TOL)
++ ))
+> (an3 <- anova(m, type=1)) # Not strictly valid, but accepted
+Type I Analysis of Variance Table with Satterthwaite's method
+     Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+Days  30031   30031     1    17  45.853 3.264e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> stopifnot(isTRUE(
++   all.equal(an1, an3, tolerance=TOL)
++ ))
+> 
+> (an1 <- anova(m, type="2")) # valid type arg.
+Type II Analysis of Variance Table with Satterthwaite's method
+     Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+Days  30031   30031     1    17  45.853 3.264e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an2 <- anova(m, type="II")) # same
+Type II Analysis of Variance Table with Satterthwaite's method
+     Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+Days  30031   30031     1    17  45.853 3.264e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> stopifnot(isTRUE(
++   all.equal(an1, an2, tolerance=TOL)
++ ))
+> (an3 <- anova(m, type=3)) # Not strictly valid, but accepted
+Type III Analysis of Variance Table with Satterthwaite's method
+     Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+Days  30031   30031     1    17  45.853 3.264e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> stopifnot(isTRUE(
++   all.equal(an1, an3, check.attributes=FALSE, tolerance=TOL)
++ ))
+> 
+> (an1 <- anova(m, type="3")) # valid type arg.
+Type III Analysis of Variance Table with Satterthwaite's method
+     Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+Days  30031   30031     1    17  45.853 3.264e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an2 <- anova(m, type="III")) # same
+Type III Analysis of Variance Table with Satterthwaite's method
+     Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+Days  30031   30031     1    17  45.853 3.264e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> stopifnot(isTRUE(
++   all.equal(an1, an2, tolerance=TOL)
++ ))
+> (an3 <- anova(m, type=3)) # Not strictly valid, but accepted
+Type III Analysis of Variance Table with Satterthwaite's method
+     Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+Days  30031   30031     1    17  45.853 3.264e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> stopifnot(isTRUE(
++   all.equal(an1, an3, tolerance=TOL)
++ ))
+> assertError(anova(m, type=0)) # Not valid arg.
+> assertError(anova(m, type="i")) # Not valid arg.
+> 
+> ####### Model comparison:
+> fm <- lm(Reaction ~ Days, sleepstudy)
+> (an <- anova(m, fm))
+refitting model(s) with ML (instead of REML)
+Data: sleepstudy
+Models:
+fm: Reaction ~ Days
+m: Reaction ~ Days + (Days | Subject)
+   npar    AIC    BIC  logLik -2*log(L)  Chisq Df Pr(>Chisq)    
+fm    3 1906.3 1915.9 -950.15    1900.3                         
+m     6 1763.9 1783.1 -875.97    1751.9 148.35  3  < 2.2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> stopifnot(
++   nrow(an) == 2L,
++   rownames(an)[2] == "m"
++ )
+> 
+> m2 <- lmer(Reaction ~ Days + I(Days^2) + (Days | Subject), sleepstudy)
+> (an <- anova(m, m2, refit=FALSE))
+Data: sleepstudy
+Models:
+m: Reaction ~ Days + (Days | Subject)
+m2: Reaction ~ Days + I(Days^2) + (Days | Subject)
+   npar    AIC    BIC  logLik -2*log(L)  Chisq Df Pr(>Chisq)
+m     6 1755.6 1774.8 -871.81    1743.6                     
+m2    7 1756.8 1779.2 -871.41    1742.8 0.8127  1     0.3673
+> stopifnot(
++   nrow(an) == 2L,
++   rownames(an)[1] == "m"
++ )
+> 
+> 
+> ####################################
+> ## Example with factor fixef:
+> ####################################
+> 
+> ## 'temp' is continuous, 'temperature' an ordered factor with 6 levels
+> data("cake", package="lme4")
+> m <- lmer(angle ~ recipe * temp + (1|recipe:replicate), cake)
+> (an <- anova(m))
+Type III Analysis of Variance Table with Satterthwaite's method
+             Sum Sq Mean Sq NumDF  DenDF F value Pr(>F)    
+recipe         4.00    2.00     2 254.02  0.0957 0.9088    
+temp        1966.71 1966.71     1 222.00 94.1632 <2e-16 ***
+recipe:temp    1.74    0.87     2 222.00  0.0417 0.9592    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an_lme4 <- anova(m, ddf="lme4"))
+Analysis of Variance Table
+            npar  Sum Sq Mean Sq F value
+recipe         2   10.39    5.20  0.2488
+temp           1 1966.71 1966.71 94.1632
+recipe:temp    2    1.74    0.87  0.0417
+> 
+> if(has_pbkrtest) {
++   (an_KR <- anova(m, ddf="Kenward-Roger"))
++   # res <- all.equal(an[, c("Sum Sq", "Mean Sq", "F value")],
++   #                  an_lme4[, c("Sum Sq", "Mean Sq", "F value")])
++   # stopifnot(isTRUE(res))
++   res <- all.equal(an[, c("Sum Sq", "Mean Sq", "F value")],
++                    an_KR[, c("Sum Sq", "Mean Sq", "F value")], tolerance=TOL)
++   stopifnot(isTRUE(res))
++ }
+> stopifnot(all.equal(c(2, 1, 2), an$NumDF, tol=1e-6),
++           all.equal(c(254.0157612, 222, 222), an$DenDF, tol=TOL))
+> 
+> an3 <- anova(m, type=3)
+> an2 <- anova(m, type=2)
+> an1 <- anova(m, type=1)
+> 
+> ## Data is balanced, so Type II and III should be identical:
+> ## One variable is continuous, so Type I and II/III are different:
+> stopifnot(
++   isTRUE(all.equal(an3, an2, check.attributes=FALSE, tolerance=TOL)),
++   !isTRUE(all.equal(an1, an2, check.attributes=FALSE, tolerance=1e-8))
++ )
+> 
+> # Using an ordered factor:
+> m <- lmer(angle ~ recipe * temperature + (1|recipe:replicate), cake)
+> (an1 <- anova(m, type=1))
+Type I Analysis of Variance Table with Satterthwaite's method
+                    Sum Sq Mean Sq NumDF DenDF F value Pr(>F)    
+recipe               10.19    5.09     2    42  0.2488 0.7809    
+temperature        2100.30  420.06     5   210 20.5199 <2e-16 ***
+recipe:temperature  205.98   20.60    10   210  1.0062 0.4393    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an2 <- anova(m, type=2))
+Type II Analysis of Variance Table with Satterthwaite's method
+                    Sum Sq Mean Sq NumDF DenDF F value Pr(>F)    
+recipe               10.19    5.09     2    42  0.2488 0.7809    
+temperature        2100.30  420.06     5   210 20.5199 <2e-16 ***
+recipe:temperature  205.98   20.60    10   210  1.0062 0.4393    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> # Type 3 is also available with ordered factors:
+> (an3 <- anova(m, type=3))
+Type III Analysis of Variance Table with Satterthwaite's method
+                    Sum Sq Mean Sq NumDF DenDF F value Pr(>F)    
+recipe               10.19    5.09     2    42  0.2488 0.7809    
+temperature        2100.30  420.06     5   210 20.5199 <2e-16 ***
+recipe:temperature  205.98   20.60    10   210  1.0062 0.4393    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> ## Balanced data and only factors: Type I, II and III should be the same:
+> stopifnot(
++   isTRUE(all.equal(an1, an2, check.attributes=FALSE, tolerance=TOL)),
++   isTRUE(all.equal(an1, an3, check.attributes=FALSE, tolerance=TOL))
++ )
+> 
+> (an <- anova(m, type=1))
+Type I Analysis of Variance Table with Satterthwaite's method
+                    Sum Sq Mean Sq NumDF DenDF F value Pr(>F)    
+recipe               10.19    5.09     2    42  0.2488 0.7809    
+temperature        2100.30  420.06     5   210 20.5199 <2e-16 ***
+recipe:temperature  205.98   20.60    10   210  1.0062 0.4393    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an_lme4 <- anova(m, type=1, ddf="lme4"))
+Analysis of Variance Table
+                   npar  Sum Sq Mean Sq F value
+recipe                2   10.19    5.09  0.2488
+temperature           5 2100.30  420.06 20.5199
+recipe:temperature   10  205.98   20.60  1.0062
+> res <- all.equal(an[, c("Sum Sq", "Mean Sq", "F value")],
++                  an_lme4[, c("Sum Sq", "Mean Sq", "F value")], tolerance=TOL)
+> stopifnot(isTRUE(res))
+> if(has_pbkrtest) {
++   (an_KR <- anova(m, type=1, ddf="Kenward-Roger"))
++   res <- all.equal(an[, c("Sum Sq", "Mean Sq", "F value")],
++                    an_KR[, c("Sum Sq", "Mean Sq", "F value")], tolerance=TOL)
++   stopifnot(isTRUE(res))
++ }
+> stopifnot(all.equal(c(2, 5, 10), an$NumDF, tolerance=TOL),
++           all.equal(c(42, 210, 210), an$DenDF, tolerance=TOL))
+> 
+> ########
+> ## Make case with balanced unordered factors:
+> cake2 <- cake
+> cake2$temperature <- factor(cake2$temperature, ordered = FALSE)
+> # str(cake2)
+> stopifnot(
++   !is.ordered(cake2$temperature)
++ )
+> m <- lmer(angle ~ recipe * temperature + (1|recipe:replicate), cake2)
+> (an1 <- anova(m, type=1))
+Type I Analysis of Variance Table with Satterthwaite's method
+                    Sum Sq Mean Sq NumDF DenDF F value Pr(>F)    
+recipe               10.19    5.09     2    42  0.2488 0.7809    
+temperature        2100.30  420.06     5   210 20.5199 <2e-16 ***
+recipe:temperature  205.98   20.60    10   210  1.0062 0.4393    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an2 <- anova(m, type=2))
+Type II Analysis of Variance Table with Satterthwaite's method
+                    Sum Sq Mean Sq NumDF DenDF F value Pr(>F)    
+recipe               10.19    5.09     2    42  0.2488 0.7809    
+temperature        2100.30  420.06     5   210 20.5199 <2e-16 ***
+recipe:temperature  205.98   20.60    10   210  1.0062 0.4393    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an3 <- anova(m, type=3))
+Type III Analysis of Variance Table with Satterthwaite's method
+                    Sum Sq Mean Sq NumDF DenDF F value Pr(>F)    
+recipe               10.19    5.09     2    42  0.2488 0.7809    
+temperature        2100.30  420.06     5   210 20.5199 <2e-16 ***
+recipe:temperature  205.98   20.60    10   210  1.0062 0.4393    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> ## Balanced data and only factors: Type I, II, and III should be the same:
+> stopifnot(
++   isTRUE(all.equal(an1, an2, check.attributes=FALSE, tolerance=TOL)),
++   isTRUE(all.equal(an3, an2, check.attributes=FALSE, tolerance=TOL))
++ )
+> ########
+> 
+> # No intercept:
+> m <- lmer(angle ~ 0 + recipe * temp + (1|recipe:replicate), cake)
+> (an <- anova(m, type=1))
+Type I Analysis of Variance Table with Satterthwaite's method
+             Sum Sq Mean Sq NumDF DenDF  F value Pr(>F)    
+recipe      21442.9  7147.6     3    42 342.2200 <2e-16 ***
+temp         1966.7  1966.7     1   222  94.1632 <2e-16 ***
+recipe:temp     1.7     0.9     2   222   0.0417 0.9592    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an2 <- anova(m, type=2))
+Type II Analysis of Variance Table with Satterthwaite's method
+             Sum Sq Mean Sq NumDF  DenDF F value Pr(>F)    
+recipe         4.48    1.49     3 254.02  0.0714 0.9752    
+temp        1966.71 1966.71     1 222.00 94.1632 <2e-16 ***
+recipe:temp    1.74    0.87     2 222.00  0.0417 0.9592    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an2 <- anova(m, type=3))
+Type III Analysis of Variance Table with Satterthwaite's method
+             Sum Sq Mean Sq NumDF  DenDF F value Pr(>F)    
+recipe         4.48    1.49     3 254.02  0.0714 0.9752    
+temp        1966.71 1966.71     1 222.00 94.1632 <2e-16 ***
+recipe:temp    1.74    0.87     2 222.00  0.0417 0.9592    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> if(has_pbkrtest)
++   (an_KR <- anova(m, ddf="Kenward-Roger"))
+Type III Analysis of Variance Table with Kenward-Roger's method
+             Sum Sq Mean Sq NumDF  DenDF F value Pr(>F)    
+recipe         4.48    1.49     3 254.02  0.0714 0.9752    
+temp        1966.71 1966.71     1 222.00 94.1632 <2e-16 ***
+recipe:temp    1.74    0.87     2 222.00  0.0417 0.9592    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an_lme4 <- anova(m, ddf="lme4"))
+Analysis of Variance Table
+            npar  Sum Sq Mean Sq  F value
+recipe         3 21442.9  7147.6 342.2200
+temp           1  1966.7  1966.7  94.1632
+recipe:temp    2     1.7     0.9   0.0417
+> res <- all.equal(an[, c("Sum Sq", "Mean Sq", "F value")],
++                  an_lme4[, c("Sum Sq", "Mean Sq", "F value")], tolerance=TOL)
+> stopifnot(isTRUE(res))
+> 
+> # ML-fit:
+> m <- lmer(angle ~ recipe * temp + (1|recipe:replicate), cake, REML=FALSE)
+> (an <- anova(m, type=1))
+Type I Analysis of Variance Table with Satterthwaite's method
+             Sum Sq Mean Sq NumDF DenDF F value Pr(>F)    
+recipe        10.99    5.49     2    45  0.2666 0.7672    
+temp        1966.71 1966.71     1   225 95.4357 <2e-16 ***
+recipe:temp    1.74    0.87     2   225  0.0423 0.9586    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> if(has_pbkrtest)
++   assertError(an <- anova(m, ddf="Kenward-Roger")) # KR fits should be REML
+> (an_lme4 <- anova(m, ddf="lme4"))
+Analysis of Variance Table
+            npar  Sum Sq Mean Sq F value
+recipe         2   10.99    5.49  0.2666
+temp           1 1966.71 1966.71 95.4357
+recipe:temp    2    1.74    0.87  0.0423
+> res <- all.equal(an[, c("Sum Sq", "Mean Sq", "F value")],
++                  an_lme4[, c("Sum Sq", "Mean Sq", "F value")], tolerance=TOL)
+> stopifnot(isTRUE(res))
+> 
+> ####################################
+> ## Using contr.sum:
+> ####################################
+> 
+> m <- lmer(angle ~ recipe * temp + (1|recipe:replicate), cake,
++           contrasts = list('recipe' = "contr.sum"))
+> (an <- anova(m, type=1))
+Type I Analysis of Variance Table with Satterthwaite's method
+             Sum Sq Mean Sq NumDF DenDF F value Pr(>F)    
+recipe        10.39    5.20     2    42  0.2488 0.7809    
+temp        1966.71 1966.71     1   222 94.1632 <2e-16 ***
+recipe:temp    1.74    0.87     2   222  0.0417 0.9592    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an2 <- anova(m, type=2))
+Type II Analysis of Variance Table with Satterthwaite's method
+             Sum Sq Mean Sq NumDF  DenDF F value Pr(>F)    
+recipe         4.00    2.00     2 254.02  0.0957 0.9088    
+temp        1966.71 1966.71     1 222.00 94.1632 <2e-16 ***
+recipe:temp    1.74    0.87     2 222.00  0.0417 0.9592    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an3 <- anova(m, type=3))
+Type III Analysis of Variance Table with Satterthwaite's method
+             Sum Sq Mean Sq NumDF  DenDF F value Pr(>F)    
+recipe         4.00    2.00     2 254.02  0.0957 0.9088    
+temp        1966.71 1966.71     1 222.00 94.1632 <2e-16 ***
+recipe:temp    1.74    0.87     2 222.00  0.0417 0.9592    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> stopifnot(
++   isTRUE(all.equal(an2, an3, check.attributes=FALSE, tolerance=TOL))
++ )
+> if(has_pbkrtest)
++   (an_KR <- anova(m, type=1, ddf="Kenward-Roger"))
+Type I Analysis of Variance Table with Kenward-Roger's method
+             Sum Sq Mean Sq NumDF DenDF F value Pr(>F)    
+recipe        10.39    5.20     2    42  0.2488 0.7809    
+temp        1966.71 1966.71     1   222 94.1632 <2e-16 ***
+recipe:temp    1.74    0.87     2   222  0.0417 0.9592    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an_lme4 <- anova(m, ddf="lme4"))
+Analysis of Variance Table
+            npar  Sum Sq Mean Sq F value
+recipe         2   10.39    5.20  0.2488
+temp           1 1966.71 1966.71 94.1632
+recipe:temp    2    1.74    0.87  0.0417
+> res <- all.equal(an[, c("Sum Sq", "Mean Sq", "F value")],
++                  an_lme4[, c("Sum Sq", "Mean Sq", "F value")], tolerance=TOL)
+> stopifnot(isTRUE(res))
+> 
+> 
+> ####################################
+> ## Example with continuous fixef:
+> ####################################
+> 
+> # Example with no fixef:
+> m <- lmer(Reaction ~ -1 + (Days | Subject), sleepstudy)
+> # m <- lmer(Reaction ~ 0 + (Days | Subject), sleepstudy) # alternative
+> stopifnot(length(fixef(m)) == 0L)
+> (an <- anova(m, type=1))
+Type I Analysis of Variance Table with Satterthwaite's method
+     Sum Sq Mean Sq NumDF DenDF F value Pr(>F)
+> (an_2 <- anova(m, type=2))
+Type II Analysis of Variance Table with Satterthwaite's method
+     Sum Sq Mean Sq NumDF DenDF F value Pr(>F)
+> (an_3 <- anova(m, type=3))
+Type III Analysis of Variance Table with Satterthwaite's method
+     Sum Sq Mean Sq NumDF DenDF F value Pr(>F)
+> stopifnot(nrow(an) == 0L,
++           nrow(an_2) == 0L,
++           nrow(an_3) == 0L)
+> # anova(m, ddf="lme4") # Bug in lme4 it seems
+> if(has_pbkrtest) {
++   (an_KR <- anova(m, ddf="Kenward-Roger"))
++   stopifnot(
++     nrow(an_KR) == 0L
++   )
++ }
+> 
+> # Example with intercept only:
+> m <- lmer(Reaction ~ (Days | Subject), sleepstudy)
+> # m <- lmer(Reaction ~ 1 + (Days | Subject), sleepstudy) # alternative
+> stopifnot(length(fixef(m)) == 1L,
++           names(fixef(m)) == "(Intercept)")
+> (an <- anova(m))
+Type III Analysis of Variance Table with Satterthwaite's method
+     Sum Sq Mean Sq NumDF DenDF F value Pr(>F)
+> (an_2 <- anova(m, type=2))
+Type II Analysis of Variance Table with Satterthwaite's method
+     Sum Sq Mean Sq NumDF DenDF F value Pr(>F)
+> (an_3 <- anova(m, type=3))
+Type III Analysis of Variance Table with Satterthwaite's method
+     Sum Sq Mean Sq NumDF DenDF F value Pr(>F)
+> (an_lme4 <- anova(m, ddf="lme4"))
+Analysis of Variance Table
+     npar Sum Sq Mean Sq F value
+> stopifnot(nrow(an) == 0L,
++           nrow(an_2) == 0L,
++           nrow(an_3) == 0L,
++           nrow(an_lme4) == 0L)
+> if(has_pbkrtest) {
++   (an_KR <- anova(m, ddf="Kenward-Roger"))
++   stopifnot(
++     nrow(an_KR) == 0L
++   )
++ }
+> 
+> # Example with 1 fixef without intercept:
+> # for packageVersion("lme4") < 1.1.20
+> # mOld <- lmer(Reaction ~ Days - 1 + (Days | Subject), sleepstudy)
+> # for packageVersion("lme4") >= 1.1.20 we need to specify the old default
+> # optimizer to get the model to converge well enough.
+> m <- lmer(Reaction ~ Days - 1 + (Days | Subject), sleepstudy,
++           control=lmerControl(optimizer="bobyqa"))
+> # m <- lmer(Reaction ~ 0 + Days + (Days | Subject), sleepstudy) # alternative
+> stopifnot(length(fixef(m)) == 1L,
++           names(fixef(m)) == "Days")
+> (an <- anova(m))
+Type III Analysis of Variance Table with Satterthwaite's method
+     Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+Days  93564   93564     1    17  142.86 1.069e-09 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an_2 <- anova(m, type=2))
+Type II Analysis of Variance Table with Satterthwaite's method
+     Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+Days  93564   93564     1    17  142.86 1.069e-09 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an_3 <- anova(m, type=3))
+Type III Analysis of Variance Table with Satterthwaite's method
+     Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+Days  93564   93564     1    17  142.86 1.069e-09 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an_lme4 <- anova(m, ddf="lme4"))
+Analysis of Variance Table
+     npar Sum Sq Mean Sq F value
+Days    1  93564   93564  142.86
+> stopifnot(nrow(an) == 1L,
++           nrow(an_2) == 1L,
++           nrow(an_3) == 1L,
++           nrow(an_lme4) == 1L)
+> if(has_pbkrtest) {
++   (an_KR <- anova(m, ddf="Kenward-Roger"))
++   stopifnot(
++     nrow(an_KR) == 1L
++   )
++ }
+> 
+> res <- all.equal(an[, c("Sum Sq", "Mean Sq", "F value")],
++                  an_lme4[, c("Sum Sq", "Mean Sq", "F value")], tolerance=TOL)
+> stopifnot(isTRUE(res))
+> stopifnot(isTRUE(all.equal(
++   c(1, 17), unname(unlist(an[, c("NumDF", "DenDF")])), tolerance=TOL
++ )))
+> 
+> # Example with >1 fixef without intercept:
+> m <- lmer(Reaction ~ Days - 1 + I(Days^2) + (Days | Subject), sleepstudy)
+> stopifnot(length(fixef(m)) == 2L,
++           names(fixef(m)) == c("Days", "I(Days^2)"))
+> (an <- anova(m))
+Type III Analysis of Variance Table with Satterthwaite's method
+           Sum Sq Mean Sq NumDF   DenDF F value   Pr(>F)    
+Days      22127.2 22127.2     1  69.048 33.9280 1.65e-07 ***
+I(Days^2)   744.7   744.7     1 143.679  1.1419    0.287    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an_2 <- anova(m, type=2))
+Type II Analysis of Variance Table with Satterthwaite's method
+           Sum Sq Mean Sq NumDF   DenDF F value   Pr(>F)    
+Days      22127.2 22127.2     1  69.048 33.9280 1.65e-07 ***
+I(Days^2)   744.7   744.7     1 143.679  1.1419    0.287    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an_3 <- anova(m, type=3))
+Type III Analysis of Variance Table with Satterthwaite's method
+           Sum Sq Mean Sq NumDF   DenDF F value   Pr(>F)    
+Days      22127.2 22127.2     1  69.048 33.9280 1.65e-07 ***
+I(Days^2)   744.7   744.7     1 143.679  1.1419    0.287    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an_lme4 <- anova(m, ddf="lme4"))
+Analysis of Variance Table
+          npar Sum Sq Mean Sq  F value
+Days         1  93129   93129 142.7959
+I(Days^2)    1    745     745   1.1419
+> stopifnot(nrow(an) == 2L,
++           nrow(an_3) == 2L,
++           nrow(an_lme4) == 2L)
+> if(has_pbkrtest) {
++   (an_KR <- anova(m, ddf="Kenward-Roger"))
++   stopifnot(
++     nrow(an_KR) == 2L
++   )
++ }
+> # Here is a diff in SSQ which doesn't seem well-defined anyway...
+> # SSQ for I(Days^2) agree though.
+> # t-statistics also agree:
+> coef(summary(m))
+           Estimate Std. Error        df  t value     Pr(>|t|)
+Days      15.884431  2.7270460  69.04781 5.824776 1.649534e-07
+I(Days^2)  0.279552  0.2616034 143.67926 1.068610 2.870375e-01
+> Lmat <- diag(length(fixef(m)))
+> lmerTest:::rbindall(lapply(1:nrow(Lmat), function(i) contest1D(m, Lmat[i, ])))
+   Estimate Std. Error        df  t value     Pr(>|t|)
+1 15.884431  2.7270460  69.04781 5.824776 1.649534e-07
+2  0.279552  0.2616034 143.67926 1.068610 2.870375e-01
+> 
+> # Example with >1 fixef and intercept:
+> m <- lmer(Reaction ~ Days + I(Days^2) + (Days | Subject), sleepstudy)
+> stopifnot(length(fixef(m)) == 3L)
+> (an <- anova(m, type=1))
+Type I Analysis of Variance Table with Satterthwaite's method
+           Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+Days      29894.8 29894.8     1    17 45.8530 3.264e-06 ***
+I(Days^2)  1079.5  1079.5     1   143  1.6558    0.2003    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an_2 <- anova(m, type=2))
+Type II Analysis of Variance Table with Satterthwaite's method
+          Sum Sq Mean Sq NumDF  DenDF F value  Pr(>F)   
+Days      4534.5  4534.5     1 114.43  6.9551 0.00952 **
+I(Days^2) 1079.5  1079.5     1 143.00  1.6558 0.20026   
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an_3 <- anova(m, type=3))
+Type III Analysis of Variance Table with Satterthwaite's method
+          Sum Sq Mean Sq NumDF  DenDF F value  Pr(>F)   
+Days      4534.5  4534.5     1 114.43  6.9551 0.00952 **
+I(Days^2) 1079.5  1079.5     1 143.00  1.6558 0.20026   
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an_lme4 <- anova(m, ddf="lme4"))
+Analysis of Variance Table
+          npar  Sum Sq Mean Sq F value
+Days         1 29894.8 29894.8 45.8530
+I(Days^2)    1  1079.5  1079.5  1.6558
+> res <- all.equal(an[, c("Sum Sq", "Mean Sq", "F value")],
++                  an_lme4[, c("Sum Sq", "Mean Sq", "F value")], tolerance=TOL)
+> stopifnot(isTRUE(res))
+> 
+> if(has_pbkrtest) {
++   (an_KR <- anova(m, ddf="Kenward-Roger"))
++   res <- all.equal(an_3[, c("Sum Sq", "Mean Sq", "DenDF", "F value")],
++                    an_KR[, c("Sum Sq", "Mean Sq", "DenDF", "F value")], tolerance=TOL)
++   stopifnot(isTRUE(res))
++ }
+> 
+> ## FIXME: Test the use of refit arg to lme4:::anova.merMod
+> 
+> ##############################
+> # Test that type III anova is the same regardless of contrast coding:
+> # 3 x 3 factorial with missing diagonal
+> data("cake", package="lme4")
+> cake4 <- cake
+> cake4$temperature <- factor(cake4$temperature, ordered=FALSE)
+> cake4 <- droplevels(subset(cake4, temperature %in% levels(cake4$temperature)[1:3]))
+> cake4 <- droplevels(subset(cake4, !((recipe == "A" & temperature == "175") |
++                                       (recipe == "B" & temperature == "185") |
++                                       (recipe == "C" & temperature == "195") )))
+> str(cake4)
+'data.frame':	90 obs. of  5 variables:
+ $ replicate  : Factor w/ 15 levels "1","2","3","4",..: 1 1 1 1 1 1 2 2 2 2 ...
+ $ recipe     : Factor w/ 3 levels "A","B","C": 1 1 2 2 3 3 1 1 2 2 ...
+ $ temperature: Factor w/ 3 levels "175","185","195": 2 3 1 3 1 2 2 3 1 3 ...
+ $ angle      : int  46 47 39 51 46 44 29 35 35 47 ...
+ $ temp       : num  185 195 175 195 175 185 185 195 175 195 ...
+> with(cake4, table(recipe, temperature))
+      temperature
+recipe 175 185 195
+     A   0  15  15
+     B  15   0  15
+     C  15  15   0
+> # load_all(r2path)
+> 
+> fm1 <- lmer(angle ~ recipe * temperature + (1|recipe:replicate), cake4)
+fixed-effect model matrix is rank deficient so dropping 3 columns / coefficients
+> fm2 <- lmer(angle ~ recipe * temperature + (1|recipe:replicate), cake4,
++             contrasts=list(recipe="contr.sum", temperature="contr.SAS"))
+fixed-effect model matrix is rank deficient so dropping 3 columns / coefficients
+> fm3 <- lmer(angle ~ recipe * temperature + (1|recipe:replicate), cake4,
++             contrasts=list(recipe="contr.sum", temperature="contr.poly"))
+fixed-effect model matrix is rank deficient so dropping 3 columns / coefficients
+> fm4 <- lmer(angle ~ recipe * temperature + (1|recipe:replicate), cake4,
++             contrasts=list(recipe=contr.helmert, temperature="contr.poly"))
+fixed-effect model matrix is rank deficient so dropping 3 columns / coefficients
+> (an1 <- anova(fm1))
+Missing cells for: recipeA:temperature175, recipeB:temperature185, recipeC:temperature195.  
+Interpret type III hypotheses with care.
+Type III Analysis of Variance Table with Satterthwaite's method
+                    Sum Sq Mean Sq NumDF  DenDF F value   Pr(>F)   
+recipe               2.282   1.141     2 45.888  0.0871 0.916766   
+temperature        136.267  68.133     2 42.000  5.1998 0.009602 **
+recipe:temperature  52.900  52.900     1 42.000  4.0372 0.050963 . 
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an2 <- anova(fm2))
+Missing cells for: recipeA:temperature175, recipeB:temperature185, recipeC:temperature195.  
+Interpret type III hypotheses with care.
+Type III Analysis of Variance Table with Satterthwaite's method
+                    Sum Sq Mean Sq NumDF  DenDF F value   Pr(>F)   
+recipe               2.282   1.141     2 45.888  0.0871 0.916766   
+temperature        136.267  68.133     2 42.000  5.1998 0.009602 **
+recipe:temperature  52.900  52.900     1 42.000  4.0372 0.050963 . 
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an3 <- anova(fm3))
+Missing cells for: recipeA:temperature175, recipeB:temperature185, recipeC:temperature195.  
+Interpret type III hypotheses with care.
+Type III Analysis of Variance Table with Satterthwaite's method
+                    Sum Sq Mean Sq NumDF  DenDF F value   Pr(>F)   
+recipe               2.282   1.141     2 45.888  0.0871 0.916766   
+temperature        136.267  68.133     2 42.000  5.1998 0.009602 **
+recipe:temperature  52.900  52.900     1 42.000  4.0372 0.050963 . 
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an4 <- anova(fm4))
+Missing cells for: recipeA:temperature175, recipeB:temperature185, recipeC:temperature195.  
+Interpret type III hypotheses with care.
+Type III Analysis of Variance Table with Satterthwaite's method
+                    Sum Sq Mean Sq NumDF  DenDF F value   Pr(>F)   
+recipe               2.282   1.141     2 45.888  0.0871 0.916766   
+temperature        136.267  68.133     2 42.000  5.1998 0.009602 **
+recipe:temperature  52.900  52.900     1 42.000  4.0372 0.050963 . 
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> options("contrasts")
+$contrasts
+        unordered           ordered 
+"contr.treatment"      "contr.poly" 
+
+> options(contrasts = c("contr.sum", "contr.poly"))
+> fm5 <- lmer(angle ~ recipe * temperature + (1|recipe:replicate), cake4)
+fixed-effect model matrix is rank deficient so dropping 3 columns / coefficients
+> (an5 <- anova(fm5))
+Missing cells for: recipeA:temperature175, recipeB:temperature185, recipeC:temperature195.  
+Interpret type III hypotheses with care.
+Type III Analysis of Variance Table with Satterthwaite's method
+                    Sum Sq Mean Sq NumDF  DenDF F value   Pr(>F)   
+recipe               2.282   1.141     2 45.888  0.0871 0.916766   
+temperature        136.267  68.133     2 42.000  5.1998 0.009602 **
+recipe:temperature  52.900  52.900     1 42.000  4.0372 0.050963 . 
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> options(contrasts = c("contr.treatment", "contr.poly"))
+> options("contrasts")
+$contrasts
+[1] "contr.treatment" "contr.poly"     
+
+> stopifnot(
++   isTRUE(all.equal(an1, an2, check.attributes=FALSE, tolerance=TOL)),
++   isTRUE(all.equal(an1, an3, check.attributes=FALSE, tolerance=TOL)),
++   isTRUE(all.equal(an1, an4, check.attributes=FALSE, tolerance=TOL)),
++   isTRUE(all.equal(an1, an5, check.attributes=FALSE, tolerance=TOL))
++ )
+> 
+> 

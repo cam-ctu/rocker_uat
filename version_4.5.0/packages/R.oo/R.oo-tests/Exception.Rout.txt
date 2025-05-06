@@ -1,0 +1,129 @@
+
+R version 4.5.0 (2025-04-11) -- "How About a Twenty-Six"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> message("TESTING: Exception...")
+TESTING: Exception...
+> 
+> library("R.oo")
+Loading required package: R.methodsS3
+R.methodsS3 v1.8.2 (2022-06-13 22:00:14 UTC) successfully loaded. See ?R.methodsS3 for help.
+R.oo v1.27.0 (2024-11-01 18:00:02 UTC) successfully loaded. See ?R.oo for help.
+
+Attaching package: ‘R.oo’
+
+The following object is masked from ‘package:R.methodsS3’:
+
+    throw
+
+The following objects are masked from ‘package:methods’:
+
+    getClasses, getMethods
+
+The following objects are masked from ‘package:base’:
+
+    attach, detach, load, save
+
+> oopts <- options(warn=1)
+> 
+> ######################################################################
+> # 1. To catch a regular "error" exception thrown by e.g. stop().
+> ######################################################################
+> x <- NA
+> y <- NA
+> tryCatch({
++   x <- log(123)
++   y <- log("a")
++ }, error = function(ex) {
++   print(ex)
++ })
+<simpleError in log("a"): non-numeric argument to mathematical function>
+> print(x)
+[1] 4.812184
+> print(y)
+[1] NA
+> 
+> 
+> 
+> ######################################################################
+> # 2. Always run a "final" expression regardless or error or not.
+> ######################################################################
+> filename <- tempfile("R.methodsS3.example")
+> con <- file(filename)
+> tryCatch({
++   open(con, "r")
++ }, error = function(ex) {
++   cat("Could not open ", filename, " for reading.\n", sep="")
++ }, finally = {
++   close(con)
++   cat("The id of the connection is ",
++        ifelse(is.null(con), "NULL", con), ".\n", sep="")
++ })
+Warning in open.connection(con, "r") :
+  cannot open file '/tmp/RtmpBvecMh/R.methodsS3.example62823f88c61b': No such file or directory
+Could not open /tmp/RtmpBvecMh/R.methodsS3.example62823f88c61b for reading.
+The id of the connection is 3.
+> 
+> 
+> ######################################################################
+> # 3. Creating your own Exception class
+> ######################################################################
+> setConstructorS3("NegativeLogValueException", function(
++   msg="Trying to calculate the logarithm of a negative value", value=NULL) {
++   extend(Exception(msg=msg), "NegativeLogValueException",
++     .value = value
++   )
++ })
+> 
+> setMethodS3("as.character", "NegativeLogValueException", function(this, ...) {
++   paste(as.character.Exception(this), ": ", getValue(this), sep="")
++ })
+NULL
+> 
+> setMethodS3("getValue", "NegativeLogValueException", function(this, ...) {
++   this$.value
++ })
+> 
+> 
+> mylog <- function(x, base=exp(1)) {
++   if (x < 0)
++     throw(NegativeLogValueException(value=x))
++   else
++     log(x, base=base)
++ }
+> 
+> 
+> # Note that the order of the catch list is important:
+> l <- NA
+> x <- 123
+> tryCatch({
++   l <- mylog(x)
++ }, NegativeLogValueException = function(ex) {
++   cat(as.character(ex), "\n")
++ }, "try-error" = function(ex) {
++   cat("try-error: Could not calculate the logarithm of ", x, ".\n", sep="")
++ }, error = function(ex) {
++   cat("error: Could not calculate the logarithm of ", x, ".\n", sep="")
++ })
+> cat("The logarithm of ", x, " is ", l, ".\n\n", sep="")
+The logarithm of 123 is 4.812184.
+
+> 
+> options(oopts)
+> 
+> message("TESTING: Exception...DONE")
+TESTING: Exception...DONE
+> 

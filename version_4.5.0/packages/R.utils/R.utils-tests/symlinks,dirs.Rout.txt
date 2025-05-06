@@ -1,0 +1,148 @@
+
+R version 4.5.0 (2025-04-11) -- "How About a Twenty-Six"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library("R.utils")
+Loading required package: R.oo
+Loading required package: R.methodsS3
+R.methodsS3 v1.8.2 (2022-06-13 22:00:14 UTC) successfully loaded. See ?R.methodsS3 for help.
+R.oo v1.27.0 (2024-11-01 18:00:02 UTC) successfully loaded. See ?R.oo for help.
+
+Attaching package: ‘R.oo’
+
+The following object is masked from ‘package:R.methodsS3’:
+
+    throw
+
+The following objects are masked from ‘package:methods’:
+
+    getClasses, getMethods
+
+The following objects are masked from ‘package:base’:
+
+    attach, detach, load, save
+
+R.utils v2.13.0 (2025-02-24 21:20:02 UTC) successfully loaded. See ?R.utils for help.
+
+Attaching package: ‘R.utils’
+
+The following object is masked from ‘package:utils’:
+
+    timestamp
+
+The following objects are masked from ‘package:base’:
+
+    cat, commandArgs, getOption, isOpen, nullfile, parse, use, warnings
+
+> verbose <- Arguments$getVerbose(TRUE, timestamp=TRUE)
+> 
+> # Run only tests if this platform/client supports symbolic file links
+> canSymlink <- tryCatch({
++   res <- file.symlink(".", "test-symlink-dir")
++   if (isDirectory("test-symlink-dir")) removeDirectory("test-symlink-dir")
++   res
++ }, error = function(ex) FALSE)
+> 
+> 
+> # Test only if symlinks are supported
+> if (canSymlink) {
++ 
++ # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
++ # Local functions
++ # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
++ fileAccessT <- function(pathname, modes=c(exist=0, exec=1, write=2, read=4)) {
++   sapply(modes, FUN=function(mode) fileAccess(pathname, mode=mode))
++ }
++ 
++ 
++ # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
++ # DIRECTORIES
++ # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
++ verbose && enter(verbose, "Symbolic links to directories")
++ 
++ # Create a target
++ path <- file.path(tempdir(), "foo")
++ mkdirs(path)
++ stopifnot(isDirectory(path))
++ 
++ # Create a symbolic link
++ pathL <- "link-to-tempdir"
++ file.symlink(path, pathL)
++ stopifnot(isDirectory(pathL))
++ 
++ # File information (directly and via link)
++ fi <- file.info(path)
++ fiL <- file.info2(pathL)
++ stopifnot(all.equal(fiL, fi, check.attributes=FALSE))
++ 
++ # Add a file (via link)
++ pathnameL <- file.path(pathL, "target2.txt")
++ cat("Hello", file=pathnameL)
++ 
++ # Assert that it exists (via direct pathname)
++ pathname <- file.path(path, "target2.txt")
++ stopifnot(isFile(pathname))
++ 
++ # Remove file (via direct pathname)
++ file.remove(pathname)
++ stopifnot(!isFile(pathname))
++ stopifnot(!isFile(pathnameL))
++ 
++ verbose && enter(verbose, "Renaming")
++ pathL2 <- sprintf("%s-new", pathL)
++ renameFile(pathL, pathL2)
++ stopifnot(isDirectory(pathL2))
++ renameFile(pathL2, pathL)
++ stopifnot(isDirectory(pathL))
++ verbose && exit(verbose)
++ 
++ # File access
++ verbose && enter(verbose, "Testing file permissions & access information")
++ fa <- fileAccessT(path)
++ faL <- fileAccessT(pathL)
++ stopifnot(identical(faL, fa))
++ # Disable write permission on target
++ Sys.chmod(path, mode="0077")
++ fa <- fileAccessT(path)
++ faL <- fileAccessT(pathL)
++ stopifnot(identical(faL, fa))
++ # Reset
++ Sys.chmod(path, mode="0777")
++ verbose && exit(verbose)
++ 
++ # Removing & cleanup
++ verbose && enter(verbose, "Cleanup")
++ # (Neither file.remove() nor unlink() can remove symbolic directory links)
++ removeDirectory(pathL)
++ stopifnot(!isDirectory(pathL))
++ stopifnot(isDirectory(path))
++ removeDirectory(path)
++ stopifnot(!isDirectory(path))
++ verbose && exit(verbose)
++ 
++ verbose && exit(verbose)
++ 
++ } # if (canSymlink)
+20250506 10:00:52|Symbolic links to directories...
+20250506 10:00:52| Renaming...
+20250506 10:00:52| Renaming...done
+20250506 10:00:52| Testing file permissions & access information...
+20250506 10:00:52| Testing file permissions & access information...done
+20250506 10:00:52| Cleanup...
+20250506 10:00:52| Cleanup...done
+20250506 10:00:52|Symbolic links to directories...done
+[1] TRUE
+> 

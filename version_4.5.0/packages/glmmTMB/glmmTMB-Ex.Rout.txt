@@ -1,0 +1,1169 @@
+
+R version 4.5.0 (2025-04-11) -- "How About a Twenty-Six"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "glmmTMB"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('glmmTMB')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("Owls")
+> ### * Owls
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Owls
+> ### Title: Begging by Owl Nestlings
+> ### Aliases: Owls OwlModel OwlModel_nb1_bs OwlModel_nb1_bs_mcmc
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> data(Owls, package = "glmmTMB")
+> require("lattice")
+Loading required package: lattice
+> bwplot(reorder(Nest,NegPerChick) ~ NegPerChick | FoodTreatment:SexParent,
++        data=Owls)
+> dotplot(reorder(Nest,NegPerChick) ~ NegPerChick| FoodTreatment:SexParent,
++         data=Owls)
+> ## Not run: 
+> ##D ## Fit negative binomial model with "constant" Zero Inflation :
+> ##D owls_nb1 <- glmmTMB(SiblingNegotiation ~ FoodTreatment*SexParent +
+> ##D                                     (1|Nest)+offset(log(BroodSize)),
+> ##D               family = nbinom1(), zi = ~1, data=Owls)
+> ##D owls_nb1_bs <- update(owls_nb1,
+> ##D                       . ~ . - offset(log(BroodSize)) + log(BroodSize))
+> ##D fixef(owls_nb1_bs)
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:lattice’
+
+> nameEx("Salamanders")
+> ### * Salamanders
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Salamanders
+> ### Title: Repeated counts of salamanders in streams
+> ### Aliases: Salamanders
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> require("glmmTMB")
+> data(Salamanders)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("VarCorr.glmmTMB")
+> ### * VarCorr.glmmTMB
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: VarCorr.glmmTMB
+> ### Title: Extract variance and correlation components
+> ### Aliases: VarCorr.glmmTMB VarCorr
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> ## Comparing variance-covariance matrix with manual computation
+> data("sleepstudy",package="lme4")
+> fm4 <- glmmTMB(Reaction ~ Days + (Days|Subject), sleepstudy)
+> VarCorr(fm4)[[c("cond","Subject")]]
+            (Intercept)     Days
+(Intercept)   565.49144 11.05471
+Days           11.05471 32.68060
+attr(,"stddev")
+(Intercept)        Days 
+  23.780064    5.716695 
+attr(,"correlation")
+            (Intercept)      Days
+(Intercept)   1.0000000 0.0813185
+Days          0.0813185 1.0000000
+attr(,"blockCode")
+us 
+ 1 
+> ## hand calculation
+> pars <- getME(fm4,"theta")
+> ## construct cholesky factor
+> L <- diag(2)
+> L[lower.tri(L)] <- pars[-(1:2)]
+> C <- crossprod(L)
+> diag(C) <- 1
+> sdvec <- exp(pars[1:2])
+> (V <- outer(sdvec,sdvec) * C)
+          [,1]     [,2]
+[1,] 565.49144 11.09144
+[2,]  11.09144 32.68060
+> 
+> 
+> 
+> cleanEx()
+> nameEx("bootmer_methods")
+> ### * bootmer_methods
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: isLMM.glmmTMB
+> ### Title: support methods for parametric bootstrapping
+> ### Aliases: isLMM.glmmTMB refit.glmmTMB
+> 
+> ### ** Examples
+> 
+> if (requireNamespace("lme4")) {
++ ## Not run: 
++ ##D    fm1 <- glmmTMB(count~mined+(1|spp),
++ ##D                   ziformula=~mined,
++ ##D                   data=Salamanders,
++ ##D                   family=nbinom1)
++ ##D    ## single parametric bootstrap step: refit with data simulated from original model
++ ##D    fm1R <- refit(fm1, simulate(fm1)[[1]])
++ ##D    ## the bootMer function from lme4 provides a wrapper for doing multiple refits
++ ##D    ##   with a specified summary function
++ ##D    b1 <- lme4::bootMer(fm1, FUN=function(x) fixef(x)$zi, nsim=20, .progress="txt")
++ ##D    if (requireNamespace("boot")) {
++ ##D       boot.ci(b1,type="perc")
++ ##D     }
++ ##D    ## can run in parallel: may need to set up cluster explicitly,
++ ##D    ## use clusterEvalQ() to load packages on workers
++ ##D    if (requireNamespace("parallel")) {
++ ##D       cl <- parallel::makeCluster(2)
++ ##D       parallel::clusterEvalQ(cl, library("lme4"))
++ ##D       parallel::clusterEvalQ(cl, library("glmmTMB"))
++ ##D       b2 <- lme4::bootMer(fm1, FUN = function(x) fixef(x)$cond,
++ ##D               nsim = 10, ncpus = 2, cl = cl, parallel = "snow")
++ ##D    }
++ ## End(Not run)
++ }
+NULL
+> 
+> 
+> 
+> cleanEx()
+> nameEx("confint.glmmTMB")
+> ### * confint.glmmTMB
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: confint.glmmTMB
+> ### Title: Calculate confidence intervals
+> ### Aliases: confint.glmmTMB
+> 
+> ### ** Examples
+> 
+> data(sleepstudy, package="lme4")
+> model <- glmmTMB(Reaction ~ Days + (1|Subject), sleepstudy)
+> model2 <- glmmTMB(Reaction ~ Days + (1|Subject), sleepstudy,
++     dispformula= ~I(Days>8))
+> confint(model)  ## Wald/delta-method CIs
+                                 2.5 %    97.5 %  Estimate
+(Intercept)                 232.773317 270.03687 251.40509
+Days                          8.895915  12.03866  10.46729
+Std.Dev.(Intercept)|Subject  25.357109  51.14422  36.01207
+> confint(model,parm="theta_")  ## Wald/delta-method CIs
+                               2.5 %   97.5 % Estimate
+Std.Dev.(Intercept)|Subject 25.35711 51.14422 36.01207
+> confint(model,parm=1,method="profile")
+               2.5 %   97.5 %
+(Intercept) 231.9922 270.8178
+> 
+> 
+> 
+> cleanEx()
+> nameEx("downstream_methods")
+> ### * downstream_methods
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Anova.glmmTMB
+> ### Title: Downstream methods
+> ### Aliases: Anova.glmmTMB Effect.glmmTMB downstream_methods
+> ###   emmeans.glmmTMB
+> 
+> ### ** Examples
+> 
+> warp.lm <- glmmTMB(breaks ~ wool * tension, data = warpbreaks)
+> salamander1 <- up2date(readRDS(system.file("example_files","salamander1.rds",package="glmmTMB")))
+> if (require(emmeans)) withAutoprint({
++     emmeans(warp.lm, poly ~ tension | wool)
++     emmeans(salamander1, ~ mined, type="response")  # conditional means
++     emmeans(salamander1, ~ mined, component="cmean")     # same as above, but re-gridded
++     emmeans(salamander1, ~ mined, component="zi", type="response")  # zero probabilities
++     emmeans(salamander1, ~ mined, component="response")  # response means including both components
++ })
+Loading required package: emmeans
+Welcome to emmeans.
+Caution: You lose important information if you filter this package's results.
+See '? untidy'
+> emmeans(warp.lm, poly ~ tension | wool)
+$emmeans
+wool = A:
+ tension emmean   SE df lower.CL upper.CL
+ L         44.6 3.44 47     37.6     51.5
+ M         24.0 3.44 47     17.1     30.9
+ H         24.6 3.44 47     17.6     31.5
+
+wool = B:
+ tension emmean   SE df lower.CL upper.CL
+ L         28.2 3.44 47     21.3     35.1
+ M         28.8 3.44 47     21.9     35.7
+ H         18.8 3.44 47     11.9     25.7
+
+Confidence level used: 0.95 
+
+$contrasts
+wool = A:
+ contrast  estimate   SE df t.ratio p.value
+ linear      -20.00 4.86 47  -4.113  0.0002
+ quadratic    21.11 8.42 47   2.507  0.0157
+
+wool = B:
+ contrast  estimate   SE df t.ratio p.value
+ linear       -9.44 4.86 47  -1.942  0.0581
+ quadratic   -10.56 8.42 47  -1.253  0.2163
+
+
+> emmeans(salamander1, ~mined, type = "response")
+ mined rate    SE  df asymp.LCL asymp.UCL
+ yes   1.09 0.254 Inf     0.692      1.72
+ no    3.42 0.311 Inf     2.862      4.09
+
+Confidence level used: 0.95 
+Intervals are back-transformed from the log scale 
+> emmeans(salamander1, ~mined, component = "cmean")
+ mined emmean    SE  df asymp.LCL asymp.UCL
+ yes     1.09 0.254 Inf     0.594      1.59
+ no      3.42 0.311 Inf     2.811      4.03
+
+Confidence level used: 0.95 
+> emmeans(salamander1, ~mined, component = "zi", type = "response")
+ mined response     SE  df asymp.LCL asymp.UCL
+ yes      0.758 0.0432 Inf     0.663     0.832
+ no       0.355 0.0279 Inf     0.303     0.411
+
+Confidence level used: 0.95 
+Intervals are back-transformed from the logit scale 
+> emmeans(salamander1, ~mined, component = "response")
+ mined emmean     SE  df asymp.LCL asymp.UCL
+ yes    0.265 0.0484 Inf      0.17      0.36
+ no     2.206 0.2170 Inf      1.78      2.63
+
+Confidence level used: 0.95 
+> if (getRversion() >= "3.6.0") {
++    if (require(car)) withAutoprint({
++        Anova(warp.lm,type="III")
++        Anova(salamander1)
++        Anova(salamander1, component="zi")
++    })
++    if (require(effects)) withAutoprint({
++        plot(allEffects(warp.lm))
++        plot(allEffects(salamander1))
++    })
++ }
+Loading required package: car
+Loading required package: carData
+> Anova(warp.lm, type = "III")
+Analysis of Deviance Table (Type III Wald chisquare tests)
+
+Response: breaks
+                Chisq Df Pr(>Chisq)    
+(Intercept)  167.9350  1  < 2.2e-16 ***
+wool          11.2839  1  0.0007818 ***
+tension       23.2022  2  9.156e-06 ***
+wool:tension   9.4254  2  0.0089806 ** 
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> Anova(salamander1)
+Analysis of Deviance Table (Type II Wald chisquare tests)
+
+Response: count
+       Chisq Df Pr(>Chisq)    
+mined 21.522  1  3.499e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> Anova(salamander1, component = "zi")
+Analysis of Deviance Table (Type II Wald chisquare tests)
+
+Response: count
+       Chisq Df Pr(>Chisq)    
+mined 43.907  1  3.444e-11 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+Loading required package: effects
+lattice theme set by effectsTheme()
+See ?effectsTheme for details.
+> plot(allEffects(warp.lm))
+> plot(allEffects(salamander1))
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:effects’, ‘package:car’, ‘package:carData’,
+  ‘package:emmeans’
+
+> nameEx("epil2")
+> ### * epil2
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: epil2
+> ### Title: Seizure Counts for Epileptics - Extended
+> ### Aliases: epil2
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("fitTMB")
+> ### * fitTMB
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: fitTMB
+> ### Title: Optimize TMB models and package results, modularly
+> ### Aliases: fitTMB finalizeTMB
+> 
+> ### ** Examples
+> 
+> ## 1. regular (non-modular) model fit:
+> m0 <- glmmTMB(count ~ mined + (1|site),
++              family=poisson, data=Salamanders)
+> ## 2. the equivalent fit, done modularly:
+> ##  a. 
+> m1 <- glmmTMB(count ~ mined + (1|site),
++              family=poisson, data=Salamanders,
++              doFit = FALSE)
+> ## result is a list of elements (data to be passed to TMB,
+> ## random effects structures, etc.) needed to fit the model
+> names(m1)
+ [1] "data.tmb"    "parameters"  "mapArg"      "randomArg"   "grpVar"     
+ [6] "condList"    "ziList"      "dispList"    "condReStruc" "ziReStruc"  
+[11] "dispReStruc" "family"      "contrasts"   "respCol"     "allForm"    
+[16] "fr"          "se"          "call"        "verbose"     "REML"       
+[21] "map"         "sparseX"     "priors"      "control"    
+> ## b. The next step calls TMB to set up the automatic differentiation
+> ## machinery
+> m2 <- fitTMB(m1, doOptim = FALSE)
+> ## The result includes initial parameter values, objective function
+> ## (fn), gradient function (gr), etc.
+> names(m2)
+ [1] "par"      "fn"       "gr"       "he"       "hessian"  "method"  
+ [7] "retape"   "env"      "report"   "simulate"
+> ## Optionally, one could choose to 
+> ## modify the components of m1$env$data at this point ...
+> ## updating the TMB structure as follows may be necessary:
+> m2 <- with(m2$env,
++                TMB::MakeADFun(data,
++                                parameters,
++                                map = map,
++                                random = random,
++                                silent = silent,
++                                DLL = "glmmTMB"))
+> ## c. Use the starting values, objective function, and gradient
+> ## function set up in the previous step to do the nonlinear optimization
+> m3 <- with(m2, nlminb(par, objective = fn, gr = gr))
+> ## the resulting object contains the fitted parameters, value of
+> ## the objective function, information on convergence, etc.
+> names(m3)
+[1] "par"         "objective"   "convergence" "iterations"  "evaluations"
+[6] "message"    
+> ## d. The last step is to combine the information from the previous
+> ## three steps into a \code{glmmTMB} object that is equivalent to
+> ## the original fit
+> m4 <- finalizeTMB(m1, m2, m3)
+> m4$call$doFit <- NULL ## adjust 'call' element to match
+> all.equal(m0, m4)
+ [1] "Component “obj”: Component “fn”: Component “.random”: Modes: character, numeric"                    
+ [2] "Component “obj”: Component “fn”: Component “.random”: Lengths: 1, 23"                               
+ [3] "Component “obj”: Component “fn”: Component “.random”: target is character, current is numeric"      
+ [4] "Component “obj”: Component “gr”: Component “.random”: Modes: character, numeric"                    
+ [5] "Component “obj”: Component “gr”: Component “.random”: Lengths: 1, 23"                               
+ [6] "Component “obj”: Component “gr”: Component “.random”: target is character, current is numeric"      
+ [7] "Component “obj”: Component “he”: Component “.random”: Modes: character, numeric"                    
+ [8] "Component “obj”: Component “he”: Component “.random”: Lengths: 1, 23"                               
+ [9] "Component “obj”: Component “he”: Component “.random”: target is character, current is numeric"      
+[10] "Component “obj”: Component “retape”: Component “.random”: Modes: character, numeric"                
+[11] "Component “obj”: Component “retape”: Component “.random”: Lengths: 1, 23"                           
+[12] "Component “obj”: Component “retape”: Component “.random”: target is character, current is numeric"  
+[13] "Component “obj”: Component “env”: Component “.random”: Modes: character, numeric"                   
+[14] "Component “obj”: Component “env”: Component “.random”: Lengths: 1, 23"                              
+[15] "Component “obj”: Component “env”: Component “.random”: target is character, current is numeric"     
+[16] "Component “obj”: Component “report”: Component “.random”: Modes: character, numeric"                
+[17] "Component “obj”: Component “report”: Component “.random”: Lengths: 1, 23"                           
+[18] "Component “obj”: Component “report”: Component “.random”: target is character, current is numeric"  
+[19] "Component “obj”: Component “simulate”: Component “.random”: Modes: character, numeric"              
+[20] "Component “obj”: Component “simulate”: Component “.random”: Lengths: 1, 23"                         
+[21] "Component “obj”: Component “simulate”: Component “.random”: target is character, current is numeric"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("fixef")
+> ### * fixef
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: fixef
+> ### Title: Extract fixed-effects estimates
+> ### Aliases: fixef fixef.glmmTMB
+> ### Keywords: models
+> 
+> ### ** Examples
+> 
+> data(sleepstudy, package = "lme4")
+> fm1 <- glmmTMB(Reaction ~ Days, sleepstudy)
+> (f1 <- fixef(fm1))
+
+Conditional model:
+(Intercept)         Days  
+     251.40        10.47  
+> f1$cond
+(Intercept)        Days 
+  251.40498    10.46731 
+> ## show full coefficients, including empty z-i model and
+> ## constant dispersion parameter
+> print(f1, print_trivials = TRUE)
+
+Conditional model:
+(Intercept)         Days  
+     251.40        10.47  
+
+Zero-inflation model:
+character(0)
+
+Dispersion model:
+(Intercept)  
+       3.86  
+> 
+> 
+> 
+> cleanEx()
+> nameEx("getGrpVar")
+> ### * getGrpVar
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: getGrpVar
+> ### Title: Get Grouping Variable
+> ### Aliases: getGrpVar
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> data(cbpp,package="lme4")
+> cbpp$obs <- factor(seq(nrow(cbpp)))
+> rt <- lme4::glFormula(cbind(size,incidence-size)~(1|herd)+(1|obs),
++   data=cbpp,family=binomial)$reTrms
+> getGrpVar(rt$flist)
+[1] "obs"  "herd"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("getReStruc")
+> ### * getReStruc
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: getReStruc
+> ### Title: Calculate random effect structure Calculates number of random
+> ###   effects, number of parameters, block size and number of blocks.
+> ###   Mostly for internal use.
+> ### Aliases: getReStruc
+> 
+> ### ** Examples
+> 
+> data(sleepstudy, package="lme4")
+> rt <- lme4::lFormula(Reaction~Days+(1|Subject)+(0+Days|Subject),
++                     sleepstudy)$reTrms
+> rt2 <- lme4::lFormula(Reaction~Days+(Days|Subject),
++                     sleepstudy)$reTrms
+> getReStruc(rt)
+$`1 | Subject`
+$`1 | Subject`$blockReps
+[1] 18
+
+$`1 | Subject`$blockSize
+[1] 1
+
+$`1 | Subject`$blockNumTheta
+[1] 1
+
+$`1 | Subject`$blockCode
+us 
+ 1 
+
+$`1 | Subject`$simCode
+[1] 2
+
+
+$`0 + Days | Subject`
+$`0 + Days | Subject`$blockReps
+[1] 18
+
+$`0 + Days | Subject`$blockSize
+[1] 1
+
+$`0 + Days | Subject`$blockNumTheta
+[1] 1
+
+$`0 + Days | Subject`$blockCode
+us 
+ 1 
+
+$`0 + Days | Subject`$simCode
+[1] 2
+
+
+> getReStruc(rt2)
+$`Days | Subject`
+$`Days | Subject`$blockReps
+[1] 18
+
+$`Days | Subject`$blockSize
+[1] 2
+
+$`Days | Subject`$blockNumTheta
+[1] 3
+
+$`Days | Subject`$blockCode
+us 
+ 1 
+
+$`Days | Subject`$simCode
+[1] 2
+
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("get_cor")
+> ### * get_cor
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: get_cor
+> ### Title: transform correlation parameters to and from glmmTMB
+> ###   parameterization
+> ### Aliases: get_cor put_cor
+> 
+> ### ** Examples
+> 
+> th0 <- 0.5
+> stopifnot(all.equal(get_cor(th0), th0/sqrt(1+th0^2)))
+> set.seed(101)
+> ## pick 6 values for a random 4x4 correlation matrix
+> print(C <- get_cor(rnorm(6), return_val = "mat"), digits = 3)
+       [,1]   [,2]   [,3]  [,4]
+[1,]  1.000 -0.310  0.416 0.135
+[2,] -0.310  1.000 -0.613 0.144
+[3,]  0.416 -0.613  1.000 0.514
+[4,]  0.135  0.144  0.514 1.000
+> ## transform a correlation matrix to a theta vector
+> cor_mat <- matrix(c(1,0.3,0.1,
++                     0.3,1,0.2,
++                     0.1,0.2,1), ncol = 3)
+> put_cor(cor_mat, "mat")
+[1] 0.3144855 0.1021557 0.1820500
+> put_cor(cor_mat[lower.tri(cor_mat)], "vec")
+[1] 0.3144855 0.1021557 0.1820500
+> ## test: round-trip
+> stopifnot(all.equal(get_cor(put_cor(C), return_val = "mat"), C))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("glmmTMB")
+> ### * glmmTMB
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: glmmTMB
+> ### Title: Fit Models with TMB
+> ### Aliases: glmmTMB
+> 
+> ### ** Examples
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("glmmTMBControl")
+> ### * glmmTMBControl
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: glmmTMBControl
+> ### Title: Control parameters for glmmTMB optimization
+> ### Aliases: glmmTMBControl
+> 
+> ### ** Examples
+> 
+> ## fit with default (nlminb) and alternative (optim/BFGS) optimizer
+> m1 <- glmmTMB(count~ mined, family=poisson, data=Salamanders)
+> m1B <- update(m1, control=glmmTMBControl(optimizer=optim,
++                optArgs=list(method="BFGS")))
+> ## estimates are *nearly* identical:
+> all.equal(fixef(m1), fixef(m1B))
+[1] "Component “cond”: Mean relative difference: 2.66761e-06"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("numFactor")
+> ### * numFactor
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: numFactor
+> ### Title: Factor with numeric interpretable levels.
+> ### Aliases: numFactor parseNumLevels
+> 
+> ### ** Examples
+> 
+> ## 1D example
+> numFactor(sample(1:5,20,TRUE))
+ [1] (1) (4) (1) (2) (5) (3) (2) (3) (3) (1) (5) (5) (2) (2) (1) (5) (5) (1) (1)
+[20] (5)
+Levels: (1) (2) (3) (4) (5)
+> ## 2D example
+> coords <- cbind( sample(1:5,20,TRUE), sample(1:5,20,TRUE) )
+> (f <- numFactor(coords))
+ [1] (5,3) (2,2) (2,2) (1,5) (4,2) (1,1) (4,3) (3,3) (2,4) (2,3) (4,1) (4,4)
+[13] (4,5) (2,1) (4,1) (1,4) (1,5) (4,5) (1,4) (2,5)
+15 Levels: (1,1) (2,1) (4,1) (2,2) (4,2) (2,3) (3,3) (4,3) (5,3) ... (4,5)
+> parseNumLevels(levels(f)) ## Sorted
+      [,1] [,2]
+ [1,]    1    1
+ [2,]    2    1
+ [3,]    4    1
+ [4,]    2    2
+ [5,]    4    2
+ [6,]    2    3
+ [7,]    3    3
+ [8,]    4    3
+ [9,]    5    3
+[10,]    1    4
+[11,]    2    4
+[12,]    4    4
+[13,]    1    5
+[14,]    2    5
+[15,]    4    5
+> ## Used as part of a model.matrix
+> model.matrix( ~f )
+   (Intercept) f(2,1) f(4,1) f(2,2) f(4,2) f(2,3) f(3,3) f(4,3) f(5,3) f(1,4)
+1            1      0      0      0      0      0      0      0      1      0
+2            1      0      0      1      0      0      0      0      0      0
+3            1      0      0      1      0      0      0      0      0      0
+4            1      0      0      0      0      0      0      0      0      0
+5            1      0      0      0      1      0      0      0      0      0
+6            1      0      0      0      0      0      0      0      0      0
+7            1      0      0      0      0      0      0      1      0      0
+8            1      0      0      0      0      0      1      0      0      0
+9            1      0      0      0      0      0      0      0      0      0
+10           1      0      0      0      0      1      0      0      0      0
+11           1      0      1      0      0      0      0      0      0      0
+12           1      0      0      0      0      0      0      0      0      0
+13           1      0      0      0      0      0      0      0      0      0
+14           1      1      0      0      0      0      0      0      0      0
+15           1      0      1      0      0      0      0      0      0      0
+16           1      0      0      0      0      0      0      0      0      1
+17           1      0      0      0      0      0      0      0      0      0
+18           1      0      0      0      0      0      0      0      0      0
+19           1      0      0      0      0      0      0      0      0      1
+20           1      0      0      0      0      0      0      0      0      0
+   f(2,4) f(4,4) f(1,5) f(2,5) f(4,5)
+1       0      0      0      0      0
+2       0      0      0      0      0
+3       0      0      0      0      0
+4       0      0      1      0      0
+5       0      0      0      0      0
+6       0      0      0      0      0
+7       0      0      0      0      0
+8       0      0      0      0      0
+9       1      0      0      0      0
+10      0      0      0      0      0
+11      0      0      0      0      0
+12      0      1      0      0      0
+13      0      0      0      0      1
+14      0      0      0      0      0
+15      0      0      0      0      0
+16      0      0      0      0      0
+17      0      0      1      0      0
+18      0      0      0      0      1
+19      0      0      0      0      0
+20      0      0      0      1      0
+attr(,"assign")
+ [1] 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+attr(,"contrasts")
+attr(,"contrasts")$f
+[1] "contr.treatment"
+
+> ## parseNumLevels( colnames(model.matrix( ~f )) )
+> ## Error: 'Failed to parse numeric levels: (Intercept)'
+> parseNumLevels( colnames(model.matrix( ~ f-1 )) )
+      [,1] [,2]
+ [1,]    1    1
+ [2,]    2    1
+ [3,]    4    1
+ [4,]    2    2
+ [5,]    4    2
+ [6,]    2    3
+ [7,]    3    3
+ [8,]    4    3
+ [9,]    5    3
+[10,]    1    4
+[11,]    2    4
+[12,]    4    4
+[13,]    1    5
+[14,]    2    5
+[15,]    4    5
+> 
+> 
+> 
+> cleanEx()
+> nameEx("predict.glmmTMB")
+> ### * predict.glmmTMB
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: predict.glmmTMB
+> ### Title: prediction
+> ### Aliases: predict.glmmTMB
+> 
+> ### ** Examples
+> 
+> data(sleepstudy,package="lme4")
+> g0 <- glmmTMB(Reaction~Days+(Days|Subject),sleepstudy)
+> predict(g0, sleepstudy)
+  [1] 254.2209 273.7637 293.3064 312.8492 332.3920 351.9348 371.4775 391.0203
+  [9] 410.5631 430.1059 211.3566 213.1798 215.0031 216.8263 218.6496 220.4728
+ [17] 222.2961 224.1193 225.9425 227.7658 212.9720 217.9259 222.8798 227.8337
+ [25] 232.7876 237.7416 242.6955 247.6494 252.6033 257.5572 274.2369 280.0455
+ [33] 285.8541 291.6628 297.4714 303.2800 309.0886 314.8972 320.7059 326.5145
+ [41] 272.9546 280.4775 288.0003 295.5232 303.0460 310.5688 318.0917 325.6145
+ [49] 333.1373 340.6602 260.2204 270.4526 280.6847 290.9168 301.1489 311.3810
+ [57] 321.6131 331.8452 342.0773 352.3094 267.8468 278.1553 288.4638 298.7723
+ [65] 309.0808 319.3893 329.6978 340.0063 350.3148 360.6233 244.4083 255.9084
+ [73] 267.4084 278.9084 290.4084 301.9084 313.4085 324.9085 336.4085 347.9085
+ [81] 250.3672 250.2352 250.1031 249.9710 249.8390 249.7069 249.5748 249.4428
+ [89] 249.3107 249.1787 286.0712 305.1709 324.2705 343.3702 362.4699 381.5695
+ [97] 400.6692 419.7689 438.8685 457.9682 226.8471 238.3787 249.9104 261.4420
+[105] 272.9737 284.5054 296.0370 307.5687 319.1004 330.6320 239.0706 256.0096
+[113] 272.9485 289.8875 306.8264 323.7654 340.7043 357.6432 374.5822 391.5211
+[121] 255.6789 263.1909 270.7029 278.2149 285.7268 293.2388 300.7508 308.2628
+[129] 315.7748 323.2868 272.0271 286.0561 300.0851 314.1141 328.1431 342.1721
+[137] 356.2012 370.2302 384.2592 398.2882 254.6635 266.0025 277.3415 288.6805
+[145] 300.0195 311.3586 322.6976 334.0366 345.3756 356.7146 226.6950 241.8220
+[153] 256.9489 272.0759 287.2029 302.3299 317.4568 332.5838 347.7108 362.8377
+[161] 252.1282 261.6245 271.1207 280.6170 290.1132 299.6095 309.1057 318.6020
+[169] 328.0983 337.5945 263.5238 275.3018 287.0798 298.8578 310.6358 322.4138
+[177] 334.1918 345.9698 357.7479 369.5259
+> ## Predict new Subject
+> nd <- sleepstudy[1,]
+> nd$Subject <- "new"
+> predict(g0, newdata=nd, allow.new.levels=TRUE)
+[1] 251.4043
+> ## population-level prediction
+> nd_pop <- data.frame(Days=unique(sleepstudy$Days),
++                      Subject=NA)
+> predict(g0, newdata=nd_pop)
+ [1] 251.4043 261.8716 272.3388 282.8060 293.2732 303.7405 314.2077 324.6749
+ [9] 335.1421 345.6094
+> ## return latent variables (BLUPs/conditional modes/etc. ) with standard errors
+> ##  (actually conditional standard deviations)
+> predict(g0, type = "latent", se.fit = TRUE)
+$fit
+          b           b           b           b           b           b 
+  2.8165321   9.0755534 -40.0477502  -8.6439814 -38.4323386  -5.5133133 
+          b           b           b           b           b           b 
+ 22.8325422  -4.6586025  21.5502998  -2.9443864   8.8161005  -0.2351136 
+          b           b           b           b           b           b 
+ 16.4424298  -0.1587177  -6.9960156   1.0327998  -1.0371170 -10.5992872 
+          b           b           b           b           b           b 
+ 34.6668416   8.6324459 -24.5572827   1.0644389 -12.3337137   6.4717201 
+          b           b           b           b           b           b 
+  4.2745438  -2.9552349  20.6227320   3.5617893   3.2591369   0.8717898 
+          b           b           b           b           b           b 
+-24.7093498   4.6597472   0.7238518  -0.9709667  12.1194710   1.3107800 
+
+$se.fit
+        b         b         b         b         b         b         b         b 
+13.653607  2.741354 13.828669  2.735007 13.733297  2.713093 13.948479  2.769399 
+        b         b         b         b         b         b         b         b 
+13.600861  2.708623 12.911061  2.598204 13.095825  2.625147 12.915180  2.599763 
+        b         b         b         b         b         b         b         b 
+14.019640  2.809209 13.637415  2.710907 13.506341  2.687946 13.736800  2.744890 
+        b         b         b         b         b         b         b         b 
+12.994151  2.615336 13.091184  2.623266 12.835452  2.587091 14.058866  2.786452 
+        b         b         b         b 
+12.841760  2.588428 12.925988  2.599464 
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("priors")
+> ### * priors
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: priors
+> ### Title: use of priors in glmmTMB
+> ### Aliases: priors
+> 
+> ### ** Examples
+> 
+> 
+> data("sleepstudy", package = "lme4")
+> prior1 <- data.frame(prior = c("normal(250,3)","t(0,3,3)","gamma(10,1)"),
++                      class = c("fixef", "fixef", "ranef_sd"),
++                      coef = c("(Intercept)", "Days", "Subject"))
+> g1 <- glmmTMB(Reaction ~ 1 + Days + (1 + Days |Subject), sleepstudy)
+> update(g1, priors = prior1)
+Formula:          Reaction ~ 1 + Days + (1 + Days | Subject)
+Data: sleepstudy
+      AIC       BIC    logLik -2*log(L)  df.resid 
+1793.3224 1812.4801 -890.6612 1781.3224       174 
+Random-effects (co)variances:
+
+Conditional model:
+ Groups   Name        Std.Dev. Corr 
+ Subject  (Intercept) 21.094        
+          Days         5.604   0.14 
+ Residual             25.701        
+
+Number of obs: 180 / Conditional model: Subject, 18
+
+Dispersion estimate for gaussian family (sigma^2):  661 
+
+Fixed Effects:
+
+Conditional model:
+(Intercept)         Days  
+    250.340        9.812  
+
+Priors: fixef((Intercept)) ~ normal(250, 3); fixef(Days) ~ t(0, 3, 3); ranef_sd(Subject) ~ gamma(10, 1) 
+
+> prior2 <- data.frame(prior = c("t(0,3,3)","gamma(10,1)"),
++                      class = c("fixef", "ranef_sd"),
++                      coef = c("", "Subject"))
+> update(g1, priors = prior2)
+Formula:          Reaction ~ 1 + Days + (1 + Days | Subject)
+Data: sleepstudy
+      AIC       BIC    logLik -2*log(L)  df.resid 
+1789.2204 1808.3781 -888.6102 1777.2204       174 
+Random-effects (co)variances:
+
+Conditional model:
+ Groups   Name        Std.Dev. Corr 
+ Subject  (Intercept) 21.074        
+          Days         5.608   0.13 
+ Residual             25.701        
+
+Number of obs: 180 / Conditional model: Subject, 18
+
+Dispersion estimate for gaussian family (sigma^2):  661 
+
+Fixed Effects:
+
+Conditional model:
+(Intercept)         Days  
+    251.768        9.768  
+
+Priors: fixef ~ t(0, 3, 3); ranef_sd(Subject) ~ gamma(10, 1) 
+
+> ## no prior is set for the intercept in this case - see Details above
+> prior3 <- data.frame(prior = "t(0, 3, 3)",
++                      class = "fixef")
+> update(g1, priors = prior3)
+Formula:          Reaction ~ 1 + Days + (1 + Days | Subject)
+Data: sleepstudy
+      AIC       BIC    logLik -2*log(L)  df.resid 
+1774.3996 1793.5574 -881.1998 1762.3996       174 
+Random-effects (co)variances:
+
+Conditional model:
+ Groups   Name        Std.Dev. Corr 
+ Subject  (Intercept) 23.785        
+          Days         5.763   0.08 
+ Residual             25.592        
+
+Number of obs: 180 / Conditional model: Subject, 18
+
+Dispersion estimate for gaussian family (sigma^2):  655 
+
+Fixed Effects:
+
+Conditional model:
+(Intercept)         Days  
+    251.849        9.736  
+
+Priors: fixef ~ t(0, 3, 3) 
+
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("profile.glmmTMB")
+> ### * profile.glmmTMB
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: profile.glmmTMB
+> ### Title: Compute likelihood profiles for a fitted model
+> ### Aliases: profile.glmmTMB confint.profile.glmmTMB
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D m1 <- glmmTMB(count~ mined + (1|site),
+> ##D        zi=~mined, family=poisson, data=Salamanders)
+> ##D salamander_prof1 <- profile(m1, parallel="multicore",
+> ##D                             ncpus=2, trace=1)
+> ##D ## testing
+> ##D salamander_prof1 <- profile(m1, trace=1,parm=1)
+> ##D salamander_prof1M <- profile(m1, trace=1,parm=1, npts = 4)
+> ##D salamander_prof2 <- profile(m1, parm="theta_")
+> ##D 
+> ## End(Not run)
+> salamander_prof1 <- readRDS(system.file("example_files","salamander_prof1.rds",package="glmmTMB"))
+> if (require("ggplot2")) {
++     ggplot(salamander_prof1,aes(.focal,sqrt(value))) +
++         geom_point() + geom_line()+
++         facet_wrap(~.par,scale="free_x")+
++     geom_hline(yintercept=1.96,linetype=2)
++ }
+Loading required package: ggplot2
+> salamander_prof1 <- readRDS(system.file("example_files","salamander_prof1.rds",package="glmmTMB"))
+> confint(salamander_prof1)
+                    2.5 %     97.5 %
+(Intercept)    -0.4686460  0.4805030
+minedno         0.6449938  1.7417972
+zi~(Intercept)  0.6088771  1.5648495
+zi~minedno     -2.2239195 -1.1665205
+theta_1|site.1 -1.9452621 -0.5786442
+> confint(salamander_prof1,level=0.99)
+                    0.5 %     99.5 %
+(Intercept)    -0.6830922  0.5865649
+minedno         0.6015779  1.9853898
+zi~(Intercept)  0.4108581  1.6910201
+zi~minedno     -2.3713049 -0.9600516
+theta_1|site.1 -2.1810585 -0.3697326
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’
+
+> nameEx("ranef.glmmTMB")
+> ### * ranef.glmmTMB
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: ranef.glmmTMB
+> ### Title: Extract Random Effects
+> ### Aliases: ranef.glmmTMB ranef as.data.frame.ranef.glmmTMB coef.glmmTMB
+> 
+> ### ** Examples
+> 
+> if (requireNamespace("lme4")) {
++    data(sleepstudy, package="lme4")
++    model <- glmmTMB(Reaction ~ Days + (1|Subject), sleepstudy)
++    rr <- ranef(model)
++    print(rr, simplify=FALSE)
++    ## extract Subject conditional modes for conditional model
++    rr$cond$Subject
++    as.data.frame(rr)
++ }
+$cond
+$cond$Subject
+    (Intercept)
+308   40.635100
+309  -77.565868
+310  -62.878597
+330    4.390390
+331   10.178966
+332    8.191284
+333   16.440371
+334   -2.986056
+335  -45.117116
+337   71.919659
+349  -21.119006
+350   14.059946
+351   -7.833567
+352   36.245868
+369    7.010745
+370   -6.339513
+371   -3.282264
+372   18.049738
+
+
+$zi
+list()
+
+$disp
+list()
+
+        component  grpvar        term grp    condval   condsd
+cond.1       cond Subject (Intercept) 308  40.635100 12.53484
+cond.2       cond Subject (Intercept) 309 -77.565868 12.65076
+cond.3       cond Subject (Intercept) 310 -62.878597 12.59611
+cond.4       cond Subject (Intercept) 330   4.390390 12.49122
+cond.5       cond Subject (Intercept) 331  10.178966 12.49348
+cond.6       cond Subject (Intercept) 332   8.191284 12.49251
+cond.7       cond Subject (Intercept) 333  16.440371 12.49794
+cond.8       cond Subject (Intercept) 334  -2.986056 12.49095
+cond.9       cond Subject (Intercept) 335 -45.117116 12.54509
+cond.10      cond Subject (Intercept) 337  71.919659 12.62843
+cond.11      cond Subject (Intercept) 349 -21.119006 12.50264
+cond.12      cond Subject (Intercept) 350  14.059946 12.49600
+cond.13      cond Subject (Intercept) 351  -7.833567 12.49235
+cond.14      cond Subject (Intercept) 352  36.245868 12.52583
+cond.15      cond Subject (Intercept) 369   7.010745 12.49202
+cond.16      cond Subject (Intercept) 370  -6.339513 12.49178
+cond.17      cond Subject (Intercept) 371  -3.282264 12.49100
+cond.18      cond Subject (Intercept) 372  18.049738 12.49943
+> 
+> 
+> 
+> cleanEx()
+> nameEx("simulate_new")
+> ### * simulate_new
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: simulate_new
+> ### Title: Simulate from covariate/metadata in the absence of a real data
+> ###   set (EXPERIMENTAL)
+> ### Aliases: simulate_new
+> 
+> ### ** Examples
+> 
+> ## use Salamanders data for observational design and covariate values
+> ## parameters used here are sensible, but do not fit the original data
+> params <- list(beta = c(2, 1),
++                betazi = c(-0.5, 0.5), ## logit-linear model for zi
++                betadisp = log(2), ## log(NB dispersion)
++                theta = log(1)) ## log(among-site SD)
+> sim_count <- simulate_new(~ mined + (1|site),
++              newdata = Salamanders,
++              zi = ~ mined,
++              family = nbinom2,
++              seed = 101,
++              newparams = params
++ )
+> ## simulate_new with return="sim" always returns a list of response vectors
+> Salamanders$sim_count <- sim_count[[1]]    
+> summary(glmmTMB(sim_count ~ mined + (1|site), data=Salamanders, ziformula=~mined, family=nbinom2))
+ Family: nbinom2  ( log )
+Formula:          sim_count ~ mined + (1 | site)
+Zero inflation:             ~mined
+Data: Salamanders
+
+      AIC       BIC    logLik -2*log(L)  df.resid 
+   3324.1    3350.9   -1656.0    3312.1       638 
+
+Random effects:
+
+Conditional model:
+ Groups Name        Variance Std.Dev.
+ site   (Intercept) 0.669    0.8179  
+Number of obs: 644, groups:  site, 23
+
+Dispersion parameter for nbinom2 family (): 1.69 
+
+Conditional model:
+            Estimate Std. Error z value Pr(>|z|)    
+(Intercept)   1.6481     0.2572   6.407 1.48e-10 ***
+minedno       1.3861     0.3550   3.904 9.44e-05 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Zero-inflation model:
+            Estimate Std. Error z value Pr(>|z|)    
+(Intercept)  -0.7164     0.1510  -4.745 2.08e-06 ***
+minedno       0.6331     0.1864   3.397 0.000682 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> ## return a glmmTMB object
+> sim_obj <- simulate_new(~ mined + (1|site),
++             return_val = "object",
++              newdata = Salamanders,
++              zi = ~ mined,
++              family = nbinom2,
++              newparams = params)
+> ## simulate Gaussian data, multivariate random effect
+> data("sleepstudy", package = "lme4")
+> sim_obj <- simulate_new(~ 1 + (1|Subject) + ar1(0 + factor(Days)|Subject),
++              return_val = "pars",
++              newdata = sleepstudy,
++              family = gaussian,
++              newparams = list(beta = c(280, 1),
++                          betad = log(2), ## log(residual std err)
++                          theta = c(log(2), ## log(SD(subject))
++                                    log(2), ## log(SD(slope))
++                                    ## AR1 correlation = 0.2
++                                    put_cor(0.2, input_val = "vec"))
++                          )
++ )
+Warning in make_pars(list(beta = 1, betazi = numeric(0), betadisp = 0, b = c(1,  :
+  unmatched parameter names: betad
+Warning in make_pars(list(beta = 1, betazi = numeric(0), betadisp = 0, b = c(1,  :
+  length mismatch in component beta (1 != 2); not setting
+Warning in make_pars(list(beta = 1, betazi = numeric(0), betadisp = 0, b = c(1,  :
+  unmatched parameter names: betad
+Warning in make_pars(list(beta = 1, betazi = numeric(0), betadisp = 0, b = c(1,  :
+  length mismatch in component beta (1 != 2); not setting
+Warning in make_pars(list(beta = 1, betazi = numeric(0), betadisp = 0, b = c(1,  :
+  length mismatch in component betad (0 != 1); not setting
+> 
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  6.587 0.165 6.753 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

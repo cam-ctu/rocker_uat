@@ -1,0 +1,138 @@
+
+R version 4.5.0 (2025-04-11) -- "How About a Twenty-Six"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library("R.methodsS3")
+R.methodsS3 v1.8.2 (2022-06-13 22:00:14 UTC) successfully loaded. See ?R.methodsS3 for help.
+> 
+> message("TESTING: setMethodS3()...")
+TESTING: setMethodS3()...
+> 
+> ######################################################################
+> # Example 1
+> ######################################################################
+> setMethodS3("foo", "default", function(x, ...) {
++   cat("In default foo():\n")
++   print(x, ...)
++ })
+> 
+> 
+> setMethodS3("foo", "character", function(s) {
++   cat("In foo() for class 'character':\n")
++   print(s, ...)
++ })
+NULL
+Warning message:
+In setMethodS3.default("foo", "character", function(s) { :
+  Added missing argument '...' to make it more compatible with a generic function: foo.character
+> 
+> # The generic function is automatically created!
+> print(foo)
+function (...) 
+UseMethod("foo")
+attr(,"export")
+[1] TRUE
+> 
+> foo(123)
+In default foo():
+[1] 123
+> foo("123")
+In foo() for class 'character':
+[1] "123"
+> 
+> 
+> ######################################################################
+> # Example 2
+> #
+> # Assume that in a loaded package there is already a function bar(),
+> # but you also want to use the name 'bar' for the character string.
+> # It may even be the case that you do not know of the other package,
+> # but your users do!
+> ######################################################################
+> # bar() in other package
+> bar <- function(x, y, ...) {
++   cat("In bar() of 'other' package.\n")
++ }
+> 
+> 
+> # Your definition will redefine bar() above to bar.default().
+> setMethodS3("bar", "character", function(object, ...) {
++   cat("In bar() for class 'character':\n")
++   print(object, ...)
++ })
+Warning message:
+In setGenericS3.default(name, export = exportGeneric, envir = envir,  :
+  Renamed the preexisting function bar to bar.default, which was defined in environment R_GlobalEnv.
+> 
+> bar(123)
+In bar() of 'other' package.
+> bar("123")
+In bar() for class 'character':
+[1] "123"
+> 
+> setMethodS3("bar<-", "character", function(x, value) {
++   attr(x, "bar") <- value
++   x
++ })
+> 
+> x <- "a"
+> bar(x) <- "hello"
+> str(x)
+ chr "a"
+ - attr(*, "bar")= chr "hello"
+> 
+> 
+> setMethodS3("$", "SomeClass", function(x, name) {
++   attr(x, name)
++ })
+NULL
+> 
+> setMethodS3("$<-", "SomeClass", function(x, name, value) {
++   attr(x, name) <- value
++   x
++ })
+NULL
+> 
+> 
+> 
+> setMethodS3("yaa", "character", abstract=TRUE, validators=list(R.methodsS3:::rccValidateSetMethodS3))
+> 
+> print(getMethodS3("yaa", "character"))
+function (...) 
+stop("Method \"yaa\" is defined abstract in class \"character\" and has not been overridden by any of the subclasses: ", 
+    class(list(...)[[1]])[1])
+attr(,"export")
+[1] FALSE
+attr(,"S3class")
+[1] "character"
+attr(,"modifiers")
+[1] "public"   "abstract"
+> 
+> # Redefine
+> setMethodS3("yaa", "character", abstract=TRUE, validators=list(R.methodsS3:::rccValidateSetMethodS3))
+NULL
+Warning message:
+In setMethodS3.default("yaa", "character", abstract = TRUE, validators = list(R.methodsS3:::rccValidateSetMethodS3)) :
+  Method already existed and was overwritten: yaa.character
+> 
+> 
+> 
+> # Cleanup
+> rm(list=ls())
+> 
+> message("TESTING: setMethodS3()...DONE")
+TESTING: setMethodS3()...DONE
+> 

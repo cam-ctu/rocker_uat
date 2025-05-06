@@ -1,0 +1,5294 @@
+
+R version 4.5.0 (2025-04-11) -- "How About a Twenty-Six"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "datawizard"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('datawizard')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("adjust")
+> ### * adjust
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: adjust
+> ### Title: Adjust data for the effect of other variable(s)
+> ### Aliases: adjust data_adjust
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (all(insight::check_if_installed(c("bayestestR", "rstanarm", "gamm4"), quietly = TRUE))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ adjusted_all <- adjust(attitude)
++ head(adjusted_all)
++ adjusted_one <- adjust(attitude, effect = "complaints", select = "rating")
++ head(adjusted_one)
++ 
++ # Generate data
++ data <- bayestestR::simulate_correlation(n = 100, r = 0.7)
++ data$V2 <- (5 * data$V2) + 20 # Add intercept
++ 
++ # Adjust
++ adjusted <- adjust(data, effect = "V1", select = "V2")
++ adjusted_icpt <- adjust(data, effect = "V1", select = "V2", keep_intercept = TRUE)
++ 
++ # Visualize
++ plot(
++   data$V1, data$V2,
++   pch = 19, col = "blue",
++   ylim = c(min(adjusted$V2), max(data$V2)),
++   main = "Original (blue), adjusted (green), and adjusted - intercept kept (red) data"
++ )
++ abline(lm(V2 ~ V1, data = data), col = "blue")
++ points(adjusted$V1, adjusted$V2, pch = 19, col = "green")
++ abline(lm(V2 ~ V1, data = adjusted), col = "green")
++ points(adjusted_icpt$V1, adjusted_icpt$V2, pch = 19, col = "red")
++ abline(lm(V2 ~ V1, data = adjusted_icpt), col = "red")
++ ## Don't show: 
++ }) # examplesIf
+> adjusted_all <- adjust(attitude)
+> head(adjusted_all)
+       rating complaints privileges    learning     raises   critical
+1  -8.1102953  5.5583770 -15.848949 -2.75102306  0.5742664  15.605502
+2   1.6472337  0.0646564  -1.422592 -3.06207012 -1.5567655  -2.315781
+3   1.0605589 -7.5116953  11.174609  5.59808033  4.8603132   8.061801
+4  -0.2268416  3.8345277  -4.567441  0.03866933 -7.1185324  13.002574
+5   6.5462010 -1.2420122  -3.051098  0.87312095 -2.7131349   6.500353
+6 -10.9418499  5.2030745   2.664156 -1.24552098  4.1370346 -21.678382
+     advance
+1  2.8684130
+2  5.3937097
+3 -6.4236221
+4 -0.3951046
+5  2.1988621
+6 -3.1912418
+> adjusted_one <- adjust(attitude, effect = "complaints", select = "rating")
+> head(adjusted_one)
+       rating complaints privileges learning raises critical advance
+1  -9.8614202         51         30       39     61       92      45
+2   0.3286522         64         51       54     63       73      47
+3   3.8009933         70         68       69     76       86      48
+4  -0.9167380         63         45       47     54       84      35
+5   7.7641147         78         56       66     71       83      47
+6 -12.8798594         55         49       44     54       49      34
+> data <- bayestestR::simulate_correlation(n = 100, r = 0.7)
+> data$V2 <- (5 * data$V2) + 20
+> adjusted <- adjust(data, effect = "V1", select = "V2")
+> adjusted_icpt <- adjust(data, effect = "V1", select = "V2", keep_intercept = TRUE)
+> plot(data$V1, data$V2, pch = 19, col = "blue", ylim = c(min(adjusted$V2), 
++     max(data$V2)), main = "Original (blue), adjusted (green), and adjusted - intercept kept (red) data")
+> abline(lm(V2 ~ V1, data = data), col = "blue")
+> points(adjusted$V1, adjusted$V2, pch = 19, col = "green")
+> abline(lm(V2 ~ V1, data = adjusted), col = "green")
+> points(adjusted_icpt$V1, adjusted_icpt$V2, pch = 19, col = "red")
+> abline(lm(V2 ~ V1, data = adjusted_icpt), col = "red")
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("assign_labels")
+> ### * assign_labels
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: assign_labels
+> ### Title: Assign variable and value labels
+> ### Aliases: assign_labels assign_labels.numeric assign_labels.data.frame
+> 
+> ### ** Examples
+> 
+> x <- 1:3
+> # labelling by providing required number of labels
+> assign_labels(
++   x,
++   variable = "My x",
++   values = c("one", "two", "three")
++ )
+[1] 1 2 3
+attr(,"label")
+[1] "My x"
+attr(,"labels")
+  one   two three 
+    1     2     3 
+> 
+> # labelling using named vectors
+> data(iris)
+> out <- assign_labels(
++   iris$Species,
++   variable = "Labelled Species",
++   values = c(`setosa` = "Spec1", `versicolor` = "Spec2", `virginica` = "Spec3")
++ )
+> str(out)
+ Factor w/ 3 levels "setosa","versicolor",..: 1 1 1 1 1 1 1 1 1 1 ...
+ - attr(*, "label")= chr "Labelled Species"
+ - attr(*, "labels")= Named chr [1:3] "setosa" "versicolor" "virginica"
+  ..- attr(*, "names")= chr [1:3] "Spec1" "Spec2" "Spec3"
+> 
+> # data frame example
+> out <- assign_labels(
++   iris,
++   select = "Species",
++   variable = "Labelled Species",
++   values = c(`setosa` = "Spec1", `versicolor` = "Spec2", `virginica` = "Spec3")
++ )
+> str(out$Species)
+ Factor w/ 3 levels "setosa","versicolor",..: 1 1 1 1 1 1 1 1 1 1 ...
+ - attr(*, "label")= chr "Labelled Species"
+ - attr(*, "labels")= Named chr [1:3] "setosa" "versicolor" "virginica"
+  ..- attr(*, "names")= chr [1:3] "Spec1" "Spec2" "Spec3"
+> 
+> # Partial labelling
+> x <- 1:5
+> assign_labels(
++   x,
++   variable = "My x",
++   values = c(`1` = "lowest", `5` = "highest")
++ )
+[1] 1 2 3 4 5
+attr(,"label")
+[1] "My x"
+attr(,"labels")
+ lowest highest 
+      1       5 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("categorize")
+> ### * categorize
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: categorize
+> ### Title: Recode (or "cut" / "bin") data into groups of values.
+> ### Aliases: categorize categorize.numeric categorize.data.frame
+> 
+> ### ** Examples
+> 
+> set.seed(123)
+> x <- sample(1:10, size = 50, replace = TRUE)
+> 
+> table(x)
+x
+ 1  2  3  4  5  6  7  8  9 10 
+ 2  3  5  3  7  5  5  2 11  7 
+> 
+> # by default, at median
+> table(categorize(x))
+
+ 1  2 
+25 25 
+> 
+> # into 3 groups, based on distribution (quantiles)
+> table(categorize(x, split = "quantile", n_groups = 3))
+
+ 1  2  3 
+13 19 18 
+> 
+> # into 3 groups, user-defined break
+> table(categorize(x, split = c(3, 5)))
+
+ 1  2  3 
+ 5  8 37 
+> 
+> set.seed(123)
+> x <- sample(1:100, size = 500, replace = TRUE)
+> 
+> # into 5 groups, try to recode into intervals of similar length,
+> # i.e. the range within groups is the same for all groups
+> table(categorize(x, split = "equal_length", n_groups = 5))
+
+  1   2   3   4   5 
+ 89 116  96  94 105 
+> 
+> # into 5 groups, try to return same range within groups
+> # i.e. 1-20, 21-40, 41-60, etc. Since the range of "x" is
+> # 1-100, and we have a range of 20, this results into 5
+> # groups, and thus is for this particular case identical
+> # to the previous result.
+> table(categorize(x, split = "equal_range", range = 20))
+
+  1   2   3   4   5 
+ 89 116  96  94 105 
+> 
+> # return factor with value labels instead of numeric value
+> set.seed(123)
+> x <- sample(1:10, size = 30, replace = TRUE)
+> categorize(x, "equal_length", n_groups = 3)
+ [1] 1 1 3 1 2 2 2 2 3 3 2 1 3 3 3 1 3 3 3 3 3 1 2 1 3 2 3 3 3 3
+> categorize(x, "equal_length", n_groups = 3, labels = c("low", "mid", "high"))
+ [1] low  low  high low  mid  mid  mid  mid  high high mid  low  high high high
+[16] low  high high high high high low  mid  low  high mid  high high high high
+Levels: low mid high
+> 
+> # cut numeric into groups with the mean or median as a label name
+> x <- sample(1:10, size = 30, replace = TRUE)
+> categorize(x, "equal_length", n_groups = 3, labels = "mean")
+ [1] 8.45 8.45 5.33 8.45 5.33 5.33 8.45 1.57 5.33 8.45 1.57 1.57 8.45 8.45 5.33
+[16] 5.33 8.45 8.45 5.33 5.33 8.45 5.33 5.33 8.45 1.57 5.33 1.57 1.57 1.57 5.33
+Levels: 1.57 5.33 8.45
+> categorize(x, "equal_length", n_groups = 3, labels = "median")
+ [1] 9.00 9.00 5.50 9.00 5.50 5.50 9.00 2.00 5.50 9.00 2.00 2.00 9.00 9.00 5.50
+[16] 5.50 9.00 9.00 5.50 5.50 9.00 5.50 5.50 9.00 2.00 5.50 2.00 2.00 2.00 5.50
+Levels: 2.00 5.50 9.00
+> 
+> # cut numeric into groups with the requested range as a label name
+> # each category has the same range, and labels indicate this range
+> categorize(mtcars$mpg, "equal_length", n_groups = 5, labels = "range")
+ [1] [19.8,24.5) [19.8,24.5) [19.8,24.5) [19.8,24.5) [15.1,19.8) [15.1,19.8)
+ [7] [10.4,15.1) [19.8,24.5) [19.8,24.5) [15.1,19.8) [15.1,19.8) [15.1,19.8)
+[13] [15.1,19.8) [15.1,19.8) [10.4,15.1) [10.4,15.1) [10.4,15.1) [29.2,33.9]
+[19] [29.2,33.9] [29.2,33.9] [19.8,24.5) [15.1,19.8) [15.1,19.8) [10.4,15.1)
+[25] [15.1,19.8) [24.5,29.2) [24.5,29.2) [29.2,33.9] [15.1,19.8) [15.1,19.8)
+[31] [10.4,15.1) [19.8,24.5)
+Levels: [10.4,15.1) [15.1,19.8) [19.8,24.5) [24.5,29.2) [29.2,33.9]
+> # in this example, each category has the same range, but labels only refer
+> # to the ranges of the actual values (present in the data) inside each group
+> categorize(mtcars$mpg, "equal_length", n_groups = 5, labels = "observed")
+ [1] (21-24.4)   (21-24.4)   (21-24.4)   (21-24.4)   (15.2-19.7) (15.2-19.7)
+ [7] (10.4-15)   (21-24.4)   (21-24.4)   (15.2-19.7) (15.2-19.7) (15.2-19.7)
+[13] (15.2-19.7) (15.2-19.7) (10.4-15)   (10.4-15)   (10.4-15)   (30.4-33.9)
+[19] (30.4-33.9) (30.4-33.9) (21-24.4)   (15.2-19.7) (15.2-19.7) (10.4-15)  
+[25] (15.2-19.7) (26-27.3)   (26-27.3)   (30.4-33.9) (15.2-19.7) (15.2-19.7)
+[31] (10.4-15)   (21-24.4)  
+Levels: (10.4-15) (15.2-19.7) (21-24.4) (26-27.3) (30.4-33.9)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("center")
+> ### * center
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: center
+> ### Title: Centering (Grand-Mean Centering)
+> ### Aliases: center centre center.numeric center.data.frame
+> 
+> ### ** Examples
+> 
+> data(iris)
+> 
+> # entire data frame or a vector
+> head(iris$Sepal.Width)
+[1] 3.5 3.0 3.2 3.1 3.6 3.9
+> head(center(iris$Sepal.Width))
+[1]  0.44266667 -0.05733333  0.14266667  0.04266667  0.54266667  0.84266667
+> head(center(iris))
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+1   -0.7433333  0.44266667       -2.358  -0.9993333  setosa
+2   -0.9433333 -0.05733333       -2.358  -0.9993333  setosa
+3   -1.1433333  0.14266667       -2.458  -0.9993333  setosa
+4   -1.2433333  0.04266667       -2.258  -0.9993333  setosa
+5   -0.8433333  0.54266667       -2.358  -0.9993333  setosa
+6   -0.4433333  0.84266667       -2.058  -0.7993333  setosa
+> head(center(iris, force = TRUE))
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+1   -0.7433333  0.44266667       -2.358  -0.9993333      -1
+2   -0.9433333 -0.05733333       -2.358  -0.9993333      -1
+3   -1.1433333  0.14266667       -2.458  -0.9993333      -1
+4   -1.2433333  0.04266667       -2.258  -0.9993333      -1
+5   -0.8433333  0.54266667       -2.358  -0.9993333      -1
+6   -0.4433333  0.84266667       -2.058  -0.7993333      -1
+> 
+> # only the selected columns from a data frame
+> center(anscombe, select = c("x1", "x3"))
+   x1 x2 x3 x4    y1   y2    y3    y4
+1   1 10  1  8  8.04 9.14  7.46  6.58
+2  -1  8 -1  8  6.95 8.14  6.77  5.76
+3   4 13  4  8  7.58 8.74 12.74  7.71
+4   0  9  0  8  8.81 8.77  7.11  8.84
+5   2 11  2  8  8.33 9.26  7.81  8.47
+6   5 14  5  8  9.96 8.10  8.84  7.04
+7  -3  6 -3  8  7.24 6.13  6.08  5.25
+8  -5  4 -5 19  4.26 3.10  5.39 12.50
+9   3 12  3  8 10.84 9.13  8.15  5.56
+10 -2  7 -2  8  4.82 7.26  6.42  7.91
+11 -4  5 -4  8  5.68 4.74  5.73  6.89
+> center(anscombe, exclude = c("x1", "x3"))
+   x1 x2 x3 x4          y1         y2    y3         y4
+1  10  1 10 -1  0.53909091  1.6390909 -0.04 -0.9209091
+2   8 -1  8 -1 -0.55090909  0.6390909 -0.73 -1.7409091
+3  13  4 13 -1  0.07909091  1.2390909  5.24  0.2090909
+4   9  0  9 -1  1.30909091  1.2690909 -0.39  1.3390909
+5  11  2 11 -1  0.82909091  1.7590909  0.31  0.9690909
+6  14  5 14 -1  2.45909091  0.5990909  1.34 -0.4609091
+7   6 -3  6 -1 -0.26090909 -1.3709091 -1.42 -2.2509091
+8   4 -5  4 10 -3.24090909 -4.4009091 -2.11  4.9990909
+9  12  3 12 -1  3.33909091  1.6290909  0.65 -1.9409091
+10  7 -2  7 -1 -2.68090909 -0.2409091 -1.08  0.4090909
+11  5 -4  5 -1 -1.82090909 -2.7609091 -1.77 -0.6109091
+> 
+> # centering with reference center and scale
+> d <- data.frame(
++   a = c(-2, -1, 0, 1, 2),
++   b = c(3, 4, 5, 6, 7)
++ )
+> 
+> # default centering at mean
+> center(d)
+   a  b
+1 -2 -2
+2 -1 -1
+3  0  0
+4  1  1
+5  2  2
+> 
+> # centering, using 0 as mean
+> center(d, center = 0)
+   a b
+1 -2 3
+2 -1 4
+3  0 5
+4  1 6
+5  2 7
+> 
+> # centering, using -5 as mean
+> center(d, center = -5)
+  a  b
+1 3  8
+2 4  9
+3 5 10
+4 6 11
+5 7 12
+> 
+> 
+> 
+> cleanEx()
+> nameEx("coef_var")
+> ### * coef_var
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: coef_var
+> ### Title: Compute the coefficient of variation
+> ### Aliases: coef_var distribution_cv distribution_coef_var
+> ###   coef_var.numeric
+> 
+> ### ** Examples
+> 
+> coef_var(1:10)
+[1] 0.5504819
+> coef_var(c(1:10, 100), method = "median_mad")
+[1] 0.7413
+> coef_var(c(1:10, 100), method = "qcd")
+[1] 0.4166667
+> coef_var(mu = 10, sigma = 20)
+[1] 2
+> coef_var(mu = 10, sigma = 20, method = "unbiased", n = 30)
+[1] 2.250614
+> 
+> 
+> 
+> cleanEx()
+> nameEx("coerce_to_numeric")
+> ### * coerce_to_numeric
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: coerce_to_numeric
+> ### Title: Convert to Numeric (if possible)
+> ### Aliases: coerce_to_numeric
+> 
+> ### ** Examples
+> 
+> coerce_to_numeric(c("1", "2"))
+[1] 1 2
+> coerce_to_numeric(c("1", "2", "A"))
+[1] "1" "2" "A"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("colnames")
+> ### * colnames
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: row_to_colnames
+> ### Title: Tools for working with column names
+> ### Aliases: row_to_colnames colnames_to_row
+> 
+> ### ** Examples
+> 
+> # Convert a row to column names --------------------------------
+> test <- data.frame(
++   a = c("iso", 2, 5),
++   b = c("year", 3, 6),
++   c = c("value", 5, 7)
++ )
+> test
+    a    b     c
+1 iso year value
+2   2    3     5
+3   5    6     7
+> row_to_colnames(test)
+  iso year value
+2   2    3     5
+3   5    6     7
+> 
+> # Convert column names to row --------------------------------
+> test <- data.frame(
++   ARG = c("BRA", "FRA"),
++   `1960` = c(1960, 1960),
++   `2000` = c(2000, 2000)
++ )
+> test
+  ARG X1960 X2000
+1 BRA  1960  2000
+2 FRA  1960  2000
+> colnames_to_row(test)
+   x1    x2    x3
+1 ARG X1960 X2000
+2 BRA  1960  2000
+3 FRA  1960  2000
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("contr.deviation")
+> ### * contr.deviation
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: contr.deviation
+> ### Title: Deviation Contrast Matrix
+> ### Aliases: contr.deviation
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (!identical(Sys.getenv("IN_PKGDOWN"), "true")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ ## Don't show: 
++ }) # examplesIf
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("convert_na_to")
+> ### * convert_na_to
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: convert_na_to
+> ### Title: Replace missing values in a variable or a data frame.
+> ### Aliases: convert_na_to convert_na_to.numeric convert_na_to.character
+> ###   convert_na_to.data.frame
+> 
+> ### ** Examples
+> 
+> # Convert NA to 0 in a numeric vector
+> convert_na_to(
++   c(9, 3, NA, 2, 3, 1, NA, 8),
++   replacement = 0
++ )
+[1] 9 3 0 2 3 1 0 8
+> 
+> # Convert NA to "missing" in a character vector
+> convert_na_to(
++   c("a", NA, "d", "z", NA, "t"),
++   replacement = "missing"
++ )
+[1] "a"       "missing" "d"       "z"       "missing" "t"      
+> 
+> ### For data frames
+> 
+> test_df <- data.frame(
++   x = c(1, 2, NA),
++   x2 = c(4, 5, NA),
++   y = c("a", "b", NA)
++ )
+> 
+> # Convert all NA to 0 in numeric variables, and all NA to "missing" in
+> # character variables
+> convert_na_to(
++   test_df,
++   replace_num = 0,
++   replace_char = "missing"
++ )
+  x x2       y
+1 1  4       a
+2 2  5       b
+3 0  0 missing
+> 
+> # Convert a specific variable in the data frame
+> convert_na_to(
++   test_df,
++   replace_num = 0,
++   replace_char = "missing",
++   select = "x"
++ )
+  x x2    y
+1 1  4    a
+2 2  5    b
+3 0 NA <NA>
+> 
+> # Convert all variables starting with "x"
+> convert_na_to(
++   test_df,
++   replace_num = 0,
++   replace_char = "missing",
++   select = starts_with("x")
++ )
+  x x2    y
+1 1  4    a
+2 2  5    b
+3 0  0 <NA>
+> 
+> # Convert NA to 1 in variable 'x2' and to 0 in all other numeric
+> # variables
+> convert_na_to(
++   test_df,
++   replace_num = 0,
++   select = list(x2 = 1)
++ )
+  x x2    y
+1 1  4    a
+2 2  5    b
+3 0  1 <NA>
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("convert_to_na")
+> ### * convert_to_na
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: convert_to_na
+> ### Title: Convert non-missing values in a variable into missing values.
+> ### Aliases: convert_to_na convert_to_na.numeric convert_to_na.factor
+> ###   convert_to_na.data.frame
+> 
+> ### ** Examples
+> 
+> x <- sample(1:6, size = 30, replace = TRUE)
+> x
+ [1] 1 4 1 2 5 3 6 2 3 3 1 5 5 2 6 6 2 1 5 5 1 1 6 5 5 2 2 6 1 4
+> # values 4 and 5 to NA
+> convert_to_na(x, na = 4:5)
+ [1]  1 NA  1  2 NA  3  6  2  3  3  1 NA NA  2  6  6  2  1 NA NA  1  1  6 NA NA
+[26]  2  2  6  1 NA
+> 
+> # data frames
+> set.seed(123)
+> x <- data.frame(
++   a = sample(1:6, size = 20, replace = TRUE),
++   b = sample(letters[1:6], size = 20, replace = TRUE),
++   c = sample(c(30:33, 99), size = 20, replace = TRUE)
++ )
+> # for all numerics, convert 5 to NA. Character/factor will be ignored.
+> convert_to_na(x, na = 5)
+Could not convert values into `NA` for a factor or character variable.
+  To do this, `na` needs to be a character vector, or a list that contains
+  character vector elements.
+    a b  c
+1   3 a 33
+2   6 e 99
+3   3 c 99
+4   2 b 32
+5   2 b 30
+6   6 a 31
+7   3 f 99
+8  NA c 99
+9   4 d 33
+10  6 f 99
+11  6 a 31
+12  1 c 30
+13  2 e 30
+14  3 d 32
+15 NA b 30
+16  3 e 99
+17  3 a 30
+18  1 a 31
+19  4 b 33
+20  1 c 33
+> 
+> # for numerics, 5 to NA, for character/factor, "f" to NA
+> convert_to_na(x, na = list(6, "f"))
+    a    b  c
+1   3    a 33
+2  NA    e 99
+3   3    c 99
+4   2    b 32
+5   2    b 30
+6  NA    a 31
+7   3 <NA> 99
+8   5    c 99
+9   4    d 33
+10 NA <NA> 99
+11 NA    a 31
+12  1    c 30
+13  2    e 30
+14  3    d 32
+15  5    b 30
+16  3    e 99
+17  3    a 30
+18  1    a 31
+19  4    b 33
+20  1    c 33
+> 
+> # select specific variables
+> convert_to_na(x, select = c("a", "b"), na = list(6, "f"))
+    a    b  c
+1   3    a 33
+2  NA    e 99
+3   3    c 99
+4   2    b 32
+5   2    b 30
+6  NA    a 31
+7   3 <NA> 99
+8   5    c 99
+9   4    d 33
+10 NA <NA> 99
+11 NA    a 31
+12  1    c 30
+13  2    e 30
+14  3    d 32
+15  5    b 30
+16  3    e 99
+17  3    a 30
+18  1    a 31
+19  4    b 33
+20  1    c 33
+> 
+> 
+> 
+> cleanEx()
+> nameEx("data_arrange")
+> ### * data_arrange
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data_arrange
+> ### Title: Arrange rows by column values
+> ### Aliases: data_arrange
+> 
+> ### ** Examples
+> 
+> 
+> # Arrange using several variables
+> data_arrange(head(mtcars), c("gear", "carb"))
+                   mpg cyl disp  hp drat    wt  qsec vs am gear carb
+Hornet 4 Drive    21.4   6  258 110 3.08 3.215 19.44  1  0    3    1
+Valiant           18.1   6  225 105 2.76 3.460 20.22  1  0    3    1
+Hornet Sportabout 18.7   8  360 175 3.15 3.440 17.02  0  0    3    2
+Datsun 710        22.8   4  108  93 3.85 2.320 18.61  1  1    4    1
+Mazda RX4         21.0   6  160 110 3.90 2.620 16.46  0  1    4    4
+Mazda RX4 Wag     21.0   6  160 110 3.90 2.875 17.02  0  1    4    4
+> 
+> # Arrange in decreasing order
+> data_arrange(head(mtcars), "-carb")
+                   mpg cyl disp  hp drat    wt  qsec vs am gear carb
+Mazda RX4         21.0   6  160 110 3.90 2.620 16.46  0  1    4    4
+Mazda RX4 Wag     21.0   6  160 110 3.90 2.875 17.02  0  1    4    4
+Hornet Sportabout 18.7   8  360 175 3.15 3.440 17.02  0  0    3    2
+Datsun 710        22.8   4  108  93 3.85 2.320 18.61  1  1    4    1
+Hornet 4 Drive    21.4   6  258 110 3.08 3.215 19.44  1  0    3    1
+Valiant           18.1   6  225 105 2.76 3.460 20.22  1  0    3    1
+> 
+> # Throw an error if one of the variables specified doesn't exist
+> try(data_arrange(head(mtcars), c("gear", "foo"), safe = FALSE))
+Error : The following column(s) don't exist in the dataset: foo.
+  Possibly misspelled?
+> 
+> 
+> 
+> cleanEx()
+> nameEx("data_codebook")
+> ### * data_codebook
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data_codebook
+> ### Title: Generate a codebook of a data frame.
+> ### Aliases: data_codebook print_html.data_codebook
+> 
+> ### ** Examples
+> 
+> data(iris)
+> data_codebook(iris, select = starts_with("Sepal"))
+iris (150 rows and 5 variables, 2 shown)
+
+ID | Name         | Type    | Missings |     Values |   N
+---+--------------+---------+----------+------------+----
+1  | Sepal.Length | numeric | 0 (0.0%) | [4.3, 7.9] | 150
+---+--------------+---------+----------+------------+----
+2  | Sepal.Width  | numeric | 0 (0.0%) |   [2, 4.4] | 150
+---------------------------------------------------------
+> 
+> data(efc)
+> data_codebook(efc)
+efc (100 rows and 5 variables, 5 shown)
+
+ID | Name     | Label                                    | Type       
+---+----------+------------------------------------------+------------
+1  | c12hour  | average number of hours of care per week | numeric    
+---+----------+------------------------------------------+------------
+2  | e16sex   | elder's gender                           | numeric    
+   |          |                                          |            
+---+----------+------------------------------------------+------------
+3  | e42dep   | elder's dependency                       | categorical
+   |          |                                          |            
+   |          |                                          |            
+   |          |                                          |            
+---+----------+------------------------------------------+------------
+4  | c172code | carer's level of education               | numeric    
+   |          |                                          |            
+   |          |                                          |            
+---+----------+------------------------------------------+------------
+5  | neg_c_7  | Negative impact with 7 items             | numeric    
+----------------------------------------------------------------------
+
+ID |   Missings |   Values | Value Labels                    |          N
+---+------------+----------+---------------------------------+-----------
+1  |   2 (2.0%) | [5, 168] |                                 |         98
+---+------------+----------+---------------------------------+-----------
+2  |   0 (0.0%) |        1 | male                            | 46 (46.0%)
+   |            |        2 | female                          | 54 (54.0%)
+---+------------+----------+---------------------------------+-----------
+3  |   3 (3.0%) |        1 | independent                     |  2 ( 2.1%)
+   |            |        2 | slightly dependent              |  4 ( 4.1%)
+   |            |        3 | moderately dependent            | 28 (28.9%)
+   |            |        4 | severely dependent              | 63 (64.9%)
+---+------------+----------+---------------------------------+-----------
+4  | 10 (10.0%) |        1 | low level of education          |  8 ( 8.9%)
+   |            |        2 | intermediate level of education | 66 (73.3%)
+   |            |        3 | high level of education         | 16 (17.8%)
+---+------------+----------+---------------------------------+-----------
+5  |   3 (3.0%) |  [7, 28] |                                 |         97
+-------------------------------------------------------------------------
+> 
+> # shorten labels
+> data_codebook(efc, variable_label_width = 20, value_label_width = 15)
+efc (100 rows and 5 variables, 5 shown)
+
+ID | Name     | Label              | Type        |   Missings |   Values
+---+----------+--------------------+-------------+------------+---------
+1  | c12hour  | average number of  | numeric     |   2 (2.0%) | [5, 168]
+   |          | hours of care per  |             |            |         
+   |          | week               |             |            |         
+---+----------+--------------------+-------------+------------+---------
+2  | e16sex   | elder's gender     | numeric     |   0 (0.0%) |        1
+   |          |                    |             |            |        2
+---+----------+--------------------+-------------+------------+---------
+3  | e42dep   | elder's dependency | categorical |   3 (3.0%) |        1
+   |          |                    |             |            |        2
+   |          |                    |             |            |        3
+   |          |                    |             |            |        4
+---+----------+--------------------+-------------+------------+---------
+4  | c172code | carer's level of   | numeric     | 10 (10.0%) |        1
+   |          | education          |             |            |        2
+   |          |                    |             |            |        3
+---+----------+--------------------+-------------+------------+---------
+5  | neg_c_7  | Negative impact    | numeric     |   3 (3.0%) |  [7, 28]
+   |          | with 7 items       |             |            |         
+------------------------------------------------------------------------
+
+ID | Value Labels     |          N
+---+------------------+-----------
+1  |                  |         98
+   |                  |           
+   |                  |           
+---+------------------+-----------
+2  | male             | 46 (46.0%)
+   | female           | 54 (54.0%)
+---+------------------+-----------
+3  | independent      |  2 ( 2.1%)
+   | slightly...      |  4 ( 4.1%)
+   | moderately...    | 28 (28.9%)
+   | severely...      | 63 (64.9%)
+---+------------------+-----------
+4  | low level of...  |  8 ( 8.9%)
+   | intermediate...  | 66 (73.3%)
+   | high level of... | 16 (17.8%)
+---+------------------+-----------
+5  |                  |         97
+   |                  |           
+----------------------------------
+> 
+> # automatic range for numerics at more than 5 unique values
+> data(mtcars)
+> data_codebook(mtcars, select = starts_with("c"))
+mtcars (32 rows and 11 variables, 2 shown)
+
+ID | Name | Type    | Missings | Values |          N
+---+------+---------+----------+--------+-----------
+2  | cyl  | numeric | 0 (0.0%) |      4 | 11 (34.4%)
+   |      |         |          |      6 |  7 (21.9%)
+   |      |         |          |      8 | 14 (43.8%)
+---+------+---------+----------+--------+-----------
+11 | carb | numeric | 0 (0.0%) | [1, 8] |         32
+----------------------------------------------------
+> 
+> # force all values to be displayed
+> data_codebook(mtcars, select = starts_with("c"), range_at = 100)
+mtcars (32 rows and 11 variables, 2 shown)
+
+ID | Name | Type    | Missings | Values |          N
+---+------+---------+----------+--------+-----------
+2  | cyl  | numeric | 0 (0.0%) |      4 | 11 (34.4%)
+   |      |         |          |      6 |  7 (21.9%)
+   |      |         |          |      8 | 14 (43.8%)
+---+------+---------+----------+--------+-----------
+11 | carb | numeric | 0 (0.0%) |      1 |  7 (21.9%)
+   |      |         |          |      2 | 10 (31.2%)
+   |      |         |          |      3 |  3 ( 9.4%)
+   |      |         |          |      4 | 10 (31.2%)
+   |      |         |          |      6 |  1 ( 3.1%)
+   |      |         |          |      8 |  1 ( 3.1%)
+----------------------------------------------------
+> 
+> 
+> 
+> cleanEx()
+> nameEx("data_duplicated")
+> ### * data_duplicated
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data_duplicated
+> ### Title: Extract all duplicates
+> ### Aliases: data_duplicated
+> ### Keywords: duplicates
+> 
+> ### ** Examples
+> 
+> df1 <- data.frame(
++   id = c(1, 2, 3, 1, 3),
++   year = c(2022, 2022, 2022, 2022, 2000),
++   item1 = c(NA, 1, 1, 2, 3),
++   item2 = c(NA, 1, 1, 2, 3),
++   item3 = c(NA, 1, 1, 2, 3)
++ )
+> 
+> data_duplicated(df1, select = "id")
+  Row id year item1 item2 item3 count_na
+1   1  1 2022    NA    NA    NA        3
+4   4  1 2022     2     2     2        0
+3   3  3 2022     1     1     1        0
+5   5  3 2000     3     3     3        0
+> 
+> data_duplicated(df1, select = c("id", "year"))
+  Row id year item1 item2 item3 count_na
+1   1  1 2022    NA    NA    NA        3
+4   4  1 2022     2     2     2        0
+> 
+> # Filter to exclude duplicates
+> df2 <- df1[-c(1, 5), ]
+> df2
+  id year item1 item2 item3
+2  2 2022     1     1     1
+3  3 2022     1     1     1
+4  1 2022     2     2     2
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("data_extract")
+> ### * data_extract
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data_extract
+> ### Title: Extract one or more columns or elements from an object
+> ### Aliases: data_extract data_extract.data.frame
+> 
+> ### ** Examples
+> 
+> # single variable
+> data_extract(mtcars, cyl, name = gear)
+4 4 4 3 3 3 3 4 4 4 4 3 3 3 3 3 3 4 4 4 3 3 3 3 3 4 5 5 5 5 5 4 
+6 6 4 6 8 6 8 4 4 6 6 8 8 8 8 8 8 4 4 4 4 8 8 8 8 4 4 4 8 6 8 4 
+> data_extract(mtcars, "cyl", name = gear)
+4 4 4 3 3 3 3 4 4 4 4 3 3 3 3 3 3 4 4 4 3 3 3 3 3 4 5 5 5 5 5 4 
+6 6 4 6 8 6 8 4 4 6 6 8 8 8 8 8 8 4 4 4 4 8 8 8 8 4 4 4 8 6 8 4 
+> data_extract(mtcars, -1, name = gear)
+                    cyl  disp  hp drat    wt  qsec vs am gear carb
+Mazda RX4             6 160.0 110 3.90 2.620 16.46  0  1    4    4
+Mazda RX4 Wag         6 160.0 110 3.90 2.875 17.02  0  1    4    4
+Datsun 710            4 108.0  93 3.85 2.320 18.61  1  1    4    1
+Hornet 4 Drive        6 258.0 110 3.08 3.215 19.44  1  0    3    1
+Hornet Sportabout     8 360.0 175 3.15 3.440 17.02  0  0    3    2
+Valiant               6 225.0 105 2.76 3.460 20.22  1  0    3    1
+Duster 360            8 360.0 245 3.21 3.570 15.84  0  0    3    4
+Merc 240D             4 146.7  62 3.69 3.190 20.00  1  0    4    2
+Merc 230              4 140.8  95 3.92 3.150 22.90  1  0    4    2
+Merc 280              6 167.6 123 3.92 3.440 18.30  1  0    4    4
+Merc 280C             6 167.6 123 3.92 3.440 18.90  1  0    4    4
+Merc 450SE            8 275.8 180 3.07 4.070 17.40  0  0    3    3
+Merc 450SL            8 275.8 180 3.07 3.730 17.60  0  0    3    3
+Merc 450SLC           8 275.8 180 3.07 3.780 18.00  0  0    3    3
+Cadillac Fleetwood    8 472.0 205 2.93 5.250 17.98  0  0    3    4
+Lincoln Continental   8 460.0 215 3.00 5.424 17.82  0  0    3    4
+Chrysler Imperial     8 440.0 230 3.23 5.345 17.42  0  0    3    4
+Fiat 128              4  78.7  66 4.08 2.200 19.47  1  1    4    1
+Honda Civic           4  75.7  52 4.93 1.615 18.52  1  1    4    2
+Toyota Corolla        4  71.1  65 4.22 1.835 19.90  1  1    4    1
+Toyota Corona         4 120.1  97 3.70 2.465 20.01  1  0    3    1
+Dodge Challenger      8 318.0 150 2.76 3.520 16.87  0  0    3    2
+AMC Javelin           8 304.0 150 3.15 3.435 17.30  0  0    3    2
+Camaro Z28            8 350.0 245 3.73 3.840 15.41  0  0    3    4
+Pontiac Firebird      8 400.0 175 3.08 3.845 17.05  0  0    3    2
+Fiat X1-9             4  79.0  66 4.08 1.935 18.90  1  1    4    1
+Porsche 914-2         4 120.3  91 4.43 2.140 16.70  0  1    5    2
+Lotus Europa          4  95.1 113 3.77 1.513 16.90  1  1    5    2
+Ford Pantera L        8 351.0 264 4.22 3.170 14.50  0  1    5    4
+Ferrari Dino          6 145.0 175 3.62 2.770 15.50  0  1    5    6
+Maserati Bora         8 301.0 335 3.54 3.570 14.60  0  1    5    8
+Volvo 142E            4 121.0 109 4.11 2.780 18.60  1  1    4    2
+> data_extract(mtcars, cyl, name = 0)
+          Mazda RX4       Mazda RX4 Wag          Datsun 710      Hornet 4 Drive 
+                  6                   6                   4                   6 
+  Hornet Sportabout             Valiant          Duster 360           Merc 240D 
+                  8                   6                   8                   4 
+           Merc 230            Merc 280           Merc 280C          Merc 450SE 
+                  4                   6                   6                   8 
+         Merc 450SL         Merc 450SLC  Cadillac Fleetwood Lincoln Continental 
+                  8                   8                   8                   8 
+  Chrysler Imperial            Fiat 128         Honda Civic      Toyota Corolla 
+                  8                   4                   4                   4 
+      Toyota Corona    Dodge Challenger         AMC Javelin          Camaro Z28 
+                  4                   8                   8                   8 
+   Pontiac Firebird           Fiat X1-9       Porsche 914-2        Lotus Europa 
+                  8                   4                   4                   4 
+     Ford Pantera L        Ferrari Dino       Maserati Bora          Volvo 142E 
+                  8                   6                   8                   4 
+> data_extract(mtcars, cyl, name = "row.names")
+          Mazda RX4       Mazda RX4 Wag          Datsun 710      Hornet 4 Drive 
+                  6                   6                   4                   6 
+  Hornet Sportabout             Valiant          Duster 360           Merc 240D 
+                  8                   6                   8                   4 
+           Merc 230            Merc 280           Merc 280C          Merc 450SE 
+                  4                   6                   6                   8 
+         Merc 450SL         Merc 450SLC  Cadillac Fleetwood Lincoln Continental 
+                  8                   8                   8                   8 
+  Chrysler Imperial            Fiat 128         Honda Civic      Toyota Corolla 
+                  8                   4                   4                   4 
+      Toyota Corona    Dodge Challenger         AMC Javelin          Camaro Z28 
+                  4                   8                   8                   8 
+   Pontiac Firebird           Fiat X1-9       Porsche 914-2        Lotus Europa 
+                  8                   4                   4                   4 
+     Ford Pantera L        Ferrari Dino       Maserati Bora          Volvo 142E 
+                  8                   6                   8                   4 
+> 
+> # selecting multiple variables
+> head(data_extract(iris, starts_with("Sepal")))
+  Sepal.Length Sepal.Width
+1          5.1         3.5
+2          4.9         3.0
+3          4.7         3.2
+4          4.6         3.1
+5          5.0         3.6
+6          5.4         3.9
+> head(data_extract(iris, ends_with("Width")))
+  Sepal.Width Petal.Width
+1         3.5         0.2
+2         3.0         0.2
+3         3.2         0.2
+4         3.1         0.2
+5         3.6         0.2
+6         3.9         0.4
+> head(data_extract(iris, 2:4))
+  Sepal.Width Petal.Length Petal.Width
+1         3.5          1.4         0.2
+2         3.0          1.4         0.2
+3         3.2          1.3         0.2
+4         3.1          1.5         0.2
+5         3.6          1.4         0.2
+6         3.9          1.7         0.4
+> 
+> # select first of multiple variables
+> data_extract(iris, starts_with("Sepal"), extract = "first")
+  [1] 5.1 4.9 4.7 4.6 5.0 5.4 4.6 5.0 4.4 4.9 5.4 4.8 4.8 4.3 5.8 5.7 5.4 5.1
+ [19] 5.7 5.1 5.4 5.1 4.6 5.1 4.8 5.0 5.0 5.2 5.2 4.7 4.8 5.4 5.2 5.5 4.9 5.0
+ [37] 5.5 4.9 4.4 5.1 5.0 4.5 4.4 5.0 5.1 4.8 5.1 4.6 5.3 5.0 7.0 6.4 6.9 5.5
+ [55] 6.5 5.7 6.3 4.9 6.6 5.2 5.0 5.9 6.0 6.1 5.6 6.7 5.6 5.8 6.2 5.6 5.9 6.1
+ [73] 6.3 6.1 6.4 6.6 6.8 6.7 6.0 5.7 5.5 5.5 5.8 6.0 5.4 6.0 6.7 6.3 5.6 5.5
+ [91] 5.5 6.1 5.8 5.0 5.6 5.7 5.7 6.2 5.1 5.7 6.3 5.8 7.1 6.3 6.5 7.6 4.9 7.3
+[109] 6.7 7.2 6.5 6.4 6.8 5.7 5.8 6.4 6.5 7.7 7.7 6.0 6.9 5.6 7.7 6.3 6.7 7.2
+[127] 6.2 6.1 6.4 7.2 7.4 7.9 6.4 6.3 6.1 7.7 6.3 6.4 6.0 6.9 6.7 6.9 5.8 6.8
+[145] 6.7 6.7 6.3 6.5 6.2 5.9
+> 
+> # select first of multiple variables, return as data frame
+> head(data_extract(iris, starts_with("Sepal"), extract = "first", as_data_frame = TRUE))
+  Sepal.Length
+1          5.1
+2          4.9
+3          4.7
+4          4.6
+5          5.0
+6          5.4
+> 
+> 
+> 
+> cleanEx()
+> nameEx("data_group")
+> ### * data_group
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data_group
+> ### Title: Create a grouped data frame
+> ### Aliases: data_group data_ungroup
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (requireNamespace("poorman")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ data(efc)
++ suppressPackageStartupMessages(library(poorman, quietly = TRUE))
++ 
++ # total mean
++ efc %>%
++   summarize(mean_hours = mean(c12hour, na.rm = TRUE))
++ 
++ # mean by educational level
++ efc %>%
++   data_group(c172code) %>%
++   summarize(mean_hours = mean(c12hour, na.rm = TRUE))
++ ## Don't show: 
++ }) # examplesIf
+Loading required namespace: poorman
+> data(efc)
+> suppressPackageStartupMessages(library(poorman, quietly = TRUE))
+> efc %>% summarize(mean_hours = mean(c12hour, na.rm = TRUE))
+  mean_hours
+1   85.65306
+> efc %>% data_group(c172code) %>% summarize(mean_hours = mean(c12hour, 
++     na.rm = TRUE))
+# A tibble: 3 × 2
+# Groups:   c172code [3]
+  c172code mean_hours
+     <dbl>      <dbl>
+1        1       87.1
+2        2       94.0
+3        3       75  
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:poorman’
+
+> nameEx("data_match")
+> ### * data_match
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data_match
+> ### Title: Return filtered or sliced data frame, or row indices
+> ### Aliases: data_match data_filter
+> 
+> ### ** Examples
+> 
+> data_match(mtcars, data.frame(vs = 0, am = 1))
+                mpg cyl  disp  hp drat    wt  qsec vs am gear carb
+Mazda RX4      21.0   6 160.0 110 3.90 2.620 16.46  0  1    4    4
+Mazda RX4 Wag  21.0   6 160.0 110 3.90 2.875 17.02  0  1    4    4
+Porsche 914-2  26.0   4 120.3  91 4.43 2.140 16.70  0  1    5    2
+Ford Pantera L 15.8   8 351.0 264 4.22 3.170 14.50  0  1    5    4
+Ferrari Dino   19.7   6 145.0 175 3.62 2.770 15.50  0  1    5    6
+Maserati Bora  15.0   8 301.0 335 3.54 3.570 14.60  0  1    5    8
+> data_match(mtcars, data.frame(vs = 0, am = c(0, 1)))
+                     mpg cyl  disp  hp drat    wt  qsec vs am gear carb
+Mazda RX4           21.0   6 160.0 110 3.90 2.620 16.46  0  1    4    4
+Mazda RX4 Wag       21.0   6 160.0 110 3.90 2.875 17.02  0  1    4    4
+Hornet Sportabout   18.7   8 360.0 175 3.15 3.440 17.02  0  0    3    2
+Duster 360          14.3   8 360.0 245 3.21 3.570 15.84  0  0    3    4
+Merc 450SE          16.4   8 275.8 180 3.07 4.070 17.40  0  0    3    3
+Merc 450SL          17.3   8 275.8 180 3.07 3.730 17.60  0  0    3    3
+Merc 450SLC         15.2   8 275.8 180 3.07 3.780 18.00  0  0    3    3
+Cadillac Fleetwood  10.4   8 472.0 205 2.93 5.250 17.98  0  0    3    4
+Lincoln Continental 10.4   8 460.0 215 3.00 5.424 17.82  0  0    3    4
+Chrysler Imperial   14.7   8 440.0 230 3.23 5.345 17.42  0  0    3    4
+Dodge Challenger    15.5   8 318.0 150 2.76 3.520 16.87  0  0    3    2
+AMC Javelin         15.2   8 304.0 150 3.15 3.435 17.30  0  0    3    2
+Camaro Z28          13.3   8 350.0 245 3.73 3.840 15.41  0  0    3    4
+Pontiac Firebird    19.2   8 400.0 175 3.08 3.845 17.05  0  0    3    2
+Porsche 914-2       26.0   4 120.3  91 4.43 2.140 16.70  0  1    5    2
+Ford Pantera L      15.8   8 351.0 264 4.22 3.170 14.50  0  1    5    4
+Ferrari Dino        19.7   6 145.0 175 3.62 2.770 15.50  0  1    5    6
+Maserati Bora       15.0   8 301.0 335 3.54 3.570 14.60  0  1    5    8
+> 
+> # observations where "vs" is NOT 0 AND "am" is NOT 1
+> data_match(mtcars, data.frame(vs = 0, am = 1), match = "not")
+                mpg cyl  disp  hp drat    wt  qsec vs am gear carb
+Hornet 4 Drive 21.4   6 258.0 110 3.08 3.215 19.44  1  0    3    1
+Valiant        18.1   6 225.0 105 2.76 3.460 20.22  1  0    3    1
+Merc 240D      24.4   4 146.7  62 3.69 3.190 20.00  1  0    4    2
+Merc 230       22.8   4 140.8  95 3.92 3.150 22.90  1  0    4    2
+Merc 280       19.2   6 167.6 123 3.92 3.440 18.30  1  0    4    4
+Merc 280C      17.8   6 167.6 123 3.92 3.440 18.90  1  0    4    4
+Toyota Corona  21.5   4 120.1  97 3.70 2.465 20.01  1  0    3    1
+> # equivalent to
+> data_filter(mtcars, vs != 0 & am != 1)
+                mpg cyl  disp  hp drat    wt  qsec vs am gear carb
+Hornet 4 Drive 21.4   6 258.0 110 3.08 3.215 19.44  1  0    3    1
+Valiant        18.1   6 225.0 105 2.76 3.460 20.22  1  0    3    1
+Merc 240D      24.4   4 146.7  62 3.69 3.190 20.00  1  0    4    2
+Merc 230       22.8   4 140.8  95 3.92 3.150 22.90  1  0    4    2
+Merc 280       19.2   6 167.6 123 3.92 3.440 18.30  1  0    4    4
+Merc 280C      17.8   6 167.6 123 3.92 3.440 18.90  1  0    4    4
+Toyota Corona  21.5   4 120.1  97 3.70 2.465 20.01  1  0    3    1
+> 
+> # observations where EITHER "vs" is 0 OR "am" is 1
+> data_match(mtcars, data.frame(vs = 0, am = 1), match = "or")
+                     mpg cyl  disp  hp drat    wt  qsec vs am gear carb
+Mazda RX4           21.0   6 160.0 110 3.90 2.620 16.46  0  1    4    4
+Mazda RX4 Wag       21.0   6 160.0 110 3.90 2.875 17.02  0  1    4    4
+Hornet Sportabout   18.7   8 360.0 175 3.15 3.440 17.02  0  0    3    2
+Duster 360          14.3   8 360.0 245 3.21 3.570 15.84  0  0    3    4
+Merc 450SE          16.4   8 275.8 180 3.07 4.070 17.40  0  0    3    3
+Merc 450SL          17.3   8 275.8 180 3.07 3.730 17.60  0  0    3    3
+Merc 450SLC         15.2   8 275.8 180 3.07 3.780 18.00  0  0    3    3
+Cadillac Fleetwood  10.4   8 472.0 205 2.93 5.250 17.98  0  0    3    4
+Lincoln Continental 10.4   8 460.0 215 3.00 5.424 17.82  0  0    3    4
+Chrysler Imperial   14.7   8 440.0 230 3.23 5.345 17.42  0  0    3    4
+Dodge Challenger    15.5   8 318.0 150 2.76 3.520 16.87  0  0    3    2
+AMC Javelin         15.2   8 304.0 150 3.15 3.435 17.30  0  0    3    2
+Camaro Z28          13.3   8 350.0 245 3.73 3.840 15.41  0  0    3    4
+Pontiac Firebird    19.2   8 400.0 175 3.08 3.845 17.05  0  0    3    2
+Porsche 914-2       26.0   4 120.3  91 4.43 2.140 16.70  0  1    5    2
+Ford Pantera L      15.8   8 351.0 264 4.22 3.170 14.50  0  1    5    4
+Ferrari Dino        19.7   6 145.0 175 3.62 2.770 15.50  0  1    5    6
+Maserati Bora       15.0   8 301.0 335 3.54 3.570 14.60  0  1    5    8
+Datsun 710          22.8   4 108.0  93 3.85 2.320 18.61  1  1    4    1
+Fiat 128            32.4   4  78.7  66 4.08 2.200 19.47  1  1    4    1
+Honda Civic         30.4   4  75.7  52 4.93 1.615 18.52  1  1    4    2
+Toyota Corolla      33.9   4  71.1  65 4.22 1.835 19.90  1  1    4    1
+Fiat X1-9           27.3   4  79.0  66 4.08 1.935 18.90  1  1    4    1
+Lotus Europa        30.4   4  95.1 113 3.77 1.513 16.90  1  1    5    2
+Volvo 142E          21.4   4 121.0 109 4.11 2.780 18.60  1  1    4    2
+> # equivalent to
+> data_filter(mtcars, vs == 0 | am == 1)
+                     mpg cyl  disp  hp drat    wt  qsec vs am gear carb
+Mazda RX4           21.0   6 160.0 110 3.90 2.620 16.46  0  1    4    4
+Mazda RX4 Wag       21.0   6 160.0 110 3.90 2.875 17.02  0  1    4    4
+Datsun 710          22.8   4 108.0  93 3.85 2.320 18.61  1  1    4    1
+Hornet Sportabout   18.7   8 360.0 175 3.15 3.440 17.02  0  0    3    2
+Duster 360          14.3   8 360.0 245 3.21 3.570 15.84  0  0    3    4
+Merc 450SE          16.4   8 275.8 180 3.07 4.070 17.40  0  0    3    3
+Merc 450SL          17.3   8 275.8 180 3.07 3.730 17.60  0  0    3    3
+Merc 450SLC         15.2   8 275.8 180 3.07 3.780 18.00  0  0    3    3
+Cadillac Fleetwood  10.4   8 472.0 205 2.93 5.250 17.98  0  0    3    4
+Lincoln Continental 10.4   8 460.0 215 3.00 5.424 17.82  0  0    3    4
+Chrysler Imperial   14.7   8 440.0 230 3.23 5.345 17.42  0  0    3    4
+Fiat 128            32.4   4  78.7  66 4.08 2.200 19.47  1  1    4    1
+Honda Civic         30.4   4  75.7  52 4.93 1.615 18.52  1  1    4    2
+Toyota Corolla      33.9   4  71.1  65 4.22 1.835 19.90  1  1    4    1
+Dodge Challenger    15.5   8 318.0 150 2.76 3.520 16.87  0  0    3    2
+AMC Javelin         15.2   8 304.0 150 3.15 3.435 17.30  0  0    3    2
+Camaro Z28          13.3   8 350.0 245 3.73 3.840 15.41  0  0    3    4
+Pontiac Firebird    19.2   8 400.0 175 3.08 3.845 17.05  0  0    3    2
+Fiat X1-9           27.3   4  79.0  66 4.08 1.935 18.90  1  1    4    1
+Porsche 914-2       26.0   4 120.3  91 4.43 2.140 16.70  0  1    5    2
+Lotus Europa        30.4   4  95.1 113 3.77 1.513 16.90  1  1    5    2
+Ford Pantera L      15.8   8 351.0 264 4.22 3.170 14.50  0  1    5    4
+Ferrari Dino        19.7   6 145.0 175 3.62 2.770 15.50  0  1    5    6
+Maserati Bora       15.0   8 301.0 335 3.54 3.570 14.60  0  1    5    8
+Volvo 142E          21.4   4 121.0 109 4.11 2.780 18.60  1  1    4    2
+> 
+> # slice data frame by row indices
+> data_filter(mtcars, 5:10)
+                   mpg cyl  disp  hp drat   wt  qsec vs am gear carb
+Hornet Sportabout 18.7   8 360.0 175 3.15 3.44 17.02  0  0    3    2
+Valiant           18.1   6 225.0 105 2.76 3.46 20.22  1  0    3    1
+Duster 360        14.3   8 360.0 245 3.21 3.57 15.84  0  0    3    4
+Merc 240D         24.4   4 146.7  62 3.69 3.19 20.00  1  0    4    2
+Merc 230          22.8   4 140.8  95 3.92 3.15 22.90  1  0    4    2
+Merc 280          19.2   6 167.6 123 3.92 3.44 18.30  1  0    4    4
+> 
+> # Define a custom function containing data_filter()
+> my_filter <- function(data, variable) {
++   data_filter(data, variable)
++ }
+> my_filter(mtcars, "cyl == 6")
+                mpg cyl  disp  hp drat    wt  qsec vs am gear carb
+Mazda RX4      21.0   6 160.0 110 3.90 2.620 16.46  0  1    4    4
+Mazda RX4 Wag  21.0   6 160.0 110 3.90 2.875 17.02  0  1    4    4
+Hornet 4 Drive 21.4   6 258.0 110 3.08 3.215 19.44  1  0    3    1
+Valiant        18.1   6 225.0 105 2.76 3.460 20.22  1  0    3    1
+Merc 280       19.2   6 167.6 123 3.92 3.440 18.30  1  0    4    4
+Merc 280C      17.8   6 167.6 123 3.92 3.440 18.90  1  0    4    4
+Ferrari Dino   19.7   6 145.0 175 3.62 2.770 15.50  0  1    5    6
+> 
+> # Pass complete filter-condition as string.
+> my_filter <- function(data, condition) {
++   data_filter(data, condition)
++ }
+> my_filter(mtcars, "am != 0")
+                mpg cyl  disp  hp drat    wt  qsec vs am gear carb
+Mazda RX4      21.0   6 160.0 110 3.90 2.620 16.46  0  1    4    4
+Mazda RX4 Wag  21.0   6 160.0 110 3.90 2.875 17.02  0  1    4    4
+Datsun 710     22.8   4 108.0  93 3.85 2.320 18.61  1  1    4    1
+Fiat 128       32.4   4  78.7  66 4.08 2.200 19.47  1  1    4    1
+Honda Civic    30.4   4  75.7  52 4.93 1.615 18.52  1  1    4    2
+Toyota Corolla 33.9   4  71.1  65 4.22 1.835 19.90  1  1    4    1
+Fiat X1-9      27.3   4  79.0  66 4.08 1.935 18.90  1  1    4    1
+Porsche 914-2  26.0   4 120.3  91 4.43 2.140 16.70  0  1    5    2
+Lotus Europa   30.4   4  95.1 113 3.77 1.513 16.90  1  1    5    2
+Ford Pantera L 15.8   8 351.0 264 4.22 3.170 14.50  0  1    5    4
+Ferrari Dino   19.7   6 145.0 175 3.62 2.770 15.50  0  1    5    6
+Maserati Bora  15.0   8 301.0 335 3.54 3.570 14.60  0  1    5    8
+Volvo 142E     21.4   4 121.0 109 4.11 2.780 18.60  1  1    4    2
+> 
+> # string can also be used directly as argument
+> data_filter(mtcars, "am != 0")
+                mpg cyl  disp  hp drat    wt  qsec vs am gear carb
+Mazda RX4      21.0   6 160.0 110 3.90 2.620 16.46  0  1    4    4
+Mazda RX4 Wag  21.0   6 160.0 110 3.90 2.875 17.02  0  1    4    4
+Datsun 710     22.8   4 108.0  93 3.85 2.320 18.61  1  1    4    1
+Fiat 128       32.4   4  78.7  66 4.08 2.200 19.47  1  1    4    1
+Honda Civic    30.4   4  75.7  52 4.93 1.615 18.52  1  1    4    2
+Toyota Corolla 33.9   4  71.1  65 4.22 1.835 19.90  1  1    4    1
+Fiat X1-9      27.3   4  79.0  66 4.08 1.935 18.90  1  1    4    1
+Porsche 914-2  26.0   4 120.3  91 4.43 2.140 16.70  0  1    5    2
+Lotus Europa   30.4   4  95.1 113 3.77 1.513 16.90  1  1    5    2
+Ford Pantera L 15.8   8 351.0 264 4.22 3.170 14.50  0  1    5    4
+Ferrari Dino   19.7   6 145.0 175 3.62 2.770 15.50  0  1    5    6
+Maserati Bora  15.0   8 301.0 335 3.54 3.570 14.60  0  1    5    8
+Volvo 142E     21.4   4 121.0 109 4.11 2.780 18.60  1  1    4    2
+> 
+> # or as variable
+> fl <- "am != 0"
+> data_filter(mtcars, fl)
+                mpg cyl  disp  hp drat    wt  qsec vs am gear carb
+Mazda RX4      21.0   6 160.0 110 3.90 2.620 16.46  0  1    4    4
+Mazda RX4 Wag  21.0   6 160.0 110 3.90 2.875 17.02  0  1    4    4
+Datsun 710     22.8   4 108.0  93 3.85 2.320 18.61  1  1    4    1
+Fiat 128       32.4   4  78.7  66 4.08 2.200 19.47  1  1    4    1
+Honda Civic    30.4   4  75.7  52 4.93 1.615 18.52  1  1    4    2
+Toyota Corolla 33.9   4  71.1  65 4.22 1.835 19.90  1  1    4    1
+Fiat X1-9      27.3   4  79.0  66 4.08 1.935 18.90  1  1    4    1
+Porsche 914-2  26.0   4 120.3  91 4.43 2.140 16.70  0  1    5    2
+Lotus Europa   30.4   4  95.1 113 3.77 1.513 16.90  1  1    5    2
+Ford Pantera L 15.8   8 351.0 264 4.22 3.170 14.50  0  1    5    4
+Ferrari Dino   19.7   6 145.0 175 3.62 2.770 15.50  0  1    5    6
+Maserati Bora  15.0   8 301.0 335 3.54 3.570 14.60  0  1    5    8
+Volvo 142E     21.4   4 121.0 109 4.11 2.780 18.60  1  1    4    2
+> 
+> 
+> 
+> cleanEx()
+> nameEx("data_merge")
+> ### * data_merge
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data_merge
+> ### Title: Merge (join) two data frames, or a list of data frames
+> ### Aliases: data_merge data_join data_merge.data.frame data_merge.list
+> 
+> ### ** Examples
+> 
+> 
+> x <- data.frame(a = 1:3, b = c("a", "b", "c"), c = 5:7, id = 1:3)
+> y <- data.frame(c = 6:8, d = c("f", "g", "h"), e = 100:102, id = 2:4)
+> 
+> x
+  a b c id
+1 1 a 5  1
+2 2 b 6  2
+3 3 c 7  3
+> y
+  c d   e id
+1 6 f 100  2
+2 7 g 101  3
+3 8 h 102  4
+> 
+> # "by" will default to all shared columns, i.e. "c" and "id". new columns
+> # "d" and "e" will be copied from "y" to "x", but there are only two cases
+> # in "x" that have the same values for "c" and "id" in "y". only those cases
+> # have values in the copied columns, the other case gets "NA".
+> data_merge(x, y, join = "left")
+  a b c id    d   e
+3 1 a 5  1 <NA>  NA
+1 2 b 6  2    f 100
+2 3 c 7  3    g 101
+> 
+> # we change the id-value here
+> x <- data.frame(a = 1:3, b = c("a", "b", "c"), c = 5:7, id = 1:3)
+> y <- data.frame(c = 6:8, d = c("f", "g", "h"), e = 100:102, id = 3:5)
+> 
+> x
+  a b c id
+1 1 a 5  1
+2 2 b 6  2
+3 3 c 7  3
+> y
+  c d   e id
+1 6 f 100  3
+2 7 g 101  4
+3 8 h 102  5
+> 
+> # no cases in "y" have the same matching "c" and "id" as in "x", thus
+> # copied variables from "y" to "x" copy no values, all get NA.
+> data_merge(x, y, join = "left")
+  a b c id    d  e
+1 1 a 5  1 <NA> NA
+2 2 b 6  2 <NA> NA
+3 3 c 7  3 <NA> NA
+> 
+> # one case in "y" has a match in "id" with "x", thus values for this
+> # case from the remaining variables in "y" are copied to "x", all other
+> # values (cases) in those remaining variables get NA
+> data_merge(x, y, join = "left", by = "id")
+  a b id    d   e c.x c.y
+2 1 a  1 <NA>  NA   5  NA
+3 2 b  2 <NA>  NA   6  NA
+1 3 c  3    f 100   7   6
+> 
+> data(mtcars)
+> x <- mtcars[1:5, 1:3]
+> y <- mtcars[28:32, 4:6]
+> 
+> # add ID common column
+> x$id <- 1:5
+> y$id <- 3:7
+> 
+> # left-join, add new variables and copy values from y to x,
+> # where "id" values match
+> data_merge(x, y)
+   mpg cyl disp id  hp drat    wt
+4 21.0   6  160  1  NA   NA    NA
+5 21.0   6  160  2  NA   NA    NA
+1 22.8   4  108  3 113 3.77 1.513
+2 21.4   6  258  4 264 4.22 3.170
+3 18.7   8  360  5 175 3.62 2.770
+> 
+> # right-join, add new variables and copy values from x to y,
+> # where "id" values match
+> data_merge(x, y, join = "right")
+   mpg cyl disp id  hp drat    wt
+1 22.8   4  108  3 113 3.77 1.513
+2 21.4   6  258  4 264 4.22 3.170
+3 18.7   8  360  5 175 3.62 2.770
+4   NA  NA   NA  6 335 3.54 3.570
+5   NA  NA   NA  7 109 4.11 2.780
+> 
+> # full-join
+> data_merge(x, y, join = "full")
+   mpg cyl disp id  hp drat    wt
+4 21.0   6  160  1  NA   NA    NA
+5 21.0   6  160  2  NA   NA    NA
+1 22.8   4  108  3 113 3.77 1.513
+2 21.4   6  258  4 264 4.22 3.170
+3 18.7   8  360  5 175 3.62 2.770
+6   NA  NA   NA  6 335 3.54 3.570
+7   NA  NA   NA  7 109 4.11 2.780
+> 
+> 
+> data(mtcars)
+> x <- mtcars[1:5, 1:3]
+> y <- mtcars[28:32, c(1, 4:5)]
+> 
+> # add ID common column
+> x$id <- 1:5
+> y$id <- 3:7
+> 
+> # left-join, no matching rows (because columns "id" and "disp" are used)
+> # new variables get all NA values
+> data_merge(x, y)
+   mpg cyl disp id hp drat
+1 21.0   6  160  1 NA   NA
+2 21.0   6  160  2 NA   NA
+3 22.8   4  108  3 NA   NA
+4 21.4   6  258  4 NA   NA
+5 18.7   8  360  5 NA   NA
+> 
+> # one common value in "mpg", so one row from y is copied to x
+> data_merge(x, y, by = "mpg")
+   mpg cyl disp  hp drat id.x id.y
+2 21.0   6  160  NA   NA    1   NA
+3 21.0   6  160  NA   NA    2   NA
+4 22.8   4  108  NA   NA    3   NA
+1 21.4   6  258 109 4.11    4    7
+5 18.7   8  360  NA   NA    5   NA
+> 
+> # only keep rows with matching values in by-column
+> data_merge(x, y, join = "semi", by = "mpg")
+                mpg cyl disp id
+Hornet 4 Drive 21.4   6  258  4
+> 
+> # only keep rows with non-matching values in by-column
+> data_merge(x, y, join = "anti", by = "mpg")
+                   mpg cyl disp id
+Mazda RX4         21.0   6  160  1
+Mazda RX4 Wag     21.0   6  160  2
+Datsun 710        22.8   4  108  3
+Hornet Sportabout 18.7   8  360  5
+> 
+> # merge list of data frames. can be of different rows
+> x <- mtcars[1:5, 1:3]
+> y <- mtcars[28:31, 3:5]
+> z <- mtcars[11:18, c(1, 3:4, 6:8)]
+> x$id <- 1:5
+> y$id <- 4:7
+> z$id <- 3:10
+> data_merge(list(x, y, z), join = "bind", by = "id", id = "source")
+    mpg cyl  disp id  hp drat    wt  qsec vs source
+1  21.0   6 160.0  1  NA   NA    NA    NA NA      1
+2  21.0   6 160.0  2  NA   NA    NA    NA NA      1
+3  22.8   4 108.0  3  NA   NA    NA    NA NA      1
+4  21.4   6 258.0  4  NA   NA    NA    NA NA      1
+5  18.7   8 360.0  5  NA   NA    NA    NA NA      1
+6    NA  NA  95.1  4 113 3.77    NA    NA NA      2
+7    NA  NA 351.0  5 264 4.22    NA    NA NA      2
+8    NA  NA 145.0  6 175 3.62    NA    NA NA      2
+9    NA  NA 301.0  7 335 3.54    NA    NA NA      2
+10 17.8  NA 167.6  3 123   NA 3.440 18.90  1      3
+11 16.4  NA 275.8  4 180   NA 4.070 17.40  0      3
+12 17.3  NA 275.8  5 180   NA 3.730 17.60  0      3
+13 15.2  NA 275.8  6 180   NA 3.780 18.00  0      3
+14 10.4  NA 472.0  7 205   NA 5.250 17.98  0      3
+15 10.4  NA 460.0  8 215   NA 5.424 17.82  0      3
+16 14.7  NA 440.0  9 230   NA 5.345 17.42  0      3
+17 32.4  NA  78.7 10  66   NA 2.200 19.47  1      3
+> 
+> 
+> 
+> cleanEx()
+> nameEx("data_modify")
+> ### * data_modify
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data_modify
+> ### Title: Create new variables in a data frame
+> ### Aliases: data_modify data_modify.data.frame
+> 
+> ### ** Examples
+> 
+> data(efc)
+> new_efc <- data_modify(
++   efc,
++   c12hour_c = center(c12hour),
++   c12hour_z = c12hour_c / sd(c12hour, na.rm = TRUE),
++   c12hour_z2 = standardize(c12hour)
++ )
+> head(new_efc)
+  c12hour e16sex e42dep c172code neg_c_7 c12hour_c  c12hour_z c12hour_z2
+1      16      2      3        2      12 -69.65306 -1.0466657 -1.0466657
+2     148      2      3        2      20  62.34694  0.9368777  0.9368777
+3      70      2      3        1      11 -15.65306 -0.2352161 -0.2352161
+4      NA      2   <NA>        2      10        NA         NA         NA
+5     168      2      4        2      12  82.34694  1.2374146  1.2374146
+6      16      2      4        2      19 -69.65306 -1.0466657 -1.0466657
+> 
+> # using strings instead of literal expressions
+> new_efc <- data_modify(
++   efc,
++   "c12hour_c = center(c12hour)",
++   "c12hour_z = c12hour_c / sd(c12hour, na.rm = TRUE)",
++   "c12hour_z2 = standardize(c12hour)"
++ )
+> head(new_efc)
+  c12hour e16sex e42dep c172code neg_c_7 c12hour_c  c12hour_z c12hour_z2
+1      16      2      3        2      12 -69.65306 -1.0466657 -1.0466657
+2     148      2      3        2      20  62.34694  0.9368777  0.9368777
+3      70      2      3        1      11 -15.65306 -0.2352161 -0.2352161
+4      NA      2   <NA>        2      10        NA         NA         NA
+5     168      2      4        2      12  82.34694  1.2374146  1.2374146
+6      16      2      4        2      19 -69.65306 -1.0466657 -1.0466657
+> 
+> # using character strings, provided as variable
+> stand <- "c12hour_c / sd(c12hour, na.rm = TRUE)"
+> new_efc <- data_modify(
++   efc,
++   c12hour_c = center(c12hour),
++   c12hour_z = stand
++ )
+> head(new_efc)
+  c12hour e16sex e42dep c172code neg_c_7 c12hour_c  c12hour_z
+1      16      2      3        2      12 -69.65306 -1.0466657
+2     148      2      3        2      20  62.34694  0.9368777
+3      70      2      3        1      11 -15.65306 -0.2352161
+4      NA      2   <NA>        2      10        NA         NA
+5     168      2      4        2      12  82.34694  1.2374146
+6      16      2      4        2      19 -69.65306 -1.0466657
+> 
+> # providing expressions as character vector
+> new_exp <- c(
++   "c12hour_c = center(c12hour)",
++   "c12hour_z = c12hour_c / sd(c12hour, na.rm = TRUE)"
++ )
+> new_efc <- data_modify(efc, new_exp)
+> head(new_efc)
+  c12hour e16sex e42dep c172code neg_c_7 c12hour_c  c12hour_z
+1      16      2      3        2      12 -69.65306 -1.0466657
+2     148      2      3        2      20  62.34694  0.9368777
+3      70      2      3        1      11 -15.65306 -0.2352161
+4      NA      2   <NA>        2      10        NA         NA
+5     168      2      4        2      12  82.34694  1.2374146
+6      16      2      4        2      19 -69.65306 -1.0466657
+> 
+> # attributes - in this case, value and variable labels - are preserved
+> str(new_efc)
+'data.frame':	100 obs. of  7 variables:
+ $ c12hour  : num  16 148 70 NA 168 16 161 110 28 40 ...
+  ..- attr(*, "label")= chr "average number of hours of care per week"
+ $ e16sex   : num  2 2 2 2 2 2 1 2 2 2 ...
+  ..- attr(*, "label")= chr "elder's gender"
+  ..- attr(*, "labels")= Named num [1:2] 1 2
+  .. ..- attr(*, "names")= chr [1:2] "male" "female"
+ $ e42dep   : Factor w/ 4 levels "1","2","3","4": 3 3 3 NA 4 4 4 4 4 4 ...
+  ..- attr(*, "labels")= Named num [1:4] 1 2 3 4
+  .. ..- attr(*, "names")= chr [1:4] "independent" "slightly dependent" "moderately dependent" "severely dependent"
+  ..- attr(*, "label")= chr "elder's dependency"
+ $ c172code : num  2 2 1 2 2 2 2 2 NA 2 ...
+  ..- attr(*, "label")= chr "carer's level of education"
+  ..- attr(*, "labels")= Named num [1:3] 1 2 3
+  .. ..- attr(*, "names")= chr [1:3] "low level of education" "intermediate level of education" "high level of education"
+ $ neg_c_7  : num  12 20 11 10 12 19 15 11 15 10 ...
+  ..- attr(*, "label")= chr "Negative impact with 7 items"
+ $ c12hour_c: 'dw_transformer' num  -69.7 62.3 -15.7 NA 82.3 ...
+  ..- attr(*, "center")= num 85.7
+  ..- attr(*, "scale")= num 1
+  ..- attr(*, "robust")= logi FALSE
+  ..- attr(*, "label")= chr "average number of hours of care per week"
+ $ c12hour_z: 'dw_transformer' num  -1.047 0.937 -0.235 NA 1.237 ...
+  ..- attr(*, "center")= num 85.7
+  ..- attr(*, "scale")= num 1
+  ..- attr(*, "robust")= logi FALSE
+  ..- attr(*, "label")= chr "average number of hours of care per week"
+> 
+> # overwrite existing variable, remove old variable
+> out <- data_modify(iris, Petal.Length = 1 / Sepal.Length, Sepal.Length = NULL)
+> head(out)
+  Sepal.Width Petal.Length Petal.Width Species
+1         3.5    0.1960784         0.2  setosa
+2         3.0    0.2040816         0.2  setosa
+3         3.2    0.2127660         0.2  setosa
+4         3.1    0.2173913         0.2  setosa
+5         3.6    0.2000000         0.2  setosa
+6         3.9    0.1851852         0.4  setosa
+> 
+> # works on grouped data
+> grouped_efc <- data_group(efc, "c172code")
+> new_efc <- data_modify(
++   grouped_efc,
++   c12hour_c = center(c12hour),
++   c12hour_z = c12hour_c / sd(c12hour, na.rm = TRUE),
++   c12hour_z2 = standardize(c12hour),
++   id = 1:n()
++ )
+> head(new_efc)
+# A tibble: 6 × 9
+# Groups:   c172code [2]
+  c12hour e16sex e42dep c172code neg_c_7 c12hour_c c12hour_z c12hour_z2    id
+    <dbl>  <dbl> <fct>     <dbl>   <dbl>     <dbl>     <dbl>      <dbl> <int>
+1      16      2 3             2      12     -78.0    -1.16      -1.16      1
+2     148      2 3             2      20      54.0     0.804      0.804     2
+3      70      2 3             1      11     -17.1    -0.250     -0.250     1
+4      NA      2 <NA>          2      10      NA      NA         NA         3
+5     168      2 4             2      12      74.0     1.10       1.10      4
+6      16      2 4             2      19     -78.0    -1.16      -1.16      5
+> 
+> # works from inside functions
+> foo <- function(data, z) {
++   head(data_modify(data, z))
++ }
+> foo(iris, "var_a = Sepal.Width / 10")
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species var_a
+1          5.1         3.5          1.4         0.2  setosa  0.35
+2          4.9         3.0          1.4         0.2  setosa  0.30
+3          4.7         3.2          1.3         0.2  setosa  0.32
+4          4.6         3.1          1.5         0.2  setosa  0.31
+5          5.0         3.6          1.4         0.2  setosa  0.36
+6          5.4         3.9          1.7         0.4  setosa  0.39
+> 
+> new_exp <- c("SW_double = 2 * Sepal.Width", "SW_fraction = SW_double / 10")
+> foo(iris, new_exp)
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species SW_double
+1          5.1         3.5          1.4         0.2  setosa       7.0
+2          4.9         3.0          1.4         0.2  setosa       6.0
+3          4.7         3.2          1.3         0.2  setosa       6.4
+4          4.6         3.1          1.5         0.2  setosa       6.2
+5          5.0         3.6          1.4         0.2  setosa       7.2
+6          5.4         3.9          1.7         0.4  setosa       7.8
+  SW_fraction
+1        0.70
+2        0.60
+3        0.64
+4        0.62
+5        0.72
+6        0.78
+> 
+> # modify at specific positions or if condition is met
+> d <- iris[1:5, ]
+> data_modify(d, .at = "Species", .modify = as.numeric)
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+1          5.1         3.5          1.4         0.2       1
+2          4.9         3.0          1.4         0.2       1
+3          4.7         3.2          1.3         0.2       1
+4          4.6         3.1          1.5         0.2       1
+5          5.0         3.6          1.4         0.2       1
+> data_modify(d, .if = is.factor, .modify = as.numeric)
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+1          5.1         3.5          1.4         0.2       1
+2          4.9         3.0          1.4         0.2       1
+3          4.7         3.2          1.3         0.2       1
+4          4.6         3.1          1.5         0.2       1
+5          5.0         3.6          1.4         0.2       1
+> 
+> # can be combined with dots
+> data_modify(d, new_length = Petal.Length * 2, .at = "Species", .modify = as.numeric)
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species new_length
+1          5.1         3.5          1.4         0.2       1        2.8
+2          4.9         3.0          1.4         0.2       1        2.8
+3          4.7         3.2          1.3         0.2       1        2.6
+4          4.6         3.1          1.5         0.2       1        3.0
+5          5.0         3.6          1.4         0.2       1        2.8
+> 
+> # new variables used in `.at` or `.if`
+> data_modify(
++   d,
++   new_length = Petal.Length * 2,
++   .at = c("Petal.Length", "new_length"),
++   .modify = round
++ )
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species new_length
+1          5.1         3.5            1         0.2  setosa          3
+2          4.9         3.0            1         0.2  setosa          3
+3          4.7         3.2            1         0.2  setosa          3
+4          4.6         3.1            2         0.2  setosa          3
+5          5.0         3.6            1         0.2  setosa          3
+> 
+> # combine "extract_column_names()" and ".at" argument
+> out <- data_modify(
++   d,
++   .at = extract_column_names(d, select = starts_with("Sepal")),
++   .modify = as.factor
++ )
+> # "Sepal.Length" and "Sepal.Width" are now factors
+> str(out)
+'data.frame':	5 obs. of  5 variables:
+ $ Sepal.Length: Factor w/ 5 levels "4.6","4.7","4.9",..: 5 3 2 1 4
+ $ Sepal.Width : Factor w/ 5 levels "3","3.1","3.2",..: 4 1 3 2 5
+ $ Petal.Length: num  1.4 1.4 1.3 1.5 1.4
+ $ Petal.Width : num  0.2 0.2 0.2 0.2 0.2
+ $ Species     : Factor w/ 3 levels "setosa","versicolor",..: 1 1 1 1 1
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("data_partition")
+> ### * data_partition
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data_partition
+> ### Title: Partition data
+> ### Aliases: data_partition
+> 
+> ### ** Examples
+> 
+> data(iris)
+> out <- data_partition(iris, proportion = 0.9)
+> out$test
+   Sepal.Length Sepal.Width Petal.Length Petal.Width    Species .row_id
+1           5.0         3.6          1.4         0.2     setosa       5
+2           5.0         3.4          1.5         0.2     setosa       8
+3           5.4         3.7          1.5         0.2     setosa      11
+4           5.0         3.2          1.2         0.2     setosa      36
+5           4.8         3.0          1.4         0.3     setosa      46
+6           5.1         3.8          1.6         0.2     setosa      47
+7           6.3         3.3          4.7         1.6 versicolor      57
+8           5.6         3.0          4.5         1.5 versicolor      67
+9           6.2         2.2          4.5         1.5 versicolor      69
+10          6.1         2.8          4.0         1.3 versicolor      72
+11          5.7         2.6          3.5         1.0 versicolor      80
+12          5.5         2.5          4.0         1.3 versicolor      90
+13          6.5         3.0          5.5         1.8  virginica     117
+14          6.1         3.0          4.9         1.8  virginica     128
+15          6.0         3.0          4.8         1.8  virginica     139
+> nrow(out$p_0.9)
+[1] 135
+> 
+> # Stratify by group (equal proportions of each species)
+> out <- data_partition(iris, proportion = 0.9, by = "Species")
+> out$test
+   Sepal.Length Sepal.Width Petal.Length Petal.Width    Species .row_id
+1           4.6         3.4          1.4         0.3     setosa       7
+2           5.1         3.7          1.5         0.4     setosa      22
+3           4.8         3.4          1.9         0.2     setosa      25
+4           5.0         3.4          1.6         0.4     setosa      27
+5           4.9         3.6          1.4         0.1     setosa      38
+6           5.0         2.0          3.5         1.0 versicolor      61
+7           6.2         2.2          4.5         1.5 versicolor      69
+8           5.5         2.4          3.7         1.0 versicolor      82
+9           5.7         2.9          4.2         1.3 versicolor      97
+10          6.2         2.9          4.3         1.3 versicolor      98
+11          7.2         3.2          6.0         1.8  virginica     126
+12          7.2         3.0          5.8         1.6  virginica     130
+13          7.4         2.8          6.1         1.9  virginica     131
+14          6.9         3.1          5.1         2.3  virginica     142
+15          6.2         3.4          5.4         2.3  virginica     149
+> 
+> # Create multiple partitions
+> out <- data_partition(iris, proportion = c(0.3, 0.3))
+> lapply(out, head)
+$p_0.3
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species .row_id
+1          4.7         3.2          1.3         0.2  setosa       3
+2          4.6         3.1          1.5         0.2  setosa       4
+3          5.0         3.6          1.4         0.2  setosa       5
+4          5.1         3.8          1.5         0.3  setosa      20
+5          5.1         3.7          1.5         0.4  setosa      22
+6          4.6         3.6          1.0         0.2  setosa      23
+
+$p_0.3
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species .row_id
+1          5.1         3.5          1.4         0.2  setosa       1
+2          4.9         3.0          1.4         0.2  setosa       2
+3          5.0         3.4          1.5         0.2  setosa       8
+4          4.4         2.9          1.4         0.2  setosa       9
+5          5.4         3.7          1.5         0.2  setosa      11
+6          5.1         3.5          1.4         0.3  setosa      18
+
+$test
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species .row_id
+1          5.4         3.9          1.7         0.4  setosa       6
+2          4.6         3.4          1.4         0.3  setosa       7
+3          4.9         3.1          1.5         0.1  setosa      10
+4          4.8         3.4          1.6         0.2  setosa      12
+5          4.8         3.0          1.4         0.1  setosa      13
+6          4.3         3.0          1.1         0.1  setosa      14
+
+> 
+> # Create multiple partitions, stratified by group - 30% equally sampled
+> # from species in first training set, 50% in second training set and
+> # remaining 20% equally sampled from each species in test set.
+> out <- data_partition(iris, proportion = c(0.3, 0.5), by = "Species")
+> lapply(out, function(i) table(i$Species))
+$p_0.3
+
+    setosa versicolor  virginica 
+        15         15         15 
+
+$p_0.5
+
+    setosa versicolor  virginica 
+        25         25         25 
+
+$test
+
+    setosa versicolor  virginica 
+        10         10         10 
+
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("data_peek")
+> ### * data_peek
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data_peek
+> ### Title: Peek at values and type of variables in a data frame
+> ### Aliases: data_peek data_peek.data.frame
+> 
+> ### ** Examples
+> 
+> data(efc)
+> data_peek(efc)
+Data frame with 100 rows and 5 variables
+
+Variable | Type    | Values                                           
+----------------------------------------------------------------------
+c12hour  | numeric | 16, 148, 70, NA, 168, 16, 161, 110, 28, 40, ...  
+e16sex   | numeric | 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 1, 2, 2, 2, 2, ... 
+e42dep   | factor  | 3, 3, 3, NA, 4, 4, 4, 4, 4, 4, 4, 3, 4, 3, 3, ...
+c172code | numeric | 2, 2, 1, 2, 2, 2, 2, 2, NA, 2, 2, 2, 3, 1, 3, ...
+neg_c_7  | numeric | 12, 20, 11, 10, 12, 19, 15, 11, 15, 10, 28, ...  
+> # show variables two to four
+> data_peek(efc, select = 2:4)
+Data frame with 100 rows and 5 variables
+
+Variable | Type    | Values                                           
+----------------------------------------------------------------------
+e16sex   | numeric | 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 1, 2, 2, 2, 2, ... 
+e42dep   | factor  | 3, 3, 3, NA, 4, 4, 4, 4, 4, 4, 4, 3, 4, 3, 3, ...
+c172code | numeric | 2, 2, 1, 2, 2, 2, 2, 2, NA, 2, 2, 2, 3, 1, 3, ...
+> 
+> 
+> 
+> cleanEx()
+> nameEx("data_prefix_suffix")
+> ### * data_prefix_suffix
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data_addprefix
+> ### Title: Add a prefix or suffix to column names
+> ### Aliases: data_addprefix data_addsuffix
+> 
+> ### ** Examples
+> 
+> # Add prefix / suffix to all columns
+> head(data_addprefix(iris, "NEW_"))
+  NEW_Sepal.Length NEW_Sepal.Width NEW_Petal.Length NEW_Petal.Width NEW_Species
+1              5.1             3.5              1.4             0.2      setosa
+2              4.9             3.0              1.4             0.2      setosa
+3              4.7             3.2              1.3             0.2      setosa
+4              4.6             3.1              1.5             0.2      setosa
+5              5.0             3.6              1.4             0.2      setosa
+6              5.4             3.9              1.7             0.4      setosa
+> head(data_addsuffix(iris, "_OLD"))
+  Sepal.Length_OLD Sepal.Width_OLD Petal.Length_OLD Petal.Width_OLD Species_OLD
+1              5.1             3.5              1.4             0.2      setosa
+2              4.9             3.0              1.4             0.2      setosa
+3              4.7             3.2              1.3             0.2      setosa
+4              4.6             3.1              1.5             0.2      setosa
+5              5.0             3.6              1.4             0.2      setosa
+6              5.4             3.9              1.7             0.4      setosa
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("data_relocate")
+> ### * data_relocate
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data_relocate
+> ### Title: Relocate (reorder) columns of a data frame
+> ### Aliases: data_relocate data_reorder data_remove
+> 
+> ### ** Examples
+> 
+> # Reorder columns
+> head(data_relocate(iris, select = "Species", before = "Sepal.Length"))
+  Species Sepal.Length Sepal.Width Petal.Length Petal.Width
+1  setosa          5.1         3.5          1.4         0.2
+2  setosa          4.9         3.0          1.4         0.2
+3  setosa          4.7         3.2          1.3         0.2
+4  setosa          4.6         3.1          1.5         0.2
+5  setosa          5.0         3.6          1.4         0.2
+6  setosa          5.4         3.9          1.7         0.4
+> head(data_relocate(iris, select = "Species", before = "Sepal.Width"))
+  Sepal.Length Species Sepal.Width Petal.Length Petal.Width
+1          5.1  setosa         3.5          1.4         0.2
+2          4.9  setosa         3.0          1.4         0.2
+3          4.7  setosa         3.2          1.3         0.2
+4          4.6  setosa         3.1          1.5         0.2
+5          5.0  setosa         3.6          1.4         0.2
+6          5.4  setosa         3.9          1.7         0.4
+> head(data_relocate(iris, select = "Sepal.Width", after = "Species"))
+  Sepal.Length Petal.Length Petal.Width Species Sepal.Width
+1          5.1          1.4         0.2  setosa         3.5
+2          4.9          1.4         0.2  setosa         3.0
+3          4.7          1.3         0.2  setosa         3.2
+4          4.6          1.5         0.2  setosa         3.1
+5          5.0          1.4         0.2  setosa         3.6
+6          5.4          1.7         0.4  setosa         3.9
+> # which is same as
+> head(data_relocate(iris, select = "Sepal.Width", after = -1))
+  Sepal.Length Petal.Length Petal.Width Species Sepal.Width
+1          5.1          1.4         0.2  setosa         3.5
+2          4.9          1.4         0.2  setosa         3.0
+3          4.7          1.3         0.2  setosa         3.2
+4          4.6          1.5         0.2  setosa         3.1
+5          5.0          1.4         0.2  setosa         3.6
+6          5.4          1.7         0.4  setosa         3.9
+> 
+> # Reorder multiple columns
+> head(data_relocate(iris, select = c("Species", "Petal.Length"), after = "Sepal.Width"))
+  Sepal.Length Sepal.Width Species Petal.Length Petal.Width
+1          5.1         3.5  setosa          1.4         0.2
+2          4.9         3.0  setosa          1.4         0.2
+3          4.7         3.2  setosa          1.3         0.2
+4          4.6         3.1  setosa          1.5         0.2
+5          5.0         3.6  setosa          1.4         0.2
+6          5.4         3.9  setosa          1.7         0.4
+> # which is same as
+> head(data_relocate(iris, select = c("Species", "Petal.Length"), after = 2))
+  Sepal.Length Sepal.Width Species Petal.Length Petal.Width
+1          5.1         3.5  setosa          1.4         0.2
+2          4.9         3.0  setosa          1.4         0.2
+3          4.7         3.2  setosa          1.3         0.2
+4          4.6         3.1  setosa          1.5         0.2
+5          5.0         3.6  setosa          1.4         0.2
+6          5.4         3.9  setosa          1.7         0.4
+> 
+> # Reorder columns
+> head(data_reorder(iris, c("Species", "Sepal.Length")))
+  Species Sepal.Length Sepal.Width Petal.Length Petal.Width
+1  setosa          5.1         3.5          1.4         0.2
+2  setosa          4.9         3.0          1.4         0.2
+3  setosa          4.7         3.2          1.3         0.2
+4  setosa          4.6         3.1          1.5         0.2
+5  setosa          5.0         3.6          1.4         0.2
+6  setosa          5.4         3.9          1.7         0.4
+> 
+> # Remove columns
+> head(data_remove(iris, "Sepal.Length"))
+  Sepal.Width Petal.Length Petal.Width Species
+1         3.5          1.4         0.2  setosa
+2         3.0          1.4         0.2  setosa
+3         3.2          1.3         0.2  setosa
+4         3.1          1.5         0.2  setosa
+5         3.6          1.4         0.2  setosa
+6         3.9          1.7         0.4  setosa
+> head(data_remove(iris, starts_with("Sepal")))
+  Petal.Length Petal.Width Species
+1          1.4         0.2  setosa
+2          1.4         0.2  setosa
+3          1.3         0.2  setosa
+4          1.5         0.2  setosa
+5          1.4         0.2  setosa
+6          1.7         0.4  setosa
+> 
+> 
+> 
+> cleanEx()
+> nameEx("data_rename")
+> ### * data_rename
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data_rename
+> ### Title: Rename columns and variable names
+> ### Aliases: data_rename data_rename_rows
+> 
+> ### ** Examples
+> 
+> # Rename columns
+> head(data_rename(iris, "Sepal.Length", "length"))
+  length Sepal.Width Petal.Length Petal.Width Species
+1    5.1         3.5          1.4         0.2  setosa
+2    4.9         3.0          1.4         0.2  setosa
+3    4.7         3.2          1.3         0.2  setosa
+4    4.6         3.1          1.5         0.2  setosa
+5    5.0         3.6          1.4         0.2  setosa
+6    5.4         3.9          1.7         0.4  setosa
+> 
+> # Use named vector to rename
+> head(data_rename(iris, c(length = "Sepal.Length", width = "Sepal.Width")))
+  length width Petal.Length Petal.Width Species
+1    5.1   3.5          1.4         0.2  setosa
+2    4.9   3.0          1.4         0.2  setosa
+3    4.7   3.2          1.3         0.2  setosa
+4    4.6   3.1          1.5         0.2  setosa
+5    5.0   3.6          1.4         0.2  setosa
+6    5.4   3.9          1.7         0.4  setosa
+> 
+> # Change all
+> head(data_rename(iris, replacement = paste0("Var", 1:5)))
+  Var1 Var2 Var3 Var4   Var5
+1  5.1  3.5  1.4  0.2 setosa
+2  4.9  3.0  1.4  0.2 setosa
+3  4.7  3.2  1.3  0.2 setosa
+4  4.6  3.1  1.5  0.2 setosa
+5  5.0  3.6  1.4  0.2 setosa
+6  5.4  3.9  1.7  0.4 setosa
+> 
+> # Use glue-styled patterns
+> head(data_rename(mtcars[1:3], c("mpg", "cyl", "disp"), "formerly_{col}"))
+                  formerly_mpg formerly_cyl formerly_disp
+Mazda RX4                 21.0            6           160
+Mazda RX4 Wag             21.0            6           160
+Datsun 710                22.8            4           108
+Hornet 4 Drive            21.4            6           258
+Hornet Sportabout         18.7            8           360
+Valiant                   18.1            6           225
+> head(data_rename(mtcars[1:3], c("mpg", "cyl", "disp"), "{col}_is_column_{n}"))
+                  mpg_is_column_1 cyl_is_column_2 disp_is_column_3
+Mazda RX4                    21.0               6              160
+Mazda RX4 Wag                21.0               6              160
+Datsun 710                   22.8               4              108
+Hornet 4 Drive               21.4               6              258
+Hornet Sportabout            18.7               8              360
+Valiant                      18.1               6              225
+> head(data_rename(mtcars[1:3], c("mpg", "cyl", "disp"), "new_{letter}"))
+                  new_a new_b new_c
+Mazda RX4          21.0     6   160
+Mazda RX4 Wag      21.0     6   160
+Datsun 710         22.8     4   108
+Hornet 4 Drive     21.4     6   258
+Hornet Sportabout  18.7     8   360
+Valiant            18.1     6   225
+> 
+> # User-defined glue-styled patterns from objects in environment
+> x <- c("hi", "there", "!")
+> head(data_rename(mtcars[1:3], c("mpg", "cyl", "disp"), "col_{x}"))
+                  col_hi col_there col_!
+Mazda RX4           21.0         6   160
+Mazda RX4 Wag       21.0         6   160
+Datsun 710          22.8         4   108
+Hornet 4 Drive      21.4         6   258
+Hornet Sportabout   18.7         8   360
+Valiant             18.1         6   225
+> 
+> 
+> 
+> cleanEx()
+> nameEx("data_replicate")
+> ### * data_replicate
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data_replicate
+> ### Title: Expand (i.e. replicate rows) a data frame
+> ### Aliases: data_replicate
+> 
+> ### ** Examples
+> 
+> data(mtcars)
+> data_replicate(head(mtcars), "carb")
+    mpg cyl disp  hp drat    wt  qsec vs am gear
+1  21.0   6  160 110 3.90 2.620 16.46  0  1    4
+2  21.0   6  160 110 3.90 2.620 16.46  0  1    4
+3  21.0   6  160 110 3.90 2.620 16.46  0  1    4
+4  21.0   6  160 110 3.90 2.620 16.46  0  1    4
+5  21.0   6  160 110 3.90 2.875 17.02  0  1    4
+6  21.0   6  160 110 3.90 2.875 17.02  0  1    4
+7  21.0   6  160 110 3.90 2.875 17.02  0  1    4
+8  21.0   6  160 110 3.90 2.875 17.02  0  1    4
+9  22.8   4  108  93 3.85 2.320 18.61  1  1    4
+10 21.4   6  258 110 3.08 3.215 19.44  1  0    3
+11 18.7   8  360 175 3.15 3.440 17.02  0  0    3
+12 18.7   8  360 175 3.15 3.440 17.02  0  0    3
+13 18.1   6  225 105 2.76 3.460 20.22  1  0    3
+> 
+> 
+> 
+> cleanEx()
+> nameEx("data_restoretype")
+> ### * data_restoretype
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data_restoretype
+> ### Title: Restore the type of columns according to a reference data frame
+> ### Aliases: data_restoretype
+> 
+> ### ** Examples
+> 
+> data <- data.frame(
++   Sepal.Length = c("1", "3", "2"),
++   Species = c("setosa", "versicolor", "setosa"),
++   New = c("1", "3", "4")
++ )
+> 
+> fixed <- data_restoretype(data, reference = iris)
+> summary(fixed)
+  Sepal.Length       Species      New           
+ Min.   :1.0   setosa    :2   Length:3          
+ 1st Qu.:1.5   versicolor:1   Class :character  
+ Median :2.0   virginica :0   Mode  :character  
+ Mean   :2.0                                    
+ 3rd Qu.:2.5                                    
+ Max.   :3.0                                    
+> 
+> 
+> 
+> cleanEx()
+> nameEx("data_rotate")
+> ### * data_rotate
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data_rotate
+> ### Title: Rotate a data frame
+> ### Aliases: data_rotate data_transpose
+> 
+> ### ** Examples
+> 
+> x <- mtcars[1:3, 1:4]
+> 
+> x
+               mpg cyl disp  hp
+Mazda RX4     21.0   6  160 110
+Mazda RX4 Wag 21.0   6  160 110
+Datsun 710    22.8   4  108  93
+> 
+> data_rotate(x)
+     Mazda RX4 Mazda RX4 Wag Datsun 710
+mpg         21            21       22.8
+cyl          6             6        4.0
+disp       160           160      108.0
+hp         110           110       93.0
+> data_rotate(x, rownames = "property")
+  property Mazda RX4 Mazda RX4 Wag Datsun 710
+1      mpg        21            21       22.8
+2      cyl         6             6        4.0
+3     disp       160           160      108.0
+4       hp       110           110       93.0
+> 
+> # use values in 1. column as column name
+> data_rotate(x, colnames = TRUE)
+      21  21 22.8
+cyl    6   6    4
+disp 160 160  108
+hp   110 110   93
+> data_rotate(x, rownames = "property", colnames = TRUE)
+  property  21  21 22.8
+1      cyl   6   6    4
+2     disp 160 160  108
+3       hp 110 110   93
+> 
+> # use either first column or specific column for column names
+> x <- data.frame(a = 1:5, b = 11:15, c = 21:25)
+> data_rotate(x, colnames = TRUE)
+   1  2  3  4  5
+b 11 12 13 14 15
+c 21 22 23 24 25
+> data_rotate(x, colnames = "c")
+  21 22 23 24 25
+a  1  2  3  4  5
+b 11 12 13 14 15
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("data_seek")
+> ### * data_seek
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data_seek
+> ### Title: Find variables by their names, variable or value labels
+> ### Aliases: data_seek
+> 
+> ### ** Examples
+> 
+> # seek variables with "Length" in variable name or labels
+> data_seek(iris, "Length")
+index |       column |       labels
+-----------------------------------
+    1 | Sepal.Length | Sepal.Length
+    3 | Petal.Length | Petal.Length
+> 
+> # seek variables with "dependency" in names or labels
+> # column "e42dep" has a label-attribute "elder's dependency"
+> data(efc)
+> data_seek(efc, "dependency")
+index | column |             labels
+-----------------------------------
+    3 | e42dep | elder's dependency
+> 
+> # "female" only appears as value label attribute - default search is in
+> # variable names and labels only, so no match
+> data_seek(efc, "female")
+No matches found.
+> # when we seek in all sources, we find the variable "e16sex"
+> data_seek(efc, "female", seek = "all")
+index | column |         labels
+-------------------------------
+    2 | e16sex | elder's gender
+> 
+> # typo, no match
+> data_seek(iris, "Lenght")
+No matches found.
+> # typo, fuzzy match
+> data_seek(iris, "Lenght", fuzzy = TRUE)
+index |       column |       labels
+-----------------------------------
+    1 | Sepal.Length | Sepal.Length
+    3 | Petal.Length | Petal.Length
+> 
+> 
+> 
+> cleanEx()
+> nameEx("data_separate")
+> ### * data_separate
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data_separate
+> ### Title: Separate single variable into multiple variables
+> ### Aliases: data_separate
+> 
+> ### ** Examples
+> 
+> # simple case
+> d <- data.frame(
++   x = c("1.a.6", "2.b.7", "3.c.8"),
++   stringsAsFactors = FALSE
++ )
+> d
+      x
+1 1.a.6
+2 2.b.7
+3 3.c.8
+> data_separate(d, new_columns = c("a", "b", "c"))
+  a b c
+1 1 a 6
+2 2 b 7
+3 3 c 8
+> 
+> # guess number of columns
+> d <- data.frame(
++   x = c("1.a.6", NA, "2.b.6.7", "3.c", "x.y.z"),
++   stringsAsFactors = FALSE
++ )
+> d
+        x
+1   1.a.6
+2    <NA>
+3 2.b.6.7
+4     3.c
+5   x.y.z
+> data_separate(d, guess_columns = "mode")
+Column `x` had different number of values after splitting. Variable was
+  split into 3 columns.
+`x` returned more columns than expected after splitting. Right-most
+  columns have been dropped.
+`x`returned fewer columns than expected after splitting. Right-most
+  columns were filled with `NA`.
+   x_1  x_2  x_3
+1    1    a    6
+2 <NA> <NA> <NA>
+3    2    b    6
+4    3    c <NA>
+5    x    y    z
+> 
+> data_separate(d, guess_columns = "max")
+Column `x` had different number of values after splitting. Variable was
+  split into 4 columns.
+`x`returned fewer columns than expected after splitting. Right-most
+  columns were filled with `NA`.
+   x_1  x_2  x_3  x_4
+1    1    a    6 <NA>
+2 <NA> <NA> <NA> <NA>
+3    2    b    6    7
+4    3    c <NA> <NA>
+5    x    y    z <NA>
+> 
+> # drop left-most column
+> data_separate(d, guess_columns = "mode", extra = "drop_left")
+Column `x` had different number of values after splitting. Variable was
+  split into 3 columns.
+`x` returned more columns than expected after splitting. Left-most
+  columns have been dropped.
+`x`returned fewer columns than expected after splitting. Right-most
+  columns were filled with `NA`.
+   x_1  x_2  x_3
+1    1    a    6
+2 <NA> <NA> <NA>
+3    b    6    7
+4    3    c <NA>
+5    x    y    z
+> 
+> # merge right-most column
+> data_separate(d, guess_columns = "mode", extra = "merge_right")
+Column `x` had different number of values after splitting. Variable was
+  split into 3 columns.
+`x` returned more columns than expected after splitting. Right-most
+  columns have been merged together.
+`x`returned fewer columns than expected after splitting. Right-most
+  columns were filled with `NA`.
+   x_1  x_2  x_3
+1    1    a    6
+2 <NA> <NA> <NA>
+3    2    b  6 7
+4    3    c <NA>
+5    x    y    z
+> 
+> # fill columns with fewer values with left-most values
+> data_separate(d, guess_columns = "mode", fill = "value_left")
+Column `x` had different number of values after splitting. Variable was
+  split into 3 columns.
+`x` returned more columns than expected after splitting. Right-most
+  columns have been dropped.
+`x`returned fewer columns than expected after splitting. Left-most
+  columns were filled with first value.
+   x_1  x_2  x_3
+1    1    a    6
+2 <NA> <NA> <NA>
+3    2    b    6
+4    3    3    c
+5    x    y    z
+> 
+> # fill and merge
+> data_separate(
++   d,
++   guess_columns = "mode",
++   fill = "value_left",
++   extra = "merge_right"
++ )
+Column `x` had different number of values after splitting. Variable was
+  split into 3 columns.
+`x` returned more columns than expected after splitting. Right-most
+  columns have been merged together.
+`x`returned fewer columns than expected after splitting. Left-most
+  columns were filled with first value.
+   x_1  x_2  x_3
+1    1    a    6
+2 <NA> <NA> <NA>
+3    2    b  6 7
+4    3    3    c
+5    x    y    z
+> 
+> # multiple columns to split
+> d <- data.frame(
++   x = c("1.a.6", "2.b.7", "3.c.8"),
++   y = c("x.y.z", "10.11.12", "m.n.o"),
++   stringsAsFactors = FALSE
++ )
+> d
+      x        y
+1 1.a.6    x.y.z
+2 2.b.7 10.11.12
+3 3.c.8    m.n.o
+> # split two columns, default column names
+> data_separate(d, guess_columns = "mode")
+  x_1 x_2 x_3 y_1 y_2 y_3
+1   1   a   6   x   y   z
+2   2   b   7  10  11  12
+3   3   c   8   m   n   o
+> 
+> # split into new named columns, repeating column names
+> data_separate(d, new_columns = c("a", "b", "c"))
+  x_a x_b x_c y_a y_b y_c
+1   1   a   6   x   y   z
+2   2   b   7  10  11  12
+3   3   c   8   m   n   o
+> 
+> # split selected variable new columns
+> data_separate(d, select = "y", new_columns = c("a", "b", "c"))
+      x  a  b  c
+1 1.a.6  x  y  z
+2 2.b.7 10 11 12
+3 3.c.8  m  n  o
+> 
+> # merge multiple split columns
+> data_separate(
++   d,
++   new_columns = c("a", "b", "c"),
++   merge_multiple = TRUE
++ )
+    a   b   c
+1  1x  ay  6z
+2 210 b11 712
+3  3m  cn  8o
+> 
+> # merge multiple split columns
+> data_separate(
++   d,
++   new_columns = c("a", "b", "c"),
++   merge_multiple = TRUE,
++   merge_separator = "-"
++ )
+     a    b    c
+1  1-x  a-y  6-z
+2 2-10 b-11 7-12
+3  3-m  c-n  8-o
+> 
+> # separate multiple columns, give proper column names
+> d_sep <- data.frame(
++   x = c("1.a.6", "2.b.7.d", "3.c.8", "5.j"),
++   y = c("m.n.99.22", "77.f.g.34", "44.9", NA),
++   stringsAsFactors = FALSE
++ )
+> 
+> data_separate(
++   d_sep,
++   select = c("x", "y"),
++   new_columns = list(
++     x = c("A", "B", "C"), # separate "x" into three columns
++     y = c("EE", "FF", "GG", "HH") # separate "y" into four columns
++   ),
++   verbose = FALSE
++ )
+  A B    C   EE   FF   GG   HH
+1 1 a    6    m    n   99   22
+2 2 b    7   77    f    g   34
+3 3 c    8   44    9 <NA> <NA>
+4 5 j <NA> <NA> <NA> <NA> <NA>
+> 
+> 
+> 
+> cleanEx()
+> nameEx("data_summary")
+> ### * data_summary
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data_summary
+> ### Title: Summarize data
+> ### Aliases: data_summary data_summary.data.frame
+> 
+> ### ** Examples
+> 
+> data(iris)
+> data_summary(iris, MW = mean(Sepal.Width), SD = sd(Sepal.Width))
+  MW |   SD
+-----------
+3.06 | 0.44
+> data_summary(
++   iris,
++   MW = mean(Sepal.Width),
++   SD = sd(Sepal.Width),
++   by = "Species"
++ )
+Species    |   MW |   SD
+------------------------
+setosa     | 3.43 | 0.38
+versicolor | 2.77 | 0.31
+virginica  | 2.97 | 0.32
+> 
+> # same as
+> d <- data_group(iris, "Species")
+> data_summary(d, MW = mean(Sepal.Width), SD = sd(Sepal.Width))
+Species    |   MW |   SD
+------------------------
+setosa     | 3.43 | 0.38
+versicolor | 2.77 | 0.31
+virginica  | 2.97 | 0.32
+> 
+> # multiple groups
+> data(mtcars)
+> data_summary(mtcars, MW = mean(mpg), SD = sd(mpg), by = c("am", "gear"))
+am | gear |    MW |   SD
+------------------------
+ 0 |    3 | 16.11 | 3.37
+ 0 |    4 | 21.05 | 3.07
+ 1 |    4 | 26.27 | 5.41
+ 1 |    5 | 21.38 | 6.66
+> 
+> # expressions can also be supplied as character strings
+> data_summary(mtcars, "MW = mean(mpg)", "SD = sd(mpg)", by = c("am", "gear"))
+am | gear |    MW |   SD
+------------------------
+ 0 |    3 | 16.11 | 3.37
+ 0 |    4 | 21.05 | 3.07
+ 1 |    4 | 26.27 | 5.41
+ 1 |    5 | 21.38 | 6.66
+> 
+> # count observations within groups
+> data_summary(mtcars, observations = n(), by = c("am", "gear"))
+am | gear | observations
+------------------------
+ 0 |    3 |           15
+ 0 |    4 |            4
+ 1 |    4 |            8
+ 1 |    5 |            5
+> 
+> # first and last observations of "mpg" within groups
+> data_summary(
++   mtcars,
++   first = mpg[1],
++   last = mpg[length(mpg)],
++   by = c("am", "gear")
++ )
+am | gear | first |  last
+-------------------------
+ 0 |    3 | 21.40 | 19.20
+ 0 |    4 | 24.40 | 17.80
+ 1 |    4 | 21.00 | 21.40
+ 1 |    5 | 26.00 | 15.00
+> 
+> 
+> 
+> cleanEx()
+> nameEx("data_tabulate")
+> ### * data_tabulate
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data_tabulate
+> ### Title: Create frequency and crosstables of variables
+> ### Aliases: data_tabulate data_tabulate.default data_tabulate.data.frame
+> ###   as.data.frame.datawizard_tables
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (requireNamespace("poorman")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ # frequency tables -------
++ # ------------------------
++ data(efc)
++ 
++ # vector/factor
++ data_tabulate(efc$c172code)
++ 
++ # drop missing values
++ data_tabulate(efc$c172code, remove_na = TRUE)
++ 
++ # data frame
++ data_tabulate(efc, c("e42dep", "c172code"))
++ 
++ # grouped data frame
++ suppressPackageStartupMessages(library(poorman, quietly = TRUE))
++ efc %>%
++   group_by(c172code) %>%
++   data_tabulate("e16sex")
++ 
++ # collapse tables
++ efc %>%
++   group_by(c172code) %>%
++   data_tabulate("e16sex", collapse = TRUE)
++ 
++ # for larger N's (> 100000), a big mark is automatically added
++ set.seed(123)
++ x <- sample(1:3, 1e6, TRUE)
++ data_tabulate(x, name = "Large Number")
++ 
++ # to remove the big mark, use "print(..., big_mark = "")"
++ print(data_tabulate(x), big_mark = "")
++ 
++ # weighted frequencies
++ set.seed(123)
++ efc$weights <- abs(rnorm(n = nrow(efc), mean = 1, sd = 0.5))
++ data_tabulate(efc$e42dep, weights = efc$weights)
++ 
++ # crosstables ------
++ # ------------------
++ 
++ # add some missing values
++ set.seed(123)
++ efc$e16sex[sample.int(nrow(efc), 5)] <- NA
++ 
++ data_tabulate(efc, "c172code", by = "e16sex")
++ 
++ # add row and column percentages
++ data_tabulate(efc, "c172code", by = "e16sex", proportions = "row")
++ data_tabulate(efc, "c172code", by = "e16sex", proportions = "column")
++ 
++ # omit missing values
++ data_tabulate(
++   efc$c172code,
++   by = efc$e16sex,
++   proportions = "column",
++   remove_na = TRUE
++ )
++ 
++ # round percentages
++ out <- data_tabulate(efc, "c172code", by = "e16sex", proportions = "column")
++ print(out, digits = 0)
++ 
++ # coerce to data frames
++ result <- data_tabulate(efc, "c172code", by = "e16sex")
++ as.data.frame(result)
++ as.data.frame(result)$table
++ as.data.frame(result, add_total = TRUE)$table
++ ## Don't show: 
++ }) # examplesIf
+> data(efc)
+> data_tabulate(efc$c172code)
+carer's level of education (efc$c172code) <numeric>
+# total N=100 valid N=90
+
+Value |  N | Raw % | Valid % | Cumulative %
+------+----+-------+---------+-------------
+1     |  8 |  8.00 |    8.89 |         8.89
+2     | 66 | 66.00 |   73.33 |        82.22
+3     | 16 | 16.00 |   17.78 |       100.00
+<NA>  | 10 | 10.00 |    <NA> |         <NA>
+> data_tabulate(efc$c172code, remove_na = TRUE)
+carer's level of education (efc$c172code) <numeric>
+# total N=90 valid N=90
+
+Value |  N | Raw % | Valid % | Cumulative %
+------+----+-------+---------+-------------
+1     |  8 |  8.89 |    8.89 |         8.89
+2     | 66 | 73.33 |   73.33 |        82.22
+3     | 16 | 17.78 |   17.78 |       100.00
+> data_tabulate(efc, c("e42dep", "c172code"))
+elder's dependency (e42dep) <categorical>
+# total N=100 valid N=97
+
+Value |  N | Raw % | Valid % | Cumulative %
+------+----+-------+---------+-------------
+1     |  2 |  2.00 |    2.06 |         2.06
+2     |  4 |  4.00 |    4.12 |         6.19
+3     | 28 | 28.00 |   28.87 |        35.05
+4     | 63 | 63.00 |   64.95 |       100.00
+<NA>  |  3 |  3.00 |    <NA> |         <NA>
+
+carer's level of education (c172code) <numeric>
+# total N=100 valid N=90
+
+Value |  N | Raw % | Valid % | Cumulative %
+------+----+-------+---------+-------------
+1     |  8 |  8.00 |    8.89 |         8.89
+2     | 66 | 66.00 |   73.33 |        82.22
+3     | 16 | 16.00 |   17.78 |       100.00
+<NA>  | 10 | 10.00 |    <NA> |         <NA>
+> suppressPackageStartupMessages(library(poorman, quietly = TRUE))
+> efc %>% group_by(c172code) %>% data_tabulate("e16sex")
+elder's gender (e16sex) <numeric>
+Grouped by c172code (1)
+# total N=8 valid N=8
+
+Value | N | Raw % | Valid % | Cumulative %
+------+---+-------+---------+-------------
+1     | 5 | 62.50 |   62.50 |        62.50
+2     | 3 | 37.50 |   37.50 |       100.00
+<NA>  | 0 |  0.00 |    <NA> |         <NA>
+
+elder's gender (e16sex) <numeric>
+Grouped by c172code (2)
+# total N=66 valid N=66
+
+Value |  N | Raw % | Valid % | Cumulative %
+------+----+-------+---------+-------------
+1     | 32 | 48.48 |   48.48 |        48.48
+2     | 34 | 51.52 |   51.52 |       100.00
+<NA>  |  0 |  0.00 |    <NA> |         <NA>
+
+elder's gender (e16sex) <numeric>
+Grouped by c172code (3)
+# total N=16 valid N=16
+
+Value |  N | Raw % | Valid % | Cumulative %
+------+----+-------+---------+-------------
+1     |  4 | 25.00 |   25.00 |        25.00
+2     | 12 | 75.00 |   75.00 |       100.00
+<NA>  |  0 |  0.00 |    <NA> |         <NA>
+
+elder's gender (e16sex) <numeric>
+Grouped by c172code (NA)
+# total N=10 valid N=10
+
+Value | N | Raw % | Valid % | Cumulative %
+------+---+-------+---------+-------------
+1     | 5 | 50.00 |   50.00 |        50.00
+2     | 5 | 50.00 |   50.00 |       100.00
+<NA>  | 0 |  0.00 |    <NA> |         <NA>
+> efc %>% group_by(c172code) %>% data_tabulate("e16sex", collapse = TRUE)
+# Frequency Table
+
+Variable |         Group | Value |  N | Raw % | Valid % | Cumulative %
+---------+---------------+-------+----+-------+---------+-------------
+e16sex   |  c172code (1) |     1 |  5 | 62.50 |   62.50 |        62.50
+         |               |     2 |  3 | 37.50 |   37.50 |       100.00
+         |               |  <NA> |  0 |  0.00 |    <NA> |         <NA>
+---------+---------------+-------+----+-------+---------+-------------
+e16sex   |  c172code (2) |     1 | 32 | 48.48 |   48.48 |        48.48
+         |               |     2 | 34 | 51.52 |   51.52 |       100.00
+         |               |  <NA> |  0 |  0.00 |    <NA> |         <NA>
+---------+---------------+-------+----+-------+---------+-------------
+e16sex   |  c172code (3) |     1 |  4 | 25.00 |   25.00 |        25.00
+         |               |     2 | 12 | 75.00 |   75.00 |       100.00
+         |               |  <NA> |  0 |  0.00 |    <NA> |         <NA>
+---------+---------------+-------+----+-------+---------+-------------
+e16sex   | c172code (NA) |     1 |  5 | 50.00 |   50.00 |        50.00
+         |               |     2 |  5 | 50.00 |   50.00 |       100.00
+         |               |  <NA> |  0 |  0.00 |    <NA> |         <NA>
+----------------------------------------------------------------------
+> set.seed(123)
+> x <- sample(1:3, 1e+06, TRUE)
+> data_tabulate(x, name = "Large Number")
+Large Number (x) <integer>
+# total N=1,000,000 valid N=1,000,000
+
+Value |       N | Raw % | Valid % | Cumulative %
+------+---------+-------+---------+-------------
+1     | 333,852 | 33.39 |   33.39 |        33.39
+2     | 332,910 | 33.29 |   33.29 |        66.68
+3     | 333,238 | 33.32 |   33.32 |       100.00
+<NA>  |       0 |  0.00 |    <NA> |         <NA>
+> print(data_tabulate(x), big_mark = "")
+x <integer>
+# total N=1000000 valid N=1000000
+
+Value |      N | Raw % | Valid % | Cumulative %
+------+--------+-------+---------+-------------
+1     | 333852 | 33.39 |   33.39 |        33.39
+2     | 332910 | 33.29 |   33.29 |        66.68
+3     | 333238 | 33.32 |   33.32 |       100.00
+<NA>  |      0 |  0.00 |    <NA> |         <NA>
+> set.seed(123)
+> efc$weights <- abs(rnorm(n = nrow(efc), mean = 1, sd = 0.5))
+> data_tabulate(efc$e42dep, weights = efc$weights)
+elder's dependency (efc$e42dep) <categorical>
+# total N=105 valid N=100 (weighted)
+
+Value |  N | Raw % | Valid % | Cumulative %
+------+----+-------+---------+-------------
+1     |  3 |  2.86 |    3.00 |         3.00
+2     |  4 |  3.81 |    4.00 |         7.00
+3     | 26 | 24.76 |   26.00 |        33.00
+4     | 67 | 63.81 |   67.00 |       100.00
+<NA>  |  5 |  4.76 |    <NA> |         <NA>
+> set.seed(123)
+> efc$e16sex[sample.int(nrow(efc), 5)] <- NA
+> data_tabulate(efc, "c172code", by = "e16sex")
+c172code | male | female | <NA> | Total
+---------+------+--------+------+------
+1        |    5 |      2 |    1 |     8
+2        |   30 |     34 |    2 |    66
+3        |    4 |     10 |    2 |    16
+<NA>     |    5 |      5 |    0 |    10
+---------+------+--------+------+------
+Total    |   44 |     51 |    5 |   100
+> data_tabulate(efc, "c172code", by = "e16sex", proportions = "row")
+c172code |       male |     female |      <NA> | Total
+---------+------------+------------+-----------+------
+1        |  5 (62.5%) |  2 (25.0%) | 1 (12.5%) |     8
+2        | 30 (45.5%) | 34 (51.5%) | 2  (3.0%) |    66
+3        |  4 (25.0%) | 10 (62.5%) | 2 (12.5%) |    16
+<NA>     |  5 (50.0%) |  5 (50.0%) | 0  (0.0%) |    10
+---------+------------+------------+-----------+------
+Total    |         44 |         51 |         5 |   100
+> data_tabulate(efc, "c172code", by = "e16sex", proportions = "column")
+c172code |       male |     female |      <NA> | Total
+---------+------------+------------+-----------+------
+1        |  5 (11.4%) |  2  (3.9%) | 1 (20.0%) |     8
+2        | 30 (68.2%) | 34 (66.7%) | 2 (40.0%) |    66
+3        |  4  (9.1%) | 10 (19.6%) | 2 (40.0%) |    16
+<NA>     |  5 (11.4%) |  5  (9.8%) | 0  (0.0%) |    10
+---------+------------+------------+-----------+------
+Total    |         44 |         51 |         5 |   100
+> data_tabulate(efc$c172code, by = efc$e16sex, proportions = "column", remove_na = TRUE)
+efc$c172code |       male |     female | Total
+-------------+------------+------------+------
+1            |  5 (12.8%) |  2  (4.3%) |     7
+2            | 30 (76.9%) | 34 (73.9%) |    64
+3            |  4 (10.3%) | 10 (21.7%) |    14
+-------------+------------+------------+------
+Total        |         39 |         46 |    85
+> out <- data_tabulate(efc, "c172code", by = "e16sex", proportions = "column")
+> print(out, digits = 0)
+c172code |     male |   female |    <NA> | Total
+---------+----------+----------+---------+------
+1        |  5 (11%) |  2  (4%) | 1 (20%) |     8
+2        | 30 (68%) | 34 (67%) | 2 (40%) |    66
+3        |  4  (9%) | 10 (20%) | 2 (40%) |    16
+<NA>     |  5 (11%) |  5 (10%) | 0  (0%) |    10
+---------+----------+----------+---------+------
+Total    |       44 |       51 |       5 |   100
+> result <- data_tabulate(efc, "c172code", by = "e16sex")
+> as.data.frame(result)
+       var        table
+1 c172code c(1, 2, ....
+> as.data.frame(result)$table
+[[1]]
+  c172code male female NA
+1        1    5      2  1
+2        2   30     34  2
+3        3    4     10  2
+4     <NA>    5      5  0
+
+> as.data.frame(result, add_total = TRUE)$table
+[[1]]
+  c172code male female <NA> Total
+1        1    5      2    1     8
+2        2   30     34    2    66
+3        3    4     10    2    16
+4     <NA>    5      5    0    10
+5    Total   44     51    5   100
+
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:poorman’
+
+> nameEx("data_to_long")
+> ### * data_to_long
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data_to_long
+> ### Title: Reshape (pivot) data from wide to long
+> ### Aliases: data_to_long reshape_longer
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (all(insight::check_if_installed(c("psych", "tidyr"), quietly = TRUE))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ wide_data <- setNames(
++   data.frame(replicate(2, rnorm(8))),
++   c("Time1", "Time2")
++ )
++ wide_data$ID <- 1:8
++ wide_data
++ 
++ # Default behaviour (equivalent to tidyr::pivot_longer(wide_data, cols = 1:3))
++ # probably doesn't make much sense to mix "time" and "id"
++ data_to_long(wide_data)
++ 
++ # Customizing the names
++ data_to_long(
++   wide_data,
++   select = c("Time1", "Time2"),
++   names_to = "Timepoint",
++   values_to = "Score"
++ )
++ 
++ # Reshape multiple columns into long format.
++ mydat <- data.frame(
++   age = c(20, 30, 40),
++   sex = c("Female", "Male", "Male"),
++   score_t1 = c(30, 35, 32),
++   score_t2 = c(33, 34, 37),
++   score_t3 = c(36, 35, 38),
++   speed_t1 = c(2, 3, 1),
++   speed_t2 = c(3, 4, 5),
++   speed_t3 = c(1, 8, 6)
++ )
++ # The column names are split into two columns: "type" and "time". The
++ # pattern for splitting column names is provided in `names_pattern`. Values
++ # of all "score_*" and "speed_*" columns are gathered into a single column
++ # named "count".
++ data_to_long(
++   mydat,
++   select = 3:8,
++   names_to = c("type", "time"),
++   names_pattern = "(score|speed)_t(\\d+)",
++   values_to = "count"
++ )
++ 
++ # Full example
++ # ------------------
++ data <- psych::bfi # Wide format with one row per participant's personality test
++ 
++ # Pivot long format
++ very_long_data <- data_to_long(data,
++   select = regex("\\d"), # Select all columns that contain a digit
++   names_to = "Item",
++   values_to = "Score",
++   rows_to = "Participant"
++ )
++ head(very_long_data)
++ 
++ even_longer_data <- data_to_long(
++   tidyr::who,
++   select = new_sp_m014:newrel_f65,
++   names_to = c("diagnosis", "gender", "age"),
++   names_pattern = "new_?(.*)_(.)(.*)",
++   values_to = "count"
++ )
++ head(even_longer_data)
++ ## Don't show: 
++ }) # examplesIf
+> wide_data <- setNames(data.frame(replicate(2, rnorm(8))), c("Time1", "Time2"))
+> wide_data$ID <- 1:8
+> wide_data
+       Time1       Time2 ID
+1 -0.6264538  0.57578135  1
+2  0.1836433 -0.30538839  2
+3 -0.8356286  1.51178117  3
+4  1.5952808  0.38984324  4
+5  0.3295078 -0.62124058  5
+6 -0.8204684 -2.21469989  6
+7  0.4874291  1.12493092  7
+8  0.7383247 -0.04493361  8
+> data_to_long(wide_data)
+    name       value
+1  Time1 -0.62645381
+2  Time2  0.57578135
+3     ID  1.00000000
+4  Time1  0.18364332
+5  Time2 -0.30538839
+6     ID  2.00000000
+7  Time1 -0.83562861
+8  Time2  1.51178117
+9     ID  3.00000000
+10 Time1  1.59528080
+11 Time2  0.38984324
+12    ID  4.00000000
+13 Time1  0.32950777
+14 Time2 -0.62124058
+15    ID  5.00000000
+16 Time1 -0.82046838
+17 Time2 -2.21469989
+18    ID  6.00000000
+19 Time1  0.48742905
+20 Time2  1.12493092
+21    ID  7.00000000
+22 Time1  0.73832471
+23 Time2 -0.04493361
+24    ID  8.00000000
+> data_to_long(wide_data, select = c("Time1", "Time2"), names_to = "Timepoint", 
++     values_to = "Score")
+   ID Timepoint       Score
+1   1     Time1 -0.62645381
+2   1     Time2  0.57578135
+3   2     Time1  0.18364332
+4   2     Time2 -0.30538839
+5   3     Time1 -0.83562861
+6   3     Time2  1.51178117
+7   4     Time1  1.59528080
+8   4     Time2  0.38984324
+9   5     Time1  0.32950777
+10  5     Time2 -0.62124058
+11  6     Time1 -0.82046838
+12  6     Time2 -2.21469989
+13  7     Time1  0.48742905
+14  7     Time2  1.12493092
+15  8     Time1  0.73832471
+16  8     Time2 -0.04493361
+> mydat <- data.frame(age = c(20, 30, 40), sex = c("Female", "Male", "Male"), 
++     score_t1 = c(30, 35, 32), score_t2 = c(33, 34, 37), score_t3 = c(36, 35, 38), 
++     speed_t1 = c(2, 3, 1), speed_t2 = c(3, 4, 5), speed_t3 = c(1, 8, 6))
+> data_to_long(mydat, select = 3:8, names_to = c("type", "time"), names_pattern = "(score|speed)_t(\\d+)", 
++     values_to = "count")
+   age    sex  type time count
+1   20 Female score    1    30
+2   20 Female score    2    33
+3   20 Female score    3    36
+4   20 Female speed    1     2
+5   20 Female speed    2     3
+6   20 Female speed    3     1
+7   30   Male score    1    35
+8   30   Male score    2    34
+9   30   Male score    3    35
+10  30   Male speed    1     3
+11  30   Male speed    2     4
+12  30   Male speed    3     8
+13  40   Male score    1    32
+14  40   Male score    2    37
+15  40   Male score    3    38
+16  40   Male speed    1     1
+17  40   Male speed    2     5
+18  40   Male speed    3     6
+> data <- psych::bfi
+> very_long_data <- data_to_long(data, select = regex("\\d"), names_to = "Item", 
++     values_to = "Score", rows_to = "Participant")
+> head(very_long_data)
+  gender education age Participant Item Score
+1      1        NA  16       61617   A1     2
+2      1        NA  16       61617   A2     4
+3      1        NA  16       61617   A3     3
+4      1        NA  16       61617   A4     4
+5      1        NA  16       61617   A5     4
+6      1        NA  16       61617   C1     2
+> even_longer_data <- data_to_long(tidyr::who, select = new_sp_m014:newrel_f65, 
++     names_to = c("diagnosis", "gender", "age"), names_pattern = "new_?(.*)_(.)(.*)", 
++     values_to = "count")
+> head(even_longer_data)
+# A tibble: 6 × 8
+  country     iso2  iso3   year diagnosis gender age   count
+  <chr>       <chr> <chr> <dbl> <chr>     <chr>  <chr> <dbl>
+1 Afghanistan AF    AFG    1980 sp        m      014      NA
+2 Afghanistan AF    AFG    1980 sp        m      1524     NA
+3 Afghanistan AF    AFG    1980 sp        m      2534     NA
+4 Afghanistan AF    AFG    1980 sp        m      3544     NA
+5 Afghanistan AF    AFG    1980 sp        m      4554     NA
+6 Afghanistan AF    AFG    1980 sp        m      5564     NA
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("data_to_wide")
+> ### * data_to_wide
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data_to_wide
+> ### Title: Reshape (pivot) data from long to wide
+> ### Aliases: data_to_wide reshape_wider
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (requireNamespace("lme4", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ data_long <- read.table(header = TRUE, text = "
++  subject sex condition measurement
++        1   M   control         7.9
++        1   M     cond1        12.3
++        1   M     cond2        10.7
++        2   F   control         6.3
++        2   F     cond1        10.6
++        2   F     cond2        11.1
++        3   F   control         9.5
++        3   F     cond1        13.1
++        3   F     cond2        13.8
++        4   M   control        11.5
++        4   M     cond1        13.4
++        4   M     cond2        12.9")
++ 
++ # converting long data into wide format
++ data_to_wide(
++   data_long,
++   id_cols = "subject",
++   names_from = "condition",
++   values_from = "measurement"
++ )
++ 
++ # converting long data into wide format with custom column names
++ data_to_wide(
++   data_long,
++   id_cols = "subject",
++   names_from = "condition",
++   values_from = "measurement",
++   names_prefix = "Var.",
++   names_sep = "."
++ )
++ 
++ # converting long data into wide format, combining multiple columns
++ production <- expand.grid(
++   product = c("A", "B"),
++   country = c("AI", "EI"),
++   year = 2000:2014
++ )
++ production <- data_filter(production, (product == "A" & country == "AI") | product == "B")
++ production$production <- rnorm(nrow(production))
++ 
++ data_to_wide(
++   production,
++   names_from = c("product", "country"),
++   values_from = "production",
++   names_glue = "prod_{product}_{country}"
++ )
++ 
++ # using the "sleepstudy" dataset
++ data(sleepstudy, package = "lme4")
++ 
++ # the sleepstudy data contains repeated measurements of average reaction
++ # times for each subjects over multiple days, in a sleep deprivation study.
++ # It is in long-format, i.e. each row corresponds to a single measurement.
++ # The variable "Days" contains the timepoint of the measurement, and
++ # "Reaction" contains the measurement itself. Converting this data to wide
++ # format will create a new column for each day, with the reaction time as the
++ # value.
++ head(sleepstudy)
++ 
++ data_to_wide(
++   sleepstudy,
++   id_cols = "Subject",
++   names_from = "Days",
++   values_from = "Reaction"
++ )
++ 
++ # clearer column names
++ data_to_wide(
++   sleepstudy,
++   id_cols = "Subject",
++   names_from = "Days",
++   values_from = "Reaction",
++   names_prefix = "Reaction_Day_"
++ )
++ 
++ # For unequal group sizes, missing information is filled with NA
++ d <- subset(sleepstudy, Days %in% c(0, 1, 2, 3, 4))[c(1:9, 11:13, 16:17, 21), ]
++ 
++ # long format, different number of "Subjects"
++ d
++ 
++ data_to_wide(
++   d,
++   id_cols = "Subject",
++   names_from = "Days",
++   values_from = "Reaction",
++   names_prefix = "Reaction_Day_"
++ )
++ 
++ # filling missing values with 0
++ data_to_wide(
++   d,
++   id_cols = "Subject",
++   names_from = "Days",
++   values_from = "Reaction",
++   names_prefix = "Reaction_Day_",
++   values_fill = 0
++ )
++ ## Don't show: 
++ }) # examplesIf
+> data_long <- read.table(header = TRUE, text = "\n subject sex condition measurement\n       1   M   control         7.9\n       1   M     cond1        12.3\n       1   M     cond2        10.7\n       2   F   control         6.3\n       2   F     cond1        10.6\n       2   F     cond2        11.1\n       3   F   control         9.5\n       3   F     cond1        13.1\n       3   F     cond2        13.8\n       4   M   control        11.5\n       4   M     cond1        13.4\n       4   M     cond2        12.9")
+> data_to_wide(data_long, id_cols = "subject", names_from = "condition", 
++     values_from = "measurement")
+  subject control cond1 cond2
+1       1     7.9  12.3  10.7
+2       2     6.3  10.6  11.1
+3       3     9.5  13.1  13.8
+4       4    11.5  13.4  12.9
+> data_to_wide(data_long, id_cols = "subject", names_from = "condition", 
++     values_from = "measurement", names_prefix = "Var.", names_sep = ".")
+  subject Var.control Var.cond1 Var.cond2
+1       1         7.9      12.3      10.7
+2       2         6.3      10.6      11.1
+3       3         9.5      13.1      13.8
+4       4        11.5      13.4      12.9
+> production <- expand.grid(product = c("A", "B"), country = c("AI", "EI"), 
++     year = 2000:2014)
+> production <- data_filter(production, (product == "A" & country == "AI") | 
++     product == "B")
+> production$production <- rnorm(nrow(production))
+> data_to_wide(production, names_from = c("product", "country"), values_from = "production", 
++     names_glue = "prod_{product}_{country}")
+   year   prod_A_AI   prod_B_AI  prod_B_EI
+1  2000 -0.62645381  0.18364332 -0.8356286
+2  2001  1.59528080  0.32950777 -0.8204684
+3  2002  0.48742905  0.73832471  0.5757814
+4  2003 -0.30538839  1.51178117  0.3898432
+5  2004 -0.62124058 -2.21469989  1.1249309
+6  2005 -0.04493361 -0.01619026  0.9438362
+7  2006  0.82122120  0.59390132  0.9189774
+8  2007  0.78213630  0.07456498 -1.9893517
+9  2008  0.61982575 -0.05612874 -0.1557955
+10 2009 -1.47075238 -0.47815006  0.4179416
+11 2010  1.35867955 -0.10278773  0.3876716
+12 2011 -0.05380504 -1.37705956 -0.4149946
+13 2012 -0.39428995 -0.05931340  1.1000254
+14 2013  0.76317575 -0.16452360 -0.2533617
+15 2014  0.69696338  0.55666320 -0.6887557
+> data(sleepstudy, package = "lme4")
+> head(sleepstudy)
+  Reaction Days Subject
+1 249.5600    0     308
+2 258.7047    1     308
+3 250.8006    2     308
+4 321.4398    3     308
+5 356.8519    4     308
+6 414.6901    5     308
+> data_to_wide(sleepstudy, id_cols = "Subject", names_from = "Days", values_from = "Reaction")
+   Subject        0        1        2        3        4        5        6
+1      308 249.5600 258.7047 250.8006 321.4398 356.8519 414.6901 382.2038
+2      309 222.7339 205.2658 202.9778 204.7070 207.7161 215.9618 213.6303
+3      310 199.0539 194.3322 234.3200 232.8416 229.3074 220.4579 235.4208
+4      330 321.5426 300.4002 283.8565 285.1330 285.7973 297.5855 280.2396
+5      331 287.6079 285.0000 301.8206 320.1153 316.2773 293.3187 290.0750
+6      332 234.8606 242.8118 272.9613 309.7688 317.4629 309.9976 454.1619
+7      333 283.8424 289.5550 276.7693 299.8097 297.1710 338.1665 332.0265
+8      334 265.4731 276.2012 243.3647 254.6723 279.0244 284.1912 305.5248
+9      335 241.6083 273.9472 254.4907 270.8021 251.4519 254.6362 245.4523
+10     337 312.3666 313.8058 291.6112 346.1222 365.7324 391.8385 404.2601
+11     349 236.1032 230.3167 238.9256 254.9220 250.7103 269.7744 281.5648
+12     350 256.2968 243.4543 256.2046 255.5271 268.9165 329.7247 379.4445
+13     351 250.5265 300.0576 269.8939 280.5891 271.8274 304.6336 287.7466
+14     352 221.6771 298.1939 326.8785 346.8555 348.7402 352.8287 354.4266
+15     369 271.9235 268.4369 257.2424 277.6566 314.8222 317.2135 298.1353
+16     370 225.2640 234.5235 238.9008 240.4730 267.5373 344.1937 281.1481
+17     371 269.8804 272.4428 277.8989 281.7895 279.1705 284.5120 259.2658
+18     372 269.4117 273.4740 297.5968 310.6316 287.1726 329.6076 334.4818
+          7        8        9
+1  290.1486 430.5853 466.3535
+2  217.7272 224.2957 237.3142
+3  255.7511 261.0125 247.5153
+4  318.2613 305.3495 354.0487
+5  334.8177 293.7469 371.5811
+6  346.8311 330.3003 253.8644
+7  348.8399 333.3600 362.0428
+8  331.5229 335.7469 377.2990
+9  235.3110 235.7541 237.2466
+10 416.6923 455.8643 458.9167
+11 308.1020 336.2806 351.6451
+12 362.9184 394.4872 389.0527
+13 266.5955 321.5418 347.5655
+14 360.4326 375.6406 388.5417
+15 348.1229 340.2800 366.5131
+16 347.5855 365.1630 372.2288
+17 304.6306 350.7807 369.4692
+18 343.2199 369.1417 364.1236
+> data_to_wide(sleepstudy, id_cols = "Subject", names_from = "Days", values_from = "Reaction", 
++     names_prefix = "Reaction_Day_")
+   Subject Reaction_Day_0 Reaction_Day_1 Reaction_Day_2 Reaction_Day_3
+1      308       249.5600       258.7047       250.8006       321.4398
+2      309       222.7339       205.2658       202.9778       204.7070
+3      310       199.0539       194.3322       234.3200       232.8416
+4      330       321.5426       300.4002       283.8565       285.1330
+5      331       287.6079       285.0000       301.8206       320.1153
+6      332       234.8606       242.8118       272.9613       309.7688
+7      333       283.8424       289.5550       276.7693       299.8097
+8      334       265.4731       276.2012       243.3647       254.6723
+9      335       241.6083       273.9472       254.4907       270.8021
+10     337       312.3666       313.8058       291.6112       346.1222
+11     349       236.1032       230.3167       238.9256       254.9220
+12     350       256.2968       243.4543       256.2046       255.5271
+13     351       250.5265       300.0576       269.8939       280.5891
+14     352       221.6771       298.1939       326.8785       346.8555
+15     369       271.9235       268.4369       257.2424       277.6566
+16     370       225.2640       234.5235       238.9008       240.4730
+17     371       269.8804       272.4428       277.8989       281.7895
+18     372       269.4117       273.4740       297.5968       310.6316
+   Reaction_Day_4 Reaction_Day_5 Reaction_Day_6 Reaction_Day_7 Reaction_Day_8
+1        356.8519       414.6901       382.2038       290.1486       430.5853
+2        207.7161       215.9618       213.6303       217.7272       224.2957
+3        229.3074       220.4579       235.4208       255.7511       261.0125
+4        285.7973       297.5855       280.2396       318.2613       305.3495
+5        316.2773       293.3187       290.0750       334.8177       293.7469
+6        317.4629       309.9976       454.1619       346.8311       330.3003
+7        297.1710       338.1665       332.0265       348.8399       333.3600
+8        279.0244       284.1912       305.5248       331.5229       335.7469
+9        251.4519       254.6362       245.4523       235.3110       235.7541
+10       365.7324       391.8385       404.2601       416.6923       455.8643
+11       250.7103       269.7744       281.5648       308.1020       336.2806
+12       268.9165       329.7247       379.4445       362.9184       394.4872
+13       271.8274       304.6336       287.7466       266.5955       321.5418
+14       348.7402       352.8287       354.4266       360.4326       375.6406
+15       314.8222       317.2135       298.1353       348.1229       340.2800
+16       267.5373       344.1937       281.1481       347.5855       365.1630
+17       279.1705       284.5120       259.2658       304.6306       350.7807
+18       287.1726       329.6076       334.4818       343.2199       369.1417
+   Reaction_Day_9
+1        466.3535
+2        237.3142
+3        247.5153
+4        354.0487
+5        371.5811
+6        253.8644
+7        362.0428
+8        377.2990
+9        237.2466
+10       458.9167
+11       351.6451
+12       389.0527
+13       347.5655
+14       388.5417
+15       366.5131
+16       372.2288
+17       369.4692
+18       364.1236
+> d <- subset(sleepstudy, Days %in% c(0, 1, 2, 3, 4))[c(1:9, 11:13, 16:17, 
++     21), ]
+> d
+   Reaction Days Subject
+1  249.5600    0     308
+2  258.7047    1     308
+3  250.8006    2     308
+4  321.4398    3     308
+5  356.8519    4     308
+11 222.7339    0     309
+12 205.2658    1     309
+13 202.9778    2     309
+14 204.7070    3     309
+21 199.0539    0     310
+22 194.3322    1     310
+23 234.3200    2     310
+31 321.5426    0     330
+32 300.4002    1     330
+41 287.6079    0     331
+> data_to_wide(d, id_cols = "Subject", names_from = "Days", values_from = "Reaction", 
++     names_prefix = "Reaction_Day_")
+  Subject Reaction_Day_0 Reaction_Day_1 Reaction_Day_2 Reaction_Day_3
+1     308       249.5600       258.7047       250.8006       321.4398
+2     309       222.7339       205.2658       202.9778       204.7070
+3     310       199.0539       194.3322       234.3200             NA
+4     330       321.5426       300.4002             NA             NA
+5     331       287.6079             NA             NA             NA
+  Reaction_Day_4
+1       356.8519
+2             NA
+3             NA
+4             NA
+5             NA
+> data_to_wide(d, id_cols = "Subject", names_from = "Days", values_from = "Reaction", 
++     names_prefix = "Reaction_Day_", values_fill = 0)
+  Subject Reaction_Day_0 Reaction_Day_1 Reaction_Day_2 Reaction_Day_3
+1     308       249.5600       258.7047       250.8006       321.4398
+2     309       222.7339       205.2658       202.9778       204.7070
+3     310       199.0539       194.3322       234.3200         0.0000
+4     330       321.5426       300.4002         0.0000         0.0000
+5     331       287.6079         0.0000         0.0000         0.0000
+  Reaction_Day_4
+1       356.8519
+2         0.0000
+3         0.0000
+4         0.0000
+5         0.0000
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("data_unique")
+> ### * data_unique
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data_unique
+> ### Title: Keep only one row from all with duplicated IDs
+> ### Aliases: data_unique
+> 
+> ### ** Examples
+> 
+> df1 <- data.frame(
++   id = c(1, 2, 3, 1, 3),
++   item1 = c(NA, 1, 1, 2, 3),
++   item2 = c(NA, 1, 1, 2, 3),
++   item3 = c(NA, 1, 1, 2, 3)
++ )
+> 
+> data_unique(df1, select = "id")
+(2 duplicates removed, with method 'best')
+  id item1 item2 item3
+1  1     2     2     2
+2  2     1     1     1
+3  3     1     1     1
+> 
+> 
+> 
+> cleanEx()
+> nameEx("data_unite")
+> ### * data_unite
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data_unite
+> ### Title: Unite ("merge") multiple variables
+> ### Aliases: data_unite
+> 
+> ### ** Examples
+> 
+> d <- data.frame(
++   x = 1:3,
++   y = letters[1:3],
++   z = 6:8
++ )
+> d
+  x y z
+1 1 a 6
+2 2 b 7
+3 3 c 8
+> data_unite(d, new_column = "xyz")
+    xyz
+1 1_a_6
+2 2_b_7
+3 3_c_8
+> data_unite(d, new_column = "xyz", remove = FALSE)
+    xyz
+1 1_a_6
+2 2_b_7
+3 3_c_8
+> data_unite(d, new_column = "xyz", select = c("x", "z"))
+  y xyz
+1 a 1_6
+2 b 2_7
+3 c 3_8
+> data_unite(d, new_column = "xyz", select = c("x", "z"), append = TRUE)
+  x y z xyz
+1 1 a 6 1_6
+2 2 b 7 2_7
+3 3 c 8 3_8
+> 
+> 
+> 
+> cleanEx()
+> nameEx("demean")
+> ### * demean
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: demean
+> ### Title: Compute group-meaned and de-meaned variables
+> ### Aliases: demean degroup detrend
+> 
+> ### ** Examples
+> 
+> 
+> data(iris)
+> iris$ID <- sample(1:4, nrow(iris), replace = TRUE) # fake-ID
+> iris$binary <- as.factor(rbinom(150, 1, .35)) # binary variable
+> 
+> x <- demean(iris, select = c("Sepal.Length", "Petal.Length"), by = "ID")
+> head(x)
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species ID binary
+1          5.1         3.5          1.4         0.2  setosa  1      0
+2          4.9         3.0          1.4         0.2  setosa  4      0
+3          4.7         3.2          1.3         0.2  setosa  3      0
+4          4.6         3.1          1.5         0.2  setosa  1      0
+5          5.0         3.6          1.4         0.2  setosa  2      0
+6          5.4         3.9          1.7         0.4  setosa  1      0
+  Sepal.Length_between Petal.Length_between Sepal.Length_within
+1             5.823684             3.544737          -0.7236842
+2             5.978788             4.142424          -1.0787879
+3             5.894444             3.936111          -1.1944444
+4             5.823684             3.544737          -1.2236842
+5             5.713953             3.502326          -0.7139535
+6             5.823684             3.544737          -0.4236842
+  Petal.Length_within
+1           -2.144737
+2           -2.742424
+3           -2.636111
+4           -2.044737
+5           -2.102326
+6           -1.844737
+> 
+> x <- demean(iris, select = c("Sepal.Length", "binary", "Species"), by = "ID")
+Categorical predictors (binary, Species) have been coerced to numeric
+  values to compute de- and group-meaned variables.
+
+> head(x)
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species ID binary
+1          5.1         3.5          1.4         0.2  setosa  1      0
+2          4.9         3.0          1.4         0.2  setosa  4      0
+3          4.7         3.2          1.3         0.2  setosa  3      0
+4          4.6         3.1          1.5         0.2  setosa  1      0
+5          5.0         3.6          1.4         0.2  setosa  2      0
+6          5.4         3.9          1.7         0.4  setosa  1      0
+  Sepal.Length_between binary_between Species_between Species_setosa_between
+1             5.823684      0.2894737       0.8684211              0.4210526
+2             5.978788      0.3030303       1.1818182              0.2121212
+3             5.894444      0.3055556       1.0833333              0.3055556
+4             5.823684      0.2894737       0.8684211              0.4210526
+5             5.713953      0.2325581       0.9069767              0.3720930
+6             5.823684      0.2894737       0.8684211              0.4210526
+  Species_versicolor_between Species_virginica_between Sepal.Length_within
+1                  0.2894737                 0.2894737          -0.7236842
+2                  0.3939394                 0.3939394          -1.0787879
+3                  0.3055556                 0.3888889          -1.1944444
+4                  0.2894737                 0.2894737          -1.2236842
+5                  0.3488372                 0.2790698          -0.7139535
+6                  0.2894737                 0.2894737          -0.4236842
+  binary_within Species_within Species_setosa_within Species_versicolor_within
+1    -0.2894737     -0.8684211             0.5789474                -0.2894737
+2    -0.3030303     -1.1818182             0.7878788                -0.3939394
+3    -0.3055556     -1.0833333             0.6944444                -0.3055556
+4    -0.2894737     -0.8684211             0.5789474                -0.2894737
+5    -0.2325581     -0.9069767             0.6279070                -0.3488372
+6    -0.2894737     -0.8684211             0.5789474                -0.2894737
+  Species_virginica_within
+1               -0.2894737
+2               -0.3939394
+3               -0.3888889
+4               -0.2894737
+5               -0.2790698
+6               -0.2894737
+> 
+> 
+> # demean interaction term x*y
+> dat <- data.frame(
++   a = c(1, 2, 3, 4, 1, 2, 3, 4),
++   x = c(4, 3, 3, 4, 1, 2, 1, 2),
++   y = c(1, 2, 1, 2, 4, 3, 2, 1),
++   ID = c(1, 2, 3, 1, 2, 3, 1, 2)
++ )
+> demean(dat, select = c("a", "x*y"), by = "ID")
+  a x y ID a_between x_y_between   a_within x_y_within
+1 1 4 1  1  2.666667    4.666667 -1.6666667 -0.6666667
+2 2 3 2  2  2.333333    4.000000 -0.3333333  2.0000000
+3 3 3 1  3  2.500000    4.500000  0.5000000 -1.5000000
+4 4 4 2  1  2.666667    4.666667  1.3333333  3.3333333
+5 1 1 4  2  2.333333    4.000000 -1.3333333  0.0000000
+6 2 2 3  3  2.500000    4.500000 -0.5000000  1.5000000
+7 3 1 2  1  2.666667    4.666667  0.3333333 -2.6666667
+8 4 2 1  2  2.333333    4.000000  1.6666667 -2.0000000
+> 
+> # or in formula-notation
+> demean(dat, select = ~ a + x * y, by = ~ID)
+  a x y ID a_between x_y_between   a_within x_y_within
+1 1 4 1  1  2.666667    4.666667 -1.6666667 -0.6666667
+2 2 3 2  2  2.333333    4.000000 -0.3333333  2.0000000
+3 3 3 1  3  2.500000    4.500000  0.5000000 -1.5000000
+4 4 4 2  1  2.666667    4.666667  1.3333333  3.3333333
+5 1 1 4  2  2.333333    4.000000 -1.3333333  0.0000000
+6 2 2 3  3  2.500000    4.500000 -0.5000000  1.5000000
+7 3 1 2  1  2.666667    4.666667  0.3333333 -2.6666667
+8 4 2 1  2  2.333333    4.000000  1.6666667 -2.0000000
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("describe_distribution")
+> ### * describe_distribution
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: describe_distribution
+> ### Title: Describe a distribution
+> ### Aliases: describe_distribution describe_distribution.numeric
+> ###   describe_distribution.factor describe_distribution.data.frame
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (require("bayestestR", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ describe_distribution(rnorm(100))
++ 
++ data(iris)
++ describe_distribution(iris)
++ describe_distribution(iris, include_factors = TRUE, quartiles = TRUE)
++ describe_distribution(list(mtcars$mpg, mtcars$cyl))
++ ## Don't show: 
++ }) # examplesIf
+> describe_distribution(rnorm(100))
+Mean |   SD |  IQR |         Range | Skewness | Kurtosis |   n | n_Missing
+--------------------------------------------------------------------------
+0.11 | 0.90 | 1.22 | [-2.21, 2.40] |    -0.07 |     0.07 | 100 |         0
+> data(iris)
+> describe_distribution(iris)
+Variable     | Mean |   SD |  IQR |        Range | Skewness | Kurtosis |   n | n_Missing
+----------------------------------------------------------------------------------------
+Sepal.Length | 5.84 | 0.83 | 1.30 | [4.30, 7.90] |     0.31 |    -0.55 | 150 |         0
+Sepal.Width  | 3.06 | 0.44 | 0.52 | [2.00, 4.40] |     0.32 |     0.23 | 150 |         0
+Petal.Length | 3.76 | 1.77 | 3.52 | [1.00, 6.90] |    -0.27 |    -1.40 | 150 |         0
+Petal.Width  | 1.20 | 0.76 | 1.50 | [0.10, 2.50] |    -0.10 |    -1.34 | 150 |         0
+> describe_distribution(iris, include_factors = TRUE, quartiles = TRUE)
+Variable     | Mean |   SD |  IQR |               Range |  Quartiles | Skewness
+-------------------------------------------------------------------------------
+Sepal.Length | 5.84 | 0.83 | 1.30 |          [4.3, 7.9] | 5.10, 6.40 |     0.31
+Sepal.Width  | 3.06 | 0.44 | 0.52 |            [2, 4.4] | 2.80, 3.30 |     0.32
+Petal.Length | 3.76 | 1.77 | 3.52 |            [1, 6.9] | 1.60, 5.10 |    -0.27
+Petal.Width  | 1.20 | 0.76 | 1.50 |          [0.1, 2.5] | 0.30, 1.80 |    -0.10
+Species      |      |      |      | [setosa, virginica] |            |     0.00
+
+Variable     | Kurtosis |   n | n_Missing
+-----------------------------------------
+Sepal.Length |    -0.55 | 150 |         0
+Sepal.Width  |     0.23 | 150 |         0
+Petal.Length |    -1.40 | 150 |         0
+Petal.Width  |    -1.34 | 150 |         0
+Species      |    -1.51 | 150 |         0
+> describe_distribution(list(mtcars$mpg, mtcars$cyl))
+Variable   |  Mean |   SD |  IQR |          Range | Skewness | Kurtosis |  n | n_Missing
+----------------------------------------------------------------------------------------
+mtcars$mpg | 20.09 | 6.03 | 7.53 | [10.40, 33.90] |     0.67 |    -0.02 | 32 |         0
+mtcars$cyl |  6.19 | 1.79 | 4.00 |   [4.00, 8.00] |    -0.19 |    -1.76 | 32 |         0
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:bayestestR’
+
+> nameEx("distribution_mode")
+> ### * distribution_mode
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: distribution_mode
+> ### Title: Compute mode for a statistical distribution
+> ### Aliases: distribution_mode
+> 
+> ### ** Examples
+> 
+> 
+> distribution_mode(c(1, 2, 3, 3, 4, 5))
+[1] 3
+> distribution_mode(c(1.5, 2.3, 3.7, 3.7, 4.0, 5))
+[1] 3.7
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("extract_column_names")
+> ### * extract_column_names
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data_select
+> ### Title: Find or get columns in a data frame based on search patterns
+> ### Aliases: data_select extract_column_names find_columns
+> 
+> ### ** Examples
+> 
+> # Find column names by pattern
+> extract_column_names(iris, starts_with("Sepal"))
+[1] "Sepal.Length" "Sepal.Width" 
+> extract_column_names(iris, ends_with("Width"))
+[1] "Sepal.Width" "Petal.Width"
+> extract_column_names(iris, regex("\\."))
+[1] "Sepal.Length" "Sepal.Width"  "Petal.Length" "Petal.Width" 
+> extract_column_names(iris, c("Petal.Width", "Sepal.Length"))
+[1] "Petal.Width"  "Sepal.Length"
+> 
+> # starts with "Sepal", but not allowed to end with "width"
+> extract_column_names(iris, starts_with("Sepal"), exclude = contains("Width"))
+[1] "Sepal.Length"
+> 
+> # find numeric with mean > 3.5
+> numeric_mean_35 <- function(x) is.numeric(x) && mean(x, na.rm = TRUE) > 3.5
+> extract_column_names(iris, numeric_mean_35)
+[1] "Sepal.Length" "Petal.Length"
+> 
+> # find column names, using range
+> extract_column_names(mtcars, c(cyl:hp, wt))
+[1] "cyl"  "disp" "hp"   "wt"  
+> 
+> # find range of column names by range, using character vector
+> extract_column_names(mtcars, c("cyl:hp", "wt"))
+[1] "cyl"  "disp" "hp"   "wt"  
+> 
+> # rename returned columns for "data_select()"
+> head(data_select(mtcars, c(`Miles per Gallon` = "mpg", Cylinders = "cyl")))
+                  Miles per Gallon Cylinders
+Mazda RX4                     21.0         6
+Mazda RX4 Wag                 21.0         6
+Datsun 710                    22.8         4
+Hornet 4 Drive                21.4         6
+Hornet Sportabout             18.7         8
+Valiant                       18.1         6
+> 
+> 
+> 
+> cleanEx()
+> nameEx("labels_to_levels")
+> ### * labels_to_levels
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: labels_to_levels
+> ### Title: Convert value labels into factor levels
+> ### Aliases: labels_to_levels labels_to_levels.factor
+> ###   labels_to_levels.data.frame
+> 
+> ### ** Examples
+> 
+> data(efc)
+> # create factor
+> x <- as.factor(efc$c172code)
+> # add value labels - these are not factor levels yet
+> x <- assign_labels(x, values = c(`1` = "low", `2` = "mid", `3` = "high"))
+> levels(x)
+[1] "1" "2" "3"
+> data_tabulate(x)
+x <categorical>
+# total N=100 valid N=90
+
+Value |  N | Raw % | Valid % | Cumulative %
+------+----+-------+---------+-------------
+1     |  8 |  8.00 |    8.89 |         8.89
+2     | 66 | 66.00 |   73.33 |        82.22
+3     | 16 | 16.00 |   17.78 |       100.00
+<NA>  | 10 | 10.00 |    <NA> |         <NA>
+> 
+> x <- labels_to_levels(x)
+> levels(x)
+[1] "low"  "mid"  "high"
+> data_tabulate(x)
+x <categorical>
+# total N=100 valid N=90
+
+Value |  N | Raw % | Valid % | Cumulative %
+------+----+-------+---------+-------------
+low   |  8 |  8.00 |    8.89 |         8.89
+mid   | 66 | 66.00 |   73.33 |        82.22
+high  | 16 | 16.00 |   17.78 |       100.00
+<NA>  | 10 | 10.00 |    <NA> |         <NA>
+> 
+> 
+> 
+> cleanEx()
+> nameEx("makepredictcall.dw_transformer")
+> ### * makepredictcall.dw_transformer
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: makepredictcall.dw_transformer
+> ### Title: Utility Function for Safe Prediction with 'datawizard'
+> ###   transformers
+> ### Aliases: makepredictcall.dw_transformer
+> 
+> ### ** Examples
+> 
+> 
+> data("mtcars")
+> train <- mtcars[1:30, ]
+> test <- mtcars[31:32, ]
+> 
+> m1 <- lm(mpg ~ center(hp), data = train)
+> predict(m1, newdata = test) # Data is "centered" before the prediction is made,
+Maserati Bora    Volvo 142E 
+     4.269496     22.911189 
+> # according to the center of the old data
+> 
+> m2 <- lm(mpg ~ standardize(hp), data = train)
+> m3 <- lm(mpg ~ scale(hp), data = train) # same as above
+> predict(m2, newdata = test) # Data is "standardized" before the prediction is made.
+Maserati Bora    Volvo 142E 
+     4.269496     22.911189 
+> predict(m3, newdata = test) # Data is "standardized" before the prediction is made.
+Maserati Bora    Volvo 142E 
+     4.269496     22.911189 
+> 
+> 
+> m4 <- lm(mpg ~ normalize(hp), data = mtcars)
+> m5 <- lm(mpg ~ rescale(hp, to = c(-3, 3)), data = mtcars)
+> 
+> (newdata <- data.frame(hp = c(range(mtcars$hp), 400))) # 400 is outside original range!
+   hp
+1  52
+2 335
+3 400
+> 
+> model.frame(delete.response(terms(m4)), data = newdata)
+  normalize(hp)
+1      0.000000
+2      1.000000
+3      1.229682
+> model.frame(delete.response(terms(m5)), data = newdata)
+  rescale(hp, to = c(-3, 3))
+1                  -3.000000
+2                   3.000000
+3                   4.378092
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("mean_sd")
+> ### * mean_sd
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: mean_sd
+> ### Title: Summary Helpers
+> ### Aliases: mean_sd median_mad
+> 
+> ### ** Examples
+> 
+> mean_sd(mtcars$mpg)
+     -SD     Mean      +SD 
+14.06368 20.09062 26.11757 
+> 
+> mean_sd(mtcars$mpg, times = 2L)
+    -2 SD     -1 SD      Mean     +1 SD     +2 SD 
+ 8.036729 14.063677 20.090625 26.117573 32.144521 
+> 
+> median_mad(mtcars$mpg)
+    -MAD   Median     +MAD 
+13.78851 19.20000 24.61149 
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("means_by_group")
+> ### * means_by_group
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: means_by_group
+> ### Title: Summary of mean values by group
+> ### Aliases: means_by_group means_by_group.numeric
+> ###   means_by_group.data.frame
+> 
+> ### ** Examples
+> 
+> data(efc)
+> means_by_group(efc, "c12hour", "e42dep")
+# Mean of average number of hours of care per week by elder's dependency
+
+Category             |   Mean |  N |    SD |           95% CI |      p
+----------------------------------------------------------------------
+independent          |  17.00 |  2 | 11.31 | [-68.46, 102.46] | 0.573 
+slightly dependent   |  34.25 |  4 | 29.97 | [-26.18,  94.68] | 0.626 
+moderately dependent |  52.75 | 28 | 51.83 | [ 29.91,  75.59] | > .999
+severely dependent   | 106.97 | 63 | 65.88 | [ 91.74, 122.19] | 0.001 
+Total                |  86.46 | 97 | 66.40 |                  |       
+
+Anova: R2=0.186; adj.R2=0.160; F=7.098; p<.001
+> 
+> data(iris)
+> means_by_group(iris, "Sepal.Width", "Species")
+# Mean of Sepal.Width by Species
+
+Category   | Mean |   N |   SD |       95% CI |      p
+------------------------------------------------------
+setosa     | 3.43 |  50 | 0.38 | [3.33, 3.52] | < .001
+versicolor | 2.77 |  50 | 0.31 | [2.68, 2.86] | < .001
+virginica  | 2.97 |  50 | 0.32 | [2.88, 3.07] | 0.035 
+Total      | 3.06 | 150 | 0.44 |              |       
+
+Anova: R2=0.401; adj.R2=0.393; F=49.160; p<.001
+> 
+> # weighting
+> efc$weight <- abs(rnorm(n = nrow(efc), mean = 1, sd = .5))
+> means_by_group(efc, "c12hour", "e42dep", weights = "weight")
+# Mean of average number of hours of care per week by elder's dependency
+
+Category             |   Mean |  N |    SD |           95% CI |      p
+----------------------------------------------------------------------
+independent          |  15.11 |  3 | 11.31 | [-60.37,  90.60] | 0.394 
+slightly dependent   |  35.02 |  4 | 26.47 | [-29.71,  99.74] | 0.636 
+moderately dependent |  57.10 | 28 | 55.06 | [ 34.32,  79.88] | 0.835 
+severely dependent   | 108.38 | 68 | 63.06 | [ 93.60, 123.16] | < .001
+Total                |  89.20 | 97 | 65.05 |                  |       
+
+Anova: R2=0.184; adj.R2=0.158; F=7.009; p<.001
+> 
+> 
+> 
+> cleanEx()
+> nameEx("normalize")
+> ### * normalize
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: normalize
+> ### Title: Normalize numeric variable to 0-1 range
+> ### Aliases: normalize normalize.numeric normalize.data.frame unnormalize
+> ###   unnormalize.numeric unnormalize.data.frame unnormalize.grouped_df
+> 
+> ### ** Examples
+> 
+> 
+> normalize(c(0, 1, 5, -5, -2))
+[1] 0.5 0.6 1.0 0.0 0.3
+(original range = -5 to 5)
+> normalize(c(0, 1, 5, -5, -2), include_bounds = FALSE)
+[1] 0.50 0.58 0.90 0.10 0.34
+(original range = -5 to 5)
+> # use a value defining the bounds
+> normalize(c(0, 1, 5, -5, -2), include_bounds = .001)
+[1] 0.5000 0.5998 0.9990 0.0010 0.3004
+(original range = -5 to 5)
+> 
+> head(normalize(trees))
+       Girth     Height      Volume
+1 0.00000000 0.29166667 0.001497006
+2 0.02439024 0.08333333 0.001497006
+3 0.04065041 0.00000000 0.000000000
+4 0.17886179 0.37500000 0.092814371
+5 0.19512195 0.75000000 0.128742515
+6 0.20325203 0.83333333 0.142215569
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("ranktransform")
+> ### * ranktransform
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: ranktransform
+> ### Title: (Signed) rank transformation
+> ### Aliases: ranktransform ranktransform.numeric ranktransform.data.frame
+> 
+> ### ** Examples
+> 
+> ranktransform(c(0, 1, 5, -5, -2))
+[1] 3 4 5 1 2
+> 
+> # By default, zeros are converted to NA
+> suppressWarnings(
++   ranktransform(c(0, 1, 5, -5, -2), sign = TRUE)
++ )
+[1]   NA  1.0  3.5 -3.5 -2.0
+> ranktransform(c(0, 1, 5, -5, -2), sign = TRUE, zeros = "signrank")
+[1]  0.0  2.0  4.5 -4.5 -3.0
+> 
+> head(ranktransform(trees))
+  Girth Height Volume
+1     1    6.0    2.5
+2     2    3.0    2.5
+3     3    1.0    1.0
+4     4    8.5    5.0
+5     5   25.5    7.0
+6     6   28.0    9.0
+> 
+> 
+> 
+> cleanEx()
+> nameEx("recode_into")
+> ### * recode_into
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: recode_into
+> ### Title: Recode values from one or more variables into a new variable
+> ### Aliases: recode_into
+> 
+> ### ** Examples
+> 
+> x <- 1:30
+> recode_into(
++   x > 15 ~ "a",
++   x > 10 & x <= 15 ~ "b",
++   default = "c"
++ )
+ [1] "c" "c" "c" "c" "c" "c" "c" "c" "c" "c" "b" "b" "b" "b" "b" "a" "a" "a" "a"
+[20] "a" "a" "a" "a" "a" "a" "a" "a" "a" "a" "a"
+> 
+> x <- 1:10
+> # default behaviour: second recode pattern "x > 5" overwrites
+> # some of the formerly recoded cases from pattern "x >= 3 & x <= 7"
+> recode_into(
++   x >= 3 & x <= 7 ~ 1,
++   x > 5 ~ 2,
++   default = 0,
++   verbose = FALSE
++ )
+ [1] 0 0 1 1 1 2 2 2 2 2
+> 
+> # setting "overwrite = FALSE" will not alter formerly recoded cases
+> recode_into(
++   x >= 3 & x <= 7 ~ 1,
++   x > 5 ~ 2,
++   default = 0,
++   overwrite = FALSE,
++   verbose = FALSE
++ )
+ [1] 0 0 1 1 1 1 1 2 2 2
+> 
+> set.seed(123)
+> d <- data.frame(
++   x = sample(1:5, 30, TRUE),
++   y = sample(letters[1:5], 30, TRUE),
++   stringsAsFactors = FALSE
++ )
+> 
+> # from different variables into new vector
+> recode_into(
++   d$x %in% 1:3 & d$y %in% c("a", "b") ~ 1,
++   d$x > 3 ~ 2,
++   default = 0
++ )
+ [1] 1 1 1 0 0 2 2 0 1 1 2 0 0 0 2 1 1 2 1 0 1 1 0 2 0 1 2 2 1 2
+> 
+> # no need to write name of data frame each time
+> recode_into(
++   x %in% 1:3 & y %in% c("a", "b") ~ 1,
++   x > 3 ~ 2,
++   data = d,
++   default = 0
++ )
+ [1] 1 1 1 0 0 2 2 0 1 1 2 0 0 0 2 1 1 2 1 0 1 1 0 2 0 1 2 2 1 2
+> 
+> # handling of missing values
+> d <- data.frame(
++   x = c(1, NA, 2, NA, 3, 4),
++   y = c(1, 11, 3, NA, 5, 6)
++ )
+> # first NA in x is overwritten by valid value from y
+> # we have no known value for second NA in x and y,
+> # thus we get one NA in the result
+> recode_into(
++   x <= 3 ~ 1,
++   y > 5 ~ 2,
++   data = d,
++   default = 0,
++   preserve_na = TRUE
++ )
+[1]  1  2  1 NA  1  2
+> # first NA in x is overwritten by valid value from y
+> # default value is used for second NA
+> recode_into(
++   x <= 3 ~ 1,
++   y > 5 ~ 2,
++   data = d,
++   default = 0,
++   preserve_na = FALSE
++ )
+Missing values in original variable are overwritten by default value. If
+  you want to preserve missing values, set `preserve_na = TRUE`.
+[1] 1 2 1 0 1 2
+> 
+> 
+> 
+> cleanEx()
+> nameEx("recode_values")
+> ### * recode_values
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: recode_values
+> ### Title: Recode old values of variables into new values
+> ### Aliases: recode_values recode_values.numeric recode_values.data.frame
+> 
+> ### ** Examples
+> 
+> # numeric ----------
+> set.seed(123)
+> x <- sample(c(1:4, NA), 15, TRUE)
+> table(x, useNA = "always")
+x
+   1    2    3    4 <NA> 
+   2    3    6    2    2 
+> 
+> out <- recode_values(x, list(`0` = 1, `1` = 2:3, `2` = 4))
+> out
+ [1]  1  1  1  1  1 NA  2  0  1  1 NA  1  1  0  2
+> table(out, useNA = "always")
+out
+   0    1    2 <NA> 
+   2    9    2    2 
+> 
+> # to recode NA values, set preserve_na to FALSE
+> out <- recode_values(
++   x,
++   list(`0` = 1, `1` = 2:3, `2` = 4, `9` = NA),
++   preserve_na = FALSE
++ )
+> out
+ [1] 1 1 1 1 1 9 2 0 1 1 9 1 1 0 2
+> table(out, useNA = "always")
+out
+   0    1    2    9 <NA> 
+   2    9    2    2    0 
+> 
+> # preserve na ----------
+> out <- recode_values(x, list(`0` = 1, `1` = 2:3), default = 77)
+> out
+ [1]  1  1  1  1  1 NA 77  0  1  1 NA  1  1  0 77
+> table(out, useNA = "always")
+out
+   0    1   77 <NA> 
+   2    9    2    2 
+> 
+> # recode na into default ----------
+> out <- recode_values(
++   x,
++   list(`0` = 1, `1` = 2:3),
++   default = 77,
++   preserve_na = FALSE
++ )
+> out
+ [1]  1  1  1  1  1 77 77  0  1  1 77  1  1  0 77
+> table(out, useNA = "always")
+out
+   0    1   77 <NA> 
+   2    9    4    0 
+> 
+> 
+> # factors (character vectors are similar) ----------
+> set.seed(123)
+> x <- as.factor(sample(c("a", "b", "c"), 15, TRUE))
+> table(x)
+x
+a b c 
+2 7 6 
+> 
+> out <- recode_values(x, list(x = "a", y = c("b", "c")))
+> out
+ [1] y y y y y y y y y x y y x y y
+Levels: x y
+> table(out)
+out
+ x  y 
+ 2 13 
+> 
+> out <- recode_values(x, list(x = "a", y = "b", z = "c"))
+> out
+ [1] z z z y z y y y z x y y x y z
+Levels: x y z
+> table(out)
+out
+x y z 
+2 7 6 
+> 
+> out <- recode_values(x, list(y = "b,c"), default = 77)
+> # same as
+> # recode_values(x, list(y = c("b", "c")), default = 77)
+> out
+ [1] y  y  y  y  y  y  y  y  y  77 y  y  77 y  y 
+Levels: 77 y
+> table(out)
+out
+77  y 
+ 2 13 
+> 
+> 
+> # data frames ----------
+> set.seed(123)
+> d <- data.frame(
++   x = sample(c(1:4, NA), 12, TRUE),
++   y = as.factor(sample(c("a", "b", "c"), 12, TRUE)),
++   stringsAsFactors = FALSE
++ )
+> 
+> recode_values(
++   d,
++   recode = list(`0` = 1, `1` = 2:3, `2` = 4, x = "a", y = c("b", "c")),
++   append = TRUE
++ )
+    x y x_r y_r
+1   3 c   1   y
+2   3 a   1   x
+3   2 a   1   x
+4   2 a   1   x
+5   3 a   1   x
+6  NA c  NA   y
+7   4 b   2   y
+8   1 c   0   y
+9   2 b   1   y
+10  3 a   1   x
+11 NA b  NA   y
+12  3 c   1   y
+> 
+> 
+> # switch recode pattern to "old=new" ----------
+> options(data_recode_pattern = "old=new")
+> 
+> # numeric
+> set.seed(123)
+> x <- sample(c(1:4, NA), 15, TRUE)
+> table(x, useNA = "always")
+x
+   1    2    3    4 <NA> 
+   2    3    6    2    2 
+> 
+> out <- recode_values(x, list(`1` = 0, `2:3` = 1, `4` = 2))
+> table(out, useNA = "always")
+out
+   0    1    2 <NA> 
+   2    9    2    2 
+> 
+> # factors (character vectors are similar)
+> set.seed(123)
+> x <- as.factor(sample(c("a", "b", "c"), 15, TRUE))
+> table(x)
+x
+a b c 
+2 7 6 
+> 
+> out <- recode_values(x, list(a = "x", `b, c` = "y"))
+> table(out)
+out
+ x  y 
+ 2 13 
+> 
+> # reset options
+> options(data_recode_pattern = NULL)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("remove_empty")
+> ### * remove_empty
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: remove_empty
+> ### Title: Return or remove variables or observations that are completely
+> ###   missing
+> ### Aliases: remove_empty empty_columns empty_rows remove_empty_columns
+> ###   remove_empty_rows
+> 
+> ### ** Examples
+> 
+> tmp <- data.frame(
++   a = c(1, 2, 3, NA, 5),
++   b = c(1, NA, 3, NA, 5),
++   c = c(NA, NA, NA, NA, NA),
++   d = c(1, NA, 3, NA, 5)
++ )
+> 
+> tmp
+   a  b  c  d
+1  1  1 NA  1
+2  2 NA NA NA
+3  3  3 NA  3
+4 NA NA NA NA
+5  5  5 NA  5
+> 
+> # indices of empty columns or rows
+> empty_columns(tmp)
+c 
+3 
+> empty_rows(tmp)
+[1] 4
+> 
+> # remove empty columns or rows
+> remove_empty_columns(tmp)
+   a  b  d
+1  1  1  1
+2  2 NA NA
+3  3  3  3
+4 NA NA NA
+5  5  5  5
+> remove_empty_rows(tmp)
+  a  b  c  d
+1 1  1 NA  1
+2 2 NA NA NA
+3 3  3 NA  3
+5 5  5 NA  5
+> 
+> # remove empty columns and rows
+> remove_empty(tmp)
+  a  b  d
+1 1  1  1
+2 2 NA NA
+3 3  3  3
+5 5  5  5
+> 
+> # also remove "empty" character vectors
+> tmp <- data.frame(
++   a = c(1, 2, 3, NA, 5),
++   b = c(1, NA, 3, NA, 5),
++   c = c("", "", "", "", ""),
++   stringsAsFactors = FALSE
++ )
+> empty_columns(tmp)
+c 
+3 
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("replace_nan_inf")
+> ### * replace_nan_inf
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: replace_nan_inf
+> ### Title: Convert infinite or 'NaN' values into 'NA'
+> ### Aliases: replace_nan_inf
+> 
+> ### ** Examples
+> 
+> # a vector
+> x <- c(1, 2, NA, 3, NaN, 4, NA, 5, Inf, -Inf, 6, 7)
+> replace_nan_inf(x)
+ [1]  1  2 NA  3 NA  4 NA  5 NA NA  6  7
+> 
+> # a data frame
+> df <- data.frame(
++   x = c(1, NA, 5, Inf, 2, NA),
++   y = c(3, NaN, 4, -Inf, 6, 7),
++   stringsAsFactors = FALSE
++ )
+> replace_nan_inf(df)
+   x  y
+1  1  3
+2 NA NA
+3  5  4
+4 NA NA
+5  2  6
+6 NA  7
+> 
+> 
+> 
+> cleanEx()
+> nameEx("rescale")
+> ### * rescale
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: rescale
+> ### Title: Rescale Variables to a New Range
+> ### Aliases: rescale change_scale rescale.numeric rescale.data.frame
+> 
+> ### ** Examples
+> 
+> rescale(c(0, 1, 5, -5, -2))
+[1]  50  60 100   0  30
+(original range = -5 to 5)
+> rescale(c(0, 1, 5, -5, -2), to = c(-5, 5))
+[1]  0  1  5 -5 -2
+(original range = -5 to 5)
+> rescale(c(1, 2, 3, 4, 5), to = c(-2, 2))
+[1] -2 -1  0  1  2
+(original range = 1 to 5)
+> 
+> # Specify the "theoretical" range of the input vector
+> rescale(c(1, 3, 4), to = c(0, 40), range = c(0, 4))
+[1] 10 30 40
+(original range = 0 to 4)
+> 
+> # Reverse-score a variable
+> rescale(c(1, 2, 3, 4, 5), to = c(5, 1))
+[1] 5 4 3 2 1
+(original range = 1 to 5)
+> rescale(c(1, 2, 3, 4, 5), to = c(2, -2))
+[1]  2  1  0 -1 -2
+(original range = 1 to 5)
+> 
+> # Data frames
+> head(rescale(iris, to = c(0, 1)))
+Variables of class `factor` can't be rescaled and remain unchanged.
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+1   0.22222222   0.6250000   0.06779661  0.04166667  setosa
+2   0.16666667   0.4166667   0.06779661  0.04166667  setosa
+3   0.11111111   0.5000000   0.05084746  0.04166667  setosa
+4   0.08333333   0.4583333   0.08474576  0.04166667  setosa
+5   0.19444444   0.6666667   0.06779661  0.04166667  setosa
+6   0.30555556   0.7916667   0.11864407  0.12500000  setosa
+> head(rescale(iris, to = c(0, 1), select = "Sepal.Length"))
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+1   0.22222222         3.5          1.4         0.2  setosa
+2   0.16666667         3.0          1.4         0.2  setosa
+3   0.11111111         3.2          1.3         0.2  setosa
+4   0.08333333         3.1          1.5         0.2  setosa
+5   0.19444444         3.6          1.4         0.2  setosa
+6   0.30555556         3.9          1.7         0.4  setosa
+> 
+> # One can specify a list of ranges
+> head(rescale(iris, to = list(
++   "Sepal.Length" = c(0, 1),
++   "Petal.Length" = c(-1, 0)
++ )))
+Variables of class `factor` can't be rescaled and remain unchanged.
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+1   0.22222222         3.5   -0.9322034         0.2  setosa
+2   0.16666667         3.0   -0.9322034         0.2  setosa
+3   0.11111111         3.2   -0.9491525         0.2  setosa
+4   0.08333333         3.1   -0.9152542         0.2  setosa
+5   0.19444444         3.6   -0.9322034         0.2  setosa
+6   0.30555556         3.9   -0.8813559         0.4  setosa
+> 
+> # "expand" ranges by a factor or a given value
+> x <- 5:15
+> x
+ [1]  5  6  7  8  9 10 11 12 13 14 15
+> # both will expand the range by 10%
+> rescale(x, multiply = 1.1)
+ [1]  4.5  5.6  6.7  7.8  8.9 10.0 11.1 12.2 13.3 14.4 15.5
+(original range = 5 to 15)
+> rescale(x, add = 0.5)
+ [1]  4.5  5.6  6.7  7.8  8.9 10.0 11.1 12.2 13.3 14.4 15.5
+(original range = 5 to 15)
+> 
+> # expand range by different values
+> rescale(x, add = c(1, 3))
+ [1]  4.0  5.4  6.8  8.2  9.6 11.0 12.4 13.8 15.2 16.6 18.0
+(original range = 5 to 15)
+> 
+> # Specify list of multipliers
+> d <- data.frame(x = 5:15, y = 5:15)
+> rescale(d, multiply = list(x = 1.1, y = 0.5))
+      x    y
+1   4.5  7.5
+2   5.6  8.0
+3   6.7  8.5
+4   7.8  9.0
+5   8.9  9.5
+6  10.0 10.0
+7  11.1 10.5
+8  12.2 11.0
+9  13.3 11.5
+10 14.4 12.0
+11 15.5 12.5
+> 
+> 
+> 
+> cleanEx()
+> nameEx("rescale_weights")
+> ### * rescale_weights
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: rescale_weights
+> ### Title: Rescale design weights for multilevel analysis
+> ### Aliases: rescale_weights
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (all(insight::check_if_installed(c("lme4", "parameters"), quietly = TRUE))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ data(nhanes_sample)
++ head(rescale_weights(nhanes_sample, "WTINT2YR", "SDMVSTRA"))
++ 
++ # also works with multiple group-variables
++ head(rescale_weights(nhanes_sample, "WTINT2YR", c("SDMVSTRA", "SDMVPSU")))
++ 
++ # or nested structures.
++ x <- rescale_weights(
++   data = nhanes_sample,
++   probability_weights = "WTINT2YR",
++   by = c("SDMVSTRA", "SDMVPSU"),
++   nest = TRUE
++ )
++ head(x)
++ 
++ ## Don't show: 
++ }) # examplesIf
+> data(nhanes_sample)
+> head(rescale_weights(nhanes_sample, "WTINT2YR", "SDMVSTRA"))
+  total  age RIAGENDR RIDRETH1 SDMVPSU SDMVSTRA WTINT2YR rescaled_weights_a
+1     1 2.20        1        3       2       31 97593.68          1.5733612
+2     7 2.08        2        3       1       29 39599.36          0.6231745
+3     3 1.48        2        1       2       42 26619.83          0.8976966
+4     4 1.32        2        4       2       33 34998.53          0.7083628
+5     1 2.00        2        1       1       41 14746.45          0.4217782
+6     6 2.20        2        4       1       38 28232.10          0.6877550
+  rescaled_weights_b
+1          1.2005159
+2          0.5246593
+3          0.5439111
+4          0.5498944
+5          0.3119698
+6          0.5155503
+> head(rescale_weights(nhanes_sample, "WTINT2YR", c("SDMVSTRA", "SDMVPSU")))
+  total  age RIAGENDR RIDRETH1 SDMVPSU SDMVSTRA WTINT2YR pweight_a_SDMVSTRA
+1     1 2.20        1        3       2       31 97593.68          1.5733612
+2     7 2.08        2        3       1       29 39599.36          0.6231745
+3     3 1.48        2        1       2       42 26619.83          0.8976966
+4     4 1.32        2        4       2       33 34998.53          0.7083628
+5     1 2.00        2        1       1       41 14746.45          0.4217782
+6     6 2.20        2        4       1       38 28232.10          0.6877550
+  pweight_b_SDMVSTRA pweight_a_SDMVPSU pweight_b_SDMVPSU
+1          1.2005159         1.8458164         1.3699952
+2          0.5246593         0.8217570         0.5780808
+3          0.5439111         0.5034683         0.3736824
+4          0.5498944         0.6619369         0.4913004
+5          0.3119698         0.3060151         0.2152722
+6          0.5155503         0.5858662         0.4121388
+> x <- rescale_weights(data = nhanes_sample, probability_weights = "WTINT2YR", 
++     by = c("SDMVSTRA", "SDMVPSU"), nest = TRUE)
+> head(x)
+  total  age RIAGENDR RIDRETH1 SDMVPSU SDMVSTRA WTINT2YR rescaled_weights_a
+1     1 2.20        1        3       2       31 97593.68          1.6532834
+2     7 2.08        2        3       1       29 39599.36          0.5492655
+3     3 1.48        2        1       2       42 26619.83          0.8341084
+4     4 1.32        2        4       2       33 34998.53          0.7937824
+5     1 2.00        2        1       1       41 14746.45          0.4285939
+6     6 2.20        2        4       1       38 28232.10          0.6215579
+  rescaled_weights_b
+1          1.3583967
+2          0.4875798
+3          0.5891700
+4          0.5941006
+5          0.3068214
+6          0.4759935
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("reshape_ci")
+> ### * reshape_ci
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: reshape_ci
+> ### Title: Reshape CI between wide/long formats
+> ### Aliases: reshape_ci
+> 
+> ### ** Examples
+> 
+> x <- data.frame(
++   Parameter = c("Term 1", "Term 2", "Term 1", "Term 2"),
++   CI = c(.8, .8, .9, .9),
++   CI_low = c(.2, .3, .1, .15),
++   CI_high = c(.5, .6, .8, .85),
++   stringsAsFactors = FALSE
++ )
+> 
+> reshape_ci(x)
+  Parameter CI_low_0.8 CI_high_0.8 CI_low_0.9 CI_high_0.9
+1    Term 1        0.2         0.5       0.10        0.80
+2    Term 2        0.3         0.6       0.15        0.85
+> reshape_ci(reshape_ci(x))
+  Parameter  CI CI_low CI_high
+1    Term 1 0.8   0.20    0.50
+2    Term 1 0.9   0.10    0.80
+3    Term 2 0.8   0.30    0.60
+4    Term 2 0.9   0.15    0.85
+> 
+> 
+> 
+> cleanEx()
+> nameEx("reverse")
+> ### * reverse
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: reverse
+> ### Title: Reverse-Score Variables
+> ### Aliases: reverse reverse_scale reverse.numeric reverse.data.frame
+> 
+> ### ** Examples
+> 
+> reverse(c(1, 2, 3, 4, 5))
+[1] 5 4 3 2 1
+> reverse(c(-2, -1, 0, 2, 1))
+[1]  2  1  0 -2 -1
+> 
+> # Specify the "theoretical" range of the input vector
+> reverse(c(1, 3, 4), range = c(0, 4))
+[1] 3 1 0
+> 
+> # Factor variables
+> reverse(factor(c(1, 2, 3, 4, 5)))
+[1] 5 4 3 2 1
+Levels: 1 2 3 4 5
+> reverse(factor(c(1, 2, 3, 4, 5)), range = 0:10)
+[1] 9 8 7 6 5
+Levels: 0 1 2 3 4 5 6 7 8 9 10
+> 
+> # Data frames
+> head(reverse(iris))
+  Sepal.Length Sepal.Width Petal.Length Petal.Width   Species
+1          7.1         2.9          6.5         2.4 virginica
+2          7.3         3.4          6.5         2.4 virginica
+3          7.5         3.2          6.6         2.4 virginica
+4          7.6         3.3          6.4         2.4 virginica
+5          7.2         2.8          6.5         2.4 virginica
+6          6.8         2.5          6.2         2.2 virginica
+> head(reverse(iris, select = "Sepal.Length"))
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+1          7.1         3.5          1.4         0.2  setosa
+2          7.3         3.0          1.4         0.2  setosa
+3          7.5         3.2          1.3         0.2  setosa
+4          7.6         3.1          1.5         0.2  setosa
+5          7.2         3.6          1.4         0.2  setosa
+6          6.8         3.9          1.7         0.4  setosa
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("row_count")
+> ### * row_count
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: row_count
+> ### Title: Count specific values row-wise
+> ### Aliases: row_count
+> 
+> ### ** Examples
+> 
+> dat <- data.frame(
++   c1 = c(1, 2, NA, 4),
++   c2 = c(NA, 2, NA, 5),
++   c3 = c(NA, 4, NA, NA),
++   c4 = c(2, 3, 7, 8)
++ )
+> 
+> # count all 4s per row
+> row_count(dat, count = 4)
+[1] 0 1 0 1
+> # count all missing values per row
+> row_count(dat, count = NA)
+[1] 2 0 3 1
+> 
+> dat <- data.frame(
++   c1 = c("1", "2", NA, "3"),
++   c2 = c(NA, "2", NA, "3"),
++   c3 = c(NA, 4, NA, NA),
++   c4 = c(2, 3, 7, Inf)
++ )
+> # count all 2s and "2"s per row
+> row_count(dat, count = 2)
+[1] 1 2 0 0
+> # only count 2s, but not "2"s
+> row_count(dat, count = 2, allow_coercion = FALSE)
+[1] 1 0 0 0
+> 
+> dat <- data.frame(
++   c1 = factor(c("1", "2", NA, "3")),
++   c2 = c("2", "1", NA, "3"),
++   c3 = c(NA, 4, NA, NA),
++   c4 = c(2, 3, 7, Inf)
++ )
+> # find only character "2"s
+> row_count(dat, count = "2", allow_coercion = FALSE)
+[1] 1 0 0 0
+> # find only factor level "2"s
+> row_count(dat, count = factor("2"), allow_coercion = FALSE)
+[1] 0 1 0 0
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("row_means")
+> ### * row_means
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: row_means
+> ### Title: Row means or sums (optionally with minimum amount of valid
+> ###   values)
+> ### Aliases: row_means row_sums
+> 
+> ### ** Examples
+> 
+> dat <- data.frame(
++   c1 = c(1, 2, NA, 4),
++   c2 = c(NA, 2, NA, 5),
++   c3 = c(NA, 4, NA, NA),
++   c4 = c(2, 3, 7, 8)
++ )
+> 
+> # default, all means are shown, if no NA values are present
+> row_means(dat)
+[1]   NA 2.75   NA   NA
+> 
+> # remove all NA before computing row means
+> row_means(dat, remove_na = TRUE)
+[1] 1.500000 2.750000 7.000000 5.666667
+> 
+> # needs at least 4 non-missing values per row
+> row_means(dat, min_valid = 4) # 1 valid return value
+[1]   NA 2.75   NA   NA
+> row_sums(dat, min_valid = 4) # 1 valid return value
+[1] NA 11 NA NA
+> 
+> # needs at least 3 non-missing values per row
+> row_means(dat, min_valid = 3) # 2 valid return values
+[1]       NA 2.750000       NA 5.666667
+> 
+> # needs at least 2 non-missing values per row
+> row_means(dat, min_valid = 2)
+[1] 1.500000 2.750000       NA 5.666667
+> 
+> # needs at least 1 non-missing value per row, for two selected variables
+> row_means(dat, select = c("c1", "c3"), min_valid = 1)
+[1]  1  3 NA  4
+> 
+> # needs at least 50% of non-missing values per row
+> row_means(dat, min_valid = 0.5) # 3 valid return values
+[1] 1.500000 2.750000       NA 5.666667
+> row_sums(dat, min_valid = 0.5)
+[1]  3 11 NA 17
+> 
+> # needs at least 75% of non-missing values per row
+> row_means(dat, min_valid = 0.75) # 2 valid return values
+[1]       NA 2.750000       NA 5.666667
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("rownames")
+> ### * rownames
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: rownames_as_column
+> ### Title: Tools for working with row names or row ids
+> ### Aliases: rownames_as_column column_as_rownames rowid_as_column
+> 
+> ### ** Examples
+> 
+> # Convert between row names and column --------------------------------
+> test <- rownames_as_column(mtcars, var = "car")
+> test
+                   car  mpg cyl  disp  hp drat    wt  qsec vs am gear carb
+1            Mazda RX4 21.0   6 160.0 110 3.90 2.620 16.46  0  1    4    4
+2        Mazda RX4 Wag 21.0   6 160.0 110 3.90 2.875 17.02  0  1    4    4
+3           Datsun 710 22.8   4 108.0  93 3.85 2.320 18.61  1  1    4    1
+4       Hornet 4 Drive 21.4   6 258.0 110 3.08 3.215 19.44  1  0    3    1
+5    Hornet Sportabout 18.7   8 360.0 175 3.15 3.440 17.02  0  0    3    2
+6              Valiant 18.1   6 225.0 105 2.76 3.460 20.22  1  0    3    1
+7           Duster 360 14.3   8 360.0 245 3.21 3.570 15.84  0  0    3    4
+8            Merc 240D 24.4   4 146.7  62 3.69 3.190 20.00  1  0    4    2
+9             Merc 230 22.8   4 140.8  95 3.92 3.150 22.90  1  0    4    2
+10            Merc 280 19.2   6 167.6 123 3.92 3.440 18.30  1  0    4    4
+11           Merc 280C 17.8   6 167.6 123 3.92 3.440 18.90  1  0    4    4
+12          Merc 450SE 16.4   8 275.8 180 3.07 4.070 17.40  0  0    3    3
+13          Merc 450SL 17.3   8 275.8 180 3.07 3.730 17.60  0  0    3    3
+14         Merc 450SLC 15.2   8 275.8 180 3.07 3.780 18.00  0  0    3    3
+15  Cadillac Fleetwood 10.4   8 472.0 205 2.93 5.250 17.98  0  0    3    4
+16 Lincoln Continental 10.4   8 460.0 215 3.00 5.424 17.82  0  0    3    4
+17   Chrysler Imperial 14.7   8 440.0 230 3.23 5.345 17.42  0  0    3    4
+18            Fiat 128 32.4   4  78.7  66 4.08 2.200 19.47  1  1    4    1
+19         Honda Civic 30.4   4  75.7  52 4.93 1.615 18.52  1  1    4    2
+20      Toyota Corolla 33.9   4  71.1  65 4.22 1.835 19.90  1  1    4    1
+21       Toyota Corona 21.5   4 120.1  97 3.70 2.465 20.01  1  0    3    1
+22    Dodge Challenger 15.5   8 318.0 150 2.76 3.520 16.87  0  0    3    2
+23         AMC Javelin 15.2   8 304.0 150 3.15 3.435 17.30  0  0    3    2
+24          Camaro Z28 13.3   8 350.0 245 3.73 3.840 15.41  0  0    3    4
+25    Pontiac Firebird 19.2   8 400.0 175 3.08 3.845 17.05  0  0    3    2
+26           Fiat X1-9 27.3   4  79.0  66 4.08 1.935 18.90  1  1    4    1
+27       Porsche 914-2 26.0   4 120.3  91 4.43 2.140 16.70  0  1    5    2
+28        Lotus Europa 30.4   4  95.1 113 3.77 1.513 16.90  1  1    5    2
+29      Ford Pantera L 15.8   8 351.0 264 4.22 3.170 14.50  0  1    5    4
+30        Ferrari Dino 19.7   6 145.0 175 3.62 2.770 15.50  0  1    5    6
+31       Maserati Bora 15.0   8 301.0 335 3.54 3.570 14.60  0  1    5    8
+32          Volvo 142E 21.4   4 121.0 109 4.11 2.780 18.60  1  1    4    2
+> head(column_as_rownames(test, var = "car"))
+                   mpg cyl disp  hp drat    wt  qsec vs am gear carb
+Mazda RX4         21.0   6  160 110 3.90 2.620 16.46  0  1    4    4
+Mazda RX4 Wag     21.0   6  160 110 3.90 2.875 17.02  0  1    4    4
+Datsun 710        22.8   4  108  93 3.85 2.320 18.61  1  1    4    1
+Hornet 4 Drive    21.4   6  258 110 3.08 3.215 19.44  1  0    3    1
+Hornet Sportabout 18.7   8  360 175 3.15 3.440 17.02  0  0    3    2
+Valiant           18.1   6  225 105 2.76 3.460 20.22  1  0    3    1
+> 
+> test_data <- head(iris)
+> 
+> rowid_as_column(test_data)
+  rowid Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+1     1          5.1         3.5          1.4         0.2  setosa
+2     2          4.9         3.0          1.4         0.2  setosa
+3     3          4.7         3.2          1.3         0.2  setosa
+4     4          4.6         3.1          1.5         0.2  setosa
+5     5          5.0         3.6          1.4         0.2  setosa
+6     6          5.4         3.9          1.7         0.4  setosa
+> rowid_as_column(test_data, var = "my_id")
+  my_id Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+1     1          5.1         3.5          1.4         0.2  setosa
+2     2          4.9         3.0          1.4         0.2  setosa
+3     3          4.7         3.2          1.3         0.2  setosa
+4     4          4.6         3.1          1.5         0.2  setosa
+5     5          5.0         3.6          1.4         0.2  setosa
+6     6          5.4         3.9          1.7         0.4  setosa
+> 
+> 
+> 
+> cleanEx()
+> nameEx("skewness")
+> ### * skewness
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: skewness
+> ### Title: Compute Skewness and (Excess) Kurtosis
+> ### Aliases: skewness skewness.numeric kurtosis kurtosis.numeric
+> ###   print.parameters_kurtosis print.parameters_skewness
+> ###   summary.parameters_skewness summary.parameters_kurtosis
+> 
+> ### ** Examples
+> 
+> skewness(rnorm(1000))
+Skewness |    SE
+----------------
+  -0.019 | 0.077
+> kurtosis(rnorm(1000))
+Kurtosis |    SE
+----------------
+  -0.011 | 0.154
+> 
+> 
+> 
+> cleanEx()
+> nameEx("slide")
+> ### * slide
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: slide
+> ### Title: Shift numeric value range
+> ### Aliases: slide slide.numeric slide.data.frame
+> 
+> ### ** Examples
+> 
+> # numeric
+> head(mtcars$gear)
+[1] 4 4 4 3 3 3
+> head(slide(mtcars$gear))
+[1] 1 1 1 0 0 0
+> head(slide(mtcars$gear, lowest = 10))
+[1] 11 11 11 10 10 10
+> 
+> # data frame
+> sapply(slide(mtcars, lowest = 1), min)
+ mpg  cyl disp   hp drat   wt qsec   vs   am gear carb 
+   1    1    1    1    1    1    1    1    1    1    1 
+> sapply(mtcars, min)
+   mpg    cyl   disp     hp   drat     wt   qsec     vs     am   gear   carb 
+10.400  4.000 71.100 52.000  2.760  1.513 14.500  0.000  0.000  3.000  1.000 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("smoothness")
+> ### * smoothness
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: smoothness
+> ### Title: Quantify the smoothness of a vector
+> ### Aliases: smoothness
+> 
+> ### ** Examples
+> 
+> x <- (-10:10)^3 + rnorm(21, 0, 100)
+> plot(x)
+> smoothness(x, method = "cor")
+[1] 0.9188021
+attr(,"class")
+[1] "parameters_smoothness" "numeric"              
+> smoothness(x, method = "diff")
+[1] 1.580341
+attr(,"class")
+[1] "parameters_smoothness" "numeric"              
+> 
+> 
+> 
+> cleanEx()
+> nameEx("standardize")
+> ### * standardize
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: standardize
+> ### Title: Standardization (Z-scoring)
+> ### Aliases: standardize standardise standardize.numeric standardize.factor
+> ###   standardize.data.frame unstandardize unstandardise
+> ###   unstandardize.numeric unstandardize.data.frame
+> 
+> ### ** Examples
+> 
+> d <- iris[1:4, ]
+> 
+> # vectors
+> standardise(d$Petal.Length)
+[1]  0.000000  0.000000 -1.224745  1.224745
+(center: 1.4, scale = 0.082)
+> 
+> # Data frames
+> # overwrite
+> standardise(d, select = c("Sepal.Length", "Sepal.Width"))
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+1    1.2402159   1.3887301          1.4         0.2  setosa
+2    0.3382407  -0.9258201          1.4         0.2  setosa
+3   -0.5637345   0.0000000          1.3         0.2  setosa
+4   -1.0147221  -0.4629100          1.5         0.2  setosa
+> 
+> # append
+> standardise(d, select = c("Sepal.Length", "Sepal.Width"), append = TRUE)
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species Sepal.Length_z
+1          5.1         3.5          1.4         0.2  setosa      1.2402159
+2          4.9         3.0          1.4         0.2  setosa      0.3382407
+3          4.7         3.2          1.3         0.2  setosa     -0.5637345
+4          4.6         3.1          1.5         0.2  setosa     -1.0147221
+  Sepal.Width_z
+1     1.3887301
+2    -0.9258201
+3     0.0000000
+4    -0.4629100
+> 
+> # append, suffix
+> standardise(d, select = c("Sepal.Length", "Sepal.Width"), append = "_std")
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species Sepal.Length_std
+1          5.1         3.5          1.4         0.2  setosa        1.2402159
+2          4.9         3.0          1.4         0.2  setosa        0.3382407
+3          4.7         3.2          1.3         0.2  setosa       -0.5637345
+4          4.6         3.1          1.5         0.2  setosa       -1.0147221
+  Sepal.Width_std
+1       1.3887301
+2      -0.9258201
+3       0.0000000
+4      -0.4629100
+> 
+> # standardizing with reference center and scale
+> d <- data.frame(
++   a = c(-2, -1, 0, 1, 2),
++   b = c(3, 4, 5, 6, 7)
++ )
+> 
+> # default standardization, based on mean and sd of each variable
+> standardize(d) # means are 0 and 5, sd ~ 1.581139
+           a          b
+1 -1.2649111 -1.2649111
+2 -0.6324555 -0.6324555
+3  0.0000000  0.0000000
+4  0.6324555  0.6324555
+5  1.2649111  1.2649111
+> 
+> # standardization, based on mean and sd set to the same values
+> standardize(d, center = c(0, 5), scale = c(1.581, 1.581))
+           a          b
+1 -1.2650221 -1.2650221
+2 -0.6325111 -0.6325111
+3  0.0000000  0.0000000
+4  0.6325111  0.6325111
+5  1.2650221  1.2650221
+> 
+> # standardization, mean and sd for each variable newly defined
+> standardize(d, center = c(3, 4), scale = c(2, 4))
+     a     b
+1 -2.5 -0.25
+2 -2.0  0.00
+3 -1.5  0.25
+4 -1.0  0.50
+5 -0.5  0.75
+> 
+> # standardization, taking same mean and sd for each variable
+> standardize(d, center = 1, scale = 3)
+           a         b
+1 -1.0000000 0.6666667
+2 -0.6666667 1.0000000
+3 -0.3333333 1.3333333
+4  0.0000000 1.6666667
+5  0.3333333 2.0000000
+> 
+> 
+> 
+> cleanEx()
+> nameEx("standardize.default")
+> ### * standardize.default
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: standardize.default
+> ### Title: Re-fit a model with standardized data
+> ### Aliases: standardize.default standardize_models
+> 
+> ### ** Examples
+> 
+> model <- lm(Infant.Mortality ~ Education * Fertility, data = swiss)
+> coef(standardize(model))
+        (Intercept)           Education           Fertility Education:Fertility 
+         0.06386069          0.47482848          0.63270919          0.09829777 
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("text_format")
+> ### * text_format
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: text_format
+> ### Title: Convenient text formatting functionalities
+> ### Aliases: text_format text_fullstop text_lastchar text_concatenate
+> ###   text_paste text_remove text_wrap
+> 
+> ### ** Examples
+> 
+> # Add full stop if missing
+> text_fullstop(c("something", "something else."))
+[1] "something."      "something else."
+> 
+> # Find last characters
+> text_lastchar(c("ABC", "DEF"), n = 2)
+ ABC  DEF 
+"BC" "EF" 
+> 
+> # Smart concatenation
+> text_concatenate(c("First", "Second", "Last"))
+[1] "First, Second and Last"
+> text_concatenate(c("First", "Second", "Last"), last = " or ", enclose = "`")
+[1] "`First`, `Second` or `Last`"
+> 
+> # Remove parts of string
+> text_remove(c("one!", "two", "three!"), "!")
+[1] "one"   "two"   "three"
+> 
+> # Wrap text
+> long_text <- paste(rep("abc ", 100), collapse = "")
+> cat(text_wrap(long_text, width = 50))
+ abc abc abc abc abc abc abc abc abc abc abc abc
+abc abc abc abc abc abc abc abc abc abc abc abc
+abc abc abc abc abc abc abc abc abc abc abc abc
+abc abc abc abc abc abc abc abc abc abc abc abc
+abc abc abc abc abc abc abc abc abc abc abc abc
+abc abc abc abc abc abc abc abc abc abc abc abc
+abc abc abc abc abc abc abc abc abc abc abc abc
+abc abc abc abc abc abc abc abc abc abc abc abc
+abc abc abc abc
+> 
+> # Paste with optional separator
+> text_paste(c("A", "", "B"), c("42", "42", "42"))
+[1] "A, 42" "42"    "B, 42"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("to_factor")
+> ### * to_factor
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: to_factor
+> ### Title: Convert data to factors
+> ### Aliases: to_factor to_factor.numeric to_factor.data.frame
+> 
+> ### ** Examples
+> 
+> str(to_factor(iris))
+'data.frame':	150 obs. of  5 variables:
+ $ Sepal.Length: Factor w/ 35 levels "4.3","4.4","4.5",..: 9 7 5 4 8 12 4 8 2 7 ...
+ $ Sepal.Width : Factor w/ 23 levels "2","2.2","2.3",..: 15 10 12 11 16 19 14 14 9 11 ...
+ $ Petal.Length: Factor w/ 43 levels "1","1.1","1.2",..: 5 5 4 6 5 8 5 6 5 6 ...
+ $ Petal.Width : Factor w/ 22 levels "0.1","0.2","0.3",..: 2 2 2 2 2 4 3 2 2 1 ...
+ $ Species     : Factor w/ 3 levels "setosa","versicolor",..: 1 1 1 1 1 1 1 1 1 1 ...
+> 
+> # use labels as levels
+> data(efc)
+> str(efc$c172code)
+ num [1:100] 2 2 1 2 2 2 2 2 NA 2 ...
+ - attr(*, "label")= chr "carer's level of education"
+ - attr(*, "labels")= Named num [1:3] 1 2 3
+  ..- attr(*, "names")= chr [1:3] "low level of education" "intermediate level of education" "high level of education"
+> head(to_factor(efc$c172code))
+[1] intermediate level of education intermediate level of education
+[3] low level of education          intermediate level of education
+[5] intermediate level of education intermediate level of education
+3 Levels: low level of education ... high level of education
+> 
+> 
+> 
+> cleanEx()
+> nameEx("to_numeric")
+> ### * to_numeric
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: to_numeric
+> ### Title: Convert data to numeric
+> ### Aliases: to_numeric to_numeric.data.frame
+> 
+> ### ** Examples
+> 
+> to_numeric(head(ToothGrowth))
+   len supp dose
+1  4.2    2  0.5
+2 11.5    2  0.5
+3  7.3    2  0.5
+4  5.8    2  0.5
+5  6.4    2  0.5
+6 10.0    2  0.5
+> to_numeric(head(ToothGrowth), dummy_factors = TRUE)
+   len supp.OJ supp.VC dose
+1  4.2       0       1  0.5
+2 11.5       0       1  0.5
+3  7.3       0       1  0.5
+4  5.8       0       1  0.5
+5  6.4       0       1  0.5
+6 10.0       0       1  0.5
+> 
+> # factors
+> x <- as.factor(mtcars$gear)
+> to_numeric(x)
+ [1] 2 2 2 1 1 1 1 2 2 2 2 1 1 1 1 1 1 2 2 2 1 1 1 1 1 2 3 3 3 3 3 2
+> to_numeric(x, preserve_levels = TRUE)
+ [1] 4 4 4 3 3 3 3 4 4 4 4 3 3 3 3 3 3 4 4 4 3 3 3 3 3 4 5 5 5 5 5 4
+> # same as:
+> coerce_to_numeric(x)
+ [1] 4 4 4 3 3 3 3 4 4 4 4 3 3 3 3 3 3 4 4 4 3 3 3 3 3 4 5 5 5 5 5 4
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("weighted_mean")
+> ### * weighted_mean
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: weighted_mean
+> ### Title: Weighted Mean, Median, SD, and MAD
+> ### Aliases: weighted_mean weighted_median weighted_sd weighted_mad
+> 
+> ### ** Examples
+> 
+> ## GPA from Siegel 1994
+> x <- c(3.7, 3.3, 3.5, 2.8)
+> wt <- c(5, 5, 4, 1) / 15
+> 
+> weighted_mean(x, wt)
+[1] 3.453333
+> weighted_median(x, wt)
+[1] 3.5
+> 
+> weighted_sd(x, wt)
+[1] 0.2852935
+> weighted_mad(x, wt)
+[1] 0.29652
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("winsorize")
+> ### * winsorize
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: winsorize
+> ### Title: Winsorize data
+> ### Aliases: winsorize winsorize.numeric
+> 
+> ### ** Examples
+> 
+> hist(iris$Sepal.Length, main = "Original data")
+> 
+> hist(winsorize(iris$Sepal.Length, threshold = 0.2),
++   xlim = c(4, 8), main = "Percentile Winsorization"
++ )
+> 
+> hist(winsorize(iris$Sepal.Length, threshold = 1.5, method = "zscore"),
++   xlim = c(4, 8), main = "Mean (+/- SD) Winsorization"
++ )
+> 
+> hist(winsorize(iris$Sepal.Length, threshold = 1.5, method = "zscore", robust = TRUE),
++   xlim = c(4, 8), main = "Median (+/- MAD) Winsorization"
++ )
+> 
+> hist(winsorize(iris$Sepal.Length, threshold = c(5, 7.5), method = "raw"),
++   xlim = c(4, 8), main = "Raw Thresholds"
++ )
+> 
+> # Also works on a data frame:
+> winsorize(iris, threshold = 0.2)
+    Sepal.Length Sepal.Width Petal.Length Petal.Width    Species
+1            5.1         3.4          1.5         0.2     setosa
+2            5.0         3.0          1.5         0.2     setosa
+3            5.0         3.2          1.5         0.2     setosa
+4            5.0         3.1          1.5         0.2     setosa
+5            5.0         3.4          1.5         0.2     setosa
+6            5.4         3.4          1.7         0.4     setosa
+7            5.0         3.4          1.5         0.3     setosa
+8            5.0         3.4          1.5         0.2     setosa
+9            5.0         2.9          1.5         0.2     setosa
+10           5.0         3.1          1.5         0.2     setosa
+11           5.4         3.4          1.5         0.2     setosa
+12           5.0         3.4          1.6         0.2     setosa
+13           5.0         3.0          1.5         0.2     setosa
+14           5.0         3.0          1.5         0.2     setosa
+15           5.8         3.4          1.5         0.2     setosa
+16           5.7         3.4          1.5         0.4     setosa
+17           5.4         3.4          1.5         0.4     setosa
+18           5.1         3.4          1.5         0.3     setosa
+19           5.7         3.4          1.7         0.3     setosa
+20           5.1         3.4          1.5         0.3     setosa
+21           5.4         3.4          1.7         0.2     setosa
+22           5.1         3.4          1.5         0.4     setosa
+23           5.0         3.4          1.5         0.2     setosa
+24           5.1         3.3          1.7         0.5     setosa
+25           5.0         3.4          1.9         0.2     setosa
+26           5.0         3.0          1.6         0.2     setosa
+27           5.0         3.4          1.6         0.4     setosa
+28           5.2         3.4          1.5         0.2     setosa
+29           5.2         3.4          1.5         0.2     setosa
+30           5.0         3.2          1.6         0.2     setosa
+31           5.0         3.1          1.6         0.2     setosa
+32           5.4         3.4          1.5         0.4     setosa
+33           5.2         3.4          1.5         0.2     setosa
+34           5.5         3.4          1.5         0.2     setosa
+35           5.0         3.1          1.5         0.2     setosa
+36           5.0         3.2          1.5         0.2     setosa
+37           5.5         3.4          1.5         0.2     setosa
+38           5.0         3.4          1.5         0.2     setosa
+39           5.0         3.0          1.5         0.2     setosa
+40           5.1         3.4          1.5         0.2     setosa
+41           5.0         3.4          1.5         0.3     setosa
+42           5.0         2.7          1.5         0.3     setosa
+43           5.0         3.2          1.5         0.2     setosa
+44           5.0         3.4          1.6         0.6     setosa
+45           5.1         3.4          1.9         0.4     setosa
+46           5.0         3.0          1.5         0.3     setosa
+47           5.1         3.4          1.6         0.2     setosa
+48           5.0         3.2          1.5         0.2     setosa
+49           5.3         3.4          1.5         0.2     setosa
+50           5.0         3.3          1.5         0.2     setosa
+51           6.5         3.2          4.7         1.4 versicolor
+52           6.4         3.2          4.5         1.5 versicolor
+53           6.5         3.1          4.9         1.5 versicolor
+54           5.5         2.7          4.0         1.3 versicolor
+55           6.5         2.8          4.6         1.5 versicolor
+56           5.7         2.8          4.5         1.3 versicolor
+57           6.3         3.3          4.7         1.6 versicolor
+58           5.0         2.7          3.3         1.0 versicolor
+59           6.5         2.9          4.6         1.3 versicolor
+60           5.2         2.7          3.9         1.4 versicolor
+61           5.0         2.7          3.5         1.0 versicolor
+62           5.9         3.0          4.2         1.5 versicolor
+63           6.0         2.7          4.0         1.0 versicolor
+64           6.1         2.9          4.7         1.4 versicolor
+65           5.6         2.9          3.6         1.3 versicolor
+66           6.5         3.1          4.4         1.4 versicolor
+67           5.6         3.0          4.5         1.5 versicolor
+68           5.8         2.7          4.1         1.0 versicolor
+69           6.2         2.7          4.5         1.5 versicolor
+70           5.6         2.7          3.9         1.1 versicolor
+71           5.9         3.2          4.8         1.8 versicolor
+72           6.1         2.8          4.0         1.3 versicolor
+73           6.3         2.7          4.9         1.5 versicolor
+74           6.1         2.8          4.7         1.2 versicolor
+75           6.4         2.9          4.3         1.3 versicolor
+76           6.5         3.0          4.4         1.4 versicolor
+77           6.5         2.8          4.8         1.4 versicolor
+78           6.5         3.0          5.0         1.7 versicolor
+79           6.0         2.9          4.5         1.5 versicolor
+80           5.7         2.7          3.5         1.0 versicolor
+81           5.5         2.7          3.8         1.1 versicolor
+82           5.5         2.7          3.7         1.0 versicolor
+83           5.8         2.7          3.9         1.2 versicolor
+84           6.0         2.7          5.1         1.6 versicolor
+85           5.4         3.0          4.5         1.5 versicolor
+86           6.0         3.4          4.5         1.6 versicolor
+87           6.5         3.1          4.7         1.5 versicolor
+88           6.3         2.7          4.4         1.3 versicolor
+89           5.6         3.0          4.1         1.3 versicolor
+90           5.5         2.7          4.0         1.3 versicolor
+91           5.5         2.7          4.4         1.2 versicolor
+92           6.1         3.0          4.6         1.4 versicolor
+93           5.8         2.7          4.0         1.2 versicolor
+94           5.0         2.7          3.3         1.0 versicolor
+95           5.6         2.7          4.2         1.3 versicolor
+96           5.7         3.0          4.2         1.2 versicolor
+97           5.7         2.9          4.2         1.3 versicolor
+98           6.2         2.9          4.3         1.3 versicolor
+99           5.1         2.7          3.0         1.1 versicolor
+100          5.7         2.8          4.1         1.3 versicolor
+101          6.3         3.3          5.3         1.9  virginica
+102          5.8         2.7          5.1         1.9  virginica
+103          6.5         3.0          5.3         1.9  virginica
+104          6.3         2.9          5.3         1.8  virginica
+105          6.5         3.0          5.3         1.9  virginica
+106          6.5         3.0          5.3         1.9  virginica
+107          5.0         2.7          4.5         1.7  virginica
+108          6.5         2.9          5.3         1.8  virginica
+109          6.5         2.7          5.3         1.8  virginica
+110          6.5         3.4          5.3         1.9  virginica
+111          6.5         3.2          5.1         1.9  virginica
+112          6.4         2.7          5.3         1.9  virginica
+113          6.5         3.0          5.3         1.9  virginica
+114          5.7         2.7          5.0         1.9  virginica
+115          5.8         2.8          5.1         1.9  virginica
+116          6.4         3.2          5.3         1.9  virginica
+117          6.5         3.0          5.3         1.8  virginica
+118          6.5         3.4          5.3         1.9  virginica
+119          6.5         2.7          5.3         1.9  virginica
+120          6.0         2.7          5.0         1.5  virginica
+121          6.5         3.2          5.3         1.9  virginica
+122          5.6         2.8          4.9         1.9  virginica
+123          6.5         2.8          5.3         1.9  virginica
+124          6.3         2.7          4.9         1.8  virginica
+125          6.5         3.3          5.3         1.9  virginica
+126          6.5         3.2          5.3         1.8  virginica
+127          6.2         2.8          4.8         1.8  virginica
+128          6.1         3.0          4.9         1.8  virginica
+129          6.4         2.8          5.3         1.9  virginica
+130          6.5         3.0          5.3         1.6  virginica
+131          6.5         2.8          5.3         1.9  virginica
+132          6.5         3.4          5.3         1.9  virginica
+133          6.4         2.8          5.3         1.9  virginica
+134          6.3         2.8          5.1         1.5  virginica
+135          6.1         2.7          5.3         1.4  virginica
+136          6.5         3.0          5.3         1.9  virginica
+137          6.3         3.4          5.3         1.9  virginica
+138          6.4         3.1          5.3         1.8  virginica
+139          6.0         3.0          4.8         1.8  virginica
+140          6.5         3.1          5.3         1.9  virginica
+141          6.5         3.1          5.3         1.9  virginica
+142          6.5         3.1          5.1         1.9  virginica
+143          5.8         2.7          5.1         1.9  virginica
+144          6.5         3.2          5.3         1.9  virginica
+145          6.5         3.3          5.3         1.9  virginica
+146          6.5         3.0          5.2         1.9  virginica
+147          6.3         2.7          5.0         1.9  virginica
+148          6.5         3.0          5.2         1.9  virginica
+149          6.2         3.4          5.3         1.9  virginica
+150          5.9         3.0          5.1         1.8  virginica
+> 
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  6.617 0.358 6.693 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

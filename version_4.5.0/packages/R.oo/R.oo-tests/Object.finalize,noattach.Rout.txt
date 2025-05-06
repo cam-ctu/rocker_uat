@@ -1,0 +1,109 @@
+
+R version 4.5.0 (2025-04-11) -- "How About a Twenty-Six"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> oopts <- options(warn=1L)
+> 
+> message("TESTING: finalize() on Object without attach ...")
+TESTING: finalize() on Object without attach ...
+> 
+> pkgs <- c("R.methodsS3", "R.oo")
+> isAttached <- function(pkgs) {
++   structure(sprintf("package:%s", pkgs) %in% search(), names=pkgs)
++ }
+> 
+> # Record which packages were attached from the beginning
+> # (happens if not a fresh session)
+> wasAttached <- isAttached(pkgs)
+> 
+> 
+> assertPackages <- function(loaded=c("R.methodsS3", "R.oo")) {
++   s <- utils::sessionInfo()
++   s$R.version <- NULL
++   s$platform <- ""
++   s$locale <- ""
++   cat("----------------------------------")
++   print(s)
++   cat("----------------------------------\n\n")
++   loaded <- loaded[!wasAttached[loaded]]
++   stopifnot(!any(isAttached(loaded)))
++ }
+> 
+> R.oo::setConstructorS3("MyClass", function(a=1:10) {
++   R.oo::extend(R.oo::Object(), "MyClass", a=a)
++ })
+> 
+> # Create an object with a finalizer
+> x <- MyClass()
+> 
+> assertPackages()
+----------------------------------
+Platform: 
+Running under: Ubuntu 24.04.2 LTS
+
+Matrix products: default
+BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
+LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so;  LAPACK version 3.12.0
+
+locale:
+character(0)
+
+time zone: Etc/UTC
+tzcode source: system (glibc)
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+loaded via a namespace (and not attached):
+[1] compiler_4.5.0    R.methodsS3_1.8.2 R.oo_1.27.0      
+----------------------------------
+
+> 
+> # Remove 'x' so that it will be finalized below
+> rm(x)
+> gc()
+         used (Mb) gc trigger (Mb) max used (Mb)
+Ncells 382956 20.5     707680 37.8   705885 37.7
+Vcells 696785  5.4    8388608 64.0  1973782 15.1
+> 
+> assertPackages(loaded="R.oo")
+----------------------------------
+Platform: 
+Running under: Ubuntu 24.04.2 LTS
+
+Matrix products: default
+BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
+LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so;  LAPACK version 3.12.0
+
+locale:
+character(0)
+
+time zone: Etc/UTC
+tzcode source: system (glibc)
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+loaded via a namespace (and not attached):
+[1] compiler_4.5.0    R.methodsS3_1.8.2 R.oo_1.27.0      
+----------------------------------
+
+> 
+> message("TESTING: finalize() on Object without attach ... DONE")
+TESTING: finalize() on Object without attach ... DONE
+> 
+> options(oopts)
+> 

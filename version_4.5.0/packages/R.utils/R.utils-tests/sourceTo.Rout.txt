@@ -1,0 +1,142 @@
+
+R version 4.5.0 (2025-04-11) -- "How About a Twenty-Six"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library("R.utils")
+Loading required package: R.oo
+Loading required package: R.methodsS3
+R.methodsS3 v1.8.2 (2022-06-13 22:00:14 UTC) successfully loaded. See ?R.methodsS3 for help.
+R.oo v1.27.0 (2024-11-01 18:00:02 UTC) successfully loaded. See ?R.oo for help.
+
+Attaching package: ‘R.oo’
+
+The following object is masked from ‘package:R.methodsS3’:
+
+    throw
+
+The following objects are masked from ‘package:methods’:
+
+    getClasses, getMethods
+
+The following objects are masked from ‘package:base’:
+
+    attach, detach, load, save
+
+R.utils v2.13.0 (2025-02-24 21:20:02 UTC) successfully loaded. See ?R.utils for help.
+
+Attaching package: ‘R.utils’
+
+The following object is masked from ‘package:utils’:
+
+    timestamp
+
+The following objects are masked from ‘package:base’:
+
+    cat, commandArgs, getOption, isOpen, nullfile, parse, use, warnings
+
+> 
+> opager <- options(pager=mpager)
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Example 1
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> cat("=== Example 1 ================================================\n")
+=== Example 1 ================================================
+> 
+> foo <- function(file, ...) {
++   cat("Local objects before calling sourceTo():\n")
++   print(ls())
++ 
++   res <- sourceTo(file, ...)
++ 
++   cat("Local objects after calling sourceTo():\n")
++   print(ls())
++ }
+> 
+> cat("Global objects before calling foo():\n")
+Global objects before calling foo():
+> lsBefore <- NA
+> lsBefore <- ls()
+> foo(file=textConnection(c('a <- 1', 'b <- 2')))
+Local objects before calling sourceTo():
+[1] "file"
+Local objects after calling sourceTo():
+[1] "a"    "b"    "file" "res" 
+> 
+> cat("Global objects after calling foo():\n")
+Global objects after calling foo():
+> stopifnot(length(setdiff(ls(), lsBefore)) == 0)
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Example 2 - with VComments preprocessor
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> cat("=== Example 2 ================================================\n")
+=== Example 2 ================================================
+> 
+> preprocessor <- function(lines, ...) {
++   cat("-----------------------------------------\n")
++   cat("Source code before preprocessing:\n")
++   displayCode(code=lines)
++   cat("-----------------------------------------\n")
++   cat("Source code after preprocessing:\n")
++   lines <- VComments$compile(lines)
++   displayCode(code=lines)
++   cat("-----------------------------------------\n")
++   lines
++ }
+> 
+> oldHooks <- getHook("sourceTo/onPreprocess")
+> setHook("sourceTo/onPreprocess", preprocessor, action="replace")
+> code <- c(
++  'x <- 2',
++  '#V1# threshold=-1',
++  '#Vc# A v-comment log message',
++  'print("Hello world")'
++ )
+> fh <- textConnection(code)
+> sourceTo(fh)
+-----------------------------------------
+Source code before preprocessing:
+===============================================================================
+R code
+===============================================================================
+
+1|x <- 2
+2|#V1# threshold=-1
+3|#Vc# A v-comment log message
+4|print("Hello world")
+
+
+-----------------------------------------
+Source code after preprocessing:
+===============================================================================
+R code
+===============================================================================
+
+1|x <- 2
+2|verbose <- Verbose(threshold=-1)
+3|if (verbose) { cat(verbose, "A v-comment log message") }
+4|print("Hello world")
+
+
+-----------------------------------------
+A v-comment log message
+[1] "Hello world"
+> setHook("sourceTo/onPreprocess", oldHooks, action="replace")
+> 
+> options(opager)
+> 

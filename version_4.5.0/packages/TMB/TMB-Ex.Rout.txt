@@ -1,0 +1,648 @@
+
+R version 4.5.0 (2025-04-11) -- "How About a Twenty-Six"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "TMB"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('TMB')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("FreeADFun")
+> ### * FreeADFun
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: FreeADFun
+> ### Title: Free memory allocated on the C++ side by 'MakeADFun'.
+> ### Aliases: FreeADFun
+> 
+> ### ** Examples
+> 
+> runExample("simple", thisR = TRUE)          ## Create 'obj'
+Running example simple 
+
+> require(TMB)
+
+> dyn.load(dynlib("simple"))
+
+> set.seed(123)
+
+> y <- rep(1900:2010, each = 2)
+
+> year <- factor(y)
+
+> quarter <- factor(rep(1:4, length.out = length(year)))
+
+> period <- factor((y > mean(y)) + 1)
+
+> B <- model.matrix(~year + quarter - 1)
+
+> A <- model.matrix(~period - 1)
+
+> B <- as(B, "TsparseMatrix")
+
+> A <- as(A, "TsparseMatrix")
+
+> u <- rnorm(ncol(B))
+
+> beta <- rnorm(ncol(A)) * 100
+
+> eps <- rnorm(nrow(B), sd = 1)
+
+> x <- as.numeric(A %*% beta + B %*% u + eps)
+
+> obj <- MakeADFun(data = list(x = x, B = B, A = A), 
++     parameters = list(u = u * 0, beta = beta * 0, logsdu = 1, 
++         logsd0 = 1), random = .... [TRUNCATED] 
+
+> opt <- nlminb(obj$par, obj$fn, obj$gr)
+> FreeADFun(obj)                              ## Free external pointers
+NULL
+> obj$fn()                                    ## Re-allocate external pointers
+[1] 375.0672
+attr(,"logarithm")
+[1] TRUE
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Rinterface")
+> ### * Rinterface
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rinterface
+> ### Title: Create minimal R-code corresponding to a cpp template.
+> ### Aliases: Rinterface
+> 
+> ### ** Examples
+> 
+> file <- system.file("examples/simple.cpp", package = "TMB")
+> Rinterface(file)
+library(TMB)
+dyn.load(dynlib("simple"))
+MakeADFun(
+ data=list(
+  x=  ,
+  B=  ,
+  A=  
+ ),
+ parameters=list(
+  u=  ,
+  beta=  ,
+  logsdu=  ,
+  logsd0=  
+ ),
+ DLL="simple"
+)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("as.list.sdreport")
+> ### * as.list.sdreport
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: as.list.sdreport
+> ### Title: Convert estimates to original list format.
+> ### Aliases: as.list.sdreport
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D example(sdreport)
+> ##D 
+> ##D ## Estimates as a parameter list:
+> ##D as.list(rep, "Est")
+> ##D 
+> ##D ## Std Errors in the same list format:
+> ##D as.list(rep, "Std")
+> ##D 
+> ##D ## p-values in the same list format:
+> ##D as.list(rep, "Pr", p.value=TRUE)
+> ##D 
+> ##D ## AD reported variables as a list:
+> ##D as.list(rep, "Estimate", report=TRUE)
+> ##D 
+> ##D ## Bias corrected AD reported variables as a list:
+> ##D as.list(rep, "Est. (bias.correct)", report=TRUE)
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("benchmark")
+> ### * benchmark
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: benchmark
+> ### Title: Benchmark parallel templates
+> ### Aliases: benchmark plot.parallelBenchmark
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D runExample("linreg_parallel",thisR=TRUE)  ## Create obj
+> ##D ben <- benchmark(obj,n=100,cores=1:4)
+> ##D plot(ben)
+> ##D ben <- benchmark(obj,n=10,cores=1:4,expr=expression(do.call("optim",obj)))
+> ##D plot(ben)
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("checkConsistency")
+> ### * checkConsistency
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: checkConsistency
+> ### Title: Check consistency and Laplace accuracy
+> ### Aliases: checkConsistency
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D runExample("simple")
+> ##D chk <- checkConsistency(obj)
+> ##D chk
+> ##D ## Get more details
+> ##D s <- summary(chk)
+> ##D s$marginal$p.value  ## Laplace exact for Gaussian models 
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("config")
+> ### * config
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: config
+> ### Title: Get or set internal configuration variables
+> ### Aliases: config
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D ## Load library
+> ##D dyn.load(dynlib("mymodel"))
+> ##D ## Read the current settings
+> ##D config(DLL="mymodel")
+> ##D ## Reduce memory peak of a parallel model by creating tapes in serial
+> ##D config(tape.parallel=0, DLL="mymodel")
+> ##D obj <- MakeADFun(..., DLL="mymodel")
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("oneStepPredict")
+> ### * oneStepPredict
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: oneStepPredict
+> ### Title: Calculate one-step-ahead (OSA) residuals for a latent variable
+> ###   model.
+> ### Aliases: oneStepPredict
+> 
+> ### ** Examples
+> 
+> ######################## Gaussian case
+> runExample("simple")
+Running example simple 
+
+> require(TMB)
+
+> dyn.load(dynlib("simple"))
+
+> set.seed(123)
+
+> y <- rep(1900:2010, each = 2)
+
+> year <- factor(y)
+
+> quarter <- factor(rep(1:4, length.out = length(year)))
+
+> period <- factor((y > mean(y)) + 1)
+
+> B <- model.matrix(~year + quarter - 1)
+
+> A <- model.matrix(~period - 1)
+
+> B <- as(B, "TsparseMatrix")
+
+> A <- as(A, "TsparseMatrix")
+
+> u <- rnorm(ncol(B))
+
+> beta <- rnorm(ncol(A)) * 100
+
+> eps <- rnorm(nrow(B), sd = 1)
+
+> x <- as.numeric(A %*% beta + B %*% u + eps)
+
+> obj <- MakeADFun(data = list(x = x, B = B, A = A), 
++     parameters = list(u = u * 0, beta = beta * 0, logsdu = 1, 
++         logsd0 = 1), random = .... [TRUNCATED] 
+
+> opt <- nlminb(obj$par, obj$fn, obj$gr)
+> osa.simple <- oneStepPredict(obj, observation.name = "x", method="fullGaussian")
+> qqnorm(osa.simple$residual); abline(0,1)
+> 
+> ## Not run: 
+> ##D ######################## Poisson case (First 100 observations)
+> ##D runExample("ar1xar1")
+> ##D osa.ar1xar1 <- oneStepPredict(obj, "N", "keep", method="cdf", discrete=TRUE, subset=1:100)
+> ##D qqnorm(osa.ar1xar1$residual); abline(0,1)
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("precompile")
+> ### * precompile
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: precompile
+> ### Title: Precompile the TMB library in order to speed up compilation of
+> ###   templates.
+> ### Aliases: precompile
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D ## Prepare precompilation
+> ##D precompile()
+> ##D ## Perform precompilation by running a model
+> ##D runExample(all = TRUE)
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("sdreport")
+> ### * sdreport
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: sdreport
+> ### Title: General sdreport function.
+> ### Aliases: sdreport
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D runExample("linreg_parallel", thisR = TRUE) ## Non-random effect example
+> ##D sdreport(obj) 
+> ## End(Not run)
+> 
+> runExample("simple", thisR = TRUE)          ## Random effect example
+Running example simple 
+
+> require(TMB)
+
+> dyn.load(dynlib("simple"))
+
+> set.seed(123)
+
+> y <- rep(1900:2010, each = 2)
+
+> year <- factor(y)
+
+> quarter <- factor(rep(1:4, length.out = length(year)))
+
+> period <- factor((y > mean(y)) + 1)
+
+> B <- model.matrix(~year + quarter - 1)
+
+> A <- model.matrix(~period - 1)
+
+> B <- as(B, "TsparseMatrix")
+
+> A <- as(A, "TsparseMatrix")
+
+> u <- rnorm(ncol(B))
+
+> beta <- rnorm(ncol(A)) * 100
+
+> eps <- rnorm(nrow(B), sd = 1)
+
+> x <- as.numeric(A %*% beta + B %*% u + eps)
+
+> obj <- MakeADFun(data = list(x = x, B = B, A = A), 
++     parameters = list(u = u * 0, beta = beta * 0, logsdu = 1, 
++         logsd0 = 1), random = .... [TRUNCATED] 
+
+> opt <- nlminb(obj$par, obj$fn, obj$gr)
+> rep <- sdreport(obj)
+> summary(rep, "random")                      ## Only random effects
+      Estimate Std. Error
+u -0.480820910  0.5690955
+u -0.716733126  0.5725030
+u  0.657193869  0.5712858
+u -0.217915665  0.5656616
+u  0.415627618  0.5674558
+u  1.037127885  0.5825155
+u -0.035074217  0.5651449
+u -0.226121203  0.5657118
+u -0.509386497  0.5695582
+u -0.566398890  0.5696368
+u  0.495558060  0.5685250
+u  0.298769093  0.5667365
+u  0.355212228  0.5667787
+u -0.870040865  0.5761263
+u -0.939119181  0.5794885
+u  0.764860482  0.5747977
+u  0.519021610  0.5688762
+u -0.728929771  0.5727655
+u  0.206713961  0.5655963
+u -0.431402685  0.5676512
+u -0.564252361  0.5705169
+u  0.004885871  0.5651013
+u -0.594084588  0.5710766
+u  0.107808819  0.5653671
+u -0.397921289  0.5678945
+u -0.972528543  0.5789366
+u  0.736209122  0.5729243
+u  0.002062473  0.5650987
+u -0.055435165  0.5651904
+u  0.150285655  0.5655734
+u  0.343688815  0.5666624
+u -0.219748682  0.5656726
+u  0.571349148  0.5697202
+u  0.113003595  0.5653893
+u  0.346144329  0.5666868
+u  0.699051183  0.5732600
+u  0.390264636  0.5671578
+u -0.110690270  0.5651981
+u -0.410617606  0.5680647
+u -0.064652817  0.5651094
+u -0.591632297  0.5710295
+u -0.681611393  0.5717720
+u  0.279981034  0.5660939
+u  1.288904634  0.5915390
+u  0.437227319  0.5677253
+u -1.090509371  0.5825501
+u  0.225347782  0.5657070
+u -0.207742015  0.5656022
+u  0.653948462  0.5712226
+u  0.105889628  0.5653591
+u -0.192711036  0.5658356
+u -0.787114852  0.5740793
+u -0.014988335  0.5651127
+u  1.271209265  0.5908473
+u -0.220950148  0.5660413
+u  0.421785211  0.5682186
+u -0.964761102  0.5802521
+u  0.802282866  0.5759681
+u -0.112840062  0.5653996
+u -0.494492438  0.5687318
+u  0.254116357  0.5659156
+u -0.495172714  0.5687417
+u -0.597921307  0.5711543
+u -0.557653387  0.5697122
+u -0.154392475  0.5656067
+u -0.319684402  0.5666591
+u  0.173827384  0.5654428
+u -0.313252784  0.5666009
+u  0.426042971  0.5676030
+u  1.545625872  0.6027581
+u  0.177400280  0.5654596
+u -1.881197574  0.6167924
+u  0.255603469  0.5659263
+u -0.093814064  0.5653875
+u  0.678121255  0.5717240
+u -0.026716735  0.5653169
+u -0.283918237  0.5665978
+u -0.256237237  0.5661412
+u -0.133639832  0.5654966
+u -0.037151967  0.5653186
+u  0.042171530  0.5651036
+u  0.279731843  0.5667837
+u -0.515695888  0.5696688
+u  0.333327537  0.5673407
+u -0.087592533  0.5653002
+u  0.655464007  0.5725508
+u  0.585214670  0.5699792
+u  0.819229711  0.5764038
+u -0.057372431  0.5652073
+u  1.186836748  0.5879069
+u  0.689177729  0.5719491
+u  0.609944946  0.5716226
+u -0.318936507  0.5669554
+u -1.010274399  0.5802594
+u  0.721604204  0.5726304
+u -0.939828995  0.5782188
+u  2.174171499  0.6332481
+u  1.405106972  0.5965310
+u -0.841017389  0.5767380
+u -0.564282134  0.5698222
+u -0.836831688  0.5766270
+u  0.824039254  0.5765290
+u  0.244541199  0.5658487
+u -0.469535770  0.5683781
+u -0.535926363  0.5700152
+u  0.065805804  0.5654506
+u -0.098619340  0.5653412
+u -1.085273582  0.5825898
+u -0.022389003  0.5651355
+u -0.026227891  0.5653169
+u -0.816740910  0.5761013
+u  0.472211066  0.1884481
+u -1.530647054  0.2395324
+u -0.139249811  0.2388424
+> summary(rep, "fixed", p.value = TRUE)       ## Only non-random effects
+          Estimate Std. Error    z value Pr(>|z^2|)
+beta   52.01370232  0.2016859 257.894548  0.0000000
+beta   30.24058534  0.2018362 149.827373  0.0000000
+logsdu -0.15777145  0.1201260  -1.313383  0.1890539
+logsd0  0.03326068  0.0667396   0.498365  0.6182268
+> summary(rep, "report")                      ## Only report
+             Estimate  Std. Error
+sd0           1.03382  0.06899673
+sum(exp(u)) 141.71087 15.59821443
+> 
+> ## Bias correction
+> rep <- sdreport(obj, bias.correct = TRUE)
+> summary(rep, "report")                      ## Include bias correction
+             Estimate  Std. Error Est. (bias.correct) Std. (bias.correct)
+sd0           1.03382  0.06899673             1.03382                  NA
+sum(exp(u)) 141.71087 15.59821443           163.51245                  NA
+> 
+> 
+> 
+> cleanEx()
+> nameEx("template")
+> ### * template
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: template
+> ### Title: Create cpp template to get started.
+> ### Aliases: template
+> 
+> ### ** Examples
+> 
+> template()
+#include <TMB.hpp>
+
+template<class Type>
+Type objective_function<Type>::operator() ()
+{
+  /* Minimal example */
+  DATA_VECTOR(x);
+  PARAMETER(mu);
+  PARAMETER(logSigma);
+
+  Type f = 0;
+  f -= dnorm(x, mu, exp(logSigma), true).sum();
+
+  return f;
+
+  /* Quick Reference
+     ===============
+
+     ** Macros to read data and declare parameters:
+
+     _Template_Syntax_              _C++_type_                     _R_type_
+     DATA_VECTOR(name)              vector<Type>                   vector
+     DATA_MATRIX(name)              matrix<Type>                   matrix
+     DATA_SCALAR(name)              Type                           numeric(1)
+     DATA_INTEGER(name)             int                            integer(1)
+     DATA_FACTOR(name)              vector<int>                    factor
+     DATA_SPARSE_MATRIX(name)       Eigen::SparseMatrix<Type>      dgTMatrix
+     DATA_ARRAY(name)               array<Type>                    array
+     PARAMETER_MATRIX(name)         matrix<Type>                   matrix
+     PARAMETER_VECTOR(name)         vector<Type>                   vector
+     PARAMETER_ARRAY(name)          array<Type>                    array
+     PARAMETER(name)                Type                           numeric(1)
+
+     ** Macro to report intermediate expressions back to R:
+
+     REPORT(x)
+     ADREPORT(x)
+
+     ** Basic constructors:
+
+     vector<Type> v(n1);
+     matrix<Type> m(n1,n2);
+     array<Type> a(n1,n2,n3)
+
+     ** Basic operations:
+
+     v+v,v-v,v*v,v/v                Pointwise binary operations
+     m*v                            Matrix-vector multiply
+     a.col(i)                       R equivalent of a[,,i]
+     a.col(i).col(j)                R equivalent of a[,j,i]
+     a(i,j,k)                       R equivalent of a[i,j,k]
+     exp(v)                         Pointwise math
+     m(i,j)                         R equivalent of m[i,j]
+     v.sum()                        R equivalent of sum(v)
+     m.transpose()                  R equivalent of t(m)
+
+     ** Distributions:
+
+     Type dnbinom2(const Type &x, const Type &mu, const Type &var, int give_log=0)
+     Type dpois(const Type &x, const Type &lambda, int give_log=0)
+     Type dlgamma(Type y, Type shape, Type scale, int give_log=0)
+     Type dnorm(Type x, Type mean, Type sd, int give_log=0)
+
+     ** Parallel accumulator declaration (only methods "+=" and "-="):
+     
+     parallel_accumulator<Type> res(this);
+
+  */
+
+}> 
+> 
+> 
+> cleanEx()
+> nameEx("tmbprofile")
+> ### * tmbprofile
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: tmbprofile
+> ### Title: Adaptive likelihood profiling.
+> ### Aliases: tmbprofile
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D runExample("simple",thisR=TRUE)
+> ##D ## Parameter names for this model:
+> ##D ## beta   beta   logsdu   logsd0
+> ##D 
+> ##D ## Profile wrt. sigma0:
+> ##D prof <- tmbprofile(obj,"logsd0")
+> ##D plot(prof)
+> ##D confint(prof)
+> ##D 
+> ##D ## Profile the difference between the beta parameters (name is optional):
+> ##D prof2 <- tmbprofile(obj,name="beta1 - beta2",lincomb = c(1,-1,0,0))
+> ##D plot(prof2)
+> ##D confint(prof2)
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("tmbroot")
+> ### * tmbroot
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: tmbroot
+> ### Title: Compute likelihood profile confidence intervals of a TMB object
+> ###   by root-finding
+> ### Aliases: tmbroot
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D runExample("simple",thisR=TRUE)
+> ##D logsd0.ci <- tmbroot(obj,"logsd0")
+> ## End(Not run)
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  0.987 0.369 1.021 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')
