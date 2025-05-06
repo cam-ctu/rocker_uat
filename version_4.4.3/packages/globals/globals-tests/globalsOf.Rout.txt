@@ -1,0 +1,704 @@
+
+R version 4.4.3 (2025-02-28) -- "Trophy Case"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> source("incl/start.R")
+> 
+> message("*** globalsOf() ...")
+*** globalsOf() ...
+> 
+> message(" ** globalsOf(..., method = 'conservative'):")
+ ** globalsOf(..., method = 'conservative'):
+> expr <- exprs$A
+> globals_c <- globalsOf(expr, method = "conservative")
+> str(globals_c)
+List of 5
+ $ { :.Primitive("{") 
+ $ <-:.Primitive("<-") 
+ $ c : num 3
+ $ d : NULL
+ $ + :function (e1, e2)  
+ - attr(*, "where")=List of 5
+  ..$ { :<environment: base> 
+  ..$ <-:<environment: base> 
+  ..$ c :<environment: R_GlobalEnv> 
+  ..$ d :<environment: R_GlobalEnv> 
+  ..$ + :<environment: base> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> assert_identical_sets(names(globals_c), c("{", "<-", "c", "d", "+"))
+> globals_c <- cleanup(globals_c)
+> str(globals_c)
+List of 2
+ $ c: num 3
+ $ d: NULL
+ - attr(*, "where")=List of 2
+  ..$ c:<environment: R_GlobalEnv> 
+  ..$ d:<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> assert_identical_sets(names(globals_c), c("c", "d"))
+> where <- attr(globals_c, "where")
+> stopifnot(
++   length(where) == length(globals_c),
++   identical(where$c, globalenv()),
++   identical(where$d, globalenv())
++ )
+> 
+> message(" ** globalsOf(..., method = 'liberal'):")
+ ** globalsOf(..., method = 'liberal'):
+> expr <- exprs$A
+> globals_l <- globalsOf(expr, method = "liberal")
+> str(globals_l)
+List of 8
+ $ { :.Primitive("{") 
+ $ <-:.Primitive("<-") 
+ $ b : num 2
+ $ c : num 3
+ $ d : NULL
+ $ + :function (e1, e2)  
+ $ a : num 0
+ $ e :function ()  
+ - attr(*, "where")=List of 8
+  ..$ { :<environment: base> 
+  ..$ <-:<environment: base> 
+  ..$ b :<environment: R_GlobalEnv> 
+  ..$ c :<environment: R_GlobalEnv> 
+  ..$ d :<environment: R_GlobalEnv> 
+  ..$ + :<environment: base> 
+  ..$ a :<environment: R_GlobalEnv> 
+  ..$ e :<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> assert_identical_sets(names(globals_l), c("{", "<-", "b", "c", "d", "+", "a", "e"))
+> globals_l <- cleanup(globals_l)
+> str(globals_l)
+List of 5
+ $ b: num 2
+ $ c: num 3
+ $ d: NULL
+ $ a: num 0
+ $ e:function ()  
+ - attr(*, "where")=List of 5
+  ..$ b:<environment: R_GlobalEnv> 
+  ..$ c:<environment: R_GlobalEnv> 
+  ..$ d:<environment: R_GlobalEnv> 
+  ..$ a:<environment: R_GlobalEnv> 
+  ..$ e:<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> assert_identical_sets(names(globals_l), c("b", "c", "d", "a", "e"))
+> where <- attr(globals_l, "where")
+> stopifnot(
++   length(where) == length(globals_l),
++   identical(where$b, globalenv()),
++   identical(where$c, globalenv()),
++   identical(where$d, globalenv())
++ )
+> 
+> message(" ** globalsOf(..., method = 'ordered'):")
+ ** globalsOf(..., method = 'ordered'):
+> expr <- exprs$A
+> globals_i <- globalsOf(expr, method = "ordered")
+> str(globals_i)
+List of 8
+ $ { :.Primitive("{") 
+ $ <-:.Primitive("<-") 
+ $ b : num 2
+ $ c : num 3
+ $ d : NULL
+ $ a : num 0
+ $ + :function (e1, e2)  
+ $ e :function ()  
+ - attr(*, "where")=List of 8
+  ..$ { :<environment: base> 
+  ..$ <-:<environment: base> 
+  ..$ b :<environment: R_GlobalEnv> 
+  ..$ c :<environment: R_GlobalEnv> 
+  ..$ d :<environment: R_GlobalEnv> 
+  ..$ a :<environment: R_GlobalEnv> 
+  ..$ + :<environment: base> 
+  ..$ e :<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> assert_identical_sets(names(globals_i), c("{", "<-", "b", "c", "d", "+", "a", "e"))
+> globals_i <- cleanup(globals_i)
+> str(globals_i)
+List of 5
+ $ b: num 2
+ $ c: num 3
+ $ d: NULL
+ $ a: num 0
+ $ e:function ()  
+ - attr(*, "where")=List of 5
+  ..$ b:<environment: R_GlobalEnv> 
+  ..$ c:<environment: R_GlobalEnv> 
+  ..$ d:<environment: R_GlobalEnv> 
+  ..$ a:<environment: R_GlobalEnv> 
+  ..$ e:<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> assert_identical_sets(names(globals_i), c("b", "c", "d", "a", "e"))
+> where <- attr(globals_i, "where")
+> stopifnot(
++   length(where) == length(globals_i),
++   identical(where$b, globalenv()),
++   identical(where$c, globalenv()),
++   identical(where$d, globalenv())
++ )
+> 
+> globals_i <- globalsOf(function(x) x <- x)
+> print(globals_i)
+$`<-`
+.Primitive("<-")
+
+attr(,"where")
+attr(,"where")$`<-`
+<environment: base>
+
+attr(,"class")
+[1] "Globals" "list"   
+> globals_i <- cleanup(globals_i)
+> str(globals_i)
+ Named list()
+ - attr(*, "where")= Named list()
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> assert_identical_sets(names(globals_i), character(0L))
+> where <- attr(globals_i, "where")
+> stopifnot(
++   length(where) == length(globals_i),
++   identical(where, setNames(list(), character(0L)))
++ )
+> 
+> 
+> globals_i <- globalsOf(function(x) x[1] <- 0)
+> print(globals_i)
+$`<-`
+.Primitive("<-")
+
+$`[`
+.Primitive("[")
+
+$`[<-`
+.Primitive("[<-")
+
+attr(,"where")
+attr(,"where")$`<-`
+<environment: base>
+
+attr(,"where")$`[`
+<environment: base>
+
+attr(,"where")$`[<-`
+<environment: base>
+
+attr(,"class")
+[1] "Globals" "list"   
+> globals_i <- cleanup(globals_i)
+> str(globals_i)
+ Named list()
+ - attr(*, "where")= Named list()
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> assert_identical_sets(names(globals_i), character(0L))
+> where <- attr(globals_i, "where")
+> stopifnot(
++   length(where) == length(globals_i),
++   identical(where, setNames(list(), character(0L)))
++ )
+> 
+> globals_i <- globalsOf(function(x) a <- x$a)
+> print(globals_i)
+$`<-`
+.Primitive("<-")
+
+$`$`
+.Primitive("$")
+
+attr(,"where")
+attr(,"where")$`<-`
+<environment: base>
+
+attr(,"where")$`$`
+<environment: base>
+
+attr(,"class")
+[1] "Globals" "list"   
+> globals_i <- cleanup(globals_i)
+> str(globals_i)
+ Named list()
+ - attr(*, "where")= Named list()
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> assert_identical_sets(names(globals_i), character(0L))
+> where <- attr(globals_i, "where")
+> stopifnot(
++   length(where) == length(globals_i),
++   identical(where, setNames(list(), character(0L)))
++ )
+> 
+> globals_i <- globalsOf(function(...) args <- list(...))
+> print(globals_i)
+$`<-`
+.Primitive("<-")
+
+$list
+function (...)  .Primitive("list")
+
+attr(,"where")
+attr(,"where")$`<-`
+<environment: base>
+
+attr(,"where")$list
+<environment: base>
+
+attr(,"class")
+[1] "Globals" "list"   
+> globals_i <- cleanup(globals_i)
+> str(globals_i)
+ Named list()
+ - attr(*, "where")= Named list()
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> assert_identical_sets(names(globals_i), character(0L))
+> where <- attr(globals_i, "where")
+> stopifnot(
++   length(where) == length(globals_i),
++   identical(where, setNames(list(), character(0L)))
++ )
+> 
+> 
+> x <- 1
+> globals_i <- globalsOf({ function(x) x; x }, substitute = TRUE)
+> print(globals_i)
+$`{`
+.Primitive("{")
+
+$x
+[1] 1
+
+attr(,"where")
+attr(,"where")$`{`
+<environment: base>
+
+attr(,"where")$x
+<environment: R_GlobalEnv>
+
+attr(,"class")
+[1] "Globals" "list"   
+> globals_i <- cleanup(globals_i)
+> str(globals_i)
+List of 1
+ $ x: num 1
+ - attr(*, "where")=List of 1
+  ..$ x:<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> assert_identical_sets(names(globals_i), "x")
+> where <- attr(globals_i, "where")
+> stopifnot(
++   length(where) == length(globals_i)
++ )
+> 
+> 
+> 
+> message(" ** globalsOf() w/ globals in functions:")
+ ** globalsOf() w/ globals in functions:
+> 
+> a <- 1
+> bar <- function(x) x - a
+> foo <- function(x) bar(x)
+> 
+> for (method in c("ordered", "conservative", "liberal")) {
++   globals <- globalsOf({ foo(3) }, substitute = TRUE, method = method,
++                          recursive = FALSE, mustExist = FALSE)
++   assert_identical_sets(names(globals), c("{", "foo"))
++   stopifnot(!any("a" %in% names(globals)))
++   globals <- cleanup(globals)
++   str(globals)
++   assert_identical_sets(names(globals), c("foo"))
++   stopifnot(!any("a" %in% names(globals)))
++ 
++   globals <- globalsOf({ foo(3) }, substitute = TRUE, method = "ordered",
++                          recursive = TRUE, mustExist = FALSE)
++   assert_identical_sets(names(globals), c("{", "foo", "bar", "-", "a"))
++   globals <- cleanup(globals)
++   str(globals)
++   assert_identical_sets(names(globals), c("foo", "bar", "a"))
++ 
++   globals <- globalsOf({ foo(3) }, substitute = TRUE,
++                          recursive = TRUE, mustExist = FALSE)
++   assert_identical_sets(names(globals), c("{", "foo", "bar", "-", "a"))
++   globals <- cleanup(globals)
++   str(globals)
++   assert_identical_sets(names(globals), c("foo", "bar", "a"))
++ }
+List of 1
+ $ foo:function (x)  
+ - attr(*, "where")=List of 1
+  ..$ foo:<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+List of 3
+ $ foo:function (x)  
+ $ bar:function (x)  
+ $ a  : num 1
+ - attr(*, "where")=List of 3
+  ..$ foo:<environment: R_GlobalEnv> 
+  ..$ bar:<environment: R_GlobalEnv> 
+  ..$ a  :<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+List of 3
+ $ foo:function (x)  
+ $ bar:function (x)  
+ $ a  : num 1
+ - attr(*, "where")=List of 3
+  ..$ foo:<environment: R_GlobalEnv> 
+  ..$ bar:<environment: R_GlobalEnv> 
+  ..$ a  :<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+List of 1
+ $ foo:function (x)  
+ - attr(*, "where")=List of 1
+  ..$ foo:<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+List of 3
+ $ foo:function (x)  
+ $ bar:function (x)  
+ $ a  : num 1
+ - attr(*, "where")=List of 3
+  ..$ foo:<environment: R_GlobalEnv> 
+  ..$ bar:<environment: R_GlobalEnv> 
+  ..$ a  :<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+List of 3
+ $ foo:function (x)  
+ $ bar:function (x)  
+ $ a  : num 1
+ - attr(*, "where")=List of 3
+  ..$ foo:<environment: R_GlobalEnv> 
+  ..$ bar:<environment: R_GlobalEnv> 
+  ..$ a  :<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+List of 1
+ $ foo:function (x)  
+ - attr(*, "where")=List of 1
+  ..$ foo:<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+List of 3
+ $ foo:function (x)  
+ $ bar:function (x)  
+ $ a  : num 1
+ - attr(*, "where")=List of 3
+  ..$ foo:<environment: R_GlobalEnv> 
+  ..$ bar:<environment: R_GlobalEnv> 
+  ..$ a  :<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+List of 3
+ $ foo:function (x)  
+ $ bar:function (x)  
+ $ a  : num 1
+ - attr(*, "where")=List of 3
+  ..$ foo:<environment: R_GlobalEnv> 
+  ..$ bar:<environment: R_GlobalEnv> 
+  ..$ a  :<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> 
+> 
+> message(" ** globalsOf() w/ recursive functions:")
+ ** globalsOf() w/ recursive functions:
+> 
+> ## "Easy"
+> f <- function() Recall()
+> globals <- globalsOf(f)
+> str(globals)
+List of 1
+ $ Recall:function (...)  
+ - attr(*, "where")=List of 1
+  ..$ Recall:<environment: base> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> 
+> ## Direct recursive call
+> f <- function() f()
+> globals <- globalsOf(f)
+> str(globals)
+List of 1
+ $ f:function ()  
+ - attr(*, "where")=List of 1
+  ..$ f:<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> 
+> ## Indirect recursive call
+> f <- function() g()
+> g <- function() f()
+> globals_f <- globalsOf(f)
+> str(globals_f)
+List of 2
+ $ g:function ()  
+ $ f:function ()  
+ - attr(*, "where")=List of 2
+  ..$ g:<environment: R_GlobalEnv> 
+  ..$ f:<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> globals_g <- globalsOf(g)
+> str(globals_g)
+List of 2
+ $ f:function ()  
+ $ g:function ()  
+ - attr(*, "where")=List of 2
+  ..$ f:<environment: R_GlobalEnv> 
+  ..$ g:<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> globals_f <- globals_f[order(names(globals_f))]
+> globals_g <- globals_g[order(names(globals_g))]
+> stopifnot(identical(globals_g, globals_f))
+> 
+> 
+> message("*** globalsOf() ... DONE")
+*** globalsOf() ... DONE
+> 
+> 
+> message("*** Subsetting of Globals:")
+*** Subsetting of Globals:
+> expr <- exprs$A
+> globals_l <- globalsOf(expr, method = "liberal")
+> globals_s <- globals_l[-1]
+> stopifnot(length(globals_s) == length(globals_l) - 1L)
+> stopifnot(identical(class(globals_s), class(globals_l)))
+> where_l <- attr(globals_l, "where")
+> where_s <- attr(globals_s, "where")
+> stopifnot(length(where_s) == length(where_l) - 1L)
+> stopifnot(identical(where_s, where_l[-1]))
+> 
+> 
+> message("*** cleanup() & packagesOf():")
+*** cleanup() & packagesOf():
+> expr <- exprs$A
+> globals <- globalsOf(expr, method = "conservative")
+> str(globals)
+List of 5
+ $ { :.Primitive("{") 
+ $ <-:.Primitive("<-") 
+ $ c : num 3
+ $ d : NULL
+ $ + :function (e1, e2)  
+ - attr(*, "where")=List of 5
+  ..$ { :<environment: base> 
+  ..$ <-:<environment: base> 
+  ..$ c :<environment: R_GlobalEnv> 
+  ..$ d :<environment: R_GlobalEnv> 
+  ..$ + :<environment: base> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> assert_identical_sets(names(globals), c("{", "<-", "c", "d", "+"))
+> 
+> globals <- as.Globals(globals)
+> str(globals)
+List of 5
+ $ { :.Primitive("{") 
+ $ <-:.Primitive("<-") 
+ $ c : num 3
+ $ d : NULL
+ $ + :function (e1, e2)  
+ - attr(*, "where")=List of 5
+  ..$ { :<environment: base> 
+  ..$ <-:<environment: base> 
+  ..$ c :<environment: R_GlobalEnv> 
+  ..$ d :<environment: R_GlobalEnv> 
+  ..$ + :<environment: base> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> assert_identical_sets(names(globals), c("{", "<-", "c", "d", "+"))
+> 
+> globals <- as.Globals(unclass(globals))
+> str(globals)
+List of 5
+ $ { :.Primitive("{") 
+ $ <-:.Primitive("<-") 
+ $ c : num 3
+ $ d : NULL
+ $ + :function (e1, e2)  
+ - attr(*, "where")=List of 5
+  ..$ { :<environment: base> 
+  ..$ <-:<environment: base> 
+  ..$ c :<environment: R_GlobalEnv> 
+  ..$ d :<environment: R_GlobalEnv> 
+  ..$ + :<environment: base> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> assert_identical_sets(names(globals), c("{", "<-", "c", "d", "+"))
+> 
+> pkgs <- packagesOf(globals)
+> print(pkgs)
+[1] "base"
+> stopifnot(
++   length(pkgs) == 1L,
++   identical(pkgs, c("base"))
++ )
+> 
+> globals <- cleanup(globals)
+> str(globals)
+List of 2
+ $ c: num 3
+ $ d: NULL
+ - attr(*, "where")=List of 2
+  ..$ c:<environment: R_GlobalEnv> 
+  ..$ d:<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> assert_identical_sets(names(globals), c("c", "d"))
+> 
+> pkgs <- packagesOf(globals)
+> print(pkgs)
+character(0)
+> stopifnot(length(pkgs) == 0L)
+> 
+> globals <- globalsOf(quote(pi))
+> stopifnot(
++   length(globals) == 1L,
++   identical(names(globals), "pi")
++ )
+> pkgs <- packagesOf(globals)
+> print(pkgs)
+[1] "base"
+> stopifnot(
++   length(pkgs) == 1L,
++   identical(pkgs, c("base"))
++ )
+> 
+> message("*** globalsOf() and package functions:")
+*** globalsOf() and package functions:
+> foo <- globals::Globals
+> expr <- exprs$C
+> globals <- globalsOf(expr, recursive = FALSE)
+> str(globals)
+List of 3
+ $ {   :.Primitive("{") 
+ $ foo :function (object = list(), ...)  
+ $ list:function (...)  
+ - attr(*, "where")=List of 3
+  ..$ {   :<environment: base> 
+  ..$ foo :<environment: R_GlobalEnv> 
+  ..$ list:<environment: base> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> assert_identical_sets(names(globals), c("{", "foo", "list"))
+> where <- attr(globals, "where")
+> stopifnot(length(where) == length(globals))
+> if (!covr) stopifnot(
++   identical(where$`{`, baseenv()),
++   identical(where$foo, globalenv()),
++   identical(where$list, baseenv())
++ )
+> 
+> globals <- cleanup(globals)
+> str(globals)
+List of 1
+ $ foo:function (object = list(), ...)  
+ - attr(*, "where")=List of 1
+  ..$ foo:<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> assert_identical_sets(names(globals), c("foo"))
+> pkgs <- packagesOf(globals)
+> stopifnot(pkgs == "globals")
+> 
+> 
+> message("*** globalsOf() and core-package functions:")
+*** globalsOf() and core-package functions:
+> sample2 <- base::sample
+> sum2 <- base::sum
+> expr <- exprs$D
+> globals <- globalsOf(expr, recursive = FALSE)
+> str(globals)
+List of 8
+ $ {                :.Primitive("{") 
+ $ <-               :.Primitive("<-") 
+ $ sample           :function (x, size, replace = FALSE, prob = NULL)  
+ $ sum              :function (..., na.rm = FALSE)  
+ $ sample2          :function (x, size, replace = FALSE, prob = NULL)  
+ $ sum2             :function (..., na.rm = FALSE)  
+ $ sessionInfo      :function (package = NULL)  
+ $ isNamespaceLoaded:function (name)  
+ - attr(*, "where")=List of 8
+  ..$ {                :<environment: base> 
+  ..$ <-               :<environment: base> 
+  ..$ sample           :<environment: base> 
+  ..$ sum              :<environment: base> 
+  ..$ sample2          :<environment: R_GlobalEnv> 
+  ..$ sum2             :<environment: R_GlobalEnv> 
+  ..$ sessionInfo      :<environment: package:utils> 
+  .. ..- attr(*, "name")= chr "package:utils"
+  .. ..- attr(*, "path")= chr "/usr/local/lib/R/library/utils"
+  ..$ isNamespaceLoaded:<environment: base> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> assert_identical_sets(names(globals), c("{", "<-", "sample", "sample2", "sessionInfo", "sum", "sum2", "isNamespaceLoaded"))
+> where <- attr(globals, "where")
+> stopifnot(length(where) == length(globals))
+> if (!covr) stopifnot(
++   identical(where$`<-`, baseenv()),
++   identical(where$sample, baseenv()),
++   identical(where$sample2, globalenv())
++ )
+> 
+> globals <- cleanup(globals, drop = "primitives")
+> str(globals)
+List of 5
+ $ sample           :function (x, size, replace = FALSE, prob = NULL)  
+ $ sample2          :function (x, size, replace = FALSE, prob = NULL)  
+ $ sum2             :function (..., na.rm = FALSE)  
+ $ sessionInfo      :function (package = NULL)  
+ $ isNamespaceLoaded:function (name)  
+ - attr(*, "where")=List of 5
+  ..$ sample           :<environment: base> 
+  ..$ sample2          :<environment: R_GlobalEnv> 
+  ..$ sum2             :<environment: R_GlobalEnv> 
+  ..$ sessionInfo      :<environment: package:utils> 
+  .. ..- attr(*, "name")= chr "package:utils"
+  .. ..- attr(*, "path")= chr "/usr/local/lib/R/library/utils"
+  ..$ isNamespaceLoaded:<environment: base> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> assert_identical_sets(names(globals), c("sample", "sample2", "sum2", "sessionInfo", "isNamespaceLoaded"))
+> 
+> globals <- cleanup(globals, drop = "internals")
+> str(globals)
+List of 4
+ $ sample     :function (x, size, replace = FALSE, prob = NULL)  
+ $ sample2    :function (x, size, replace = FALSE, prob = NULL)  
+ $ sum2       :function (..., na.rm = FALSE)  
+ $ sessionInfo:function (package = NULL)  
+ - attr(*, "where")=List of 4
+  ..$ sample     :<environment: base> 
+  ..$ sample2    :<environment: R_GlobalEnv> 
+  ..$ sum2       :<environment: R_GlobalEnv> 
+  ..$ sessionInfo:<environment: package:utils> 
+  .. ..- attr(*, "name")= chr "package:utils"
+  .. ..- attr(*, "path")= chr "/usr/local/lib/R/library/utils"
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> assert_identical_sets(names(globals), c("sample", "sample2", "sum2", "sessionInfo"))
+> 
+> globals <- cleanup(globals)
+> str(globals)
+List of 2
+ $ sample2:function (x, size, replace = FALSE, prob = NULL)  
+ $ sum2   :function (..., na.rm = FALSE)  
+ - attr(*, "where")=List of 2
+  ..$ sample2:<environment: R_GlobalEnv> 
+  ..$ sum2   :<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+> assert_identical_sets(names(globals), c("sample2", "sum2"))
+> where <- attr(globals, "where")
+> stopifnot(length(where) == length(globals))
+> if (!covr) stopifnot(identical(where$sample2, globalenv()))
+> 
+> 
+> message("*** globalsOf() - exceptions ...")
+*** globalsOf() - exceptions ...
+> 
+> rm(list = "a")
+> res <- try({
++   globals <- globalsOf({ x <- a }, substitute = TRUE, mustExist = TRUE)
++ }, silent = TRUE)
+> stopifnot(inherits(res, "try-error"))
+> 
+> message("*** globalsOf() - exceptions ... DONE")
+*** globalsOf() - exceptions ... DONE
+> 
+> source("incl/end.R")
+> 

@@ -1,0 +1,1154 @@
+
+R version 4.4.3 (2025-02-28) -- "Trophy Case"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> source("incl/start.R")
+[11:00:53.113] plan(): Setting new future strategy stack:
+[11:00:53.114] List of future strategies:
+[11:00:53.114] 1. sequential:
+[11:00:53.114]    - args: function (..., envir = parent.frame(), workers = "<NULL>")
+[11:00:53.114]    - tweaked: FALSE
+[11:00:53.114]    - call: future::plan("sequential")
+[11:00:53.127] plan(): nbrOfWorkers() = 1
+> options(future.debug = FALSE)
+> message("*** cluster() ...")
+*** cluster() ...
+> 
+> message("Library paths: ", paste(sQuote(.libPaths()), collapse = ", "))
+Library paths: ‘/usr/local/lib/R/site-library’, ‘/usr/local/lib/R/library’
+> message("Package path: ", sQuote(system.file(package = "future")))
+Package path: ‘/usr/local/lib/R/site-library/future’
+> 
+> types <- "PSOCK"
+> 
+> ## Speed up CRAN checks: Skip on CRAN Windows 32-bit
+> if (isWin32) types <- NULL
+> 
+> if (supportsMulticore() && !on_solaris) types <- c(types, "FORK")
+> 
+> ## WORKAROUND: covr::package_coverage() -> merge_coverage() -> ... produces
+> ## "Error in readRDS(x) : error reading from connection" for type = "FORK".
+> ## Is this related to mcparallel() comments in help("package_coverage")?
+> ## /HB 2017-05-20
+> if (covr_testing) types <- setdiff(types, "FORK")
+> 
+> ## WORKAROUND: FORK:ed processing gives really odd type="FORK" results on
+> ## macOS when running on GitHub Actions. /HB 2020-06-07
+> ## This error is also appearing on CRANs' 'r-release-macos-arm64' and
+> ## 'M1mac' checks. /HB 2021-08-11
+> if (on_macos) types <- setdiff(types, "FORK")
+> 
+> pid <- Sys.getpid()
+> message("Main PID (original): ", pid)
+Main PID (original): 76770
+> cl <- NULL
+> for (type in types) {
++   message(sprintf("Test set #1 with cluster type %s ...", sQuote(type)))
++ 
++   message("Main PID (original): ", pid)
++ 
++   for (cores in 1:availCores) {
++     message(sprintf("Testing with %d cores on type = %s ...",
++                     cores, sQuote(type)))
++     options(mc.cores = cores)
++   
++     ## Set up a cluster with <cores> nodes (explicitly)
++     cl <- parallel::makeCluster(cores, type = type, timeout = 60)
++     print(cl)
++     
++     plan(cluster, workers = cl)
++ 
++     ## Assert that the worker's global environment is "empty"
++     f <- future(ls(envir=globalenv(), all.names=TRUE))
++     v <- value(f)
++     v <- grep("^[.][.][.]future[.]", v, invert = TRUE, value = TRUE)
++     if (length(v) > 0) {
++       stop(sprintf("Stray variables in the global environment of %s: %s",
++            class(f)[1], paste(sQuote(v), collapse = ", ")))
++     }
++ 
++     ## No global variables
++     f <- try(cluster({
++       42L
++     }, workers = cl), silent = FALSE)
++     print(f)
++     stopifnot(inherits(f, "ClusterFuture"))
++   
++     print(resolved(f))
++     y <- value(f)
++     print(y)
++     stopifnot(y == 42L)
++ 
++     ## No global variables
++     f <- try(cluster({
++       42L
++     }, workers = cl), silent = FALSE)
++     print(f)
++     stopifnot(inherits(f, "ClusterFuture"))
++   
++     print(resolved(f))
++     y <- value(f)
++     print(y)
++     stopifnot(y == 42L)
++   
++     ## A global variable
++     a <- 0
++     f <- try(future({
++       b <- 3
++       c <- 2
++       a * b * c
++     }))
++     print(f)
++   
++   
++     ## A cluster future is evaluated in a separate
++     ## R session process.  Changing the value of a global
++     ## variable should not affect the result of the
++     ## future.
++     a <- 7  ## Make sure globals are frozen
++     v <- value(f)
++     print(v)
++     stopifnot(v == 0)
++ 
++     if (!"covr" %in% loadedNamespaces()) {
++       message("*** cluster() with globals and blocking")
++       fs <- list()
++       for (ii in 1:3) {
++         message(sprintf(" - Creating cluster future #%d ...", ii))
++         fs[[ii]] <- future({ ii }, label = sprintf("future-%d", ii))
++       }
++       message(sprintf(" - Resolving %d cluster futures", length(fs)))
++       v <- sapply(fs, FUN = value)
++       stopifnot(all(v == 1:3))
++     }
++   
++   
++     message("*** cluster() and errors")
++     f <- future({
++       stop("Whoops!")
++       1
++     })
++     print(f)
++     v <- value(f, signal = FALSE)
++     print(v)
++     stopifnot(inherits(v, "simpleError"))
++   
++     res <- tryCatch(value(f), error = identity)
++     print(res)
++     stopifnot(inherits(res, "error"))
++   
++     ## Error is repeated
++     res <- tryCatch(value(f), error = identity)
++     print(res)
++     stopifnot(inherits(res, "error"))
++   
++     ## Custom error class
++     f <- future({
++       stop(structure(list(message = "boom"),
++                      class = c("MyError", "error", "condition")))
++     })
++     print(f)
++     v <- value(f, signal = FALSE)
++     print(v)
++     stopifnot(inherits(v, "error"), inherits(v, "MyError"))
++   
++     ## Make sure error is signaled
++     res <- tryCatch(value(f), error = identity)
++     stopifnot(inherits(res, "error"), inherits(res, "MyError"))    
++   
++     message("*** cluster() - installed libraries ...")
++     f <- try(cluster({
++       list(
++         libPaths = .libPaths()
++       )
++     }, workers = cl), silent = FALSE)
++     print(f)
++     stopifnot(inherits(f, "ClusterFuture"))
++     v <- value(f)
++     message(paste(capture.output(str(v)), collapse = "\n"))
++     message("*** cluster() - installed packages ... DONE")
++   
++   
++     message("*** cluster() - assert covr workaround ...")
++     f <- try(cluster({
++       future:::hpaste(1:100)
++     }, workers = cl), silent = FALSE)
++     print(f)
++     stopifnot(inherits(f, "ClusterFuture"))
++     v <- value(f)
++     message(v)
++     stopifnot(v == hpaste(1:100))
++     message("*** cluster() - assert covr workaround ... DONE")
++ 
++     ## Assert that the worker's global environment is "empty"
++     f <- future(ls(envir=globalenv(), all.names=TRUE))
++     v <- value(f)
++     v <- grep("^[.][.][.]future[.]", v, invert = TRUE, value = TRUE)
++     if (length(v) > 0) {
++       stop(sprintf("Stray variables in the global environment of %s: %s",
++            class(f)[1], paste(sQuote(v), collapse = ", ")))
++     }
++ 
++     ## Sanity checks
++     pid2 <- Sys.getpid()
++     message("Main PID (original): ", pid)
++     message("Main PID: ", pid2)
++     stopifnot(pid2 == pid)
++ 
++     ## Cleanup
++     parallel::stopCluster(cl)
++   
++     message(sprintf("Testing with %d cores on type = %s ... DONE",
++                     cores, sQuote(type)))
++   } ## for (cores ...)
++ 
++   message("*** cluster() - exceptions ...")
++   
++   res <- tryCatch(cluster(42L, workers = NA), error = identity)
++   print(res)
++   stopifnot(inherits(res, "error"))
++   
++   message("*** cluster() - exceptions ... DONE")
++ 
++   message("*** cluster() - assert registry behavior ...")
++   
++   ## Explicitly created clusters are *not* added to the registry
++   cl <- parallel::makeCluster(1L, type = type, timeout = 60)
++   plan(cluster, workers = cl)
++   clR <- ClusterRegistry("get")
++   stopifnot(is.null(clR))
++   
++   ## ... and therefore changing plans shouldn't change anything
++   plan(sequential)
++   clR <- ClusterRegistry("get")
++   stopifnot(is.null(clR))
++ 
++   ## Cleanup
++   print(cl)
++   str(cl)
++   parallel::stopCluster(cl)
++   
++   message("*** cluster() - assert registry behavior ... DONE")
++ 
++   ## Sanity checks
++   pid2 <- Sys.getpid()
++   message("Main PID (original): ", pid)
++   message("Main PID: ", pid2)
++   stopifnot(pid2 == pid)
++ 
++   ## Cleanup
++   plan(sequential)
++ 
++   cl1 <- parallel::makeCluster(1L, type = type, timeout = 60)
++   plan(cluster, workers = cl1)
++   f1 <- future(1)
++ 
++   ## Cleanup
++   print(cl1)
++   str(cl1)
++   parallel::stopCluster(cl1)
++ 
++   message(sprintf("Test set #1 with cluster type %s ... DONE", sQuote(type)))
++ } ## for (type ...)
+Test set #1 with cluster type ‘PSOCK’ ...
+Main PID (original): 76770
+Testing with 1 cores on type = ‘PSOCK’ ...
+socket cluster with 1 nodes on host ‘localhost’
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    42L
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+[1] FALSE
+[1] 42
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    42L
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+[1] FALSE
+[1] 42
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    b <- 3
+    c <- 2
+    a * b * c
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: 1 objects totaling 39 bytes (numeric ‘a’ of 39 bytes)
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+[1] 0
+*** cluster() with globals and blocking
+ - Creating cluster future #1 ...
+ - Creating cluster future #2 ...
+ - Creating cluster future #3 ...
+ - Resolving 3 cluster futures
+*** cluster() and errors
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    stop("Whoops!")
+    1
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+<simpleError in withCallingHandlers({    {        stop("Whoops!")        1    }}, immediateCondition = function(cond) {    sendCondition <- ...future.makeSendCondition()    sendCondition(cond)    muffleCondition <- function (cond, pattern = "^muffle")     {        inherits <- base::inherits        invokeRestart <- base::invokeRestart        is.null <- base::is.null        muffled <- FALSE        if (inherits(cond, "message")) {            muffled <- grepl(pattern, "muffleMessage")            if (muffled)                 invokeRestart("muffleMessage")        }        else if (inherits(cond, "warning")) {            muffled <- grepl(pattern, "muffleWarning")            if (muffled)                 invokeRestart("muffleWarning")        }        else if (inherits(cond, "condition")) {            if (!is.null(pattern)) {                computeRestarts <- base::computeRestarts                grepl <- base::grepl                restarts <- computeRestarts(cond)                for (restart in restarts) {                  name <- restart$name                  if (is.null(name))                     next                  if (!grepl(pattern, name))                     next                  invokeRestart(restart)                  muffled <- TRUE                  break                }            }        }        invisible(muffled)    }    muffleCondition(cond)}): Whoops!>
+<simpleError in withCallingHandlers({    {        stop("Whoops!")        1    }}, immediateCondition = function(cond) {    sendCondition <- ...future.makeSendCondition()    sendCondition(cond)    muffleCondition <- function (cond, pattern = "^muffle")     {        inherits <- base::inherits        invokeRestart <- base::invokeRestart        is.null <- base::is.null        muffled <- FALSE        if (inherits(cond, "message")) {            muffled <- grepl(pattern, "muffleMessage")            if (muffled)                 invokeRestart("muffleMessage")        }        else if (inherits(cond, "warning")) {            muffled <- grepl(pattern, "muffleWarning")            if (muffled)                 invokeRestart("muffleWarning")        }        else if (inherits(cond, "condition")) {            if (!is.null(pattern)) {                computeRestarts <- base::computeRestarts                grepl <- base::grepl                restarts <- computeRestarts(cond)                for (restart in restarts) {                  name <- restart$name                  if (is.null(name))                     next                  if (!grepl(pattern, name))                     next                  invokeRestart(restart)                  muffled <- TRUE                  break                }            }        }        invisible(muffled)    }    muffleCondition(cond)}): Whoops!>
+<simpleError in withCallingHandlers({    {        stop("Whoops!")        1    }}, immediateCondition = function(cond) {    sendCondition <- ...future.makeSendCondition()    sendCondition(cond)    muffleCondition <- function (cond, pattern = "^muffle")     {        inherits <- base::inherits        invokeRestart <- base::invokeRestart        is.null <- base::is.null        muffled <- FALSE        if (inherits(cond, "message")) {            muffled <- grepl(pattern, "muffleMessage")            if (muffled)                 invokeRestart("muffleMessage")        }        else if (inherits(cond, "warning")) {            muffled <- grepl(pattern, "muffleWarning")            if (muffled)                 invokeRestart("muffleWarning")        }        else if (inherits(cond, "condition")) {            if (!is.null(pattern)) {                computeRestarts <- base::computeRestarts                grepl <- base::grepl                restarts <- computeRestarts(cond)                for (restart in restarts) {                  name <- restart$name                  if (is.null(name))                     next                  if (!grepl(pattern, name))                     next                  invokeRestart(restart)                  muffled <- TRUE                  break                }            }        }        invisible(muffled)    }    muffleCondition(cond)}): Whoops!>
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    stop(structure(list(message = "boom"), class = c("MyError", 
+        "error", "condition")))
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+<MyError: boom>
+*** cluster() - installed libraries ...
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    list(libPaths = .libPaths())
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+List of 1
+ $ libPaths: chr [1:2] "/usr/local/lib/R/site-library" "/usr/local/lib/R/library"
+*** cluster() - installed packages ... DONE
+*** cluster() - assert covr workaround ...
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    future:::hpaste(1:100)
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100
+*** cluster() - assert covr workaround ... DONE
+Main PID (original): 76770
+Main PID: 76770
+Testing with 1 cores on type = ‘PSOCK’ ... DONE
+Testing with 2 cores on type = ‘PSOCK’ ...
+socket cluster with 2 nodes on host ‘localhost’
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    42L
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+[1] FALSE
+[1] 42
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    42L
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+[1] FALSE
+[1] 42
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    b <- 3
+    c <- 2
+    a * b * c
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: 1 objects totaling 39 bytes (numeric ‘a’ of 39 bytes)
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+[1] 0
+*** cluster() with globals and blocking
+ - Creating cluster future #1 ...
+ - Creating cluster future #2 ...
+ - Creating cluster future #3 ...
+ - Resolving 3 cluster futures
+*** cluster() and errors
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    stop("Whoops!")
+    1
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+<simpleError in withCallingHandlers({    {        stop("Whoops!")        1    }}, immediateCondition = function(cond) {    sendCondition <- ...future.makeSendCondition()    sendCondition(cond)    muffleCondition <- function (cond, pattern = "^muffle")     {        inherits <- base::inherits        invokeRestart <- base::invokeRestart        is.null <- base::is.null        muffled <- FALSE        if (inherits(cond, "message")) {            muffled <- grepl(pattern, "muffleMessage")            if (muffled)                 invokeRestart("muffleMessage")        }        else if (inherits(cond, "warning")) {            muffled <- grepl(pattern, "muffleWarning")            if (muffled)                 invokeRestart("muffleWarning")        }        else if (inherits(cond, "condition")) {            if (!is.null(pattern)) {                computeRestarts <- base::computeRestarts                grepl <- base::grepl                restarts <- computeRestarts(cond)                for (restart in restarts) {                  name <- restart$name                  if (is.null(name))                     next                  if (!grepl(pattern, name))                     next                  invokeRestart(restart)                  muffled <- TRUE                  break                }            }        }        invisible(muffled)    }    muffleCondition(cond)}): Whoops!>
+<simpleError in withCallingHandlers({    {        stop("Whoops!")        1    }}, immediateCondition = function(cond) {    sendCondition <- ...future.makeSendCondition()    sendCondition(cond)    muffleCondition <- function (cond, pattern = "^muffle")     {        inherits <- base::inherits        invokeRestart <- base::invokeRestart        is.null <- base::is.null        muffled <- FALSE        if (inherits(cond, "message")) {            muffled <- grepl(pattern, "muffleMessage")            if (muffled)                 invokeRestart("muffleMessage")        }        else if (inherits(cond, "warning")) {            muffled <- grepl(pattern, "muffleWarning")            if (muffled)                 invokeRestart("muffleWarning")        }        else if (inherits(cond, "condition")) {            if (!is.null(pattern)) {                computeRestarts <- base::computeRestarts                grepl <- base::grepl                restarts <- computeRestarts(cond)                for (restart in restarts) {                  name <- restart$name                  if (is.null(name))                     next                  if (!grepl(pattern, name))                     next                  invokeRestart(restart)                  muffled <- TRUE                  break                }            }        }        invisible(muffled)    }    muffleCondition(cond)}): Whoops!>
+<simpleError in withCallingHandlers({    {        stop("Whoops!")        1    }}, immediateCondition = function(cond) {    sendCondition <- ...future.makeSendCondition()    sendCondition(cond)    muffleCondition <- function (cond, pattern = "^muffle")     {        inherits <- base::inherits        invokeRestart <- base::invokeRestart        is.null <- base::is.null        muffled <- FALSE        if (inherits(cond, "message")) {            muffled <- grepl(pattern, "muffleMessage")            if (muffled)                 invokeRestart("muffleMessage")        }        else if (inherits(cond, "warning")) {            muffled <- grepl(pattern, "muffleWarning")            if (muffled)                 invokeRestart("muffleWarning")        }        else if (inherits(cond, "condition")) {            if (!is.null(pattern)) {                computeRestarts <- base::computeRestarts                grepl <- base::grepl                restarts <- computeRestarts(cond)                for (restart in restarts) {                  name <- restart$name                  if (is.null(name))                     next                  if (!grepl(pattern, name))                     next                  invokeRestart(restart)                  muffled <- TRUE                  break                }            }        }        invisible(muffled)    }    muffleCondition(cond)}): Whoops!>
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    stop(structure(list(message = "boom"), class = c("MyError", 
+        "error", "condition")))
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+<MyError: boom>
+*** cluster() - installed libraries ...
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    list(libPaths = .libPaths())
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+List of 1
+ $ libPaths: chr [1:2] "/usr/local/lib/R/site-library" "/usr/local/lib/R/library"
+*** cluster() - installed packages ... DONE
+*** cluster() - assert covr workaround ...
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    future:::hpaste(1:100)
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100
+*** cluster() - assert covr workaround ... DONE
+Main PID (original): 76770
+Main PID: 76770
+Testing with 2 cores on type = ‘PSOCK’ ... DONE
+*** cluster() - exceptions ...
+<simpleError in UseMethod("as.cluster"): no applicable method for 'as.cluster' applied to an object of class "logical">
+*** cluster() - exceptions ... DONE
+*** cluster() - assert registry behavior ...
+socket cluster with 1 nodes on host ‘localhost’
+List of 1
+ $ :List of 3
+  ..$ con : 'sockconn' int 4
+  .. ..- attr(*, "conn_id")=<externalptr> 
+  ..$ host: chr "localhost"
+  ..$ rank: num 0
+  ..- attr(*, "class")= chr "SOCKnode"
+ - attr(*, "class")= chr [1:2] "SOCKcluster" "cluster"
+*** cluster() - assert registry behavior ... DONE
+Main PID (original): 76770
+Main PID: 76770
+socket cluster with 1 nodes on host ‘localhost’
+List of 1
+ $ :List of 3
+  ..$ con : 'sockconn' int 4
+  .. ..- attr(*, "conn_id")=<externalptr> 
+  ..$ host: chr "localhost"
+  ..$ rank: num 0
+  ..- attr(*, "class")= chr "SOCKnode"
+ - attr(*, "class")= chr [1:2] "SOCKcluster" "cluster"
+Test set #1 with cluster type ‘PSOCK’ ... DONE
+Test set #1 with cluster type ‘FORK’ ...
+Main PID (original): 76770
+Testing with 1 cores on type = ‘FORK’ ...
+socket cluster with 1 nodes on host ‘localhost’
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    42L
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+[1] FALSE
+[1] 42
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    42L
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+[1] FALSE
+[1] 42
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    b <- 3
+    c <- 2
+    a * b * c
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: 1 objects totaling 39 bytes (numeric ‘a’ of 39 bytes)
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+[1] 0
+*** cluster() with globals and blocking
+ - Creating cluster future #1 ...
+ - Creating cluster future #2 ...
+ - Creating cluster future #3 ...
+ - Resolving 3 cluster futures
+*** cluster() and errors
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    stop("Whoops!")
+    1
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+<simpleError in withCallingHandlers({    {        stop("Whoops!")        1    }}, immediateCondition = function(cond) {    sendCondition <- ...future.makeSendCondition()    sendCondition(cond)    muffleCondition <- function (cond, pattern = "^muffle")     {        inherits <- base::inherits        invokeRestart <- base::invokeRestart        is.null <- base::is.null        muffled <- FALSE        if (inherits(cond, "message")) {            muffled <- grepl(pattern, "muffleMessage")            if (muffled)                 invokeRestart("muffleMessage")        }        else if (inherits(cond, "warning")) {            muffled <- grepl(pattern, "muffleWarning")            if (muffled)                 invokeRestart("muffleWarning")        }        else if (inherits(cond, "condition")) {            if (!is.null(pattern)) {                computeRestarts <- base::computeRestarts                grepl <- base::grepl                restarts <- computeRestarts(cond)                for (restart in restarts) {                  name <- restart$name                  if (is.null(name))                     next                  if (!grepl(pattern, name))                     next                  invokeRestart(restart)                  muffled <- TRUE                  break                }            }        }        invisible(muffled)    }    muffleCondition(cond)}): Whoops!>
+<simpleError in withCallingHandlers({    {        stop("Whoops!")        1    }}, immediateCondition = function(cond) {    sendCondition <- ...future.makeSendCondition()    sendCondition(cond)    muffleCondition <- function (cond, pattern = "^muffle")     {        inherits <- base::inherits        invokeRestart <- base::invokeRestart        is.null <- base::is.null        muffled <- FALSE        if (inherits(cond, "message")) {            muffled <- grepl(pattern, "muffleMessage")            if (muffled)                 invokeRestart("muffleMessage")        }        else if (inherits(cond, "warning")) {            muffled <- grepl(pattern, "muffleWarning")            if (muffled)                 invokeRestart("muffleWarning")        }        else if (inherits(cond, "condition")) {            if (!is.null(pattern)) {                computeRestarts <- base::computeRestarts                grepl <- base::grepl                restarts <- computeRestarts(cond)                for (restart in restarts) {                  name <- restart$name                  if (is.null(name))                     next                  if (!grepl(pattern, name))                     next                  invokeRestart(restart)                  muffled <- TRUE                  break                }            }        }        invisible(muffled)    }    muffleCondition(cond)}): Whoops!>
+<simpleError in withCallingHandlers({    {        stop("Whoops!")        1    }}, immediateCondition = function(cond) {    sendCondition <- ...future.makeSendCondition()    sendCondition(cond)    muffleCondition <- function (cond, pattern = "^muffle")     {        inherits <- base::inherits        invokeRestart <- base::invokeRestart        is.null <- base::is.null        muffled <- FALSE        if (inherits(cond, "message")) {            muffled <- grepl(pattern, "muffleMessage")            if (muffled)                 invokeRestart("muffleMessage")        }        else if (inherits(cond, "warning")) {            muffled <- grepl(pattern, "muffleWarning")            if (muffled)                 invokeRestart("muffleWarning")        }        else if (inherits(cond, "condition")) {            if (!is.null(pattern)) {                computeRestarts <- base::computeRestarts                grepl <- base::grepl                restarts <- computeRestarts(cond)                for (restart in restarts) {                  name <- restart$name                  if (is.null(name))                     next                  if (!grepl(pattern, name))                     next                  invokeRestart(restart)                  muffled <- TRUE                  break                }            }        }        invisible(muffled)    }    muffleCondition(cond)}): Whoops!>
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    stop(structure(list(message = "boom"), class = c("MyError", 
+        "error", "condition")))
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+<MyError: boom>
+*** cluster() - installed libraries ...
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    list(libPaths = .libPaths())
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+List of 1
+ $ libPaths: chr [1:2] "/usr/local/lib/R/site-library" "/usr/local/lib/R/library"
+*** cluster() - installed packages ... DONE
+*** cluster() - assert covr workaround ...
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    future:::hpaste(1:100)
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100
+*** cluster() - assert covr workaround ... DONE
+Main PID (original): 76770
+Main PID: 76770
+Testing with 1 cores on type = ‘FORK’ ... DONE
+Testing with 2 cores on type = ‘FORK’ ...
+socket cluster with 2 nodes on host ‘localhost’
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    42L
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+[1] FALSE
+[1] 42
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    42L
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+[1] FALSE
+[1] 42
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    b <- 3
+    c <- 2
+    a * b * c
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: 1 objects totaling 39 bytes (numeric ‘a’ of 39 bytes)
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+[1] 0
+*** cluster() with globals and blocking
+ - Creating cluster future #1 ...
+ - Creating cluster future #2 ...
+ - Creating cluster future #3 ...
+ - Resolving 3 cluster futures
+*** cluster() and errors
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    stop("Whoops!")
+    1
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+<simpleError in withCallingHandlers({    {        stop("Whoops!")        1    }}, immediateCondition = function(cond) {    sendCondition <- ...future.makeSendCondition()    sendCondition(cond)    muffleCondition <- function (cond, pattern = "^muffle")     {        inherits <- base::inherits        invokeRestart <- base::invokeRestart        is.null <- base::is.null        muffled <- FALSE        if (inherits(cond, "message")) {            muffled <- grepl(pattern, "muffleMessage")            if (muffled)                 invokeRestart("muffleMessage")        }        else if (inherits(cond, "warning")) {            muffled <- grepl(pattern, "muffleWarning")            if (muffled)                 invokeRestart("muffleWarning")        }        else if (inherits(cond, "condition")) {            if (!is.null(pattern)) {                computeRestarts <- base::computeRestarts                grepl <- base::grepl                restarts <- computeRestarts(cond)                for (restart in restarts) {                  name <- restart$name                  if (is.null(name))                     next                  if (!grepl(pattern, name))                     next                  invokeRestart(restart)                  muffled <- TRUE                  break                }            }        }        invisible(muffled)    }    muffleCondition(cond)}): Whoops!>
+<simpleError in withCallingHandlers({    {        stop("Whoops!")        1    }}, immediateCondition = function(cond) {    sendCondition <- ...future.makeSendCondition()    sendCondition(cond)    muffleCondition <- function (cond, pattern = "^muffle")     {        inherits <- base::inherits        invokeRestart <- base::invokeRestart        is.null <- base::is.null        muffled <- FALSE        if (inherits(cond, "message")) {            muffled <- grepl(pattern, "muffleMessage")            if (muffled)                 invokeRestart("muffleMessage")        }        else if (inherits(cond, "warning")) {            muffled <- grepl(pattern, "muffleWarning")            if (muffled)                 invokeRestart("muffleWarning")        }        else if (inherits(cond, "condition")) {            if (!is.null(pattern)) {                computeRestarts <- base::computeRestarts                grepl <- base::grepl                restarts <- computeRestarts(cond)                for (restart in restarts) {                  name <- restart$name                  if (is.null(name))                     next                  if (!grepl(pattern, name))                     next                  invokeRestart(restart)                  muffled <- TRUE                  break                }            }        }        invisible(muffled)    }    muffleCondition(cond)}): Whoops!>
+<simpleError in withCallingHandlers({    {        stop("Whoops!")        1    }}, immediateCondition = function(cond) {    sendCondition <- ...future.makeSendCondition()    sendCondition(cond)    muffleCondition <- function (cond, pattern = "^muffle")     {        inherits <- base::inherits        invokeRestart <- base::invokeRestart        is.null <- base::is.null        muffled <- FALSE        if (inherits(cond, "message")) {            muffled <- grepl(pattern, "muffleMessage")            if (muffled)                 invokeRestart("muffleMessage")        }        else if (inherits(cond, "warning")) {            muffled <- grepl(pattern, "muffleWarning")            if (muffled)                 invokeRestart("muffleWarning")        }        else if (inherits(cond, "condition")) {            if (!is.null(pattern)) {                computeRestarts <- base::computeRestarts                grepl <- base::grepl                restarts <- computeRestarts(cond)                for (restart in restarts) {                  name <- restart$name                  if (is.null(name))                     next                  if (!grepl(pattern, name))                     next                  invokeRestart(restart)                  muffled <- TRUE                  break                }            }        }        invisible(muffled)    }    muffleCondition(cond)}): Whoops!>
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    stop(structure(list(message = "boom"), class = c("MyError", 
+        "error", "condition")))
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+<MyError: boom>
+*** cluster() - installed libraries ...
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    list(libPaths = .libPaths())
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+List of 1
+ $ libPaths: chr [1:2] "/usr/local/lib/R/site-library" "/usr/local/lib/R/library"
+*** cluster() - installed packages ... DONE
+*** cluster() - assert covr workaround ...
+ClusterFuture:
+Label: ‘<none>’
+Expression:
+{
+    future:::hpaste(1:100)
+}
+Lazy evaluation: FALSE
+Asynchronous evaluation: TRUE
+Local evaluation: TRUE
+Environment: R_GlobalEnv
+Capture standard output: TRUE
+Capture condition classes: ‘condition’ (excluding ‘nothing’)
+Globals: <none>
+Packages: <none>
+L'Ecuyer-CMRG RNG seed: <none> (seed = FALSE)
+Resolved: FALSE
+Value: <not collected>
+Conditions captured: <none>
+Early signaling: FALSE
+Owner process: a213fa1e-9783-8c52-b621-a147f16850e7
+Class: ‘ClusterFuture’, ‘MultiprocessFuture’, ‘Future’, ‘environment’
+1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100
+*** cluster() - assert covr workaround ... DONE
+Main PID (original): 76770
+Main PID: 76770
+Testing with 2 cores on type = ‘FORK’ ... DONE
+*** cluster() - exceptions ...
+<simpleError in UseMethod("as.cluster"): no applicable method for 'as.cluster' applied to an object of class "logical">
+*** cluster() - exceptions ... DONE
+*** cluster() - assert registry behavior ...
+socket cluster with 1 nodes on host ‘localhost’
+List of 1
+ $ :List of 3
+  ..$ con : 'sockconn' int 4
+  .. ..- attr(*, "conn_id")=<externalptr> 
+  ..$ host: chr "localhost"
+  ..$ rank: int 1
+  ..- attr(*, "class")= chr [1:2] "forknode" "SOCK0node"
+ - attr(*, "class")= chr [1:2] "SOCKcluster" "cluster"
+*** cluster() - assert registry behavior ... DONE
+Main PID (original): 76770
+Main PID: 76770
+socket cluster with 1 nodes on host ‘localhost’
+List of 1
+ $ :List of 3
+  ..$ con : 'sockconn' int 4
+  .. ..- attr(*, "conn_id")=<externalptr> 
+  ..$ host: chr "localhost"
+  ..$ rank: int 1
+  ..- attr(*, "class")= chr [1:2] "forknode" "SOCK0node"
+ - attr(*, "class")= chr [1:2] "SOCKcluster" "cluster"
+Test set #1 with cluster type ‘FORK’ ... DONE
+> 
+> library("parallel")
+> for (type in types) {
++   if (on_solaris) next
++  
++   message(sprintf("Test set #2 with cluster type %s ...", sQuote(type)))
++ 
++   message("*** cluster() - setDefaultCluster() ...")
++   
++   cl <- makeCluster(1L, type = type, timeout = 60)
++   print(cl)
++   
++   setDefaultCluster(cl)
++   ## FIXME: Make plan(cluster, workers = NULL) work such that
++   ## setDefaultCluster() is actually tested.
++   plan(cluster)
++   
++   pid <- Sys.getpid()
++   message(pid)
++   
++   a %<-% Sys.getpid()
++   message(a)
++   
++   setDefaultCluster(NULL)
++ 
++   ## Cleanup
++   print(cl)
++   str(cl)
++   parallel::stopCluster(cl)
++   
++   message("*** cluster() - setDefaultCluster() ... DONE")
++ 
++   ## Sanity checks
++   pid2 <- Sys.getpid()
++   message("Main PID (original): ", pid)
++   message("Main PID: ", pid2)
++   stopifnot(pid2 == pid)
++ 
++   ## Cleanup
++   plan(sequential)
++ 
++   message(sprintf("Test set #2 with cluster type %s ... DONE", sQuote(type)))
++ } ## for (type ...)
+Test set #2 with cluster type ‘PSOCK’ ...
+*** cluster() - setDefaultCluster() ...
+socket cluster with 1 nodes on host ‘localhost’
+76770
+76945
+socket cluster with 1 nodes on host ‘localhost’
+List of 1
+ $ :List of 3
+  ..$ con : 'sockconn' int 4
+  .. ..- attr(*, "conn_id")=<externalptr> 
+  ..$ host: chr "localhost"
+  ..$ rank: num 0
+  ..- attr(*, "class")= chr "SOCKnode"
+ - attr(*, "class")= chr [1:2] "SOCKcluster" "cluster"
+*** cluster() - setDefaultCluster() ... DONE
+Main PID (original): 76770
+Main PID: 76770
+Test set #2 with cluster type ‘PSOCK’ ... DONE
+Test set #2 with cluster type ‘FORK’ ...
+*** cluster() - setDefaultCluster() ...
+socket cluster with 1 nodes on host ‘localhost’
+76770
+77019
+socket cluster with 1 nodes on host ‘localhost’
+List of 1
+ $ :List of 3
+  ..$ con : 'sockconn' int 4
+  .. ..- attr(*, "conn_id")=<externalptr> 
+  ..$ host: chr "localhost"
+  ..$ rank: int 1
+  ..- attr(*, "class")= chr [1:2] "forknode" "SOCK0node"
+ - attr(*, "class")= chr [1:2] "SOCKcluster" "cluster"
+*** cluster() - setDefaultCluster() ... DONE
+Main PID (original): 76770
+Main PID: 76770
+Test set #2 with cluster type ‘FORK’ ... DONE
+> 
+> ## Sanity checks
+> pid2 <- Sys.getpid()
+> message("Main PID (original): ", pid)
+Main PID (original): 76770
+> message("Main PID: ", pid2)
+Main PID: 76770
+> stopifnot(pid2 == pid)
+> 
+> message("*** cluster() - exception when re-creating workers ...")
+*** cluster() - exception when re-creating workers ...
+> ## https://github.com/HenrikBengtsson/future/issues/261
+> 
+> plan(cluster, workers = "localhost")
+> f <- future(1)
+> plan(cluster, workers = "localhost", .skip = FALSE)
+> res <- tryCatch({
++   value(f)
++ }, FutureError = function(ex) {
++   message(conditionMessage(ex))
++   ex
++ })
+ClusterFuture (<none>) failed to receiving message from cluster RichSOCKnode #1 (PID 77088 on localhost ‘localhost’). The reason reported was ‘Connection to the worker is corrupt’. Post-mortem diagnostic: A process with this PID exists, which suggests that the localhost worker is still alive. The socket connection to the worker of ClusterFuture future (<none>) is lost or corrupted: Connection (connection: index=4, description="<-localhost:11870", class="sockconn", mode="a+b", text="binary", opened="opened", can read="yes", can write="yes", id=337, raw_id="<pointer: 0x151>") is no longer valid. It differ from the currently registered R connection with the same index 4 (connection: index=4, description="<-localhost:11870", class="sockconn", mode="a+b", text="binary", opened="opened", can read="yes", can write="yes", id=339, raw_id="<pointer: 0x153>"). As an example, this may happen if base::closeAllConnections() have been called, for instance via base::sys.save.image() which in turn is called if the R session (pid 76770) is forced to terminate
+> stopifnot(inherits(res, "FutureError"))
+> 
+> message("*** cluster() - exception when re-creating workers ... DONE")
+*** cluster() - exception when re-creating workers ... DONE
+> 
+> 
+> message("*** cluster() ... DONE")
+*** cluster() ... DONE
+> 
+> ## Sanity checks
+> pid2 <- Sys.getpid()
+> message("Main PID (original): ", pid)
+Main PID (original): 76770
+> message("Main PID: ", pid2)
+Main PID: 76770
+> stopifnot(pid2 == pid)
+> 
+> source("incl/end.R")
+> 

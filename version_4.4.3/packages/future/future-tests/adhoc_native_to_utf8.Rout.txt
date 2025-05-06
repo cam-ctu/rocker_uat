@@ -1,0 +1,93 @@
+
+R version 4.4.3 (2025-02-28) -- "Trophy Case"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> source("incl/start.R")
+[11:00:42.797] plan(): Setting new future strategy stack:
+[11:00:42.797] List of future strategies:
+[11:00:42.797] 1. sequential:
+[11:00:42.797]    - args: function (..., envir = parent.frame(), workers = "<NULL>")
+[11:00:42.797]    - tweaked: FALSE
+[11:00:42.797]    - call: future::plan("sequential")
+[11:00:42.810] plan(): nbrOfWorkers() = 1
+> 
+> adhoc_native_to_utf8 <- future:::adhoc_native_to_utf8
+> 
+> message("*** adhoc_native_to_utf8( ) ...")
+*** adhoc_native_to_utf8( ) ...
+> 
+> ## WORKAROUND: In order to avoid this test script itself to use UTF-8
+> ## encoding, we generate such UTF-8 strings at run-time instead from
+> ## escaped UTF-8 strings.
+> strings <- c(
++         "[x] hello" = "[x] hello",
++     "\\u2713 hello" = "<U+2713> hello",
++   "'\\u2713 hello'" = "'<U+2713> hello'",
++   '"\\u2713 hello"' = '"<U+2713> hello"',
++     "\\u306B hello" = "<U+306B> hello"
++ )
+> for (kk in seq_along(strings)) {
++   name <- names(strings)[kk]
++   code <- paste('"', gsub('"', '\\"', name, fixed = TRUE), '"', sep = "")
++   name <- eval(parse(text = code))
++   names(strings)[kk] <- name
++ }
+> 
+> for (kk in seq_along(strings)) {
++   message(sprintf("Test case #%d:", kk))
++   truth  <- names(strings)[kk]
++   input  <- strings[[kk]]
++   output <- adhoc_native_to_utf8(input)
++   message(sprintf(" -  input: %s", input))
++   message(sprintf(" - output: %s", output))
++   message(sprintf(" -  truth: %s", truth))
++   ## NOTE: Not all MS Windows environment support UTF-8.  Then
++   ## the above does not work and input == truth
++   stopifnot(identical(input, truth) || identical(output, truth))
++ }
+Test case #1:
+ -  input: [x] hello
+ - output: [x] hello
+ -  truth: [x] hello
+Test case #2:
+ -  input: <U+2713> hello
+ - output: ✓ hello
+ -  truth: ✓ hello
+Test case #3:
+ -  input: '<U+2713> hello'
+ - output: '✓ hello'
+ -  truth: '✓ hello'
+Test case #4:
+ -  input: "<U+2713> hello"
+ - output: "✓ hello"
+ -  truth: "✓ hello"
+Test case #5:
+ -  input: <U+306B> hello
+ - output: に hello
+ -  truth: に hello
+> 
+> message("*** adhoc_native_to_utf8( ) ... DONE")
+*** adhoc_native_to_utf8( ) ... DONE
+> 
+> source("incl/end.R")
+[11:00:42.837] plan(): Setting new future strategy stack:
+[11:00:42.837] List of future strategies:
+[11:00:42.837] 1. FutureStrategy:
+[11:00:42.837]    - args: function (..., envir = parent.frame(), workers = "<NULL>")
+[11:00:42.837]    - tweaked: FALSE
+[11:00:42.837]    - call: future::plan(oplan)
+[11:00:42.849] plan(): nbrOfWorkers() = 1
+> 

@@ -1,0 +1,177 @@
+
+R version 4.4.3 (2025-02-28) -- "Trophy Case"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> source("incl/start.R")
+[11:01:50.407] plan(): Setting new future strategy stack:
+[11:01:50.407] List of future strategies:
+[11:01:50.407] 1. sequential:
+[11:01:50.407]    - args: function (..., envir = parent.frame(), workers = "<NULL>")
+[11:01:50.407]    - tweaked: FALSE
+[11:01:50.407]    - call: future::plan("sequential")
+[11:01:50.420] plan(): nbrOfWorkers() = 1
+> 
+> ## Test adopted from http://stackoverflow.com/questions/42561088/nested-do-call-within-a-foreach-dopar-environment-cant-find-function-passed-w
+> 
+> options(future.debug = FALSE)
+> 
+> message("*** Tricky globals requiring recursive search ...")
+*** Tricky globals requiring recursive search ...
+> 
+> my_add <- function(a, b) a + b
+> 
+> call_my_add <- function(a, b) {
++   do.call(my_add, args = list(a = a, b = b))
++ }
+> 
+> call_my_add_caller <- function(a, b, FUN = call_my_add) {
++   do.call(FUN, args = list(a = a, b = b))
++ }
+> 
+> main_future <- function(x = 1L, caller = call_my_add_caller,
++                             args = list(FUN = call_my_add)) {
++   f <- future(caller(a = x, b = x + 1L, FUN = args$FUN))
++   value(f)
++ }
+> 
+> main_future_no_FUN <- function(x = 1L, caller = call_my_add_caller,
++                             args = list(FUN = call_my_add)) {
++   f <- future(caller(a = x, b = x + 1L))
++   value(f)
++ }
+> 
+> main_futureCall <- function(x = 1L, caller = call_my_add_caller,
++                             args = list(FUN = call_my_add)) {
++   f <- futureCall(caller, args = c(list(a = x, b = x+1L), args))
++   value(f)
++ }
+> 
+> main_futureCall_no_FUN <- function(x = 1L, caller = call_my_add_caller,
++                             args = list(FUN = call_my_add)) {
++   f <- futureCall(caller, args = list(a = x, b = x+1L))
++   value(f)
++ }
+> 
+> main_lapply <- function(x = 1:2, caller = call_my_add_caller,
++                                args = list(FUN = call_my_add)) {
++   lapply(x, FUN = function(i) {
++     do.call(caller, args = c(list(a = i, b = i+1L), args))
++   })
++ }
+> 
+> main_lapply_no_FUN <- function(x = 1:2, caller = call_my_add_caller,
++                                args = list(FUN = call_my_add)) {
++   lapply(x, FUN = function(i) {
++     do.call(caller, args = list(a = i, b = i+1L))
++   })
++ }
+> 
+> 
+> x0 <- y0 <- z0 <- NULL
+> for (strategy in supportedStrategies()) {
++   message(sprintf("*** strategy = %s ...", sQuote(strategy)))
++   
++   plan(strategy)
++ 
++   x <- main_future()
++   str(list(x = x))
++   if (is.null(x0)) x0 <- x
++   stopifnot(identical(x, x0))
++   
++   x2 <- main_future_no_FUN()
++   str(list(x2 = x2))
++   stopifnot(identical(x2, x0))
++   
++   y <- main_futureCall()
++   str(list(y = y))
++   if (is.null(y0)) y0 <- y
++   stopifnot(identical(y, y0))
++ 
++   y2 <- main_futureCall_no_FUN()
++   str(list(y2 = y2))
++   stopifnot(identical(y2, y0))
++   
++   z <- main_lapply()
++   str(list(z = z))
++   if (is.null(z0)) z0 <- z
++   stopifnot(identical(z, z0))
++ 
++   z2 <- main_lapply_no_FUN()
++   str(list(z2 = z2))
++   stopifnot(identical(z2, z0))
++     
++   message(sprintf("*** strategy = %s ... DONE", sQuote(strategy)))
++ }
+*** strategy = ‘sequential’ ...
+List of 1
+ $ x: int 3
+List of 1
+ $ x2: int 3
+List of 1
+ $ y: int 3
+List of 1
+ $ y2: int 3
+List of 1
+ $ z:List of 2
+  ..$ : int 3
+  ..$ : int 5
+List of 1
+ $ z2:List of 2
+  ..$ : int 3
+  ..$ : int 5
+*** strategy = ‘sequential’ ... DONE
+*** strategy = ‘multicore’ ...
+List of 1
+ $ x: int 3
+List of 1
+ $ x2: int 3
+List of 1
+ $ y: int 3
+List of 1
+ $ y2: int 3
+List of 1
+ $ z:List of 2
+  ..$ : int 3
+  ..$ : int 5
+List of 1
+ $ z2:List of 2
+  ..$ : int 3
+  ..$ : int 5
+*** strategy = ‘multicore’ ... DONE
+*** strategy = ‘multisession’ ...
+List of 1
+ $ x: int 3
+List of 1
+ $ x2: int 3
+List of 1
+ $ y: int 3
+List of 1
+ $ y2: int 3
+List of 1
+ $ z:List of 2
+  ..$ : int 3
+  ..$ : int 5
+List of 1
+ $ z2:List of 2
+  ..$ : int 3
+  ..$ : int 5
+*** strategy = ‘multisession’ ... DONE
+> 
+> message("*** Tricky globals requiring recursive search ... DONE")
+*** Tricky globals requiring recursive search ... DONE
+> 
+> source("incl/end.R")
+> 

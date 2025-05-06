@@ -1,0 +1,216 @@
+
+R version 4.4.3 (2025-02-28) -- "Trophy Case"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> message("TESTING: BasicObject...")
+TESTING: BasicObject...
+> 
+> library("R.oo")
+Loading required package: R.methodsS3
+R.methodsS3 v1.8.2 (2022-06-13 22:00:14 UTC) successfully loaded. See ?R.methodsS3 for help.
+R.oo v1.27.0 (2024-11-01 18:00:02 UTC) successfully loaded. See ?R.oo for help.
+
+Attaching package: ‘R.oo’
+
+The following object is masked from ‘package:R.methodsS3’:
+
+    throw
+
+The following objects are masked from ‘package:methods’:
+
+    getClasses, getMethods
+
+The following objects are masked from ‘package:base’:
+
+    attach, detach, load, save
+
+> 
+> obj <- BasicObject()
+> print(obj)
+[1] "BasicObject: "
+> 
+> obj <- BasicObject(42L)
+> print(obj)
+[1] "BasicObject: "
+> stopifnot(obj == 42L)
+> 
+> obj$a <- 1:99
+> print(obj)
+[1] "BasicObject: "
+> 
+> fields <- getFields(obj)
+> print(fields)
+[1] "class" "a"    
+> 
+> hasA <- hasField(obj, "a")
+> print(hasA)
+[1] TRUE
+> stopifnot(hasA)
+> 
+> value <- obj$a
+> str(value)
+ int [1:99] 1 2 3 4 5 6 7 8 9 10 ...
+> stopifnot(identical(value, 1:99))
+> 
+> obj$a <- 1:100
+> print(obj)
+[1] "BasicObject: "
+> 
+> value <- obj[["a"]]
+> str(value)
+ int [1:100] 1 2 3 4 5 6 7 8 9 10 ...
+> stopifnot(identical(value, 1:100))
+> 
+> obj[["a"]] <- 1:101
+> print(obj)
+[1] "BasicObject: "
+> 
+> value <- obj[["a"]]
+> str(value)
+ int [1:101] 1 2 3 4 5 6 7 8 9 10 ...
+> stopifnot(identical(value, 1:101))
+> 
+> size <- objectSize(obj)
+> print(size)
+920 bytes
+> 
+> ref <- isReferable(obj)
+> print(ref)
+[1] TRUE
+> stopifnot(isTRUE(ref))
+> 
+> time <- getInstantiationTime(obj)
+> print(time)
+NULL
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Attach and detach
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> obj <- BasicObject(42L)
+> obj$a <- 1:99
+> 
+> res <- attach(obj)
+> print(res)
+[1] TRUE
+> stopifnot(exists("a", mode="integer"))
+> str(a)
+ int [1:99] 1 2 3 4 5 6 7 8 9 10 ...
+> 
+> ## Object already attached
+> res <- tryCatch(attach(obj), warning=function(w) w)
+> stopifnot(inherits(res, "warning"))
+> 
+> res <- detach(obj)
+> print(res)
+[1] TRUE
+> 
+> ## Object already detached
+> res <- tryCatch(detach(obj), warning=function(w) w)
+> stopifnot(inherits(res, "warning"))
+> 
+> 
+> obj <- BasicObject(list(a=1L, b=2, c=3))
+> 
+> res <- attach(obj)
+> print(res)
+[1] TRUE
+> stopifnot(exists("a", mode="integer"))
+> str(a)
+ int 1
+> 
+> res <- detach(obj)
+> print(res)
+[1] TRUE
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Class
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> obj2 <- newInstance(obj, 43L)
+> print(obj2)
+[1] "BasicObject: "
+> stopifnot(obj2 == 43L)
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Inheritance
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> setConstructorS3("MyObject", function(...) {
++   extend(BasicObject(), "MyObject", ...)
++ })
+> obj <- MyObject(a=1, b=2)
+> print(obj)
+[1] "MyObject: "
+> str(obj)
+ 'MyObject' logi NA
+ - attr(*, "a")= num 1
+ - attr(*, "b")= num 2
+> stopifnot(all(c("a", "b") %in% names(attributes(obj))))
+> 
+> 
+> setMethodS3("foo", "MyObject", function(static, x=1L, ...) {
++   list(x=x, ...)
++ }, static=TRUE)
+> 
+> res <- MyObject$foo(y=2L)
+> stopifnot(identical(res$x, 1L))
+> stopifnot(identical(res$y, 2L))
+> 
+> obj$a <- 3
+> print(obj)
+[1] "MyObject: "
+> value <- obj[["a"]]
+> str(value)
+ num 3
+> stopifnot(identical(value, 3))
+> 
+> obj[["a"]] <- 4
+> print(obj)
+[1] "MyObject: "
+> value <- obj$a
+> str(value)
+ num 4
+> stopifnot(identical(value, 4))
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # FIXME: hashCode() return integer(0) whenever
+> # getInstantiationTime() returns NULL, which is
+> # now the default behavior of BasicObject
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> hash <- hashCode(obj)
+> print(hash)
+integer(0)
+> ## FIXME: Currently returns integer(0)
+> ## stopifnot(length(hash) == 1L)
+> 
+> neq <- equals(obj, 1)
+> print(neq)
+[1] NA
+> ## FIXME: Currently returns NA
+> ## stopifnot(!neq)
+> 
+> eq <- equals(obj, obj)
+> print(eq)
+[1] NA
+> ## FIXME: Currently returns NA
+> ## stopifnot(eq)
+> 
+> 
+> message("TESTING: BasicObject...DONE")
+TESTING: BasicObject...DONE
+> 

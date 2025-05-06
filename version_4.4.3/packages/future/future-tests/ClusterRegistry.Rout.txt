@@ -1,0 +1,852 @@
+
+R version 4.4.3 (2025-02-28) -- "Trophy Case"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> source("incl/start.R")
+[11:00:59.055] plan(): Setting new future strategy stack:
+[11:00:59.056] List of future strategies:
+[11:00:59.056] 1. sequential:
+[11:00:59.056]    - args: function (..., envir = parent.frame(), workers = "<NULL>")
+[11:00:59.056]    - tweaked: FALSE
+[11:00:59.056]    - call: future::plan("sequential")
+[11:00:59.069] plan(): nbrOfWorkers() = 1
+> 
+> message("*** ClusterRegistry() ... ")
+*** ClusterRegistry() ... 
+> 
+> allCores <- 1:availCores
+> 
+> ## Speed up CRAN checks: Skip on CRAN Windows 32-bit
+> if (isWin32) allCores <- NULL
+> 
+> for (cores in allCores) {
++   message(sprintf("Testing with %d cores ...", cores))
++   options(mc.cores = cores)
++ 
++   message("Available cores: ", availableCores())
++ 
++   ## In case sessions have been created in previous tests
++   message("Stopping any running cluster ...")
++   ClusterRegistry("stop")
++   cluster <- ClusterRegistry("get")
++   stopifnot(length(cluster) == 0)
++   message("Stopping any running cluster ... DONE")
++ 
++   message("Starting cluster ...")
++   res <- tryCatch({
++     cluster <- ClusterRegistry("set", workers = availableCores() - 1L)
++     str(cluster)
++     print(cluster)
++   }, error = identity)
++   if (cores == 1) stopifnot(inherits(res, "error"))
++   message("Starting cluster ... DONE")
++ 
++   message("Starting dual-worker cluster ...")
++   cluster <- ClusterRegistry(action = "start", workers = 2L)
++   str(cluster)
++   print(cluster)
++   stopifnot(length(cluster) == 2L)
++   message("Starting duel-worker cluster ... DONE")
++   
++   message("Starting single-worker cluster ...")
++   cluster <- ClusterRegistry(action = "start", workers = 1L)
++   str(cluster)
++   print(cluster)
++   stopifnot(length(cluster) == 1L)
++   message("Starting single-worker cluster ... DONE")
++ 
++   cluster <- ClusterRegistry(action = "get")
++   print(cluster)
++   stopifnot(length(cluster) == 1L)
++ 
++   message("Stopping single-worker cluster ...")
++   cluster <- ClusterRegistry(action = "stop")
++   print(cluster)
++   stopifnot(length(cluster) == 0L)
++   message("Stopping single-worker cluster ... DONE")
++ 
++   message(sprintf("Testing with %d cores ... DONE", cores))
++ } ## for (cores ...)
+Testing with 1 cores ...
+Available cores: 1
+Stopping any running cluster ...
+Stopping any running cluster ... DONE
+Starting cluster ...
+Starting cluster ... DONE
+Starting dual-worker cluster ...
+Warning in checkNumberOfLocalWorkers(workers) :
+  Careful, you are setting up 2 localhost parallel workers with only 1 CPU cores available for this R process (per ‘mc.cores’), which could result in a 200% load. The soft limit is set to 100%. Overusing the CPUs has negative impact on the current R process, but also on all other processes of yours and others running on the same machine. See help("parallelly.maxWorkers.localhost", package = "parallelly") for further explanations and how to override the soft limit that triggered this warning
+List of 2
+ $ :List of 4
+  ..$ con         : 'sockconn' int 4
+  .. ..- attr(*, "conn_id")=<externalptr> 
+  ..$ host        : chr "localhost"
+  .. ..- attr(*, "localhost")= logi TRUE
+  ..$ rank        : int 0
+  ..$ session_info:List of 6
+  .. ..$ r      :List of 15
+  .. .. ..$ platform      : chr "x86_64-pc-linux-gnu"
+  .. .. ..$ arch          : chr "x86_64"
+  .. .. ..$ os            : chr "linux-gnu"
+  .. .. ..$ system        : chr "x86_64, linux-gnu"
+  .. .. ..$ status        : chr ""
+  .. .. ..$ major         : chr "4"
+  .. .. ..$ minor         : chr "4.3"
+  .. .. ..$ year          : chr "2025"
+  .. .. ..$ month         : chr "02"
+  .. .. ..$ day           : chr "28"
+  .. .. ..$ svn rev       : chr "87843"
+  .. .. ..$ language      : chr "R"
+  .. .. ..$ version.string: chr "R version 4.4.3 (2025-02-28)"
+  .. .. ..$ nickname      : chr "Trophy Case"
+  .. .. ..$ os.type       : chr "unix"
+  .. ..$ system :List of 8
+  .. .. ..$ sysname       : chr "Linux"
+  .. .. ..$ release       : chr "6.11.0-1012-azure"
+  .. .. ..$ version       : chr "#12~24.04.1-Ubuntu SMP Mon Mar 10 19:00:39 UTC 2025"
+  .. .. ..$ nodename      : chr "173ee284ba16"
+  .. .. ..$ machine       : chr "x86_64"
+  .. .. ..$ login         : chr "unknown"
+  .. .. ..$ user          : chr "root"
+  .. .. ..$ effective_user: chr "root"
+  .. ..$ libs   : chr [1:2] "/usr/local/lib/R/site-library" "/usr/local/lib/R/library"
+  .. ..$ pkgs   : NULL
+  .. ..$ pwd    : chr "/__w/rocker_uat/rocker_uat/packages/future/future-tests"
+  .. ..$ process:List of 1
+  .. .. ..$ pid: int 77222
+  ..- attr(*, "options")=List of 35
+  .. ..$ worker          : chr "localhost"
+  .. .. ..- attr(*, "localhost")= logi TRUE
+  .. ..$ master          : chr "localhost"
+  .. ..$ port            : int 11365
+  .. ..$ connectTimeout  : num 120
+  .. ..$ timeout         : num 2592000
+  .. ..$ rscript         : chr "'/usr/local/lib/R/bin/Rscript'"
+  .. ..$ homogeneous     : logi TRUE
+  .. ..$ rscript_args    : chr "--default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppressWarnings(cat(Sys.getpid(),fi"| __truncated__
+  .. ..$ rscript_envs    : NULL
+  .. ..$ rscript_libs    : NULL
+  .. ..$ rscript_startup : NULL
+  .. ..$ rscript_sh      : chr [1:2] "sh" "sh"
+  .. ..$ default_packages: chr [1:6] "datasets" "utils" "grDevices" "graphics" ...
+  .. ..$ methods         : logi TRUE
+  .. ..$ socketOptions   : chr "no-delay"
+  .. ..$ useXDR          : logi FALSE
+  .. ..$ outfile         : chr "/dev/null"
+  .. ..$ renice          : int NA
+  .. ..$ rshcmd          : NULL
+  .. ..$ user            : chr(0) 
+  .. ..$ revtunnel       : logi FALSE
+  .. ..$ rshlogfile      : NULL
+  .. ..$ rshopts         : chr(0) 
+  .. ..$ rank            : int 0
+  .. ..$ manual          : logi FALSE
+  .. ..$ dryrun          : logi FALSE
+  .. ..$ quiet           : logi FALSE
+  .. ..$ setup_strategy  : chr "parallel"
+  .. ..$ local_cmd       : chr "'/usr/local/lib/R/bin/Rscript' --default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppr"| __truncated__
+  .. ..$ rshcmd_label    : NULL
+  .. ..$ rsh_call        : NULL
+  .. ..$ cmd             : chr "'/usr/local/lib/R/bin/Rscript' --default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppr"| __truncated__
+  .. ..$ localMachine    : logi TRUE
+  .. ..$ make_fcn        :function (worker = getOption2("parallelly.localhost.hostname", "localhost"), 
+    master = NULL, port, connectTimeout = getOption2("parallelly.makeNodePSOCK.connectTimeout", 
+        2 * 60), timeout = getOption2("parallelly.makeNodePSOCK.timeout", 
+        30 * 24 * 60 * 60), rscript = NULL, homogeneous = NULL, rscript_args = NULL, 
+    rscript_envs = NULL, rscript_libs = NULL, rscript_startup = NULL, rscript_sh = c("auto", 
+        "cmd", "sh", "none"), default_packages = c("datasets", "utils", 
+        "grDevices", "graphics", "stats", if (methods) "methods"), methods = TRUE, 
+    socketOptions = getOption2("parallelly.makeNodePSOCK.socketOptions", 
+        "no-delay"), useXDR = getOption2("parallelly.makeNodePSOCK.useXDR", 
+        FALSE), outfile = "/dev/null", renice = NA_integer_, rshcmd = getOption2("parallelly.makeNodePSOCK.rshcmd", 
+        NULL), user = NULL, revtunnel = NA, rshlogfile = NULL, rshopts = getOption2("parallelly.makeNodePSOCK.rshopts", 
+        NULL), rank = 1L, manual = FALSE, dryrun = FALSE, quiet = FALSE, 
+    setup_strategy = getOption2("parallelly.makeNodePSOCK.setup_strategy", 
+        "parallel"), action = c("launch", "options"), verbose = FALSE)  
+  .. ..$ arguments       :List of 28
+  .. .. ..$ worker          : chr "localhost"
+  .. .. ..$ master          : NULL
+  .. .. ..$ port            : int 11365
+  .. .. ..$ connectTimeout  : num 120
+  .. .. ..$ timeout         : num 2592000
+  .. .. ..$ rscript         : NULL
+  .. .. ..$ homogeneous     : NULL
+  .. .. ..$ rscript_args    : NULL
+  .. .. ..$ rscript_envs    : NULL
+  .. .. ..$ rscript_libs    : NULL
+  .. .. ..$ rscript_startup : NULL
+  .. .. ..$ rscript_sh      : chr "auto"
+  .. .. ..$ default_packages: chr [1:6] "datasets" "utils" "grDevices" "graphics" ...
+  .. .. ..$ methods         : logi TRUE
+  .. .. ..$ socketOptions   : chr "no-delay"
+  .. .. ..$ useXDR          : logi FALSE
+  .. .. ..$ outfile         : chr "/dev/null"
+  .. .. ..$ renice          : int NA
+  .. .. ..$ rshcmd          : NULL
+  .. .. ..$ user            : NULL
+  .. .. ..$ revtunnel       : logi NA
+  .. .. ..$ rshlogfile      : NULL
+  .. .. ..$ rshopts         : NULL
+  .. .. ..$ rank            : int 1
+  .. .. ..$ manual          : logi FALSE
+  .. .. ..$ dryrun          : logi FALSE
+  .. .. ..$ quiet           : logi FALSE
+  .. .. ..$ setup_strategy  : chr "parallel"
+  .. ..- attr(*, "class")= chr [1:2] "makeNodePSOCKOptions" "makeNodeOptions"
+  ..- attr(*, "class")= chr [1:2] "RichSOCKnode" "SOCK0node"
+ $ :List of 4
+  ..$ con         : 'sockconn' int 5
+  .. ..- attr(*, "conn_id")=<externalptr> 
+  ..$ host        : chr "localhost"
+  .. ..- attr(*, "localhost")= logi TRUE
+  ..$ rank        : int 0
+  ..$ session_info:List of 6
+  .. ..$ r      :List of 15
+  .. .. ..$ platform      : chr "x86_64-pc-linux-gnu"
+  .. .. ..$ arch          : chr "x86_64"
+  .. .. ..$ os            : chr "linux-gnu"
+  .. .. ..$ system        : chr "x86_64, linux-gnu"
+  .. .. ..$ status        : chr ""
+  .. .. ..$ major         : chr "4"
+  .. .. ..$ minor         : chr "4.3"
+  .. .. ..$ year          : chr "2025"
+  .. .. ..$ month         : chr "02"
+  .. .. ..$ day           : chr "28"
+  .. .. ..$ svn rev       : chr "87843"
+  .. .. ..$ language      : chr "R"
+  .. .. ..$ version.string: chr "R version 4.4.3 (2025-02-28)"
+  .. .. ..$ nickname      : chr "Trophy Case"
+  .. .. ..$ os.type       : chr "unix"
+  .. ..$ system :List of 8
+  .. .. ..$ sysname       : chr "Linux"
+  .. .. ..$ release       : chr "6.11.0-1012-azure"
+  .. .. ..$ version       : chr "#12~24.04.1-Ubuntu SMP Mon Mar 10 19:00:39 UTC 2025"
+  .. .. ..$ nodename      : chr "173ee284ba16"
+  .. .. ..$ machine       : chr "x86_64"
+  .. .. ..$ login         : chr "unknown"
+  .. .. ..$ user          : chr "root"
+  .. .. ..$ effective_user: chr "root"
+  .. ..$ libs   : chr [1:2] "/usr/local/lib/R/site-library" "/usr/local/lib/R/library"
+  .. ..$ pkgs   : NULL
+  .. ..$ pwd    : chr "/__w/rocker_uat/rocker_uat/packages/future/future-tests"
+  .. ..$ process:List of 1
+  .. .. ..$ pid: int 77221
+  ..- attr(*, "options")=List of 35
+  .. ..$ worker          : chr "localhost"
+  .. .. ..- attr(*, "localhost")= logi TRUE
+  .. ..$ master          : chr "localhost"
+  .. ..$ port            : int 11365
+  .. ..$ connectTimeout  : num 120
+  .. ..$ timeout         : num 2592000
+  .. ..$ rscript         : chr "'/usr/local/lib/R/bin/Rscript'"
+  .. ..$ homogeneous     : logi TRUE
+  .. ..$ rscript_args    : chr "--default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppressWarnings(cat(Sys.getpid(),fi"| __truncated__
+  .. ..$ rscript_envs    : NULL
+  .. ..$ rscript_libs    : NULL
+  .. ..$ rscript_startup : NULL
+  .. ..$ rscript_sh      : chr [1:2] "sh" "sh"
+  .. ..$ default_packages: chr [1:6] "datasets" "utils" "grDevices" "graphics" ...
+  .. ..$ methods         : logi TRUE
+  .. ..$ socketOptions   : chr "no-delay"
+  .. ..$ useXDR          : logi FALSE
+  .. ..$ outfile         : chr "/dev/null"
+  .. ..$ renice          : int NA
+  .. ..$ rshcmd          : NULL
+  .. ..$ user            : chr(0) 
+  .. ..$ revtunnel       : logi FALSE
+  .. ..$ rshlogfile      : NULL
+  .. ..$ rshopts         : chr(0) 
+  .. ..$ rank            : int 0
+  .. ..$ manual          : logi FALSE
+  .. ..$ dryrun          : logi FALSE
+  .. ..$ quiet           : logi FALSE
+  .. ..$ setup_strategy  : chr "parallel"
+  .. ..$ local_cmd       : chr "'/usr/local/lib/R/bin/Rscript' --default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppr"| __truncated__
+  .. ..$ rshcmd_label    : NULL
+  .. ..$ rsh_call        : NULL
+  .. ..$ cmd             : chr "'/usr/local/lib/R/bin/Rscript' --default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppr"| __truncated__
+  .. ..$ localMachine    : logi TRUE
+  .. ..$ make_fcn        :function (worker = getOption2("parallelly.localhost.hostname", "localhost"), 
+    master = NULL, port, connectTimeout = getOption2("parallelly.makeNodePSOCK.connectTimeout", 
+        2 * 60), timeout = getOption2("parallelly.makeNodePSOCK.timeout", 
+        30 * 24 * 60 * 60), rscript = NULL, homogeneous = NULL, rscript_args = NULL, 
+    rscript_envs = NULL, rscript_libs = NULL, rscript_startup = NULL, rscript_sh = c("auto", 
+        "cmd", "sh", "none"), default_packages = c("datasets", "utils", 
+        "grDevices", "graphics", "stats", if (methods) "methods"), methods = TRUE, 
+    socketOptions = getOption2("parallelly.makeNodePSOCK.socketOptions", 
+        "no-delay"), useXDR = getOption2("parallelly.makeNodePSOCK.useXDR", 
+        FALSE), outfile = "/dev/null", renice = NA_integer_, rshcmd = getOption2("parallelly.makeNodePSOCK.rshcmd", 
+        NULL), user = NULL, revtunnel = NA, rshlogfile = NULL, rshopts = getOption2("parallelly.makeNodePSOCK.rshopts", 
+        NULL), rank = 1L, manual = FALSE, dryrun = FALSE, quiet = FALSE, 
+    setup_strategy = getOption2("parallelly.makeNodePSOCK.setup_strategy", 
+        "parallel"), action = c("launch", "options"), verbose = FALSE)  
+  .. ..$ arguments       :List of 28
+  .. .. ..$ worker          : chr "localhost"
+  .. .. ..$ master          : NULL
+  .. .. ..$ port            : int 11365
+  .. .. ..$ connectTimeout  : num 120
+  .. .. ..$ timeout         : num 2592000
+  .. .. ..$ rscript         : NULL
+  .. .. ..$ homogeneous     : NULL
+  .. .. ..$ rscript_args    : NULL
+  .. .. ..$ rscript_envs    : NULL
+  .. .. ..$ rscript_libs    : NULL
+  .. .. ..$ rscript_startup : NULL
+  .. .. ..$ rscript_sh      : chr "auto"
+  .. .. ..$ default_packages: chr [1:6] "datasets" "utils" "grDevices" "graphics" ...
+  .. .. ..$ methods         : logi TRUE
+  .. .. ..$ socketOptions   : chr "no-delay"
+  .. .. ..$ useXDR          : logi FALSE
+  .. .. ..$ outfile         : chr "/dev/null"
+  .. .. ..$ renice          : int NA
+  .. .. ..$ rshcmd          : NULL
+  .. .. ..$ user            : NULL
+  .. .. ..$ revtunnel       : logi NA
+  .. .. ..$ rshlogfile      : NULL
+  .. .. ..$ rshopts         : NULL
+  .. .. ..$ rank            : int 1
+  .. .. ..$ manual          : logi FALSE
+  .. .. ..$ dryrun          : logi FALSE
+  .. .. ..$ quiet           : logi FALSE
+  .. .. ..$ setup_strategy  : chr "parallel"
+  .. ..- attr(*, "class")= chr [1:2] "makeNodePSOCKOptions" "makeNodeOptions"
+  ..- attr(*, "class")= chr [1:2] "RichSOCKnode" "SOCK0node"
+ - attr(*, "class")= chr [1:3] "RichSOCKcluster" "SOCKcluster" "cluster"
+Socket cluster with 2 nodes where 2 nodes are on host ‘localhost’ (R version 4.4.3 (2025-02-28), platform x86_64-pc-linux-gnu)
+Starting duel-worker cluster ... DONE
+Starting single-worker cluster ...
+List of 1
+ $ :List of 4
+  ..$ con         : 'sockconn' int 4
+  .. ..- attr(*, "conn_id")=<externalptr> 
+  ..$ host        : chr "localhost"
+  .. ..- attr(*, "localhost")= logi TRUE
+  ..$ rank        : int 0
+  ..$ session_info:List of 6
+  .. ..$ r      :List of 15
+  .. .. ..$ platform      : chr "x86_64-pc-linux-gnu"
+  .. .. ..$ arch          : chr "x86_64"
+  .. .. ..$ os            : chr "linux-gnu"
+  .. .. ..$ system        : chr "x86_64, linux-gnu"
+  .. .. ..$ status        : chr ""
+  .. .. ..$ major         : chr "4"
+  .. .. ..$ minor         : chr "4.3"
+  .. .. ..$ year          : chr "2025"
+  .. .. ..$ month         : chr "02"
+  .. .. ..$ day           : chr "28"
+  .. .. ..$ svn rev       : chr "87843"
+  .. .. ..$ language      : chr "R"
+  .. .. ..$ version.string: chr "R version 4.4.3 (2025-02-28)"
+  .. .. ..$ nickname      : chr "Trophy Case"
+  .. .. ..$ os.type       : chr "unix"
+  .. ..$ system :List of 8
+  .. .. ..$ sysname       : chr "Linux"
+  .. .. ..$ release       : chr "6.11.0-1012-azure"
+  .. .. ..$ version       : chr "#12~24.04.1-Ubuntu SMP Mon Mar 10 19:00:39 UTC 2025"
+  .. .. ..$ nodename      : chr "173ee284ba16"
+  .. .. ..$ machine       : chr "x86_64"
+  .. .. ..$ login         : chr "unknown"
+  .. .. ..$ user          : chr "root"
+  .. .. ..$ effective_user: chr "root"
+  .. ..$ libs   : chr [1:2] "/usr/local/lib/R/site-library" "/usr/local/lib/R/library"
+  .. ..$ pkgs   : NULL
+  .. ..$ pwd    : chr "/__w/rocker_uat/rocker_uat/packages/future/future-tests"
+  .. ..$ process:List of 1
+  .. .. ..$ pid: int 77288
+  ..- attr(*, "options")=List of 35
+  .. ..$ worker          : chr "localhost"
+  .. .. ..- attr(*, "localhost")= logi TRUE
+  .. ..$ master          : chr "localhost"
+  .. ..$ port            : int 11830
+  .. ..$ connectTimeout  : num 120
+  .. ..$ timeout         : num 2592000
+  .. ..$ rscript         : chr "'/usr/local/lib/R/bin/Rscript'"
+  .. ..$ homogeneous     : logi TRUE
+  .. ..$ rscript_args    : chr "--default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppressWarnings(cat(Sys.getpid(),fi"| __truncated__
+  .. ..$ rscript_envs    : NULL
+  .. ..$ rscript_libs    : NULL
+  .. ..$ rscript_startup : NULL
+  .. ..$ rscript_sh      : chr [1:2] "sh" "sh"
+  .. ..$ default_packages: chr [1:6] "datasets" "utils" "grDevices" "graphics" ...
+  .. ..$ methods         : logi TRUE
+  .. ..$ socketOptions   : chr "no-delay"
+  .. ..$ useXDR          : logi FALSE
+  .. ..$ outfile         : chr "/dev/null"
+  .. ..$ renice          : int NA
+  .. ..$ rshcmd          : NULL
+  .. ..$ user            : chr(0) 
+  .. ..$ revtunnel       : logi FALSE
+  .. ..$ rshlogfile      : NULL
+  .. ..$ rshopts         : chr(0) 
+  .. ..$ rank            : int 0
+  .. ..$ manual          : logi FALSE
+  .. ..$ dryrun          : logi FALSE
+  .. ..$ quiet           : logi FALSE
+  .. ..$ setup_strategy  : chr "parallel"
+  .. ..$ local_cmd       : chr "'/usr/local/lib/R/bin/Rscript' --default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppr"| __truncated__
+  .. ..$ rshcmd_label    : NULL
+  .. ..$ rsh_call        : NULL
+  .. ..$ cmd             : chr "'/usr/local/lib/R/bin/Rscript' --default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppr"| __truncated__
+  .. ..$ localMachine    : logi TRUE
+  .. ..$ make_fcn        :function (worker = getOption2("parallelly.localhost.hostname", "localhost"), 
+    master = NULL, port, connectTimeout = getOption2("parallelly.makeNodePSOCK.connectTimeout", 
+        2 * 60), timeout = getOption2("parallelly.makeNodePSOCK.timeout", 
+        30 * 24 * 60 * 60), rscript = NULL, homogeneous = NULL, rscript_args = NULL, 
+    rscript_envs = NULL, rscript_libs = NULL, rscript_startup = NULL, rscript_sh = c("auto", 
+        "cmd", "sh", "none"), default_packages = c("datasets", "utils", 
+        "grDevices", "graphics", "stats", if (methods) "methods"), methods = TRUE, 
+    socketOptions = getOption2("parallelly.makeNodePSOCK.socketOptions", 
+        "no-delay"), useXDR = getOption2("parallelly.makeNodePSOCK.useXDR", 
+        FALSE), outfile = "/dev/null", renice = NA_integer_, rshcmd = getOption2("parallelly.makeNodePSOCK.rshcmd", 
+        NULL), user = NULL, revtunnel = NA, rshlogfile = NULL, rshopts = getOption2("parallelly.makeNodePSOCK.rshopts", 
+        NULL), rank = 1L, manual = FALSE, dryrun = FALSE, quiet = FALSE, 
+    setup_strategy = getOption2("parallelly.makeNodePSOCK.setup_strategy", 
+        "parallel"), action = c("launch", "options"), verbose = FALSE)  
+  .. ..$ arguments       :List of 28
+  .. .. ..$ worker          : chr "localhost"
+  .. .. ..$ master          : NULL
+  .. .. ..$ port            : int 11830
+  .. .. ..$ connectTimeout  : num 120
+  .. .. ..$ timeout         : num 2592000
+  .. .. ..$ rscript         : NULL
+  .. .. ..$ homogeneous     : NULL
+  .. .. ..$ rscript_args    : NULL
+  .. .. ..$ rscript_envs    : NULL
+  .. .. ..$ rscript_libs    : NULL
+  .. .. ..$ rscript_startup : NULL
+  .. .. ..$ rscript_sh      : chr "auto"
+  .. .. ..$ default_packages: chr [1:6] "datasets" "utils" "grDevices" "graphics" ...
+  .. .. ..$ methods         : logi TRUE
+  .. .. ..$ socketOptions   : chr "no-delay"
+  .. .. ..$ useXDR          : logi FALSE
+  .. .. ..$ outfile         : chr "/dev/null"
+  .. .. ..$ renice          : int NA
+  .. .. ..$ rshcmd          : NULL
+  .. .. ..$ user            : NULL
+  .. .. ..$ revtunnel       : logi NA
+  .. .. ..$ rshlogfile      : NULL
+  .. .. ..$ rshopts         : NULL
+  .. .. ..$ rank            : int 1
+  .. .. ..$ manual          : logi FALSE
+  .. .. ..$ dryrun          : logi FALSE
+  .. .. ..$ quiet           : logi FALSE
+  .. .. ..$ setup_strategy  : chr "parallel"
+  .. ..- attr(*, "class")= chr [1:2] "makeNodePSOCKOptions" "makeNodeOptions"
+  ..- attr(*, "class")= chr [1:2] "RichSOCKnode" "SOCK0node"
+ - attr(*, "class")= chr [1:3] "RichSOCKcluster" "SOCKcluster" "cluster"
+Socket cluster with 1 nodes where 1 node is on host ‘localhost’ (R version 4.4.3 (2025-02-28), platform x86_64-pc-linux-gnu)
+Starting single-worker cluster ... DONE
+Socket cluster with 1 nodes where 1 node is on host ‘localhost’ (R version 4.4.3 (2025-02-28), platform x86_64-pc-linux-gnu)
+Stopping single-worker cluster ...
+NULL
+Stopping single-worker cluster ... DONE
+Testing with 1 cores ... DONE
+Testing with 2 cores ...
+Available cores: 2
+Stopping any running cluster ...
+Stopping any running cluster ... DONE
+Starting cluster ...
+Starting cluster ... DONE
+Starting dual-worker cluster ...
+List of 2
+ $ :List of 4
+  ..$ con         : 'sockconn' int 4
+  .. ..- attr(*, "conn_id")=<externalptr> 
+  ..$ host        : chr "localhost"
+  .. ..- attr(*, "localhost")= logi TRUE
+  ..$ rank        : int 0
+  ..$ session_info:List of 6
+  .. ..$ r      :List of 15
+  .. .. ..$ platform      : chr "x86_64-pc-linux-gnu"
+  .. .. ..$ arch          : chr "x86_64"
+  .. .. ..$ os            : chr "linux-gnu"
+  .. .. ..$ system        : chr "x86_64, linux-gnu"
+  .. .. ..$ status        : chr ""
+  .. .. ..$ major         : chr "4"
+  .. .. ..$ minor         : chr "4.3"
+  .. .. ..$ year          : chr "2025"
+  .. .. ..$ month         : chr "02"
+  .. .. ..$ day           : chr "28"
+  .. .. ..$ svn rev       : chr "87843"
+  .. .. ..$ language      : chr "R"
+  .. .. ..$ version.string: chr "R version 4.4.3 (2025-02-28)"
+  .. .. ..$ nickname      : chr "Trophy Case"
+  .. .. ..$ os.type       : chr "unix"
+  .. ..$ system :List of 8
+  .. .. ..$ sysname       : chr "Linux"
+  .. .. ..$ release       : chr "6.11.0-1012-azure"
+  .. .. ..$ version       : chr "#12~24.04.1-Ubuntu SMP Mon Mar 10 19:00:39 UTC 2025"
+  .. .. ..$ nodename      : chr "173ee284ba16"
+  .. .. ..$ machine       : chr "x86_64"
+  .. .. ..$ login         : chr "unknown"
+  .. .. ..$ user          : chr "root"
+  .. .. ..$ effective_user: chr "root"
+  .. ..$ libs   : chr [1:2] "/usr/local/lib/R/site-library" "/usr/local/lib/R/library"
+  .. ..$ pkgs   : NULL
+  .. ..$ pwd    : chr "/__w/rocker_uat/rocker_uat/packages/future/future-tests"
+  .. ..$ process:List of 1
+  .. .. ..$ pid: int 77326
+  ..- attr(*, "options")=List of 35
+  .. ..$ worker          : chr "localhost"
+  .. .. ..- attr(*, "localhost")= logi TRUE
+  .. ..$ master          : chr "localhost"
+  .. ..$ port            : int 11416
+  .. ..$ connectTimeout  : num 120
+  .. ..$ timeout         : num 2592000
+  .. ..$ rscript         : chr "'/usr/local/lib/R/bin/Rscript'"
+  .. ..$ homogeneous     : logi TRUE
+  .. ..$ rscript_args    : chr "--default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppressWarnings(cat(Sys.getpid(),fi"| __truncated__
+  .. ..$ rscript_envs    : NULL
+  .. ..$ rscript_libs    : NULL
+  .. ..$ rscript_startup : NULL
+  .. ..$ rscript_sh      : chr [1:2] "sh" "sh"
+  .. ..$ default_packages: chr [1:6] "datasets" "utils" "grDevices" "graphics" ...
+  .. ..$ methods         : logi TRUE
+  .. ..$ socketOptions   : chr "no-delay"
+  .. ..$ useXDR          : logi FALSE
+  .. ..$ outfile         : chr "/dev/null"
+  .. ..$ renice          : int NA
+  .. ..$ rshcmd          : NULL
+  .. ..$ user            : chr(0) 
+  .. ..$ revtunnel       : logi FALSE
+  .. ..$ rshlogfile      : NULL
+  .. ..$ rshopts         : chr(0) 
+  .. ..$ rank            : int 0
+  .. ..$ manual          : logi FALSE
+  .. ..$ dryrun          : logi FALSE
+  .. ..$ quiet           : logi FALSE
+  .. ..$ setup_strategy  : chr "parallel"
+  .. ..$ local_cmd       : chr "'/usr/local/lib/R/bin/Rscript' --default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppr"| __truncated__
+  .. ..$ rshcmd_label    : NULL
+  .. ..$ rsh_call        : NULL
+  .. ..$ cmd             : chr "'/usr/local/lib/R/bin/Rscript' --default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppr"| __truncated__
+  .. ..$ localMachine    : logi TRUE
+  .. ..$ make_fcn        :function (worker = getOption2("parallelly.localhost.hostname", "localhost"), 
+    master = NULL, port, connectTimeout = getOption2("parallelly.makeNodePSOCK.connectTimeout", 
+        2 * 60), timeout = getOption2("parallelly.makeNodePSOCK.timeout", 
+        30 * 24 * 60 * 60), rscript = NULL, homogeneous = NULL, rscript_args = NULL, 
+    rscript_envs = NULL, rscript_libs = NULL, rscript_startup = NULL, rscript_sh = c("auto", 
+        "cmd", "sh", "none"), default_packages = c("datasets", "utils", 
+        "grDevices", "graphics", "stats", if (methods) "methods"), methods = TRUE, 
+    socketOptions = getOption2("parallelly.makeNodePSOCK.socketOptions", 
+        "no-delay"), useXDR = getOption2("parallelly.makeNodePSOCK.useXDR", 
+        FALSE), outfile = "/dev/null", renice = NA_integer_, rshcmd = getOption2("parallelly.makeNodePSOCK.rshcmd", 
+        NULL), user = NULL, revtunnel = NA, rshlogfile = NULL, rshopts = getOption2("parallelly.makeNodePSOCK.rshopts", 
+        NULL), rank = 1L, manual = FALSE, dryrun = FALSE, quiet = FALSE, 
+    setup_strategy = getOption2("parallelly.makeNodePSOCK.setup_strategy", 
+        "parallel"), action = c("launch", "options"), verbose = FALSE)  
+  .. ..$ arguments       :List of 28
+  .. .. ..$ worker          : chr "localhost"
+  .. .. ..$ master          : NULL
+  .. .. ..$ port            : int 11416
+  .. .. ..$ connectTimeout  : num 120
+  .. .. ..$ timeout         : num 2592000
+  .. .. ..$ rscript         : NULL
+  .. .. ..$ homogeneous     : NULL
+  .. .. ..$ rscript_args    : NULL
+  .. .. ..$ rscript_envs    : NULL
+  .. .. ..$ rscript_libs    : NULL
+  .. .. ..$ rscript_startup : NULL
+  .. .. ..$ rscript_sh      : chr "auto"
+  .. .. ..$ default_packages: chr [1:6] "datasets" "utils" "grDevices" "graphics" ...
+  .. .. ..$ methods         : logi TRUE
+  .. .. ..$ socketOptions   : chr "no-delay"
+  .. .. ..$ useXDR          : logi FALSE
+  .. .. ..$ outfile         : chr "/dev/null"
+  .. .. ..$ renice          : int NA
+  .. .. ..$ rshcmd          : NULL
+  .. .. ..$ user            : NULL
+  .. .. ..$ revtunnel       : logi NA
+  .. .. ..$ rshlogfile      : NULL
+  .. .. ..$ rshopts         : NULL
+  .. .. ..$ rank            : int 1
+  .. .. ..$ manual          : logi FALSE
+  .. .. ..$ dryrun          : logi FALSE
+  .. .. ..$ quiet           : logi FALSE
+  .. .. ..$ setup_strategy  : chr "parallel"
+  .. ..- attr(*, "class")= chr [1:2] "makeNodePSOCKOptions" "makeNodeOptions"
+  ..- attr(*, "class")= chr [1:2] "RichSOCKnode" "SOCK0node"
+ $ :List of 4
+  ..$ con         : 'sockconn' int 5
+  .. ..- attr(*, "conn_id")=<externalptr> 
+  ..$ host        : chr "localhost"
+  .. ..- attr(*, "localhost")= logi TRUE
+  ..$ rank        : int 1
+  ..$ session_info:List of 6
+  .. ..$ r      :List of 15
+  .. .. ..$ platform      : chr "x86_64-pc-linux-gnu"
+  .. .. ..$ arch          : chr "x86_64"
+  .. .. ..$ os            : chr "linux-gnu"
+  .. .. ..$ system        : chr "x86_64, linux-gnu"
+  .. .. ..$ status        : chr ""
+  .. .. ..$ major         : chr "4"
+  .. .. ..$ minor         : chr "4.3"
+  .. .. ..$ year          : chr "2025"
+  .. .. ..$ month         : chr "02"
+  .. .. ..$ day           : chr "28"
+  .. .. ..$ svn rev       : chr "87843"
+  .. .. ..$ language      : chr "R"
+  .. .. ..$ version.string: chr "R version 4.4.3 (2025-02-28)"
+  .. .. ..$ nickname      : chr "Trophy Case"
+  .. .. ..$ os.type       : chr "unix"
+  .. ..$ system :List of 8
+  .. .. ..$ sysname       : chr "Linux"
+  .. .. ..$ release       : chr "6.11.0-1012-azure"
+  .. .. ..$ version       : chr "#12~24.04.1-Ubuntu SMP Mon Mar 10 19:00:39 UTC 2025"
+  .. .. ..$ nodename      : chr "173ee284ba16"
+  .. .. ..$ machine       : chr "x86_64"
+  .. .. ..$ login         : chr "unknown"
+  .. .. ..$ user          : chr "root"
+  .. .. ..$ effective_user: chr "root"
+  .. ..$ libs   : chr [1:2] "/usr/local/lib/R/site-library" "/usr/local/lib/R/library"
+  .. ..$ pkgs   : NULL
+  .. ..$ pwd    : chr "/__w/rocker_uat/rocker_uat/packages/future/future-tests"
+  .. ..$ process:List of 1
+  .. .. ..$ pid: int 77327
+  ..- attr(*, "options")=List of 35
+  .. ..$ worker          : chr "localhost"
+  .. .. ..- attr(*, "localhost")= logi TRUE
+  .. ..$ master          : chr "localhost"
+  .. ..$ port            : int 11416
+  .. ..$ connectTimeout  : num 120
+  .. ..$ timeout         : num 2592000
+  .. ..$ rscript         : chr "'/usr/local/lib/R/bin/Rscript'"
+  .. ..$ homogeneous     : logi TRUE
+  .. ..$ rscript_args    : chr "--default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppressWarnings(cat(Sys.getpid(),fi"| __truncated__
+  .. ..$ rscript_envs    : NULL
+  .. ..$ rscript_libs    : NULL
+  .. ..$ rscript_startup : NULL
+  .. ..$ rscript_sh      : chr [1:2] "sh" "sh"
+  .. ..$ default_packages: chr [1:6] "datasets" "utils" "grDevices" "graphics" ...
+  .. ..$ methods         : logi TRUE
+  .. ..$ socketOptions   : chr "no-delay"
+  .. ..$ useXDR          : logi FALSE
+  .. ..$ outfile         : chr "/dev/null"
+  .. ..$ renice          : int NA
+  .. ..$ rshcmd          : NULL
+  .. ..$ user            : chr(0) 
+  .. ..$ revtunnel       : logi FALSE
+  .. ..$ rshlogfile      : NULL
+  .. ..$ rshopts         : chr(0) 
+  .. ..$ rank            : int 1
+  .. ..$ manual          : logi FALSE
+  .. ..$ dryrun          : logi FALSE
+  .. ..$ quiet           : logi FALSE
+  .. ..$ setup_strategy  : chr "parallel"
+  .. ..$ local_cmd       : chr "'/usr/local/lib/R/bin/Rscript' --default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppr"| __truncated__
+  .. ..$ rshcmd_label    : NULL
+  .. ..$ rsh_call        : NULL
+  .. ..$ cmd             : chr "'/usr/local/lib/R/bin/Rscript' --default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppr"| __truncated__
+  .. ..$ localMachine    : logi TRUE
+  .. ..$ make_fcn        :function (worker = getOption2("parallelly.localhost.hostname", "localhost"), 
+    master = NULL, port, connectTimeout = getOption2("parallelly.makeNodePSOCK.connectTimeout", 
+        2 * 60), timeout = getOption2("parallelly.makeNodePSOCK.timeout", 
+        30 * 24 * 60 * 60), rscript = NULL, homogeneous = NULL, rscript_args = NULL, 
+    rscript_envs = NULL, rscript_libs = NULL, rscript_startup = NULL, rscript_sh = c("auto", 
+        "cmd", "sh", "none"), default_packages = c("datasets", "utils", 
+        "grDevices", "graphics", "stats", if (methods) "methods"), methods = TRUE, 
+    socketOptions = getOption2("parallelly.makeNodePSOCK.socketOptions", 
+        "no-delay"), useXDR = getOption2("parallelly.makeNodePSOCK.useXDR", 
+        FALSE), outfile = "/dev/null", renice = NA_integer_, rshcmd = getOption2("parallelly.makeNodePSOCK.rshcmd", 
+        NULL), user = NULL, revtunnel = NA, rshlogfile = NULL, rshopts = getOption2("parallelly.makeNodePSOCK.rshopts", 
+        NULL), rank = 1L, manual = FALSE, dryrun = FALSE, quiet = FALSE, 
+    setup_strategy = getOption2("parallelly.makeNodePSOCK.setup_strategy", 
+        "parallel"), action = c("launch", "options"), verbose = FALSE)  
+  .. ..$ arguments       :List of 28
+  .. .. ..$ worker          : chr "localhost"
+  .. .. ..$ master          : NULL
+  .. .. ..$ port            : int 11416
+  .. .. ..$ connectTimeout  : num 120
+  .. .. ..$ timeout         : num 2592000
+  .. .. ..$ rscript         : NULL
+  .. .. ..$ homogeneous     : NULL
+  .. .. ..$ rscript_args    : NULL
+  .. .. ..$ rscript_envs    : NULL
+  .. .. ..$ rscript_libs    : NULL
+  .. .. ..$ rscript_startup : NULL
+  .. .. ..$ rscript_sh      : chr "auto"
+  .. .. ..$ default_packages: chr [1:6] "datasets" "utils" "grDevices" "graphics" ...
+  .. .. ..$ methods         : logi TRUE
+  .. .. ..$ socketOptions   : chr "no-delay"
+  .. .. ..$ useXDR          : logi FALSE
+  .. .. ..$ outfile         : chr "/dev/null"
+  .. .. ..$ renice          : int NA
+  .. .. ..$ rshcmd          : NULL
+  .. .. ..$ user            : NULL
+  .. .. ..$ revtunnel       : logi NA
+  .. .. ..$ rshlogfile      : NULL
+  .. .. ..$ rshopts         : NULL
+  .. .. ..$ rank            : int 1
+  .. .. ..$ manual          : logi FALSE
+  .. .. ..$ dryrun          : logi FALSE
+  .. .. ..$ quiet           : logi FALSE
+  .. .. ..$ setup_strategy  : chr "parallel"
+  .. ..- attr(*, "class")= chr [1:2] "makeNodePSOCKOptions" "makeNodeOptions"
+  ..- attr(*, "class")= chr [1:2] "RichSOCKnode" "SOCK0node"
+ - attr(*, "class")= chr [1:3] "RichSOCKcluster" "SOCKcluster" "cluster"
+Socket cluster with 2 nodes where 2 nodes are on host ‘localhost’ (R version 4.4.3 (2025-02-28), platform x86_64-pc-linux-gnu)
+Starting duel-worker cluster ... DONE
+Starting single-worker cluster ...
+List of 1
+ $ :List of 4
+  ..$ con         : 'sockconn' int 4
+  .. ..- attr(*, "conn_id")=<externalptr> 
+  ..$ host        : chr "localhost"
+  .. ..- attr(*, "localhost")= logi TRUE
+  ..$ rank        : int 0
+  ..$ session_info:List of 6
+  .. ..$ r      :List of 15
+  .. .. ..$ platform      : chr "x86_64-pc-linux-gnu"
+  .. .. ..$ arch          : chr "x86_64"
+  .. .. ..$ os            : chr "linux-gnu"
+  .. .. ..$ system        : chr "x86_64, linux-gnu"
+  .. .. ..$ status        : chr ""
+  .. .. ..$ major         : chr "4"
+  .. .. ..$ minor         : chr "4.3"
+  .. .. ..$ year          : chr "2025"
+  .. .. ..$ month         : chr "02"
+  .. .. ..$ day           : chr "28"
+  .. .. ..$ svn rev       : chr "87843"
+  .. .. ..$ language      : chr "R"
+  .. .. ..$ version.string: chr "R version 4.4.3 (2025-02-28)"
+  .. .. ..$ nickname      : chr "Trophy Case"
+  .. .. ..$ os.type       : chr "unix"
+  .. ..$ system :List of 8
+  .. .. ..$ sysname       : chr "Linux"
+  .. .. ..$ release       : chr "6.11.0-1012-azure"
+  .. .. ..$ version       : chr "#12~24.04.1-Ubuntu SMP Mon Mar 10 19:00:39 UTC 2025"
+  .. .. ..$ nodename      : chr "173ee284ba16"
+  .. .. ..$ machine       : chr "x86_64"
+  .. .. ..$ login         : chr "unknown"
+  .. .. ..$ user          : chr "root"
+  .. .. ..$ effective_user: chr "root"
+  .. ..$ libs   : chr [1:2] "/usr/local/lib/R/site-library" "/usr/local/lib/R/library"
+  .. ..$ pkgs   : NULL
+  .. ..$ pwd    : chr "/__w/rocker_uat/rocker_uat/packages/future/future-tests"
+  .. ..$ process:List of 1
+  .. .. ..$ pid: int 77395
+  ..- attr(*, "options")=List of 35
+  .. ..$ worker          : chr "localhost"
+  .. .. ..- attr(*, "localhost")= logi TRUE
+  .. ..$ master          : chr "localhost"
+  .. ..$ port            : int 11947
+  .. ..$ connectTimeout  : num 120
+  .. ..$ timeout         : num 2592000
+  .. ..$ rscript         : chr "'/usr/local/lib/R/bin/Rscript'"
+  .. ..$ homogeneous     : logi TRUE
+  .. ..$ rscript_args    : chr "--default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppressWarnings(cat(Sys.getpid(),fi"| __truncated__
+  .. ..$ rscript_envs    : NULL
+  .. ..$ rscript_libs    : NULL
+  .. ..$ rscript_startup : NULL
+  .. ..$ rscript_sh      : chr [1:2] "sh" "sh"
+  .. ..$ default_packages: chr [1:6] "datasets" "utils" "grDevices" "graphics" ...
+  .. ..$ methods         : logi TRUE
+  .. ..$ socketOptions   : chr "no-delay"
+  .. ..$ useXDR          : logi FALSE
+  .. ..$ outfile         : chr "/dev/null"
+  .. ..$ renice          : int NA
+  .. ..$ rshcmd          : NULL
+  .. ..$ user            : chr(0) 
+  .. ..$ revtunnel       : logi FALSE
+  .. ..$ rshlogfile      : NULL
+  .. ..$ rshopts         : chr(0) 
+  .. ..$ rank            : int 0
+  .. ..$ manual          : logi FALSE
+  .. ..$ dryrun          : logi FALSE
+  .. ..$ quiet           : logi FALSE
+  .. ..$ setup_strategy  : chr "parallel"
+  .. ..$ local_cmd       : chr "'/usr/local/lib/R/bin/Rscript' --default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppr"| __truncated__
+  .. ..$ rshcmd_label    : NULL
+  .. ..$ rsh_call        : NULL
+  .. ..$ cmd             : chr "'/usr/local/lib/R/bin/Rscript' --default-packages=datasets,utils,grDevices,graphics,stats,methods -e 'try(suppr"| __truncated__
+  .. ..$ localMachine    : logi TRUE
+  .. ..$ make_fcn        :function (worker = getOption2("parallelly.localhost.hostname", "localhost"), 
+    master = NULL, port, connectTimeout = getOption2("parallelly.makeNodePSOCK.connectTimeout", 
+        2 * 60), timeout = getOption2("parallelly.makeNodePSOCK.timeout", 
+        30 * 24 * 60 * 60), rscript = NULL, homogeneous = NULL, rscript_args = NULL, 
+    rscript_envs = NULL, rscript_libs = NULL, rscript_startup = NULL, rscript_sh = c("auto", 
+        "cmd", "sh", "none"), default_packages = c("datasets", "utils", 
+        "grDevices", "graphics", "stats", if (methods) "methods"), methods = TRUE, 
+    socketOptions = getOption2("parallelly.makeNodePSOCK.socketOptions", 
+        "no-delay"), useXDR = getOption2("parallelly.makeNodePSOCK.useXDR", 
+        FALSE), outfile = "/dev/null", renice = NA_integer_, rshcmd = getOption2("parallelly.makeNodePSOCK.rshcmd", 
+        NULL), user = NULL, revtunnel = NA, rshlogfile = NULL, rshopts = getOption2("parallelly.makeNodePSOCK.rshopts", 
+        NULL), rank = 1L, manual = FALSE, dryrun = FALSE, quiet = FALSE, 
+    setup_strategy = getOption2("parallelly.makeNodePSOCK.setup_strategy", 
+        "parallel"), action = c("launch", "options"), verbose = FALSE)  
+  .. ..$ arguments       :List of 28
+  .. .. ..$ worker          : chr "localhost"
+  .. .. ..$ master          : NULL
+  .. .. ..$ port            : int 11947
+  .. .. ..$ connectTimeout  : num 120
+  .. .. ..$ timeout         : num 2592000
+  .. .. ..$ rscript         : NULL
+  .. .. ..$ homogeneous     : NULL
+  .. .. ..$ rscript_args    : NULL
+  .. .. ..$ rscript_envs    : NULL
+  .. .. ..$ rscript_libs    : NULL
+  .. .. ..$ rscript_startup : NULL
+  .. .. ..$ rscript_sh      : chr "auto"
+  .. .. ..$ default_packages: chr [1:6] "datasets" "utils" "grDevices" "graphics" ...
+  .. .. ..$ methods         : logi TRUE
+  .. .. ..$ socketOptions   : chr "no-delay"
+  .. .. ..$ useXDR          : logi FALSE
+  .. .. ..$ outfile         : chr "/dev/null"
+  .. .. ..$ renice          : int NA
+  .. .. ..$ rshcmd          : NULL
+  .. .. ..$ user            : NULL
+  .. .. ..$ revtunnel       : logi NA
+  .. .. ..$ rshlogfile      : NULL
+  .. .. ..$ rshopts         : NULL
+  .. .. ..$ rank            : int 1
+  .. .. ..$ manual          : logi FALSE
+  .. .. ..$ dryrun          : logi FALSE
+  .. .. ..$ quiet           : logi FALSE
+  .. .. ..$ setup_strategy  : chr "parallel"
+  .. ..- attr(*, "class")= chr [1:2] "makeNodePSOCKOptions" "makeNodeOptions"
+  ..- attr(*, "class")= chr [1:2] "RichSOCKnode" "SOCK0node"
+ - attr(*, "class")= chr [1:3] "RichSOCKcluster" "SOCKcluster" "cluster"
+Socket cluster with 1 nodes where 1 node is on host ‘localhost’ (R version 4.4.3 (2025-02-28), platform x86_64-pc-linux-gnu)
+Starting single-worker cluster ... DONE
+Socket cluster with 1 nodes where 1 node is on host ‘localhost’ (R version 4.4.3 (2025-02-28), platform x86_64-pc-linux-gnu)
+Stopping single-worker cluster ...
+NULL
+Stopping single-worker cluster ... DONE
+Testing with 2 cores ... DONE
+> 
+> 
+> message("*** ClusterRegistry() - exceptions ...")
+*** ClusterRegistry() - exceptions ...
+> 
+> res <- tryCatch(ClusterRegistry(action = "start", workers = TRUE), error = identity)
+> stopifnot(inherits(res, "error"))
+> 
+> message("*** ClusterRegistry() - exceptions ... DONE")
+*** ClusterRegistry() - exceptions ... DONE
+> 
+> 
+> message("*** ClusterRegistry() ... DONE")
+*** ClusterRegistry() ... DONE
+> 
+> source("incl/end.R")
+[11:01:00.350] plan(): Setting new future strategy stack:
+[11:01:00.350] List of future strategies:
+[11:01:00.350] 1. FutureStrategy:
+[11:01:00.350]    - args: function (..., envir = parent.frame(), workers = "<NULL>")
+[11:01:00.350]    - tweaked: FALSE
+[11:01:00.350]    - call: future::plan(oplan)
+[11:01:00.362] plan(): nbrOfWorkers() = 1
+> 

@@ -1,0 +1,382 @@
+
+R version 4.4.3 (2025-02-28) -- "Trophy Case"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library("R.utils")
+Loading required package: R.oo
+Loading required package: R.methodsS3
+R.methodsS3 v1.8.2 (2022-06-13 22:00:14 UTC) successfully loaded. See ?R.methodsS3 for help.
+R.oo v1.27.0 (2024-11-01 18:00:02 UTC) successfully loaded. See ?R.oo for help.
+
+Attaching package: ‘R.oo’
+
+The following object is masked from ‘package:R.methodsS3’:
+
+    throw
+
+The following objects are masked from ‘package:methods’:
+
+    getClasses, getMethods
+
+The following objects are masked from ‘package:base’:
+
+    attach, detach, load, save
+
+R.utils v2.13.0 (2025-02-24 21:20:02 UTC) successfully loaded. See ?R.utils for help.
+
+Attaching package: ‘R.utils’
+
+The following object is masked from ‘package:utils’:
+
+    timestamp
+
+The following objects are masked from ‘package:base’:
+
+    cat, commandArgs, getOption, isOpen, nullfile, parse, use, warnings
+
+> 
+> oopts <- options(warn=1)
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Function that takes "a long" time to run
+> # - - - - - - - - - - - - - - - - - - - - - - - - -
+> foo <- function() {
++   print("Tic")
++   for (kk in 1:20) {
++     print(kk)
++     Sys.sleep(0.1)
++   }
++   print("Tac")
++   42L
++ }
+> 
+> fib <- function(n) {
++   if (n == 0 | n == 1) return(n)
++   return (fib(n - 1) + fib(n - 2))
++ }
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Evaluate code, if it takes too long, generate
+> # a TimeoutException error.
+> # - - - - - - - - - - - - - - - - - - - - - - - - -
+> message("withTimeout() with error")
+withTimeout() with error
+> res <- tryCatch({
++   res <- withTimeout({
++     foo()
++   }, timeout=1.08)
++ }, TimeoutException=function(ex) {
++   cat("Timeout (", ex$message, "). Skipping.\n", sep="")
++   TRUE
++ })
+[1] "Tic"
+[1] 1
+[1] 2
+[1] 3
+[1] 4
+[1] 5
+[1] 6
+[1] 7
+[1] 8
+[1] 9
+[1] 10
+[1] 11
+[1] 12
+[1] 13
+Timeout (reached elapsed time limit [cpu=1.08s, elapsed=1.08s]). Skipping.
+> stopifnot(isTRUE(res))
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Evaluate code, if it takes too much CPU time,
+> # generate a TimeoutException error.
+> # - - - - - - - - - - - - - - - - - - - - - - - - -
+> message("withTimeout() with error")
+withTimeout() with error
+> res <- tryCatch({
++   res <- withTimeout({
++     fib(30)
++   }, cpu=0.1, elapsed=Inf)
++ }, TimeoutException=function(ex) {
++   cat("Timeout (", ex$message, "). Skipping.\n", sep="")
++   TRUE
++ })
+Timeout (reached CPU time limit [cpu=0.1s, elapsed=Infs]). Skipping.
+> stopifnot(isTRUE(res))
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Evaluate code, if it takes too long, generate
+> # a timeout warning.
+> # - - - - - - - - - - - - - - - - - - - - - - - - -
+> message("withTimeout() with warning")
+withTimeout() with warning
+> res <- withTimeout({
++   foo()
++ }, timeout=1.08, onTimeout="warning")
+[1] "Tic"
+[1] 1
+[1] 2
+[1] 3
+[1] 4
+[1] 5
+[1] 6
+[1] 7
+[1] 8
+[1] 9
+[1] 10
+[1] 11
+[1] 12
+[1] 13
+[1] 14
+[1] 15
+[1] 16
+Warning in value[[3L]](cond) :
+  reached elapsed time limit [cpu=1.08s, elapsed=1.08s]
+> stopifnot(is.null(res))
+> 
+> res <- tryCatch({
++   res <- withTimeout({
++     foo()
++   }, timeout=1.08, onTimeout="warning")
++ }, warning=function(ex) {
++   cat("Timeout warning (", ex$message, "). Skipping.\n", sep="")
++   TRUE
++ })
+[1] "Tic"
+[1] 1
+[1] 2
+[1] 3
+[1] 4
+[1] 5
+[1] 6
+[1] 7
+[1] 8
+[1] 9
+[1] 10
+[1] 11
+[1] 12
+[1] 13
+[1] 14
+[1] 15
+[1] 16
+Timeout warning (reached elapsed time limit [cpu=1.08s, elapsed=1.08s]). Skipping.
+> stopifnot(isTRUE(res))
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Evaluate code, if it takes too much CPU time,
+> # generate a timeout warning.
+> # - - - - - - - - - - - - - - - - - - - - - - - - -
+> message("withTimeout() with warning")
+withTimeout() with warning
+> res <- withTimeout({
++   fib(30)
++ }, cpu=0.1, elapsed=Inf, onTimeout="warning")
+Warning in value[[3L]](cond) :
+  reached CPU time limit [cpu=0.1s, elapsed=Infs]
+> stopifnot(is.null(res))
+> 
+> res <- tryCatch({
++   res <- withTimeout({
++     fib(30)
++   }, cpu=0.1, elapsed=Inf, onTimeout="warning")
++ }, warning=function(ex) {
++   cat("Timeout warning (", ex$message, "). Skipping.\n", sep="")
++   TRUE
++ })
+Timeout warning (reached CPU time limit [cpu=0.1s, elapsed=Infs]). Skipping.
+> stopifnot(isTRUE(res))
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Evaluate code, if it takes too long, generate
+> # a timeout, and return silently NULL.
+> # - - - - - - - - - - - - - - - - - - - - - - - - -
+> message("withTimeout() with silent")
+withTimeout() with silent
+> res <- withTimeout({
++   foo()
++ }, timeout=1.08, onTimeout="silent")
+[1] "Tic"
+[1] 1
+[1] 2
+[1] 3
+[1] 4
+[1] 5
+[1] 6
+[1] 7
+[1] 8
+[1] 9
+[1] 10
+[1] 11
+[1] 12
+[1] 13
+[1] 14
+[1] 15
+> stopifnot(is.null(res))
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Evaluate code, that does not timeout, then
+> # evaluate code that takes long, but should not
+> # timeout.
+> # - - - - - - - - - - - - - - - - - - - - - - - - -
+> message("withTimeout() without timeout")
+withTimeout() without timeout
+> res <- withTimeout({
++   cat("Hello world!\n")
++   TRUE
++ }, timeout=1.08)
+Hello world!
+> stopifnot(isTRUE(res))
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Evaluate code, that does not timeout, but
+> # throws an error.
+> # - - - - - - - - - - - - - - - - - - - - - - - - -
+> message("withTimeout() without timeout, but with error")
+withTimeout() without timeout, but with error
+> res <- tryCatch({
++   res <- withTimeout({
++     stop("boom")
++   }, timeout=1.08, onTimeout="warning")
++ }, error=function(ex) {
++   cat("Another error occured: ", ex$message, "\n", sep="")
++   TRUE
++ })
+Another error occured: boom
+> stopifnot(isTRUE(res))
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Evalute expression
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> message("withTimeout() without timeout")
+withTimeout() without timeout
+> expr <- quote({ cat("Hello world!\n"); TRUE })
+> res <- withTimeout(expr, substitute = FALSE, timeout=1.08)
+Hello world!
+> stopifnot(isTRUE(res))
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Visibility
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> message("withTimeout() - visibility")
+withTimeout() - visibility
+> res <- withVisible({
++   withTimeout({ 1 }, timeout=1)
++ })
+> str(res)
+List of 2
+ $ value  : num 1
+ $ visible: logi TRUE
+> stopifnot(all.equal(res$value, 1))
+> stopifnot(res$visible)
+> 
+> x <- 0
+> res <- withVisible({
++   withTimeout({ x <- 1 }, timeout=1)
++ })
+> str(res)
+List of 2
+ $ value  : num 1
+ $ visible: logi FALSE
+> stopifnot(all.equal(res$value, 1))
+> stopifnot(!res$visible)
+> stopifnot(all.equal(x, 1))
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Non-English settings
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> message("withTimeout() - other languages")
+withTimeout() - other languages
+> local({
++   olang <- Sys.getenv("LANGUAGE")
++   on.exit(Sys.setenv(LANGUAGE=olang))
++   Sys.setenv(LANGUAGE="fr")
++ 
++   res <- tryCatch({
++     res <- withTimeout({
++       foo()
++     }, timeout=1.08, onTimeout="warning")
++   }, warning=function(ex) {
++     cat("Timeout warning (", ex$message, "). Skipping.\n", sep="")
++     TRUE
++   })
++   stopifnot(isTRUE(res))
++ })
+[1] "Tic"
+[1] 1
+[1] 2
+[1] 3
+[1] 4
+[1] 5
+[1] 6
+[1] 7
+[1] 8
+[1] 9
+[1] 10
+[1] 11
+[1] 12
+[1] 13
+[1] 14
+[1] 15
+[1] 16
+Timeout warning (la limite de temps est atteinte [cpu=1.08s, elapsed=1.08s]). Skipping.
+> 
+> 
+> message("withTimeout() - switching language inside function (doesn't work)")
+withTimeout() - switching language inside function (doesn't work)
+> res <- tryCatch({
++   res <- withTimeout({
++     olang <- Sys.getenv("LANGUAGE")
++     on.exit(Sys.setenv(LANGUAGE=olang))
++     Sys.setenv(LANGUAGE="fr")
++     foo()
++   }, timeout=1.08, onTimeout="warning")
++ }, warning=function(ex) {
++   cat("Timeout warning (", ex$message, "). Skipping.\n", sep="")
++   TRUE
++ }, error=function(ex) {
++   warning("withTimeout() fails to detect timeouts when the language is temporarily switched")
++   FALSE
++ })
+[1] "Tic"
+[1] 1
+[1] 2
+[1] 3
+[1] 4
+[1] 5
+[1] 6
+[1] 7
+[1] 8
+[1] 9
+[1] 10
+[1] 11
+[1] 12
+[1] 13
+[1] 14
+[1] 15
+Timeout warning (la limite de temps est atteinte [cpu=1.08s, elapsed=1.08s]). Skipping.
+> print(res)
+[1] TRUE
+> 
+> 
+> # Undo
+> options(oopts)
+> 

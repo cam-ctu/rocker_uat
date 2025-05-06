@@ -1,0 +1,1083 @@
+
+R version 4.4.3 (2025-02-28) -- "Trophy Case"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> source("incl/start.R")
+> 
+> options(warn = 2L)
+> 
+> exprs <- list(
++   ok1   = quote(function(...) sum(x, ...)),
++   ok2   = quote(function(...) sum(x, ..1, ..2, ..3)),
++   warn1 = quote(sum(x, ...)),
++   warn2 = quote(sum(x, ..1, ..2, ..3))
++ )
+> 
+> truth <- list(
++   ok1 = c("sum", "x"),
++   ok2 = c("sum", "x"),
++   warn1 = c("sum", "x", "..."),
++   warn2 = c("sum", "x", "..1", "..2", "..3")
++ )
+> 
+> message("*** findGlobals() ...")
+*** findGlobals() ...
+> 
+> for (name in names(exprs)) {
++   expr <- exprs[[name]]
++ 
++   message(sprintf("\n*** codetools::findGlobals() - step %s:", sQuote(name)))
++   print(expr)
++   fun <- globals:::as_function(expr)
++   print(fun)
++   ## Suppress '... may be used in an incorrect context' warnings
++   suppressWarnings({
++     globals <- codetools::findGlobals(fun)
++   })
++   print(globals)
++   assert_identical_sets(globals, c("sum", "x"))
++   next
++   
++   message("\n*** findGlobals(dotdotdot = 'ignore'):")
++   cat(sprintf("Expression '%s':\n", name))
++   print(expr)  
++   globals <- findGlobals(expr, dotdotdot = "ignore")
++   print(globals)
++   assert_identical_sets(globals, c("sum", "x"))
++ 
++   message("\n*** findGlobals(dotdotdot = 'return'):")
++   cat(sprintf("Expression '%s':\n", name))
++   print(expr)
++   globals <- findGlobals(expr, dotdotdot = "return")
++   print(globals)
++   assert_identical_sets(globals, truth[[name]])
++ 
++   message("\n*** findGlobals(dotdotdot = 'warning'):")
++   cat(sprintf("Expression '%s':\n", name))
++   print(expr)
++   globals <- findGlobals(expr, dotdotdot = "warning")
++   print(globals)
++   assert_identical_sets(globals, truth[[name]])
++ 
++   message("\n*** findGlobals(dotdotdot = 'error'):")
++   cat(sprintf("Expression '%s':\n", name))
++   print(expr)
++   globals <- tryCatch(findGlobals(expr, dotdotdot = "error"), error = identity)
++   if (name %in% c("ok1", "ok2")) {
++     assert_identical_sets(globals, truth[[name]])
++   } else {
++     stopifnot(inherits(globals, "error"))
++   }
++ } # for (name ...)
+
+*** codetools::findGlobals() - step ‘ok1’:
+function(...) sum(x, ...)
+function () 
+function(...) sum(x, ...)
+[1] "sum" "x"  
+
+*** codetools::findGlobals() - step ‘ok2’:
+function(...) sum(x, ..1, ..2, ..3)
+function () 
+function(...) sum(x, ..1, ..2, ..3)
+[1] "sum" "x"  
+
+*** codetools::findGlobals() - step ‘warn1’:
+sum(x, ...)
+function () 
+sum(x, ...)
+[1] "sum" "x"  
+
+*** codetools::findGlobals() - step ‘warn2’:
+sum(x, ..1, ..2, ..3)
+function () 
+sum(x, ..1, ..2, ..3)
+[1] "sum" "x"  
+> 
+> 
+> message("\n*** findGlobals(<exprs>, dotdotdot = 'return'):")
+
+*** findGlobals(<exprs>, dotdotdot = 'return'):
+> print(exprs)
+$ok1
+function(...) sum(x, ...)
+
+$ok2
+function(...) sum(x, ..1, ..2, ..3)
+
+$warn1
+sum(x, ...)
+
+$warn2
+sum(x, ..1, ..2, ..3)
+
+> globals <- findGlobals(exprs, dotdotdot = "return")
+> print(globals)
+[1] "sum" "x"   "..." "..1" "..2" "..3"
+> assert_identical_sets(globals, unique(unlist(truth, use.names = FALSE)))
+> 
+> message("\n*** findGlobals(<attribute-with-formula-and-dots>, dotdotdot = 'return'):")
+
+*** findGlobals(<attribute-with-formula-and-dots>, dotdotdot = 'return'):
+> formula_attr <- bquote(~ .(call("fn", quote(...))))
+> x <- structure(integer(), formula_attr = formula_attr)
+> print(x)
+integer(0)
+attr(,"formula_attr")
+~fn(...)
+> # Attributes always use `dotdotdot = "ignore"`
+> globals <- findGlobals(x, dotdotdot = "return", attributes = TRUE)
+> print(globals)
+[1] "~"  "fn"
+> assert_identical_sets(globals, c("~", "fn"))
+> 
+> message("*** findGlobals() ... DONE")
+*** findGlobals() ... DONE
+> 
+> 
+> 
+> message("*** globalsOf() ...")
+*** globalsOf() ...
+> 
+> x <- 1:2
+> 
+> for (name in names(exprs)) {
++   expr <- exprs[[name]]
++ 
++   message("\n*** globalsOf(dotdotdot = 'ignore'):")
++   cat(sprintf("Expression '%s':\n", name))
++   print(expr)
++   globals <- globalsOf(expr, dotdotdot = "ignore")
++   print(globals)
++   assert_identical_sets(names(globals), c("sum", "x"))
++   stopifnot(all.equal(globals$sum, base::sum))
++   stopifnot(all.equal(globals$x, x))
++ 
++   message("\n*** globalsOf(dotdotdot = 'return'):")
++   cat(sprintf("Expression '%s':\n", name))
++   print(expr)
++   globals <- globalsOf(expr, dotdotdot = "return")
++   print(globals)
++   assert_identical_sets(names(globals), truth[[name]])
++   if (name == "warn1") {
++     stopifnot(!is.list(globals$`...`) && is.na(globals$`...`))
++   }
++   stopifnot(all.equal(globals$sum, base::sum))
++   stopifnot(all.equal(globals$x, x))
++ 
++   message("\n*** globalsOf(dotdotdot = 'warning'):")
++   cat(sprintf("Expression '%s':\n", name))
++   print(expr)
++   globals <- globalsOf(expr, dotdotdot = "warning")
++   print(globals)
++   assert_identical_sets(names(globals), truth[[name]])
++   if (name == "warn1") {
++     stopifnot(!is.list(globals$`...`) && is.na(globals$`...`))
++   }
++   stopifnot(all.equal(globals$sum, base::sum))
++   stopifnot(all.equal(globals$x, x))
++ 
++   message("\n*** globalsOf(dotdotdot = 'error'):")
++   cat(sprintf("Expression '%s':\n", name))
++   print(expr)
++   globals <- tryCatch(globalsOf(expr, dotdotdot = "error"), error = identity)
++   if (name %in% c("ok1", "ok2")) {
++     assert_identical_sets(names(globals), truth[[name]])
++     stopifnot(all.equal(globals$sum, base::sum))
++     stopifnot(all.equal(globals$x, x))
++   } else {
++     stopifnot(inherits(globals, "error"))
++   }
++ } # for (name ...)
+
+*** globalsOf(dotdotdot = 'ignore'):
+Expression 'ok1':
+function(...) sum(x, ...)
+$sum
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$x
+[1] 1 2
+
+attr(,"where")
+attr(,"where")$sum
+<environment: base>
+
+attr(,"where")$x
+<environment: R_GlobalEnv>
+
+attr(,"class")
+[1] "Globals" "list"   
+
+*** globalsOf(dotdotdot = 'return'):
+Expression 'ok1':
+function(...) sum(x, ...)
+$sum
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$x
+[1] 1 2
+
+attr(,"where")
+attr(,"where")$sum
+<environment: base>
+
+attr(,"where")$x
+<environment: R_GlobalEnv>
+
+attr(,"class")
+[1] "Globals" "list"   
+
+*** globalsOf(dotdotdot = 'warning'):
+Expression 'ok1':
+function(...) sum(x, ...)
+$sum
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$x
+[1] 1 2
+
+attr(,"where")
+attr(,"where")$sum
+<environment: base>
+
+attr(,"where")$x
+<environment: R_GlobalEnv>
+
+attr(,"class")
+[1] "Globals" "list"   
+
+*** globalsOf(dotdotdot = 'error'):
+Expression 'ok1':
+function(...) sum(x, ...)
+
+*** globalsOf(dotdotdot = 'ignore'):
+Expression 'ok2':
+function(...) sum(x, ..1, ..2, ..3)
+$sum
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$x
+[1] 1 2
+
+attr(,"where")
+attr(,"where")$sum
+<environment: base>
+
+attr(,"where")$x
+<environment: R_GlobalEnv>
+
+attr(,"class")
+[1] "Globals" "list"   
+
+*** globalsOf(dotdotdot = 'return'):
+Expression 'ok2':
+function(...) sum(x, ..1, ..2, ..3)
+$sum
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$x
+[1] 1 2
+
+attr(,"where")
+attr(,"where")$sum
+<environment: base>
+
+attr(,"where")$x
+<environment: R_GlobalEnv>
+
+attr(,"class")
+[1] "Globals" "list"   
+
+*** globalsOf(dotdotdot = 'warning'):
+Expression 'ok2':
+function(...) sum(x, ..1, ..2, ..3)
+$sum
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$x
+[1] 1 2
+
+attr(,"where")
+attr(,"where")$sum
+<environment: base>
+
+attr(,"where")$x
+<environment: R_GlobalEnv>
+
+attr(,"class")
+[1] "Globals" "list"   
+
+*** globalsOf(dotdotdot = 'error'):
+Expression 'ok2':
+function(...) sum(x, ..1, ..2, ..3)
+
+*** globalsOf(dotdotdot = 'ignore'):
+Expression 'warn1':
+sum(x, ...)
+$sum
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$x
+[1] 1 2
+
+attr(,"where")
+attr(,"where")$sum
+<environment: base>
+
+attr(,"where")$x
+<environment: R_GlobalEnv>
+
+attr(,"class")
+[1] "Globals" "list"   
+
+*** globalsOf(dotdotdot = 'return'):
+Expression 'warn1':
+sum(x, ...)
+$sum
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$x
+[1] 1 2
+
+$...
+[1] NA
+attr(,"class")
+[1] "DotDotDotList" "logical"      
+
+attr(,"where")
+attr(,"where")$sum
+<environment: base>
+
+attr(,"where")$x
+<environment: R_GlobalEnv>
+
+attr(,"where")$...
+NULL
+
+attr(,"class")
+[1] "Globals" "list"   
+
+*** globalsOf(dotdotdot = 'warning'):
+Expression 'warn1':
+sum(x, ...)
+$sum
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$x
+[1] 1 2
+
+$...
+[1] NA
+attr(,"class")
+[1] "DotDotDotList" "logical"      
+
+attr(,"where")
+attr(,"where")$sum
+<environment: base>
+
+attr(,"where")$x
+<environment: R_GlobalEnv>
+
+attr(,"where")$...
+NULL
+
+attr(,"class")
+[1] "Globals" "list"   
+
+*** globalsOf(dotdotdot = 'error'):
+Expression 'warn1':
+sum(x, ...)
+
+*** globalsOf(dotdotdot = 'ignore'):
+Expression 'warn2':
+sum(x, ..1, ..2, ..3)
+$sum
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$x
+[1] 1 2
+
+attr(,"where")
+attr(,"where")$sum
+<environment: base>
+
+attr(,"where")$x
+<environment: R_GlobalEnv>
+
+attr(,"class")
+[1] "Globals" "list"   
+
+*** globalsOf(dotdotdot = 'return'):
+Expression 'warn2':
+sum(x, ..1, ..2, ..3)
+$sum
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$x
+[1] 1 2
+
+$..1
+[1] NA
+attr(,"class")
+[1] "DotDotDotList" "logical"      
+
+$..2
+[1] NA
+attr(,"class")
+[1] "DotDotDotList" "logical"      
+
+$..3
+[1] NA
+attr(,"class")
+[1] "DotDotDotList" "logical"      
+
+attr(,"where")
+attr(,"where")$sum
+<environment: base>
+
+attr(,"where")$x
+<environment: R_GlobalEnv>
+
+attr(,"where")$..1
+NULL
+
+attr(,"where")$..2
+NULL
+
+attr(,"where")$..3
+NULL
+
+attr(,"class")
+[1] "Globals" "list"   
+
+*** globalsOf(dotdotdot = 'warning'):
+Expression 'warn2':
+sum(x, ..1, ..2, ..3)
+$sum
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$x
+[1] 1 2
+
+$..1
+[1] NA
+attr(,"class")
+[1] "DotDotDotList" "logical"      
+
+$..2
+[1] NA
+attr(,"class")
+[1] "DotDotDotList" "logical"      
+
+$..3
+[1] NA
+attr(,"class")
+[1] "DotDotDotList" "logical"      
+
+attr(,"where")
+attr(,"where")$sum
+<environment: base>
+
+attr(,"where")$x
+<environment: R_GlobalEnv>
+
+attr(,"where")$..1
+NULL
+
+attr(,"where")$..2
+NULL
+
+attr(,"where")$..3
+NULL
+
+attr(,"class")
+[1] "Globals" "list"   
+
+*** globalsOf(dotdotdot = 'error'):
+Expression 'warn2':
+sum(x, ..1, ..2, ..3)
+Warning messages:
+1: <anonymous>: ... may be used in an incorrect context: ‘sum(x, ...)’
+ 
+2: <anonymous>: ..1 may be used in an incorrect context
+ 
+3: <anonymous>: ..2 may be used in an incorrect context
+ 
+4: <anonymous>: ..3 may be used in an incorrect context
+ 
+> 
+> message("\n*** globalsOf(<exprs>, dotdotdot = 'return'):")
+
+*** globalsOf(<exprs>, dotdotdot = 'return'):
+> print(exprs)
+$ok1
+function(...) sum(x, ...)
+
+$ok2
+function(...) sum(x, ..1, ..2, ..3)
+
+$warn1
+sum(x, ...)
+
+$warn2
+sum(x, ..1, ..2, ..3)
+
+> globals <- globalsOf(exprs, dotdotdot = "return")
+> print(globals)
+$sum
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$x
+[1] 1 2
+
+$...
+[1] NA
+attr(,"class")
+[1] "DotDotDotList" "logical"      
+
+$..1
+[1] NA
+attr(,"class")
+[1] "DotDotDotList" "logical"      
+
+$..2
+[1] NA
+attr(,"class")
+[1] "DotDotDotList" "logical"      
+
+$..3
+[1] NA
+attr(,"class")
+[1] "DotDotDotList" "logical"      
+
+attr(,"where")
+attr(,"where")$sum
+<environment: base>
+
+attr(,"where")$x
+<environment: R_GlobalEnv>
+
+attr(,"where")$...
+NULL
+
+attr(,"where")$..1
+NULL
+
+attr(,"where")$..2
+NULL
+
+attr(,"where")$..3
+NULL
+
+attr(,"class")
+[1] "Globals" "list"   
+> 
+> 
+> message("*** globalsOf() ... DONE")
+*** globalsOf() ... DONE
+> 
+> 
+> message("*** function(x, ...) globalsOf() ...")
+*** function(x, ...) globalsOf() ...
+> 
+> aux <- function(x, ..., exprs) {
++   args <- list(...)
++ 
++ for (name in names(exprs)) {
++   expr <- exprs[[name]]
++ 
++   message("\n*** globalsOf(dotdotdot = 'ignore'):")
++   cat(sprintf("Expression '%s':\n", name))
++   print(expr)
++   globals <- globalsOf(expr, dotdotdot = "ignore")
++   print(globals)
++   assert_identical_sets(names(globals), c("sum", "x"))
++   stopifnot(all.equal(globals$sum, base::sum))
++   stopifnot(all.equal(globals$x, x))
++ 
++   message("\n*** globalsOf(dotdotdot = 'return'):")
++   cat(sprintf("Expression '%s':\n", name))
++   print(expr)
++   globals <- globalsOf(expr, dotdotdot = "return")
++   print(globals)
++   assert_identical_sets(names(globals), truth[[name]])
++   if (name == "warn1") {
++     stopifnot(all.equal(globals$`...`, args, check.attributes = FALSE))
++   }
++   stopifnot(all.equal(globals$sum, base::sum))
++   stopifnot(all.equal(globals$x, x))
++ 
++   message("\n*** globalsOf(dotdotdot = 'warning'):")
++   cat(sprintf("Expression '%s':\n", name))
++   print(expr)
++   globals <- globalsOf(expr, dotdotdot = "warning")
++   print(globals)
++   assert_identical_sets(names(globals), truth[[name]])
++   if (name == "warn1") {
++     stopifnot(all.equal(globals$`...`, args, check.attributes = FALSE))
++   }
++   stopifnot(all.equal(globals$sum, base::sum))
++   stopifnot(all.equal(globals$x, x))
++ 
++   message("\n*** globalsOf(dotdotdot = 'error'):")
++   cat(sprintf("Expression '%s':\n", name))
++   print(expr)
++   globals <- tryCatch(globalsOf(expr, dotdotdot = "error"), error = identity)
++   if (name %in% c("ok1", "ok2")) {
++     assert_identical_sets(names(globals), truth[[name]])
++     stopifnot(all.equal(globals$sum, base::sum))
++     stopifnot(all.equal(globals$x, x))
++   } else {
++     stopifnot(inherits(globals, "error"))
++   }
++ } # for (name ...)
++ 
++ message("\n*** globalsOf(<exprs>, dotdotdot = 'return'):")
++ print(exprs)
++ globals <- globalsOf(exprs, dotdotdot = "return")
++ print(globals)
++ 
++ } # aux()
+> 
+> aux(x = 3:4, y = 1, z = 42L, 3.14, exprs = exprs)
+
+*** globalsOf(dotdotdot = 'ignore'):
+Expression 'ok1':
+function(...) sum(x, ...)
+$sum
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$x
+[1] 3 4
+
+attr(,"where")
+attr(,"where")$sum
+<environment: base>
+
+attr(,"where")$x
+<environment: 0x5632aa8e7270>
+
+attr(,"class")
+[1] "Globals" "list"   
+
+*** globalsOf(dotdotdot = 'return'):
+Expression 'ok1':
+function(...) sum(x, ...)
+$sum
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$x
+[1] 3 4
+
+attr(,"where")
+attr(,"where")$sum
+<environment: base>
+
+attr(,"where")$x
+<environment: 0x5632aa8e7270>
+
+attr(,"class")
+[1] "Globals" "list"   
+
+*** globalsOf(dotdotdot = 'warning'):
+Expression 'ok1':
+function(...) sum(x, ...)
+$sum
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$x
+[1] 3 4
+
+attr(,"where")
+attr(,"where")$sum
+<environment: base>
+
+attr(,"where")$x
+<environment: 0x5632aa8e7270>
+
+attr(,"class")
+[1] "Globals" "list"   
+
+*** globalsOf(dotdotdot = 'error'):
+Expression 'ok1':
+function(...) sum(x, ...)
+
+*** globalsOf(dotdotdot = 'ignore'):
+Expression 'ok2':
+function(...) sum(x, ..1, ..2, ..3)
+$sum
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$x
+[1] 3 4
+
+attr(,"where")
+attr(,"where")$sum
+<environment: base>
+
+attr(,"where")$x
+<environment: 0x5632aa8e7270>
+
+attr(,"class")
+[1] "Globals" "list"   
+
+*** globalsOf(dotdotdot = 'return'):
+Expression 'ok2':
+function(...) sum(x, ..1, ..2, ..3)
+$sum
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$x
+[1] 3 4
+
+attr(,"where")
+attr(,"where")$sum
+<environment: base>
+
+attr(,"where")$x
+<environment: 0x5632aa8e7270>
+
+attr(,"class")
+[1] "Globals" "list"   
+
+*** globalsOf(dotdotdot = 'warning'):
+Expression 'ok2':
+function(...) sum(x, ..1, ..2, ..3)
+$sum
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$x
+[1] 3 4
+
+attr(,"where")
+attr(,"where")$sum
+<environment: base>
+
+attr(,"where")$x
+<environment: 0x5632aa8e7270>
+
+attr(,"class")
+[1] "Globals" "list"   
+
+*** globalsOf(dotdotdot = 'error'):
+Expression 'ok2':
+function(...) sum(x, ..1, ..2, ..3)
+
+*** globalsOf(dotdotdot = 'ignore'):
+Expression 'warn1':
+sum(x, ...)
+$sum
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$x
+[1] 3 4
+
+attr(,"where")
+attr(,"where")$sum
+<environment: base>
+
+attr(,"where")$x
+<environment: 0x5632aa8e7270>
+
+attr(,"class")
+[1] "Globals" "list"   
+
+*** globalsOf(dotdotdot = 'return'):
+Expression 'warn1':
+sum(x, ...)
+$sum
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$x
+[1] 3 4
+
+$...
+$y
+[1] 1
+
+$z
+[1] 42
+
+[[3]]
+[1] 3.14
+
+attr(,"class")
+[1] "DotDotDotList" "list"         
+
+attr(,"where")
+attr(,"where")$sum
+<environment: base>
+
+attr(,"where")$x
+<environment: 0x5632aa8e7270>
+
+attr(,"where")$...
+<environment: 0x5632aa8e7270>
+
+attr(,"class")
+[1] "Globals" "list"   
+
+*** globalsOf(dotdotdot = 'warning'):
+Expression 'warn1':
+sum(x, ...)
+$sum
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$x
+[1] 3 4
+
+$...
+$y
+[1] 1
+
+$z
+[1] 42
+
+[[3]]
+[1] 3.14
+
+attr(,"class")
+[1] "DotDotDotList" "list"         
+
+attr(,"where")
+attr(,"where")$sum
+<environment: base>
+
+attr(,"where")$x
+<environment: 0x5632aa8e7270>
+
+attr(,"where")$...
+<environment: 0x5632aa8e7270>
+
+attr(,"class")
+[1] "Globals" "list"   
+
+*** globalsOf(dotdotdot = 'error'):
+Expression 'warn1':
+sum(x, ...)
+
+*** globalsOf(dotdotdot = 'ignore'):
+Expression 'warn2':
+sum(x, ..1, ..2, ..3)
+$sum
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$x
+[1] 3 4
+
+attr(,"where")
+attr(,"where")$sum
+<environment: base>
+
+attr(,"where")$x
+<environment: 0x5632aa8e7270>
+
+attr(,"class")
+[1] "Globals" "list"   
+
+*** globalsOf(dotdotdot = 'return'):
+Expression 'warn2':
+sum(x, ..1, ..2, ..3)
+$sum
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$x
+[1] 3 4
+
+$..1
+[[1]]
+[1] 1
+
+attr(,"class")
+[1] "DotDotDotList" "list"         
+
+$..2
+[[1]]
+[1] 42
+
+attr(,"class")
+[1] "DotDotDotList" "list"         
+
+$..3
+[[1]]
+[1] 3.14
+
+attr(,"class")
+[1] "DotDotDotList" "list"         
+
+attr(,"where")
+attr(,"where")$sum
+<environment: base>
+
+attr(,"where")$x
+<environment: 0x5632aa8e7270>
+
+attr(,"where")$..1
+<environment: 0x5632aa8e7270>
+
+attr(,"where")$..2
+<environment: 0x5632aa8e7270>
+
+attr(,"where")$..3
+<environment: 0x5632aa8e7270>
+
+attr(,"class")
+[1] "Globals" "list"   
+
+*** globalsOf(dotdotdot = 'warning'):
+Expression 'warn2':
+sum(x, ..1, ..2, ..3)
+$sum
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$x
+[1] 3 4
+
+$..1
+[[1]]
+[1] 1
+
+attr(,"class")
+[1] "DotDotDotList" "list"         
+
+$..2
+[[1]]
+[1] 42
+
+attr(,"class")
+[1] "DotDotDotList" "list"         
+
+$..3
+[[1]]
+[1] 3.14
+
+attr(,"class")
+[1] "DotDotDotList" "list"         
+
+attr(,"where")
+attr(,"where")$sum
+<environment: base>
+
+attr(,"where")$x
+<environment: 0x5632aa8e7270>
+
+attr(,"where")$..1
+<environment: 0x5632aa8e7270>
+
+attr(,"where")$..2
+<environment: 0x5632aa8e7270>
+
+attr(,"where")$..3
+<environment: 0x5632aa8e7270>
+
+attr(,"class")
+[1] "Globals" "list"   
+
+*** globalsOf(dotdotdot = 'error'):
+Expression 'warn2':
+sum(x, ..1, ..2, ..3)
+
+*** globalsOf(<exprs>, dotdotdot = 'return'):
+$ok1
+function(...) sum(x, ...)
+
+$ok2
+function(...) sum(x, ..1, ..2, ..3)
+
+$warn1
+sum(x, ...)
+
+$warn2
+sum(x, ..1, ..2, ..3)
+
+$sum
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$x
+[1] 3 4
+
+$...
+$y
+[1] 1
+
+$z
+[1] 42
+
+[[3]]
+[1] 3.14
+
+attr(,"class")
+[1] "DotDotDotList" "list"         
+
+$..1
+[[1]]
+[1] 1
+
+attr(,"class")
+[1] "DotDotDotList" "list"         
+
+$..2
+[[1]]
+[1] 42
+
+attr(,"class")
+[1] "DotDotDotList" "list"         
+
+$..3
+[[1]]
+[1] 3.14
+
+attr(,"class")
+[1] "DotDotDotList" "list"         
+
+attr(,"where")
+attr(,"where")$sum
+<environment: base>
+
+attr(,"where")$x
+<environment: 0x5632aa8e7270>
+
+attr(,"where")$...
+<environment: 0x5632aa8e7270>
+
+attr(,"where")$..1
+<environment: 0x5632aa8e7270>
+
+attr(,"where")$..2
+<environment: 0x5632aa8e7270>
+
+attr(,"where")$..3
+<environment: 0x5632aa8e7270>
+
+attr(,"class")
+[1] "Globals" "list"   
+Warning messages:
+1: <anonymous>: ... may be used in an incorrect context: ‘sum(x, ...)’
+ 
+2: <anonymous>: ..1 may be used in an incorrect context
+ 
+3: <anonymous>: ..2 may be used in an incorrect context
+ 
+4: <anonymous>: ..3 may be used in an incorrect context
+ 
+> message("*** function(x, ...) globalsOf() ... DONE")
+*** function(x, ...) globalsOf() ... DONE
+> 
+> 
+> ## Cleanup
+> source("incl/end.R")
+> 
