@@ -76,10 +76,45 @@ Running test script: ‘/usr/local/lib/R/site-library/globals/testme/test-findGl
 > assert_identical_sets(globals_i, c("{", "<-", "b", 
 +     "c", "d", "+", "a", "e"))
 
-> globals_i <- findGlobals(function() {
+> message(" ** findGlobals(..., method = 'dfs'):")
+ ** findGlobals(..., method = 'dfs'):
+
+> expr <- exprs$A
+
+> print(expr)
+{
+    x <- b
+    b <- 1
+    y <- c
+    z <- d
+    a <- a + 1
+    e <- e()
+}
+
+> globals_t <- findGlobals(expr, method = "dfs")
+
+> print(globals_t)
+[1] "{"  "<-" "b"  "c"  "d"  "a"  "+"  "e" 
+
+> if (getRversion() < "4.0.0") globals_t <- setdiff(globals_t, 
++     c("x", "y", "z"))
+
+> assert_identical_sets(globals_t, c("{", "<-", "b", 
++     "c", "d", "+", "a", "e"))
+
+> fcn <- function() {
 +     a <- a + 1
 +     a
-+ })
++ }
+
+> print(fcn)
+function () 
+{
+    a <- a + 1
+    a
+}
+
+> globals_i <- globals::findGlobals(fcn)
 
 > print(globals_i)
 [1] "{"  "<-" "a"  "+" 
@@ -87,10 +122,27 @@ Running test script: ‘/usr/local/lib/R/site-library/globals/testme/test-findGl
 > assert_identical_sets(globals_i, c("{", "<-", "a", 
 +     "+"))
 
-> globals_i <- findGlobals(function() {
+> globals_t <- findGlobals(fcn, method = "dfs")
+
+> print(globals_t)
+[1] "{"  "<-" "a"  "+" 
+
+> assert_identical_sets(globals_t, c("{", "<-", "a", 
++     "+"))
+
+> fcn <- function() {
 +     a
 +     a <- a + 1
-+ })
++ }
+
+> print(fcn)
+function () 
+{
+    a
+    a <- a + 1
+}
+
+> globals_i <- findGlobals(fcn)
 
 > print(globals_i)
 [1] "{"  "a"  "<-" "+" 
@@ -98,60 +150,185 @@ Running test script: ‘/usr/local/lib/R/site-library/globals/testme/test-findGl
 > assert_identical_sets(globals_i, c("{", "a", "<-", 
 +     "+"))
 
-> globals_i <- findGlobals(function(x) x <- x)
+> globals_t <- findGlobals(fcn, method = "dfs")
+
+> print(globals_t)
+[1] "{"  "a"  "<-" "+" 
+
+> assert_identical_sets(globals_t, c("{", "a", "<-", 
++     "+"))
+
+> fcn <- function(x) x <- x
+
+> print(fcn)
+function (x) 
+x <- x
+
+> globals_i <- findGlobals(fcn)
 
 > print(globals_i)
 [1] "<-"
 
 > assert_identical_sets(globals_i, c("<-"))
 
-> globals_i <- findGlobals(function(x) x[1] <- 0)
+> globals_t <- findGlobals(fcn, method = "dfs")
+
+> print(globals_t)
+[1] "<-"
+
+> assert_identical_sets(globals_t, c("<-"))
+
+> fcn <- function(x) x[1] <- 0
+
+> print(fcn)
+function (x) 
+x[1] <- 0
+
+> globals_i <- findGlobals(fcn)
 
 > print(globals_i)
 [1] "<-"  "["   "[<-"
 
 > assert_identical_sets(globals_i, c("<-", "[", "[<-"))
 
-> globals_i <- findGlobals(function(x) a <- x$a)
+> globals_t <- findGlobals(fcn, method = "dfs")
+
+> print(globals_t)
+[1] "[<-"
+
+> assert_identical_sets(globals_t, c("[<-"))
+
+> fcn <- function(x) a <- x$a
+
+> print(fcn)
+function (x) 
+a <- x$a
+
+> globals_i <- findGlobals(fcn)
 
 > print(globals_i)
 [1] "<-" "$" 
 
 > assert_identical_sets(globals_i, c("<-", "$"))
 
-> globals_i <- findGlobals(function(...) args <- list(...))
+> globals_t <- findGlobals(fcn, method = "dfs")
+
+> print(globals_t)
+[1] "<-" "$" 
+
+> if (getRversion() < "4.0.0") globals_t <- setdiff(globals_t, 
++     "a")
+
+> assert_identical_sets(globals_t, c("<-", "$"))
+
+> fcn <- function(...) args <- list(...)
+
+> print(fcn)
+function (...) 
+args <- list(...)
+
+> globals_i <- findGlobals(fcn)
 
 > print(globals_i)
 [1] "<-"   "list"
 
 > assert_identical_sets(globals_i, c("<-", "list"))
 
-> globals_i <- findGlobals({
+> globals_t <- findGlobals(fcn, method = "dfs")
+
+> print(globals_t)
+[1] "<-"   "list"
+
+> if (getRversion() < "4.0.0") globals_t <- setdiff(globals_t, 
++     "args")
+
+> assert_identical_sets(globals_t, c("<-", "list"))
+
+> fcn <- function() args <- list(...)
+
+> print(fcn)
+function () 
+args <- list(...)
+
+> globals_i <- findGlobals(fcn)
+
+> print(globals_i)
+[1] "<-"   "list" "..." 
+
+> assert_identical_sets(globals_i, c("<-", "list", "..."))
+
+> globals_t <- findGlobals(fcn, method = "dfs")
+
+> print(globals_t)
+[1] "<-"   "list" "..." 
+
+> if (getRversion() < "4.0.0") globals_t <- setdiff(globals_t, 
++     "args")
+
+> assert_identical_sets(globals_t, c("<-", "list", "..."))
+
+> expr <- quote({
 +     function(x) x
 +     x
-+ }, substitute = TRUE)
++ })
+
+> print(expr)
+{
+    function(x) x
+    x
+}
+
+> globals_i <- findGlobals(expr)
 
 > print(globals_i)
 [1] "{" "x"
 
 > assert_identical_sets(globals_i, c("{", "x"))
 
-> globals_i <- findGlobals({
+> globals_t <- findGlobals(expr, method = "dfs")
+
+> print(globals_t)
+[1] "{" "x"
+
+> assert_identical_sets(globals_t, c("{", "x"))
+
+> expr <- quote({
 +     "x" <- 1
 +     x
-+ }, substitute = TRUE)
++ })
+
+> globals_i <- findGlobals(expr)
 
 > print(globals_i)
 [1] "{"  "<-"
 
 > assert_identical_sets(globals_i, c("{", "<-"))
 
-> globals <- findGlobals(list())
+> globals_t <- findGlobals(expr, method = "dfs")
+
+> if (getRversion() < "4.0.0") globals_t <- setdiff(globals_t, 
++     "x")
+
+> print(globals_t)
+[1] "{"  "<-"
+
+> assert_identical_sets(globals_t, c("{", "<-"))
+
+> x <- list()
+
+> globals <- findGlobals(x)
 
 > print(globals)
 character(0)
 
 > assert_identical_sets(globals, character(0))
+
+> globals_t <- findGlobals(x, method = "dfs")
+
+> print(globals_t)
+character(0)
+
+> assert_identical_sets(globals_t, character(0))
 
 > expr <- quote(list())
 
@@ -171,12 +348,28 @@ character(0)
 > assert_identical_sets(globals, c("list", "{", "a", 
 +     "d"))
 
+> globals_t <- findGlobals(expr, method = "dfs")
+
+> print(globals_t)
+[1] "list" "{"    "a"    "d"   
+
+> assert_identical_sets(globals_t, c("list", "{", "a", 
++     "d"))
+
 > globals <- findGlobals(expr, attributes = "abc")
 
 > print(globals)
 [1] "list" "{"    "a"   
 
 > assert_identical_sets(globals, c("list", "{", "a"))
+
+> globals_t <- findGlobals(expr, method = "dfs")
+
+> print(globals_t)
+[1] "list" "{"    "a"    "d"   
+
+> assert_identical_sets(globals_t, c("list", "{", "a", 
++     "d"))
 
 > message(" ** findGlobals(..., tweak):")
  ** findGlobals(..., tweak):
@@ -192,15 +385,47 @@ character(0)
 
 > expr <- exprs$A
 
+> print(expr)
+{
+    x <- b
+    b <- 1
+    y <- c
+    z <- d
+    a <- a + 1
+    e <- e()
+}
+
 > globals_i <- findGlobals(expr, tweak = tweak_another_expression)
 
 > assert_identical_sets(globals_i, c("{", "<-", "B", 
++     "C", "D"))
+
+> globals_t <- findGlobals(expr, tweak = tweak_another_expression, 
++     method = "dfs")
+
+> print(globals_t)
+[1] "{"  "<-" "B"  "C"  "D" 
+
+> if (getRversion() < "4.0.0") globals_t <- setdiff(globals_t, 
++     c("x", "y", "z"))
+
+> assert_identical_sets(globals_t, c("{", "<-", "B", 
 +     "C", "D"))
 
 > message(" ** findGlobals(..., trace = TRUE):")
  ** findGlobals(..., trace = TRUE):
 
 > expr <- exprs$A
+
+> print(expr)
+{
+    x <- b
+    b <- 1
+    y <- c
+    z <- d
+    a <- a + 1
+    e <- e()
+}
 
 > globals_i <- findGlobals(expr, trace = TRUE)
 findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
@@ -236,7 +461,7 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
                      Convert to an anonymous function:
                      function () 
                      b
-                     <environment: 0x55a783dec120>
+                     <environment: 0x55a9e0cbaee0>
                      enter_global(type=‘variable’, v=‘b’) ...
                         before:
                         [1] name  class
@@ -320,7 +545,7 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
                      Convert to an anonymous function:
                      function () 
                      1
-                     <environment: 0x55a78503c4f0>
+                     <environment: 0x55a9deb708b8>
                      variables (with duplicates):
                      [1] name  class
                      <0 rows> (or 0-length row.names)
@@ -377,7 +602,7 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
                      Convert to an anonymous function:
                      function () 
                      c
-                     <environment: 0x55a781d81470>
+                     <environment: 0x55a9e03c29f8>
                      enter_global(type=‘variable’, v=‘c’) ...
                         before:
                         [1] name  class
@@ -461,7 +686,7 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
                      Convert to an anonymous function:
                      function () 
                      d
-                     <environment: 0x55a783ca3bf8>
+                     <environment: 0x55a9e0c92828>
                      enter_global(type=‘variable’, v=‘d’) ...
                         before:
                         [1] name  class
@@ -545,7 +770,7 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
                      Convert to an anonymous function:
                      function () 
                      a + 1
-                     <environment: 0x55a7847bcff0>
+                     <environment: 0x55a9ded23b70>
                      enter_global(type=‘function’, v=‘+’) ...
                         before:
                         [1] name  class
@@ -667,7 +892,7 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
                      Convert to an anonymous function:
                      function () 
                      e()
-                     <environment: 0x55a7839a8258>
+                     <environment: 0x55a9e080dfa0>
                      enter_global(type=‘function’, v=‘e’) ...
                         before:
                         [1] name  class
@@ -772,10 +997,24 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... d
 > assert_identical_sets(globals_i, c("{", "<-", "b", 
 +     "c", "d", "+", "a", "e"))
 
+> globals_t <- findGlobals(expr, method = "dfs")
+
+> print(globals_t)
+[1] "{"  "<-" "b"  "c"  "d"  "a"  "+"  "e" 
+
+> if (getRversion() < "4.0.0") globals_t <- setdiff(globals_t, 
++     c("x", "y", "z"))
+
+> assert_identical_sets(globals_t, c("{", "<-", "b", 
++     "c", "d", "+", "a", "e"))
+
 > message(" ** findGlobals(a <- pkg::a):")
  ** findGlobals(a <- pkg::a):
 
 > expr <- exprs$B
+
+> print(expr)
+a <- pkg::a
 
 > globals_i <- findGlobals(expr)
 
@@ -784,10 +1023,25 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... d
 
 > assert_identical_sets(globals_i, c("<-", "::"))
 
+> globals_t <- findGlobals(expr, method = "dfs")
+
+> print(globals_t)
+[1] "<-" "::"
+
+> if (getRversion() < "4.0.0") globals_t <- setdiff(globals_t, 
++     "a")
+
+> assert_identical_sets(globals_t, c("<-", "::"))
+
 > message(" ** findGlobals(a[1] <- 0) etc.:")
  ** findGlobals(a[1] <- 0) etc.:
 
-> globals_i <- findGlobals(a[1] <- 0, substitute = TRUE)
+> expr <- quote(a[1] <- 0)
+
+> print(expr)
+a[1] <- 0
+
+> globals_i <- findGlobals(expr)
 
 > print(globals_i)
 [1] "<-"  "["   "a"   "[<-"
@@ -797,9 +1051,23 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... d
 > assert_identical_sets(setdiff(globals_i, false_globals), 
 +     c("<-", "a", "[<-"))
 
-> globals_i <- findGlobals({
+> globals_t <- findGlobals(expr, method = "dfs")
+
+> print(globals_t)
+[1] "[<-" "a"  
+
+> assert_identical_sets(globals_t, c("a", "[<-"))
+
+> expr <- quote({
 +     a[1] = 0
-+ }, substitute = TRUE)
++ })
+
+> print(expr)
+{
+    a[1] = 0
+}
+
+> globals_i <- findGlobals(expr)
 
 > print(globals_i)
 [1] "{"   "="   "["   "a"   "[<-"
@@ -809,7 +1077,19 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... d
 > assert_identical_sets(setdiff(globals_i, false_globals), 
 +     c("{", "=", "a", "[<-"))
 
-> globals_i <- findGlobals(a[b <- 1] <- 0, substitute = TRUE)
+> globals_t <- findGlobals(expr, method = "dfs")
+
+> print(globals_t)
+[1] "{"   "[<-" "a"  
+
+> assert_identical_sets(globals_t, c("{", "a", "[<-"))
+
+> expr <- quote(a[b <- 1] <- 0)
+
+> print(expr)
+a[b <- 1] <- 0
+
+> globals_i <- findGlobals(expr)
 
 > print(globals_i)
 [1] "<-"  "["   "a"   "[<-"
@@ -819,7 +1099,22 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... d
 > assert_identical_sets(setdiff(globals_i, false_globals), 
 +     c("<-", "a", "[<-"))
 
-> globals_i <- findGlobals(a[b = 1] <- 0, substitute = TRUE)
+> globals_t <- findGlobals(expr, method = "dfs")
+
+> print(globals_t)
+[1] "[<-" "a"   "<-" 
+
+> if (getRversion() < "4.0.0") globals_t <- setdiff(globals_t, 
++     "b")
+
+> assert_identical_sets(globals_t, c("<-", "a", "[<-"))
+
+> expr <- quote(a[b = 1] <- 0)
+
+> print(expr)
+a[b = 1] <- 0
+
+> globals_i <- findGlobals(expr)
 
 > print(globals_i)
 [1] "<-"  "["   "a"   "[<-"
@@ -829,9 +1124,26 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... d
 > assert_identical_sets(setdiff(globals_i, false_globals), 
 +     c("<-", "a", "[<-"))
 
-> globals_i <- findGlobals({
+> globals_t <- findGlobals(expr, method = "dfs")
+
+> print(globals_t)
+[1] "[<-" "a"  
+
+> if (getRversion() < "4.0.0") globals_t <- setdiff(globals_t, 
++     "b")
+
+> assert_identical_sets(globals_t, c("a", "[<-"))
+
+> expr <- quote({
 +     a[b <- 1] = 0
-+ }, substitute = TRUE)
++ })
+
+> print(expr)
+{
+    a[b <- 1] = 0
+}
+
+> globals_i <- findGlobals(expr)
 
 > print(globals_i)
 [1] "{"   "="   "["   "a"   "<-"  "[<-"
@@ -841,7 +1153,23 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... d
 > assert_identical_sets(setdiff(globals_i, false_globals), 
 +     c("{", "=", "a", "<-", "[<-"))
 
-> globals_i <- findGlobals(a$b <- 0, substitute = TRUE)
+> globals_t <- findGlobals(expr, method = "dfs")
+
+> print(globals_t)
+[1] "{"   "[<-" "a"   "<-" 
+
+> if (getRversion() < "4.0.0") globals_t <- setdiff(globals_t, 
++     "b")
+
+> assert_identical_sets(globals_t, c("{", "a", "<-", 
++     "[<-"))
+
+> expr <- quote(a$b <- 0)
+
+> print(expr)
+a$b <- 0
+
+> globals_i <- findGlobals(expr)
 
 > print(globals_i)
 [1] "<-"  "$"   "a"   "$<-"
@@ -851,9 +1179,23 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... d
 > assert_identical_sets(setdiff(globals_i, false_globals), 
 +     c("<-", "a", "$<-"))
 
-> globals_i <- findGlobals({
+> globals_t <- findGlobals(expr, method = "dfs")
+
+> print(globals_t)
+[1] "$<-" "a"  
+
+> assert_identical_sets(globals_t, c("a", "$<-"))
+
+> expr <- quote({
 +     a$b = 0
-+ }, substitute = TRUE)
++ })
+
+> print(expr)
+{
+    a$b = 0
+}
+
+> globals_i <- findGlobals(expr)
 
 > print(globals_i)
 [1] "{"   "="   "$"   "a"   "$<-"
@@ -863,7 +1205,20 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... d
 > assert_identical_sets(setdiff(globals_i, false_globals), 
 +     c("{", "=", "a", "$<-"))
 
-> globals_i <- findGlobals(names(a) <- "A", substitute = TRUE)
+> globals_t <- findGlobals(expr, method = "dfs")
+
+> print(globals_t)
+[1] "{"   "$<-" "a"  
+
+> assert_identical_sets(setdiff(globals_t, false_globals), 
++     c("{", "a", "$<-"))
+
+> expr <- quote(names(a) <- "A")
+
+> print(expr)
+names(a) <- "A"
+
+> globals_i <- findGlobals(expr)
 
 > print(globals_i)
 [1] "<-"      "names"   "a"       "names<-"
@@ -871,9 +1226,23 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... d
 > assert_identical_sets(globals_i, c("<-", "a", "names", 
 +     "names<-"))
 
-> globals_i <- findGlobals({
+> globals_t <- findGlobals(expr, method = "dfs")
+
+> print(globals_t)
+[1] "names<-" "a"      
+
+> assert_identical_sets(globals_t, c("a", "names<-"))
+
+> expr <- quote({
 +     names(a) = "A"
-+ }, substitute = TRUE)
++ })
+
+> print(expr)
+{
+    names(a) = "A"
+}
+
+> globals_i <- findGlobals(expr)
 
 > print(globals_i)
 [1] "{"       "="       "names"   "a"       "names<-"
@@ -881,7 +1250,19 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... d
 > assert_identical_sets(globals_i, c("{", "=", "a", 
 +     "names", "names<-"))
 
-> globals_i <- findGlobals(names(a)[1] <- "A", substitute = TRUE)
+> globals_t <- findGlobals(expr, method = "dfs")
+
+> print(globals_t)
+[1] "{"       "names<-" "a"      
+
+> assert_identical_sets(globals_t, c("{", "a", "names<-"))
+
+> expr <- quote(names(a)[1] <- "A")
+
+> print(expr)
+names(a)[1] <- "A"
+
+> globals_i <- findGlobals(expr)
 
 > print(globals_i)
 [1] "<-"      "["       "names"   "a"       "[<-"     "names<-"
@@ -891,9 +1272,24 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... d
 > assert_identical_sets(setdiff(globals_i, false_globals), 
 +     c("<-", "a", "names", "names<-"))
 
-> globals_i <- findGlobals({
+> globals_t <- findGlobals(expr, method = "dfs")
+
+> print(globals_t)
+[1] "[<-"     "names<-" "names"   "a"      
+
+> assert_identical_sets(globals_t, c("names<-", "a", 
++     "[<-", "names"))
+
+> expr <- quote({
 +     names(a)[1] = "A"
-+ }, substitute = TRUE)
++ })
+
+> print(expr)
+{
+    names(a)[1] = "A"
+}
+
+> globals_i <- findGlobals(expr)
 
 > print(globals_i)
 [1] "{"       "="       "["       "names"   "a"       "[<-"     "names<-"
@@ -903,19 +1299,76 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... d
 > assert_identical_sets(setdiff(globals_i, false_globals), 
 +     c("{", "=", "a", "names", "names<-"))
 
+> globals_t <- findGlobals(expr, method = "dfs")
+
+> print(globals_t)
+[1] "{"       "[<-"     "names<-" "names"   "a"      
+
+> assert_identical_sets(globals_t, c("{", "names<-", 
++     "a", "[<-", "names"))
+
+> expr <- expression(x)
+
+> print(expr)
+expression(x)
+
+> globals_i <- findGlobals(expr)
+
+> print(globals_i)
+[1] "x"
+
+> assert_identical_sets(globals_i, c("x"))
+
+> globals_t <- findGlobals(expr, method = "dfs")
+
+> print(globals_t)
+[1] "x"
+
+> assert_identical_sets(globals_t, c("x"))
+
+> expr <- expression(x + y)
+
+> print(expr)
+expression(x + y)
+
+> globals_i <- findGlobals(expr)
+
+> print(globals_i)
+[1] "+" "x" "y"
+
+> assert_identical_sets(globals_i, c("+", "x", "y"))
+
+> globals_t <- findGlobals(expr, method = "dfs")
+
+> print(globals_t)
+[1] "+" "x" "y"
+
+> assert_identical_sets(globals_t, c("+", "x", "y"))
+
 > expr <- as.call(list(function(...) GLOBAL, quote(ARG)))
 
-> for (method in c("conservative", "liberal", "ordered")) {
-+     globals_i <- findGlobals(expr, method = method)
-+     print(globals_i)
-+     assert_ .... [TRUNCATED] 
+> print(expr)
+(function (...) 
+GLOBAL)(ARG)
+
+> for (method in c("conservative", "liberal", "ordered", 
++     "dfs")) {
++     message(sprintf("method=%s", sQuote(method)))
++     globals_i <- findG .... [TRUNCATED] 
+method=‘conservative’
 [1] "GLOBAL" "ARG"   
+method=‘liberal’
 [1] "GLOBAL" "ARG"   
+method=‘ordered’
+[1] "GLOBAL" "ARG"   
+method=‘dfs’
 [1] "GLOBAL" "ARG"   
 
-> globals <- findGlobals(quote({
+> expr <- quote({
 +     a * b
-+ }), trace = TRUE)
++ })
+
+> globals <- findGlobals(expr, trace = TRUE)
 findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
    call_find_globals_with_dotdotdot(dotdotdot = ‘warning’) ...
       find_globals_ordered() ...
@@ -997,6 +1450,93 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... d
 
 > assert_identical_sets(globals, c("{", "*", "a", "b"))
 
+> globals_t <- findGlobals(expr, method = "dfs")
+
+> print(globals_t)
+[1] "{" "*" "a" "b"
+
+> assert_identical_sets(globals_t, c("{", "*", "a", 
++     "b"))
+
+> expr <- asS3(methods::getClass("S4")@prototype, complete = FALSE)
+
+> print(expr)
+<object>
+
+> globals <- findGlobals(expr, trace = TRUE)
+findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
+   call_find_globals_with_dotdotdot(dotdotdot = ‘warning’) ...
+      find_globals_ordered() ...
+         type = call
+         Convert to an anonymous function:
+         function () 
+         <object>
+         variables (with duplicates):
+         [1] name  class
+         <0 rows> (or 0-length row.names)
+         variables (no duplicates):
+         [1] name  class
+         <0 rows> (or 0-length row.names)
+      find_globals_ordered() ... done
+      globals: [n=0] 
+   call_find_globals_with_dotdotdot(dotdotdot = ‘warning’) ... done
+findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... done
+
+> print(globals)
+character(0)
+
+> assert_identical_sets(globals, character(0))
+
+> globals_t <- findGlobals(expr, method = "dfs")
+
+> print(globals_t)
+character(0)
+
+> assert_identical_sets(globals, character(0))
+
+> message("*** findGlobals() - multiple 'method's ...")
+*** findGlobals() - multiple 'method's ...
+
+> expr <- quote({
++     a + 1
++     a <- 1
++ })
+
+> globals <- findGlobals(expr, method = c("ordered", 
++     "dfs"))
+
+> print(globals)
+[1] "{"  "+"  "a"  "<-"
+
+> assert_identical_sets(globals, c("{", "+", "a", "<-"))
+
+> expr <- quote({
++     for (x in NULL) NULL
++ })
+
+> globals <- findGlobals(expr, method = c("ordered", 
++     "dfs"))
+
+> print(globals)
+[1] "{"   "for"
+
+> assert_identical_sets(globals, c("{", "for"))
+
+> expr <- quote({
++     for (x in NULL) x
++ })
+
+> globals <- findGlobals(expr, method = c("ordered", 
++     "dfs"))
+
+> print(globals)
+[1] "{"   "for"
+
+> assert_identical_sets(globals, c("{", "for"))
+
+> message("*** findGlobals() - multiple 'method's ... DONE")
+*** findGlobals() - multiple 'method's ... DONE
+
 > message("*** findGlobals() ... DONE")
 *** findGlobals() ... DONE
 Sourcing 5 epilogue scripts ...
@@ -1007,6 +1547,6 @@ Sourcing 5 epilogue scripts ...
 05/05 epilogue script ‘/usr/local/lib/R/site-library/globals/testme/_epilogue/999.detritus-files.R’
 Skipping, because path appears not to be an 'R CMD check' folder: ‘/tmp’
 Sourcing 5 epilogue scripts ... done
-Test time: user.self=0.2s, sys.self=0.008s, elapsed=0.2s, user.child=0s, sys.child=0s
+Test time: user.self=0.3s, sys.self=0.01s, elapsed=0.3s, user.child=0s, sys.child=0s
 Test ‘findGlobals’ ... success
 > 

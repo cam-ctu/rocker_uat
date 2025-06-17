@@ -119,15 +119,15 @@ OK: Residuals appear to be independent and not autocorrelated (p = 0.324).>
 
 Low Correlation
 
- Term  VIF    VIF 95% CI Increased SE Tolerance Tolerance 95% CI
- gear 1.53 [1.19,  2.51]         1.24      0.65     [0.40, 0.84]
+ Term  VIF    VIF 95% CI adj. VIF Tolerance Tolerance 95% CI
+ gear 1.53 [1.19,  2.51]     1.24      0.65     [0.40, 0.84]
 
 Moderate Correlation
 
- Term  VIF    VIF 95% CI Increased SE Tolerance Tolerance 95% CI
-   wt 5.05 [3.21,  8.41]         2.25      0.20     [0.12, 0.31]
-  cyl 5.41 [3.42,  9.04]         2.33      0.18     [0.11, 0.29]
- disp 9.97 [6.08, 16.85]         3.16      0.10     [0.06, 0.16]
+ Term  VIF    VIF 95% CI adj. VIF Tolerance Tolerance 95% CI
+   wt 5.05 [3.21,  8.41]     2.25      0.20     [0.12, 0.31]
+  cyl 5.41 [3.42,  9.04]     2.33      0.18     [0.11, 0.29]
+ disp 9.97 [6.08, 16.85]     3.16      0.10     [0.06, 0.16]
 > 
 > ## Don't show: 
 > if (insight::check_if_installed("see", minimum_version = "0.9.1", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
@@ -467,13 +467,143 @@ Predicted Distribution of Response
 > 
 > 
 > cleanEx()
+> nameEx("check_group_variation")
+> ### * check_group_variation
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: check_group_variation
+> ### Title: Check variables for within- and/or between-group variation
+> ### Aliases: check_group_variation check_group_variation.default
+> ###   check_group_variation.data.frame summary.check_group_variation
+> 
+> ### ** Examples
+> 
+> data(npk)
+> check_group_variation(npk, by = "block")
+Check block variation
+
+Variable | Variation |  Design
+------------------------------
+N        |    within | crossed
+P        |    within | crossed
+K        |    within | crossed
+yield    |      both |        
+> 
+> data(iris)
+> check_group_variation(iris, by = "Species")
+Check Species variation
+
+Variable     | Variation | Design
+---------------------------------
+Sepal.Length |      both |       
+Sepal.Width  |      both |       
+Petal.Length |      both |       
+Petal.Width  |      both |       
+> 
+> data(ChickWeight)
+> check_group_variation(ChickWeight, by = "Chick")
+Check Chick variation
+
+Variable | Variation | Design
+-----------------------------
+weight   |      both |       
+Time     |      both |       
+Diet     |   between |       
+> 
+> # A subset of mlmRev::egsingle
+> egsingle <- data.frame(
++   schoolid = factor(rep(c("2020", "2820"), times = c(18, 6))),
++   lowinc = rep(c(TRUE, FALSE), times = c(18, 6)),
++   childid = factor(rep(
++     c("288643371", "292020281", "292020361", "295341521"),
++     each = 6
++   )),
++   female = rep(c(TRUE, FALSE), each = 12),
++   year = rep(1:6, times = 4),
++   math = c(
++     -3.068, -1.13, -0.921, 0.463, 0.021, 2.035,
++     -2.732, -2.097, -0.988, 0.227, 0.403, 1.623,
++     -2.732, -1.898, -0.921, 0.587, 1.578, 2.3,
++     -2.288, -2.162, -1.631, -1.555, -0.725, 0.097
++   )
++ )
+> 
+> result <- check_group_variation(
++   egsingle,
++   by = c("schoolid", "childid"),
++   include_by = TRUE
++ )
+> result
+Check schoolid variation
+
+Variable | Variation | Design
+-----------------------------
+childid  |      both | nested
+lowinc   |   between | nested
+female   |      both |       
+year     |    within |       
+math     |      both |       
+
+Check childid variation
+
+Variable | Variation | Design
+-----------------------------
+schoolid |   between |       
+lowinc   |   between |       
+female   |   between |       
+year     |    within |       
+math     |      both |       
+> 
+> summary(result)
+Possible heterogeneity bias due to following predictors:
+- childid: math
+  - schoolid: childid, female, math
+> 
+> ## Don't show: 
+> if (insight::check_if_installed("lme4", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ 
++ data(sleepstudy, package = "lme4")
++ check_group_variation(sleepstudy, select = "Days", by = "Subject")
++ 
++ # Or
++ mod <- lme4::lmer(Reaction ~ Days + (Days | Subject), data = sleepstudy)
++ result <- check_group_variation(mod)
++ result
++ 
++ summary(result)
++ ## Don't show: 
++ }) # examplesIf
+> data(sleepstudy, package = "lme4")
+> check_group_variation(sleepstudy, select = "Days", by = "Subject")
+Check Subject variation
+
+Variable | Variation | Design
+-----------------------------
+Days     |    within |       
+> mod <- lme4::lmer(Reaction ~ Days + (Days | Subject), data = sleepstudy)
+> result <- check_group_variation(mod)
+> result
+Check Subject variation
+
+Variable | Variation | Design
+-----------------------------
+Days     |    within |       
+> summary(result)
+No predictor found that could cause heterogeneity bias.
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
 > nameEx("check_heterogeneity_bias")
 > ### * check_heterogeneity_bias
 > 
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: check_heterogeneity_bias
-> ### Title: Check model predictor for heterogeneity bias
+> ### Title: Check model predictor for heterogeneity bias _(Deprecated)_
 > ### Aliases: check_heterogeneity_bias
 > 
 > ### ** Examples
@@ -481,6 +611,8 @@ Predicted Distribution of Response
 > data(iris)
 > iris$ID <- sample(1:4, nrow(iris), replace = TRUE) # fake-ID
 > check_heterogeneity_bias(iris, select = c("Sepal.Length", "Petal.Length"), by = "ID")
+`check_heterogeneity_bias()` is deprecated. Please use
+  `check_group_variation()` instead.
 Possible heterogeneity bias due to following predictors: Sepal.Length, Petal.Length
 > 
 > 
@@ -790,20 +922,9 @@ OK: residuals appear as normally distributed (p = 0.230).
 > data <- mtcars # Size nrow(data) = 32
 > 
 > # For single variables ------------------------------------------------------
-> outliers_list <- check_outliers(data$mpg) # Find outliers
-> outliers_list # Show the row index of the outliers
-OK: No outliers detected.
-- Based on the following method and threshold: zscore_robust (3.291).
-- For variable: data$mpg
-
-> as.numeric(outliers_list) # The object is a binary vector...
- [1] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-> filtered_data <- data[!outliers_list, ] # And can be used to filter a data frame
-> nrow(filtered_data) # New size, 28 (4 outliers removed)
-[1] 32
-> 
 > # Find all observations beyond +/- 2 SD
-> check_outliers(data$mpg, method = "zscore", threshold = 2)
+> outliers_list <- check_outliers(data$mpg, method = "zscore", threshold = 2)
+> outliers_list # Show the row index of the outliers
 2 outliers detected: cases 18, 20.
 - Based on the following method and threshold: zscore (2).
 - For variable: data$mpg.
@@ -816,14 +937,20 @@ $`data$mpg`
 18  18        2.042389
 20  20        2.291272
 
+> as.numeric(outliers_list) # The object is a binary vector...
+ [1] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0
+> filtered_data <- data[!outliers_list, ] # And can be used to filter a data frame
+> nrow(filtered_data) # New size, 30 (2 outliers removed)
+[1] 30
+> 
 > 
 > # For dataframes ------------------------------------------------------
-> check_outliers(data) # It works the same way on data frames
-OK: No outliers detected.
-- Based on the following method and threshold: mahalanobis (31.264).
-- For variables: mpg, cyl, disp, hp, drat, wt, qsec, vs, am, gear, carb
-
-> 
+> check_outliers(data, threshold = 2) # It works the same way on data frames
+32 outliers detected: cases 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
+  14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+  32.
+- Based on the following method and threshold: mahalanobis (2).
+- For variables: mpg, cyl, disp, hp, drat, wt, qsec, vs, am, gear, carb.> 
 > # You can also use multiple methods at once
 > outliers_list <- check_outliers(data, method = c(
 +   "mahalanobis",
@@ -969,7 +1096,7 @@ detaching ‘package:glmmTMB’
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: check_residuals
-> ### Title: Check uniformity of simulated residuals
+> ### Title: Check distribution of simulated quantile residuals
 > ### Aliases: check_residuals check_residuals.default
 > 
 > ### ** Examples
@@ -1005,7 +1132,7 @@ detaching ‘package:DHARMa’
 > 
 > ### Name: check_singularity
 > ### Title: Check mixed models for boundary fits
-> ### Aliases: check_singularity
+> ### Aliases: check_singularity check_singularity.glmmTMB
 > 
 > ### ** Examples
 > 
@@ -1026,7 +1153,10 @@ detaching ‘package:DHARMa’
 +   Reaction ~ Days + (1 | mygrp / mysubgrp) + (1 | Subject),
 +   data = sleepstudy
 + )
++ # any singular fits?
 + check_singularity(model)
++ # singular fit for which particular random effects terms?
++ check_singularity(model, check = "terms")
 + 
 + ## Not run: 
 + ##D # Fixing singularity issues using priors in glmmTMB
@@ -1071,6 +1201,9 @@ Loading required package: glmmTMB
 boundary (singular) fit: see help('isSingular')
 > check_singularity(model)
 [1] TRUE
+> check_singularity(model, check = "terms")
+mysubgrp:mygrp        Subject          mygrp 
+          TRUE          FALSE          FALSE 
 > ## End(Don't show)
 > 
 > 
@@ -2044,6 +2177,84 @@ Summary: model seems to fit well.
 > 
 > 
 > cleanEx()
+> nameEx("performance_reliability")
+> ### * performance_reliability
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: performance_reliability
+> ### Title: Random Effects Reliability
+> ### Aliases: performance_reliability performance_dvour
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (all(insight::check_if_installed(c("lme4", "glmmTMB"), quietly = TRUE))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ url <- "https://raw.githubusercontent.com/easystats/circus/refs/heads/main/data/illusiongame.csv"
++ df <- read.csv(url)
++ 
++ m <- lme4::lmer(RT ~ (1 | Participant), data = df)
++ performance_reliability(m)
++ performance_dvour(m)
++ 
++ m <- glmmTMB::glmmTMB(RT ~ (1 | Participant), data = df)
++ performance_reliability(m)
++ performance_dvour(m)
++ 
++ m <- lme4::lmer(RT ~ (1 | Participant) + (1 | Trial), data = df)
++ performance_reliability(m)
++ performance_dvour(m)
++ 
++ m <- glmmTMB::glmmTMB(RT ~ (1 | Participant) + (1 | Trial), data = df)
++ performance_reliability(m)
++ performance_dvour(m)
++ 
++ ## Don't show: 
++ }) # examplesIf
+> url <- "https://raw.githubusercontent.com/easystats/circus/refs/heads/main/data/illusiongame.csv"
+> df <- read.csv(url)
+> m <- lme4::lmer(RT ~ (1 | Participant), data = df)
+> performance_reliability(m)
+        Group   Parameter Reliability
+1 Participant (Intercept)    0.155448
+> performance_dvour(m)
+        Group   Parameter    D_vour
+1 Participant (Intercept) 0.9781019
+> m <- glmmTMB::glmmTMB(RT ~ (1 | Participant), data = df)
+> performance_reliability(m)
+        Group   Parameter Reliability
+1 Participant (Intercept)   0.1528589
+> performance_dvour(m)
+        Group   Parameter    D_vour
+1 Participant (Intercept) 0.9603575
+> m <- lme4::lmer(RT ~ (1 | Participant) + (1 | Trial), data = df)
+> performance_reliability(m)
+        Group   Parameter Reliability
+1       Trial (Intercept) 0.005897166
+2 Participant (Intercept) 0.156391605
+> performance_dvour(m)
+        Group   Parameter    D_vour
+1 Participant (Intercept) 0.9777044
+2       Trial (Intercept) 0.5664226
+> m <- glmmTMB::glmmTMB(RT ~ (1 | Participant) + (1 | Trial), data = df)
+> performance_reliability(m)
+Cannot extract confidence intervals for random variance parameters from
+  models with more than one grouping factor.
+        Group   Parameter Reliability
+1 Participant (Intercept)  0.15386342
+2       Trial (Intercept)  0.00588784
+> performance_dvour(m)
+Cannot extract confidence intervals for random variance parameters from
+  models with more than one grouping factor.
+        Group   Parameter    D_vour
+1 Participant (Intercept) 0.9604671
+2       Trial (Intercept) 0.5602238
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
 > nameEx("performance_rmse")
 > ### * performance_rmse
 > 
@@ -2481,12 +2692,8 @@ detaching ‘package:rstantools’, ‘package:rstanarm’, ‘package:Rcpp’
 + }
 Loading required package: mlogit
 Loading required package: dfidx
-
-Attaching package: ‘dfidx’
-
-The following object is masked from ‘package:stats’:
-
-    filter
+The tidyverse part of the package is now in the tidydfidx package
+so that the dfidx package now depends only on a small set of packages
 
 McFadden's R2 
       0.17823 
@@ -2884,7 +3091,7 @@ detaching ‘package:mgcv’, ‘package:nlme’, ‘package:lme4’,
 
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  14.541 0.441 14.498 0.001 0.003 
+Time elapsed:  18.36 3.406 18.37 0 0.003 
 > grDevices::dev.off()
 null device 
           1 

@@ -1507,10 +1507,26 @@ Hornet Sportabout 18.7   8  360  5
 > # using strings instead of literal expressions
 > new_efc <- data_modify(
 +   efc,
++   as_expr("c12hour_c = center(c12hour)"),
++   as_expr("c12hour_z = c12hour_c / sd(c12hour, na.rm = TRUE)"),
++   as_expr("c12hour_z2 = standardize(c12hour)")
++ )
+> head(new_efc)
+  c12hour e16sex e42dep c172code neg_c_7 c12hour_c  c12hour_z c12hour_z2
+1      16      2      3        2      12 -69.65306 -1.0466657 -1.0466657
+2     148      2      3        2      20  62.34694  0.9368777  0.9368777
+3      70      2      3        1      11 -15.65306 -0.2352161 -0.2352161
+4      NA      2   <NA>        2      10        NA         NA         NA
+5     168      2      4        2      12  82.34694  1.2374146  1.2374146
+6      16      2      4        2      19 -69.65306 -1.0466657 -1.0466657
+> 
+> # using a character vector, provided a variable
+> xpr <- c(
 +   "c12hour_c = center(c12hour)",
 +   "c12hour_z = c12hour_c / sd(c12hour, na.rm = TRUE)",
 +   "c12hour_z2 = standardize(c12hour)"
 + )
+> new_efc <- data_modify(efc, as_expr(xpr))
 > head(new_efc)
   c12hour e16sex e42dep c172code neg_c_7 c12hour_c  c12hour_z c12hour_z2
 1      16      2      3        2      12 -69.65306 -1.0466657 -1.0466657
@@ -1525,23 +1541,8 @@ Hornet Sportabout 18.7   8  360  5
 > new_efc <- data_modify(
 +   efc,
 +   c12hour_c = center(c12hour),
-+   c12hour_z = stand
++   c12hour_z = as_expr(stand)
 + )
-> head(new_efc)
-  c12hour e16sex e42dep c172code neg_c_7 c12hour_c  c12hour_z
-1      16      2      3        2      12 -69.65306 -1.0466657
-2     148      2      3        2      20  62.34694  0.9368777
-3      70      2      3        1      11 -15.65306 -0.2352161
-4      NA      2   <NA>        2      10        NA         NA
-5     168      2      4        2      12  82.34694  1.2374146
-6      16      2      4        2      19 -69.65306 -1.0466657
-> 
-> # providing expressions as character vector
-> new_exp <- c(
-+   "c12hour_c = center(c12hour)",
-+   "c12hour_z = c12hour_c / sd(c12hour, na.rm = TRUE)"
-+ )
-> new_efc <- data_modify(efc, new_exp)
 > head(new_efc)
   c12hour e16sex e42dep c172code neg_c_7 c12hour_c  c12hour_z
 1      16      2      3        2      12 -69.65306 -1.0466657
@@ -1581,6 +1582,30 @@ Hornet Sportabout 18.7   8  360  5
   ..- attr(*, "robust")= logi FALSE
   ..- attr(*, "label")= chr "average number of hours of care per week"
 > 
+> # using `paste()` to build a string-expression
+> to_standardize <- c("Petal.Length", "Sepal.Length")
+> out <- data_modify(
++   iris,
++   as_expr(
++     paste0(to_standardize, "_stand = standardize(", to_standardize, ")")
++   )
++ )
+> head(out)
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species Petal.Length_stand
+1          5.1         3.5          1.4         0.2  setosa          -1.335752
+2          4.9         3.0          1.4         0.2  setosa          -1.335752
+3          4.7         3.2          1.3         0.2  setosa          -1.392399
+4          4.6         3.1          1.5         0.2  setosa          -1.279104
+5          5.0         3.6          1.4         0.2  setosa          -1.335752
+6          5.4         3.9          1.7         0.4  setosa          -1.165809
+  Sepal.Length_stand
+1         -0.8976739
+2         -1.1392005
+3         -1.3807271
+4         -1.5014904
+5         -1.0184372
+6         -0.5353840
+> 
 > # overwrite existing variable, remove old variable
 > out <- data_modify(iris, Petal.Length = 1 / Sepal.Length, Sepal.Length = NULL)
 > head(out)
@@ -1614,34 +1639,39 @@ Hornet Sportabout 18.7   8  360  5
 6      16      2 4             2      19     -78.0    -1.16      -1.16      5
 > 
 > # works from inside functions
-> foo <- function(data, z) {
-+   head(data_modify(data, z))
+> foo1 <- function(data, ...) {
++   head(data_modify(data, ...))
 + }
-> foo(iris, "var_a = Sepal.Width / 10")
-  Sepal.Length Sepal.Width Petal.Length Petal.Width Species var_a
-1          5.1         3.5          1.4         0.2  setosa  0.35
-2          4.9         3.0          1.4         0.2  setosa  0.30
-3          4.7         3.2          1.3         0.2  setosa  0.32
-4          4.6         3.1          1.5         0.2  setosa  0.31
-5          5.0         3.6          1.4         0.2  setosa  0.36
-6          5.4         3.9          1.7         0.4  setosa  0.39
+> foo1(iris, SW_fraction = Sepal.Width / 10)
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species SW_fraction
+1          5.1         3.5          1.4         0.2  setosa        0.35
+2          4.9         3.0          1.4         0.2  setosa        0.30
+3          4.7         3.2          1.3         0.2  setosa        0.32
+4          4.6         3.1          1.5         0.2  setosa        0.31
+5          5.0         3.6          1.4         0.2  setosa        0.36
+6          5.4         3.9          1.7         0.4  setosa        0.39
+> # or
+> foo1(iris, as_expr("SW_fraction = Sepal.Width / 10"))
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species SW_fraction
+1          5.1         3.5          1.4         0.2  setosa        0.35
+2          4.9         3.0          1.4         0.2  setosa        0.30
+3          4.7         3.2          1.3         0.2  setosa        0.32
+4          4.6         3.1          1.5         0.2  setosa        0.31
+5          5.0         3.6          1.4         0.2  setosa        0.36
+6          5.4         3.9          1.7         0.4  setosa        0.39
 > 
-> new_exp <- c("SW_double = 2 * Sepal.Width", "SW_fraction = SW_double / 10")
-> foo(iris, new_exp)
-  Sepal.Length Sepal.Width Petal.Length Petal.Width Species SW_double
-1          5.1         3.5          1.4         0.2  setosa       7.0
-2          4.9         3.0          1.4         0.2  setosa       6.0
-3          4.7         3.2          1.3         0.2  setosa       6.4
-4          4.6         3.1          1.5         0.2  setosa       6.2
-5          5.0         3.6          1.4         0.2  setosa       7.2
-6          5.4         3.9          1.7         0.4  setosa       7.8
-  SW_fraction
-1        0.70
-2        0.60
-3        0.64
-4        0.62
-5        0.72
-6        0.78
+> # also with string arguments, using `as_expr()`
+> foo2 <- function(data, modification) {
++   head(data_modify(data, as_expr(modification)))
++ }
+> foo2(iris, "SW_fraction = Sepal.Width / 10")
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species SW_fraction
+1          5.1         3.5          1.4         0.2  setosa        0.35
+2          4.9         3.0          1.4         0.2  setosa        0.30
+3          4.7         3.2          1.3         0.2  setosa        0.32
+4          4.6         3.1          1.5         0.2  setosa        0.31
+5          5.0         3.6          1.4         0.2  setosa        0.36
+6          5.4         3.9          1.7         0.4  setosa        0.39
 > 
 > # modify at specific positions or if condition is met
 > d <- iris[1:5, ]
@@ -5282,7 +5312,7 @@ abc abc abc abc
 > cleanEx()
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  6.617 0.358 6.693 0 0 
+Time elapsed:  6.474 0.308 6.484 0 0 
 > grDevices::dev.off()
 null device 
           1 
