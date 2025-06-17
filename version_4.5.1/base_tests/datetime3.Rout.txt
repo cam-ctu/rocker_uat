@@ -1,0 +1,1499 @@
+
+R version 4.5.1 (2025-06-13) -- "Great Square Root"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> ## Date-time regression tests for R >= 4.3.0
+> ## originally added to reg-tests-1d.R
+> 
+> .pt <- proc.time()
+> 
+> tryCmsg <- function(expr) tryCatch(expr, error = conditionMessage) # typically == *$message
+> assertErrV <- function(...) tools::assertError(..., verbose=TRUE)
+> options(warn = max(1, getOption("warn")))
+> 
+> if(!nzchar(Sys.getenv("_R_CHECK_DATETIME3_NO_TZ_"))) withAutoprint({
++   ## For some inter-platform reproducibility, try to set timezone
++   ## even though  Sys.setenv(..) does *NOT* always work
++   myTZ <- "Australia/Melbourne"
++   (TZenvOrig <- Sys.getenv("TZ"))
++   Sys.setenv(TZ = myTZ)
++   Sys.getenv("TZ")
++   TZok <- Sys.getenv("TZ") == myTZ
++   if(!TZok) {
++       print(sessionInfo())
++       warning("'TZ' environment variable could *not* be set on this platform")
++       ## maybe even:  quit("no")
++   }
++ })
+> myTZ <- "Australia/Melbourne"
+> (TZenvOrig <- Sys.getenv("TZ"))
+[1] "Etc/UTC"
+> Sys.setenv(TZ = myTZ)
+> Sys.getenv("TZ")
+[1] "Australia/Melbourne"
+> TZok <- Sys.getenv("TZ") == myTZ
+> if (!TZok) {
++     print(sessionInfo())
++     warning("'TZ' environment variable could *not* be set on this platform")
++ }
+> 
+> ## 0-length Date and POSIX[cl]t:  PR#71290
+> D <- structure(17337, class = "Date") # Sys.Date() of "now"
+> D; D[0]; D[c(1,2,1)] # test printing of NA too
+[1] "2017-06-20"
+Date of length 0
+[1] "2017-06-20" NA           "2017-06-20"
+> stopifnot(identical(capture.output(D[0]), "Date of length 0"))
+> D <- structure(1497973313.62798, class = c("POSIXct", "POSIXt")) # Sys.time()
+> D; D[0]; D[c(1,2,1)] # test printing of NA too
+[1] "2017-06-21 01:41:53 AEST"
+POSIXct of length 0
+[1] "2017-06-21 01:41:53 AEST" NA                        
+[3] "2017-06-21 01:41:53 AEST"
+> stopifnot(identical(capture.output(D[0]), "POSIXct of length 0"))
+> D <- as.POSIXlt(D)
+> D; D[0]; D[c(1,2,1)] # test printing of NA too
+[1] "2017-06-21 01:41:53 AEST"
+POSIXlt of length 0
+[1] "2017-06-21 01:41:53 AEST" NA                        
+[3] "2017-06-21 01:41:53 AEST"
+> stopifnot(identical(capture.output(D[0]), "POSIXlt of length 0"))
+> ## They printed as   '[1] "Date of length 0"'  etc in R < 3.5.0
+> 
+> 
+> ## seq.POSIXt(*, by="n  DSTdays") - PR#17342
+> x <- seq(as.POSIXct("1982-04-15 05:00", tz="US/Central"),
++          as.POSIXct("1994-10-15",       tz="US/Central"), by="360 DSTdays")
+> stopifnot(length(x) == 13, diff((as.numeric(x) - 39600)/86400) == 360)
+> ## length(x) was 1802 and ended in many NA's in R <= 3.4.2
+> 
+> ## print.POSIX[cl]t() - not correctly obeying "max.print" option
+> op <- options(max.print = 50, width = 85)
+> cc <- capture.output(print(dt <- .POSIXct(154e7 + (0:200)*60)))
+> c2 <- capture.output(print(dt, max = 6))
+> writeLines(tail(cc, 4))
+[43] "2018-10-20 13:28:40 AEDT" "2018-10-20 13:29:40 AEDT" "2018-10-20 13:30:40 AEDT"
+[46] "2018-10-20 13:31:40 AEDT" "2018-10-20 13:32:40 AEDT" "2018-10-20 13:33:40 AEDT"
+[49] "2018-10-20 13:34:40 AEDT" "2018-10-20 13:35:40 AEDT"
+ [ reached 'max' / getOption("max.print") -- omitted 151 entries ]
+> writeLines(c2)
+[1] "2018-10-20 12:46:40 AEDT" "2018-10-20 12:47:40 AEDT" "2018-10-20 12:48:40 AEDT"
+[4] "2018-10-20 12:49:40 AEDT" "2018-10-20 12:50:40 AEDT" "2018-10-20 12:51:40 AEDT"
+ [ reached 'max' / getOption("max.print") -- omitted 195 entries ]
+> stopifnot(exprs = {
++     grepl("omitted 151 entries", tail(cc, 1))
++                   !anyDuplicated(tail(cc, 2))
++     grepl("omitted 195 entries", tail(c2, 1))
++ }); options(op)
+> ## the omission had been reported twice because of a typo in R <= 3.5.1
+> 
+> 
+> ## as.Date() from POSIXct and POSIXlt should retain names
+> (ch <- setNames(paste0("1994-10-", 11:15), letters[1:5]))
+           a            b            c            d            e 
+"1994-10-11" "1994-10-12" "1994-10-13" "1994-10-14" "1994-10-15" 
+> d1 <- as.Date(ch, tz = "UTC")
+> ct <- as.POSIXct(ch)
+> d2 <- as.Date(ct, tz = "UTC") # fast path
+> lt <- as.POSIXlt(ch, tz = "UTC")
+> (d3 <- as.Date(lt))
+           a            b            c            d            e 
+"1994-10-11" "1994-10-12" "1994-10-13" "1994-10-14" "1994-10-15" 
+> stopifnot(identical(names(ch), names(d1)),
++           identical(names(ch), names(d2)),
++           identical(names(ch), names(d3)))
+> ## in R <= 4.1.1, names got lost whenever as.Date.POSIXlt() was called
+> 
+> 
+> ## hist() of a single date or date-time
+> dt <- as.POSIXlt("2021-10-13", "UTC")
+> hist(dt,          "secs", plot = FALSE)
+Warning in breaks[-1L] + breaks[-nB] : NAs produced by integer overflow
+> hist(as.Date(dt), "days", plot = FALSE)
+> ## failed in R <= 4.1.2 with Error in seq_len(1L + max(which(breaks < maxx)))
+> 
+> 
+> ## format.POSIX[cl]t() after print.POSIXct()
+> dt <- "2012-12-12 12:12:12"
+> x <- as.POSIXct(dt, tz = "GMT")
+> stopifnot(identical(format(x), dt))
+> op <- options(warn=1)# allow
+> (Sys.t <- Sys.timezone()) # may occasionally warn (and work)
+[1] "Australia/Melbourne"
+> options(op)
+> someCET <- paste("Europe", c("Berlin", "Brussels", "Copenhagen", "Madrid",
++                              "Paris", "Rome", "Vienna", "Zurich"), sep="/")
+> if(Sys.t %in% someCET)
++     stopifnot(identical(print(format(x, tz = "")), "2012-12-12 13:12:12"))
+> ## had failed for almost a month in R-devel & R-patched
+> 
+> 
+> ## as.Date(<nonfinite_POSIXlt>) :
+> D <- .Date(c(7:20)*1000)
+> D[15:18] <- c(Inf, -Inf, NA, NaN); D
+ [1] "1989-03-02" "1991-11-27" "1994-08-23" "1997-05-19" "2000-02-13"
+ [6] "2002-11-09" "2005-08-05" "2008-05-01" "2011-01-26" "2013-10-22"
+[11] "2016-07-18" "2019-04-14" "2022-01-08" "2024-10-04" "Inf"       
+[16] "-Inf"       NA           "NaN"       
+> stopifnot( identical(D, as.Date(as.POSIXlt(D))) )
+> ## non-finite POSIXlt gave all  NA in R <= 4.2.1
+> ##
+> ## POSIX[cl]t: keeping names, also w/ factors; is.finite() ...
+> (D <- setNames(D, LETTERS[seq_along(D)]))
+           A            B            C            D            E            F 
+"1989-03-02" "1991-11-27" "1994-08-23" "1997-05-19" "2000-02-13" "2002-11-09" 
+           G            H            I            J            K            L 
+"2005-08-05" "2008-05-01" "2011-01-26" "2013-10-22" "2016-07-18" "2019-04-14" 
+           M            N            O            P            Q            R 
+"2022-01-08" "2024-10-04"        "Inf"       "-Inf"           NA        "NaN" 
+> fD <- factor(D)
+> stopifnot(exprs = {
++     identical(fD, as.factor(D))
++     identical(names(D), names(fD))
++     ## identical(D, as.Date(fD)) -- FIXME
++     identical(D, as.Date(Dct <- as.POSIXct(D))) # also checks names(.) are kept
++     identical(D, as.Date(Dlt <- as.POSIXlt(D)))
++     identical(as.character(D), as.character(Dlt))
++     identical(      format(D),       format(Dlt) -> frmD)
++     identical(names(D), names(frmD))
++     (DeD <- Dlt == Dct)[ok <- is.finite(D)]
++     identical(is.na(DeD), is.na(D))
++     identical(as.character(D), unname(frmD))
++     identical(unname(ok), is.finite(as.numeric(D)))
++     identical(ok, is.finite(Dct))
++     identical(ok, is.finite(Dlt))     # now works for POSIXlt
++     identical(is.nan(D), is.nan(Dlt))
++     identical(is.infinite(D), is.infinite(Dlt))
++     identical(D == -Inf, Dlt == -Inf)
++ })
+> ## is.finite() now works for POSIXlt
+> 
+> 
+> ## as.POSIX?t(<POSIX?t>, tz=*) now works, too:
+> stopifnot(inherits(Dct, "POSIXct"),
++           inherits(Dlt, "POSIXlt"))
+> Sys.timezone() #  "Australia/Melbourne"   (set above)
+[1] "Australia/Melbourne"
+> mtz <- "Etc/GMT-5" # was UTC-5
+> head(Dct2  <- as.POSIXct(Dct, tz = mtz), 3)
+                        A                         B                         C 
+"1989-03-02 05:00:00 +05" "1991-11-27 05:00:00 +05" "1994-08-23 05:00:00 +05" 
+> head(Dlt2  <- as.POSIXlt(Dlt, tz = mtz), 3) ## these three POSIXlt "are different"
+               A                B                C 
+"1989-03-02 UTC" "1991-11-27 UTC" "1994-08-23 UTC" 
+> head(Dlct2 <- as.POSIXlt(Dct2),          3)
+                        A                         B                         C 
+"1989-03-02 05:00:00 +05" "1991-11-27 05:00:00 +05" "1994-08-23 05:00:00 +05" 
+> head(Dlct  <- as.POSIXlt(Dct) ,          3)
+               A                B                C 
+"1989-03-02 UTC" "1991-11-27 UTC" "1994-08-23 UTC" 
+> no_tz <- function(.) `attr<-`(., "tzone", NULL)
+> stopifnot(exprs = {
++     identical(mtz, attr(Dct2, "tzone"))
++     identical(mtz, attr(Dlt2, "tzone"))
++ 
++     (Dct2 - Dct)[ok] == 0
++     identical(no_tz(Dct2), no_tz(Dct))
++     identical(no_tz(Dlt2), no_tz(Dlt))
++     ## However (!!)
++     (Dct2  - Dct)[ok] == 0
++     ## Have 2 groups" which are "equal":  { Dlt "==" Dlct "==" Dlct2 } and  Dlt2  which differs by 5
++     (Dlt2  - Dlt )[ok] == -5L # !!!
++     (Dlct2 - Dlt )[ok] == 0L
++     (Dlct  - Dlt )[ok] == 0L
++     (Dlct  - Dlt2)[ok] == 5L
++ })
+> ## both methods return(x)ed immediately, when class "matched"
+> op <- options(OutDec = ",") # the "infamous default" in some places should *not* have an effect:
+> xf <- as.POSIXlt(chf <- c("2007-07-27 16:11:03.000002",
++                           "2011-10-01 12:34:56.3",
++                           "2022-10-02 13:14:15.9876543210123456"))
+> dd <- setNames(, c(0:6, 11:15))
+> t(sapply(dd, as.character.POSIXt, x = xf)) # get at most 13 dits after ".", because
+   [,1]                         [,2]                   
+0  "2007-07-27 16:11:03"        "2011-10-01 12:34:56"  
+1  "2007-07-27 16:11:03"        "2011-10-01 12:34:56.3"
+2  "2007-07-27 16:11:03"        "2011-10-01 12:34:56.3"
+3  "2007-07-27 16:11:03"        "2011-10-01 12:34:56.3"
+4  "2007-07-27 16:11:03"        "2011-10-01 12:34:56.3"
+5  "2007-07-27 16:11:03"        "2011-10-01 12:34:56.3"
+6  "2007-07-27 16:11:03.000002" "2011-10-01 12:34:56.3"
+11 "2007-07-27 16:11:03.000002" "2011-10-01 12:34:56.3"
+12 "2007-07-27 16:11:03.000002" "2011-10-01 12:34:56.3"
+13 "2007-07-27 16:11:03.000002" "2011-10-01 12:34:56.3"
+14 "2007-07-27 16:11:03.000002" "2011-10-01 12:34:56.3"
+15 "2007-07-27 16:11:03.000002" "2011-10-01 12:34:56.3"
+   [,3]                               
+0  "2022-10-02 13:14:16"              
+1  "2022-10-02 13:14:16"              
+2  "2022-10-02 13:14:15.99"           
+3  "2022-10-02 13:14:15.988"          
+4  "2022-10-02 13:14:15.9877"         
+5  "2022-10-02 13:14:15.98765"        
+6  "2022-10-02 13:14:15.987654"       
+11 "2022-10-02 13:14:15.98765432101"  
+12 "2022-10-02 13:14:15.987654321012" 
+13 "2022-10-02 13:14:15.9876543210123"
+14 "2022-10-02 13:14:15.9876543210123"
+15 "2022-10-02 13:14:15.9876543210123"
+> as.character(xf[3]$sec) # does get these but not more; hence:
+[1] "15,9876543210123"
+> chf[3] <- sub("3456$", "3", chf[3])
+> stopifnot(exprs = {
++     identical(as.character(xf), chf)
++     identical(as.character(xf, OutDec = ","), sub("[.]", ",", chf))
++     identical(as.character(xf, digits = 5)[-3], sub("[.]00*2$","", chf[-3]))
++ })
+> ## failed for ~ 1 day in R-devel
+> (CharleMagne.crowned <- as.POSIXlt(ISOdate(774,7,10)))
+[1] "774-07-10 12:00:00 GMT"
+> stopifnot(identical(as.character(CharleMagne.crowned),
++                     "774-07-10 12:00:00"))
+> options(op) # reset
+> 
+> 
+> ## as.POSIX[cl]t(<Date>, tz = *)
+> isUTC <- function(tz)
++     switch(tz,
++            "UTC" =, "GMT" = , "Etc/UTC" = , "Etc/GMT" = , "GMT0" = , "GMT+0" = , "GMT-0" = TRUE,
++            FALSE)
+> identical3 <- function(a,b,c) identical(a,b) && identical(b,c)
+> datePOSIXchk <- function(d, tz) {
++     stopifnot(inherits(d, "Date"), is.character(tz))
++     UTC. <- isUTC(tz)
++     ## cat(sprintf("\ntz = '%s'%s, Date = '%s':\n      ------------",
++     ##             tz, if(UTC.)"(= UTC)" else "", paste(format(d), collapse=", ")))
++     PCdate <- as.POSIXct(d, tz = tz); PLpc <- as.POSIXlt(PCdate); PLpcz <- as.POSIXlt(PCdate, tz = tz)
++     PLdate <- as.POSIXlt(d, tz = tz); PCpl <- as.POSIXct(PLdate); PCplz <- as.POSIXct(PLdate, tz = tz)
++     m <- rbind(PLdate = format(PLdate, usetz=TRUE)
++       , PCdate = format(PCdate, usetz=TRUE)
++       , PLpc   = format(PLpc,   usetz=TRUE)
++       , PLpcz  = format(PLpcz,  usetz=TRUE)
++       , PCpl   = format(PCpl,   usetz=TRUE)
++       , PCplz  = format(PCplz,  usetz=TRUE)
++     )
++     colnames(m) <- rep("", ncol(m))
++     print(m[c(1:2,5L), ]) # print() those three which are "typically" different
++     ##
++     diffD <- PLdate - PCdate
++     cat("PLdate - PCdate:", capture.output(diffD[1]), "\n")
++     ##
++     if(length(delta <- unique(diffD)) != 1L) {
++         cat(sprintf("# {unique diffD values} (typically 1), here %d:\n", length(delta)))
++         attributes(delta) <- attributes(diffD) ## class, units
++         print(delta)
++     }
++     stopifnot(exprs = {
++         PLpc == PCdate
++         PLpc == PLpcz
++         ## Not  identical3(PCdate, PLpc, PLpcz), but identically formatted:
++         identical3(m["PCdate",], m["PLpc",], m["PLpcz",])
++         ##
++         identical(PCpl, PCplz) # and typically *not* identical to  PLdate, but still equal:
++         PCpl == PLdate
++         ##
++         PLdate - PLpc  == diffD
++         PLdate - PLpcz == diffD
++         PCpl  - PCdate == diffD
++         PCplz - PCdate == diffD
++     })
++     if(UTC.) ## UTC-equivalent timezone
++         stopifnot(exprs = {
++             delta == 0
++             ## and the two groups (of 3 each) are equal, too
++             PLdate == PCdate
++         })
++ }
+> ##
+> d1 <- as.Date(c("2000-02-29", "2001-04-01"))
+> otz <- OlsonNames()
+> 
+> ## BST is a deliberate unknown: most platforms would use UTC, some warning
+> ##   (see ?Sys.timezone).
+> ## EST5EDT is a legacy non-continent/ocean name
+> ## Europe/Dublin is unusual as it has 'winter time' not DST with
+> ##   'Irish Standard Time' being used in summer (at least in 2022)
+> ## Europe/Kyiv became a primary name in Aug 2022.
+> ## 'Time difference quoted here is from UTC aka GMT, in hours.
+> for(tz in c("GMT", "EST5EDT", "BST", "Pacific/Auckland",
++             "Africa/Cairo", "Asia/Jerusalem ", "America/Jamaica",
++             "Africa/Conakry", "Asia/Calcutta", "Asia/Seoul", "Asia/Shanghai",
++             "Asia/Tokyo", "Canada/Newfoundland", "Europe/Dublin",
++             "Europe/Vienna", "Europe/Kyiv", "Europe/Moscow")) {
++     cat("\n")
++     if(!(tz %in% otz)) {
++         cat(tz, "is not in this platform's OlsonNames()\n")
++         next
++     }
++     cat("Using", sQuote(tz), "\n")
++     datePOSIXchk(d1, tz)
++ }
+
+Using 'GMT' 
+                                        
+PLdate "2000-02-29 GMT" "2001-04-01 GMT"
+PCdate "2000-02-29 GMT" "2001-04-01 GMT"
+PCpl   "2000-02-29 GMT" "2001-04-01 GMT"
+PLdate - PCdate: Time difference of 0 secs 
+
+Using 'EST5EDT' 
+                                                          
+PLdate "2000-02-29 EST5EDT"      "2001-04-01 EST5EDT"     
+PCdate "2000-02-28 19:00:00 EST" "2001-03-31 19:00:00 EST"
+PCpl   "2000-02-29 EST"          "2001-04-01 EST"         
+PLdate - PCdate: Time difference of 5 hours 
+
+BST is not in this platform's OlsonNames()
+
+Using 'Pacific/Auckland' 
+                                                                  
+PLdate "2000-02-29 Pacific/Auckland" "2001-04-01 Pacific/Auckland"
+PCdate "2000-02-29 13:00:00 NZDT"    "2001-04-01 12:00:00 NZST"   
+PCpl   "2000-02-29 01:00:00 NZDT"    "2001-04-01 00:00:00 NZST"   
+PLdate - PCdate: Time difference of -12 hours 
+
+Using 'Africa/Cairo' 
+                                                          
+PLdate "2000-02-29 Africa/Cairo" "2001-04-01 Africa/Cairo"
+PCdate "2000-02-29 02:00:00 EET" "2001-04-01 02:00:00 EET"
+PCpl   "2000-02-29 EET"          "2001-04-01 EET"         
+PLdate - PCdate: Time difference of -2 hours 
+
+Asia/Jerusalem  is not in this platform's OlsonNames()
+
+Using 'America/Jamaica' 
+                                                                
+PLdate "2000-02-29 America/Jamaica" "2001-04-01 America/Jamaica"
+PCdate "2000-02-28 19:00:00 EST"    "2001-03-31 19:00:00 EST"   
+PCpl   "2000-02-29 EST"             "2001-04-01 EST"            
+PLdate - PCdate: Time difference of 5 hours 
+
+Using 'Africa/Conakry' 
+                                                              
+PLdate "2000-02-29 Africa/Conakry" "2001-04-01 Africa/Conakry"
+PCdate "2000-02-29 GMT"            "2001-04-01 GMT"           
+PCpl   "2000-02-29 GMT"            "2001-04-01 GMT"           
+PLdate - PCdate: Time difference of 0 secs 
+
+Asia/Calcutta is not in this platform's OlsonNames()
+
+Using 'Asia/Seoul' 
+                                                          
+PLdate "2000-02-29 Asia/Seoul"   "2001-04-01 Asia/Seoul"  
+PCdate "2000-02-29 09:00:00 KST" "2001-04-01 09:00:00 KST"
+PCpl   "2000-02-29 KST"          "2001-04-01 KST"         
+PLdate - PCdate: Time difference of -9 hours 
+
+Using 'Asia/Shanghai' 
+                                                            
+PLdate "2000-02-29 Asia/Shanghai" "2001-04-01 Asia/Shanghai"
+PCdate "2000-02-29 08:00:00 CST"  "2001-04-01 08:00:00 CST" 
+PCpl   "2000-02-29 CST"           "2001-04-01 CST"          
+PLdate - PCdate: Time difference of -8 hours 
+
+Using 'Asia/Tokyo' 
+                                                          
+PLdate "2000-02-29 Asia/Tokyo"   "2001-04-01 Asia/Tokyo"  
+PCdate "2000-02-29 09:00:00 JST" "2001-04-01 09:00:00 JST"
+PCpl   "2000-02-29 JST"          "2001-04-01 JST"         
+PLdate - PCdate: Time difference of -9 hours 
+
+Canada/Newfoundland is not in this platform's OlsonNames()
+
+Using 'Europe/Dublin' 
+                                                            
+PLdate "2000-02-29 Europe/Dublin" "2001-04-01 Europe/Dublin"
+PCdate "2000-02-29 00:00:00 GMT"  "2001-04-01 01:00:00 IST" 
+PCpl   "2000-02-29 00:00:00 GMT"  "2001-04-01 01:00:00 IST" 
+PLdate - PCdate: Time difference of 0 secs 
+
+Using 'Europe/Vienna' 
+                                                            
+PLdate "2000-02-29 Europe/Vienna" "2001-04-01 Europe/Vienna"
+PCdate "2000-02-29 01:00:00 CET"  "2001-04-01 02:00:00 CEST"
+PCpl   "2000-02-29 00:00:00 CET"  "2001-04-01 01:00:00 CEST"
+PLdate - PCdate: Time difference of -1 hours 
+
+Using 'Europe/Kyiv' 
+                                                           
+PLdate "2000-02-29 Europe/Kyiv"  "2001-04-01 Europe/Kyiv"  
+PCdate "2000-02-29 02:00:00 EET" "2001-04-01 03:00:00 EEST"
+PCpl   "2000-02-29 00:00:00 EET" "2001-04-01 01:00:00 EEST"
+PLdate - PCdate: Time difference of -2 hours 
+
+Using 'Europe/Moscow' 
+                                                            
+PLdate "2000-02-29 Europe/Moscow" "2001-04-01 Europe/Moscow"
+PCdate "2000-02-29 03:00:00 MSK"  "2001-04-01 04:00:00 MSD" 
+PCpl   "2000-02-29 00:00:00 MSK"  "2001-04-01 01:00:00 MSD" 
+PLdate - PCdate: Time difference of -3 hours 
+> ## several of the identities datePOSIXchk() failed in R <= 4.2.x
+> ## unnecessarily passing 'origin'
+> ct <- as.POSIXct(.Date(19000), origin="1970-01-01")
+> stopifnot(identical(as.Date(ct), .Date(19000)))
+> ## as.POSIXct.Date() passed on 'origin' raising an error for ~25 hours
+> 
+> ## as.POSIXct.default() dealing with an *extraneous*  origin = ".."
+> (D <- .Date(19000))
+[1] "2022-01-08"
+> ## NB: The following depends on the timezone, see Sys.timezone() above
+> cE <- as.POSIXct(D, tz="EST")
+> lE <- as.POSIXlt(D, tz="EST")
+> ct   <- as.POSIXct(cE)
+> ct50 <- as.POSIXct(cE, origin="1950-1-1", tz = "NZ") ## <-- failed for 1.5 days
+> lt50 <- as.POSIXlt(lE, origin="1950-1-1", tz = "NZ") ##   (ditto)
+> stopifnot(exprs = {
++     identical(ct, structure(1641600000, class = c("POSIXct", "POSIXt"), tzone = "EST")) # no tzone in R <= 4.2.x
++     identical(ct, cE)
++     identical(ct50, `attr<-`(ct, "tzone", "NZ")) # ct50 had no "tzone"        in R <= 4.2.x
++     identical(lt50, `attr<-`(lE, "tzone", "NZ")) # lt50 had     tzone = "UTC" in R <= 4.2.x
++     identical(as.character(lE), "2022-01-08")
++ })
+> ## worked (but partly  differently!) in R <= 4.2.x
+> 
+> 
+> ## as.POSIXct(<numeric>) & as.POSIXlt(*) :
+> for(nr in list(1234, -1:1, -1000, NA, c(NaN, 1, -Inf, Inf),
++                -2^(20:33), 2^(20:33)))
++     for(tz in c("", "GMT", "NZ", "Pacific/Fiji")) {
++         cat("testing in", sQuote(tz),"\n")
++         n <- as.numeric(nr)
++         stopifnot(identical(n, as.numeric(print(as.POSIXct(nr, tz=tz)))),
++                   identical(n, as.numeric(      as.POSIXlt(nr, tz=tz))))
++     }
+testing in '' 
+[1] "1970-01-01 10:20:34 AEST"
+testing in 'GMT' 
+[1] "1970-01-01 00:20:34 GMT"
+testing in 'NZ' 
+[1] "1970-01-01 00:20:34"
+testing in 'Pacific/Fiji' 
+[1] "1970-01-01 12:20:34 +12"
+testing in '' 
+[1] "1970-01-01 09:59:59 AEST" "1970-01-01 10:00:00 AEST"
+[3] "1970-01-01 10:00:01 AEST"
+testing in 'GMT' 
+[1] "1969-12-31 23:59:59 GMT" "1970-01-01 00:00:00 GMT"
+[3] "1970-01-01 00:00:01 GMT"
+testing in 'NZ' 
+[1] "1969-12-31 23:59:59" "1970-01-01 00:00:00" "1970-01-01 00:00:01"
+testing in 'Pacific/Fiji' 
+[1] "1970-01-01 11:59:59 +12" "1970-01-01 12:00:00 +12"
+[3] "1970-01-01 12:00:01 +12"
+testing in '' 
+[1] "1970-01-01 09:43:20 AEST"
+testing in 'GMT' 
+[1] "1969-12-31 23:43:20 GMT"
+testing in 'NZ' 
+[1] "1969-12-31 23:43:20"
+testing in 'Pacific/Fiji' 
+[1] "1970-01-01 11:43:20 +12"
+testing in '' 
+[1] NA
+testing in 'GMT' 
+[1] NA
+testing in 'NZ' 
+[1] NA
+testing in 'Pacific/Fiji' 
+[1] NA
+testing in '' 
+[1] "NaN"                      "1970-01-01 10:00:01 AEST"
+[3] "-Inf"                     "Inf"                     
+testing in 'GMT' 
+[1] "NaN"                     "1970-01-01 00:00:01 GMT"
+[3] "-Inf"                    "Inf"                    
+testing in 'NZ' 
+[1] "NaN"                 "1970-01-01 00:00:01" "-Inf"               
+[4] "Inf"                
+testing in 'Pacific/Fiji' 
+[1] "NaN"                     "1970-01-01 12:00:01 +12"
+[3] "-Inf"                    "Inf"                    
+testing in '' 
+ [1] "1969-12-20 06:43:44 AEST" "1969-12-08 03:27:28 AEST"
+ [3] "1969-11-13 20:54:56 AEST" "1969-09-26 07:49:52 AEST"
+ [5] "1969-06-21 05:39:44 AEST" "1968-12-09 01:19:28 AEST"
+ [7] "1967-11-16 16:38:56 AEST" "1965-09-30 23:17:52 AEST"
+ [9] "1961-06-30 12:35:44 AEST" "1952-12-27 15:11:28 AEST"
+[11] "1935-12-23 20:22:56 AEST" "1901-12-14 06:45:52 AEST"
+[13] "1833-11-25 03:11:36 LMT"  "1697-10-17 20:43:20 LMT" 
+testing in 'GMT' 
+ [1] "1969-12-19 20:43:44 GMT" "1969-12-07 17:27:28 GMT"
+ [3] "1969-11-13 10:54:56 GMT" "1969-09-25 21:49:52 GMT"
+ [5] "1969-06-20 19:39:44 GMT" "1968-12-08 15:19:28 GMT"
+ [7] "1967-11-16 06:38:56 GMT" "1965-09-30 13:17:52 GMT"
+ [9] "1961-06-30 02:35:44 GMT" "1952-12-27 05:11:28 GMT"
+[11] "1935-12-23 10:22:56 GMT" "1901-12-13 20:45:52 GMT"
+[13] "1833-11-24 17:31:44 GMT" "1697-10-17 11:03:28 GMT"
+testing in 'NZ' 
+ [1] "1969-12-19 20:43:44" "1969-12-07 17:27:28" "1969-11-13 10:54:56"
+ [4] "1969-09-25 21:49:52" "1969-06-20 19:39:44" "1968-12-08 15:19:28"
+ [7] "1967-11-16 06:38:56" "1965-09-30 13:17:52" "1961-06-30 02:35:44"
+[10] "1952-12-27 05:11:28" "1935-12-23 10:22:56" "1901-12-13 20:45:52"
+[13] "1833-11-24 17:31:44" "1697-10-17 11:03:28"
+testing in 'Pacific/Fiji' 
+ [1] "1969-12-20 08:43:44 +12" "1969-12-08 05:27:28 +12"
+ [3] "1969-11-13 22:54:56 +12" "1969-09-26 09:49:52 +12"
+ [5] "1969-06-21 07:39:44 +12" "1968-12-09 03:19:28 +12"
+ [7] "1967-11-16 18:38:56 +12" "1965-10-01 01:17:52 +12"
+ [9] "1961-06-30 14:35:44 +12" "1952-12-27 17:11:28 +12"
+[11] "1935-12-23 22:22:56 +12" "1901-12-14 08:41:36 LMT"
+[13] "1833-11-25 05:27:28 LMT" "1697-10-17 22:59:12 LMT"
+testing in '' 
+ [1] "1970-01-13 13:16:16 AEST" "1970-01-25 16:32:32 AEST"
+ [3] "1970-02-18 23:05:04 AEST" "1970-04-08 12:10:08 AEST"
+ [5] "1970-07-14 14:20:16 AEST" "1971-01-24 18:40:32 AEST"
+ [7] "1972-02-17 04:21:04 AEDT" "1974-04-03 20:42:08 AEST"
+ [9] "1978-07-05 07:24:16 AEST" "1987-01-06 05:48:32 AEDT"
+[11] "2004-01-11 00:37:04 AEDT" "2038-01-19 14:14:08 AEDT"
+[13] "2106-02-07 17:28:16 AEDT" "2242-03-16 23:56:32 AEDT"
+testing in 'GMT' 
+ [1] "1970-01-13 03:16:16 GMT" "1970-01-25 06:32:32 GMT"
+ [3] "1970-02-18 13:05:04 GMT" "1970-04-08 02:10:08 GMT"
+ [5] "1970-07-14 04:20:16 GMT" "1971-01-24 08:40:32 GMT"
+ [7] "1972-02-16 17:21:04 GMT" "1974-04-03 10:42:08 GMT"
+ [9] "1978-07-04 21:24:16 GMT" "1987-01-05 18:48:32 GMT"
+[11] "2004-01-10 13:37:04 GMT" "2038-01-19 03:14:08 GMT"
+[13] "2106-02-07 06:28:16 GMT" "2242-03-16 12:56:32 GMT"
+testing in 'NZ' 
+ [1] "1970-01-13 03:16:16" "1970-01-25 06:32:32" "1970-02-18 13:05:04"
+ [4] "1970-04-08 02:10:08" "1970-07-14 04:20:16" "1971-01-24 08:40:32"
+ [7] "1972-02-16 17:21:04" "1974-04-03 10:42:08" "1978-07-04 21:24:16"
+[10] "1987-01-05 18:48:32" "2004-01-10 13:37:04" "2038-01-19 03:14:08"
+[13] "2106-02-07 06:28:16" "2242-03-16 12:56:32"
+testing in 'Pacific/Fiji' 
+ [1] "1970-01-13 15:16:16 +12" "1970-01-25 18:32:32 +12"
+ [3] "1970-02-19 01:05:04 +12" "1970-04-08 14:10:08 +12"
+ [5] "1970-07-14 16:20:16 +12" "1971-01-24 20:40:32 +12"
+ [7] "1972-02-17 05:21:04 +12" "1974-04-03 22:42:08 +12"
+ [9] "1978-07-05 09:24:16 +12" "1987-01-06 06:48:32 +12"
+[11] "2004-01-11 01:37:04 +12" "2038-01-19 15:14:08 +12"
+[13] "2106-02-07 18:28:16 +12" "2242-03-17 00:56:32 +12"
+> ## did not work without specifying 'origin'  in  R <= 4.2.x
+> 
+> 
+> ## small options("scipen") producing exponential format
+> cdt <- "2007-07-27 16:11:00.000000000000006"; (dt <- as.POSIXlt(cdt))
+[1] "2007-07-27 16:11:00 AEST"
+> op <- options(scipen = 0, OutDec = ",")
+> cbind(ccdt <- c(as.character(dt), as.character(dt, digits=15)))
+     [,1]                                 
+[1,] "2007-07-27 16:11:00.00000000000001" 
+[2,] "2007-07-27 16:11:00.000000000000006"
+> stopifnot(grepl(":00\\.0{13}", ccdt), getOption("OutDec") == ",")
+> cdt == ccdt[2] # TRUE on all platforms?
+[1] TRUE
+> options(op)# reset
+> ## accidentally used exponential format (and changed OutDec opt) for a while
+> 
+> 
+> ## as.Date(.) now also takes default origin 1970-1-1:
+> stopifnot(exprs = {
++   identical(D1 <- as.Date(20000), as.Date(20000, origin = "1970-01-01"))
++   inherits(D1, "Date")
++   identical(as.character(D1), "2024-10-04")
++   inherits(D2 <- as.Date(20000, origin="1960-1-1"), "Date")
++   D2 + 3653 == D1
++   identical(c(D2,D1), seq(D2, length.out=2, by = "10 years"))
++ })
+> ## 'origin' was not optional in R <= 4.2.x
+> 
+> 
+> ## length(<ragged POSIXlt>)
+> ## Ex. of "partially filled" with NA's, *not* evenly recycling, out-of-range, fractional sec
+> ## However, isdst is not known and depends on the time zone.
+> ## Using -1L says so: 1L failed in time zones without DST on glibc.
+> ## NB: this has only 9 elements
+> dlt <- .POSIXlt(list(sec = c(-999, 10000 + c(1:10,-Inf, NA)) + pi,
++                      min = 45L, hour = c(21L, 3L, NA, 4L),
++                      mday = 6L, mon  = c(0:11, NA, 1:2),
++                      year = 116L, wday = 2L, yday = 340L, isdst = -1L))
+> f1 <- format(dlt[1], "%Y-%m-%d %H:%M:%OS3") # PR#18448
+> stopifnot(f1 == "2016-01-06 21:28:24.141")  # gave "... 21:28:-995.858" in R <= 4.2.2
+> dct   <- as.POSIXct(dlt)
+> dltN  <- as.POSIXlt(dct) # "normalized POSIXlt" (with *lost* accuracy), but *added* tz-info:
+> data.frame(unclass(dltN)); str(attributes(dltN)[-1], no.list=TRUE)
+        sec min hour mday mon year wday yday isdst zone gmtoff
+1  24.14159  28   21    6   0  116    3    5     1 AEDT  39600
+2  44.14159  31    6    6   1  116    6   36     1 AEDT  39600
+3        NA  NA   NA   NA  NA   NA   NA   NA    -1          NA
+4  46.14159  31    7    6   3  116    3   96     0 AEST  36000
+5  47.14159  31    0    7   4  116    6  127     0 AEST  36000
+6  48.14159  31    6    6   5  116    1  157     0 AEST  36000
+7        NA  NA   NA   NA  NA   NA   NA   NA    -1          NA
+8  50.14159  31    7    6   7  116    6  218     0 AEST  36000
+9  51.14159  31    0    7   8  116    3  250     0 AEST  36000
+10 52.14159  31    6    6   9  116    4  279     1 AEDT  39600
+11       NA  NA   NA   NA  NA   NA   NA   NA    -1          NA
+12     -Inf  NA   NA   NA  NA   NA   NA   NA    -1          NA
+13       NA  NA   NA   NA  NA   NA   NA   NA    -1          NA
+14 24.14159  28    3    6   1  116    6   36     1 AEDT  39600
+15       NA  NA   NA   NA  NA   NA   NA   NA    -1          NA
+ $ class   : chr [1:2] "POSIXlt" "POSIXt"
+ $ tzone   : chr [1:3] "Australia/Melbourne" "AEST" "AEDT"
+ $ balanced: logi TRUE
+> dltv2 <- local({ x <- dltN
++     length(x$min ) <- 4; length(x$hour) <- 4; length(x$mday ) <- 2
++     length(x$mon ) <- 9; length(x$year) <- 5; length(x$isdst) <- 1
++     length(x$yday) <- 1; length(x$wday) <- 1; length(x$ zone) <- 1; length(x$gmtoff) <- 1
++     x })
+> dltm3 <- dlt; dltm3$mon <- c(11L, NA, 3L)
+> dltI  <- dltm3; dltI$sec <- c(-Inf, 0:2, NaN, NA, Inf)
+> c((n <- length(dlt)), (n2 <- length(dltv2)), (n3 <- length(dltm3)))
+[1] 15 15 13
+> stopifnot(n == 15L, n2 == 15L, n3 == 13L)
+> ## always returned  length(*$sec)  in R <= 4.2.x
+> ## smallest possible lt which shows format.POSIXlt() bug :
+> lt. <- local({ l <- 1L
++     .POSIXlt(list(sec = -Inf, min = l, hour = l, mday = l,
++                   mon = l, year = l, wday = l, yday = l, isdst = l))
++ })
+> stopifnot(format(lt.) == "-Inf")# was NA, which is wrong after allowing non-finite
+> ltI <- .POSIXlt(list(sec = c(-Inf, 0, NaN, NA, Inf), min = 45L, hour = 21L, mday = 6L,
++                      mon = 0:11, year = 116L, wday = 2L, yday = 340L, isdst = 1L))
+> ctI  <- as.POSIXct(ltI) # typically differs from
+> ctIu <- as.POSIXct(ltI, "UTC")
+> stopifnot(identical3(format(ctIu), format(as.POSIXlt(ctIu)), format(balancePOSIXlt(ltI))))
+> ##
+> ##  More dealing with such ragged out-of-range POSIXlt:
+> ##  (with console output, if only to compare platform dependencies)
+> dctm3  <- as.POSIXct(dltm3)
+> dltNm3 <- as.POSIXlt(dctm3)
+> data.frame(unclass(dltN))
+        sec min hour mday mon year wday yday isdst zone gmtoff
+1  24.14159  28   21    6   0  116    3    5     1 AEDT  39600
+2  44.14159  31    6    6   1  116    6   36     1 AEDT  39600
+3        NA  NA   NA   NA  NA   NA   NA   NA    -1          NA
+4  46.14159  31    7    6   3  116    3   96     0 AEST  36000
+5  47.14159  31    0    7   4  116    6  127     0 AEST  36000
+6  48.14159  31    6    6   5  116    1  157     0 AEST  36000
+7        NA  NA   NA   NA  NA   NA   NA   NA    -1          NA
+8  50.14159  31    7    6   7  116    6  218     0 AEST  36000
+9  51.14159  31    0    7   8  116    3  250     0 AEST  36000
+10 52.14159  31    6    6   9  116    4  279     1 AEDT  39600
+11       NA  NA   NA   NA  NA   NA   NA   NA    -1          NA
+12     -Inf  NA   NA   NA  NA   NA   NA   NA    -1          NA
+13       NA  NA   NA   NA  NA   NA   NA   NA    -1          NA
+14 24.14159  28    3    6   1  116    6   36     1 AEDT  39600
+15       NA  NA   NA   NA  NA   NA   NA   NA    -1          NA
+> ##' For a POSIXlt, check if it is "ragged"
+> is.raggedPOSIXlt <- function(x) { stopifnot(inherits(x,"POSIXlt"))
++     n <- lengths(unclass(x)); any(n[[1]] != n) }
+> ##' create "normalized" POSIXlt *not* losing fractional seconds accuracy
+> .POSIXltNormalize <- function(x, tz="UTC") { ## for some tz="UTC" is needed, for others tz=""
++     stopifnot(is.numeric(s <- x$sec))
++     tzA <- attr(x, "tzone")
++     n <- length(ct <- as.POSIXct(x, tz=tz))
++     x <- as.POSIXlt(ct) # and restore "tzone" attrib. & the precise seconds (recycling carefully!)
++     ifin <- is.finite(s <- rep_len(s, n)) & is.finite(x$sec)
++     x$sec[ifin] <- s[ifin] %% 60
++     if(!is.null(tzA)) attr(x, "tzone") <- tzA
++     x
++ }
+> dlt2N   <- .POSIXltNormalize(dlt, tz="") # normalized POSIXlt - with accuracy kept
+> dlt2Nu  <- .POSIXltNormalize(dlt)        # (ditto; in "UTC")
+> dlt2Nm3 <- .POSIXltNormalize(dltm3, tz="")
+> all.equal(dlt2N  $sec, dltN  $sec, tolerance = 0) # .. small (2e-9) difference
+[1] "Mean relative difference: 2.031642e-09"
+> all.equal(dlt2Nm3$sec, dltNm3$sec, tolerance = 0) # .. (ditto, slightly different)
+[1] "Mean relative difference: 1.971569e-09"
+> ## new balancePOSIXlt() :
+> ## Should be identity when a POSIXlt is already balanced:
+> (lt1 <- as.POSIXlt(ch <- "2001-02-03 04:05")) # "... AEDT" (Southern Summer)
+[1] "2001-02-03 04:05:00 AEDT"
+> stopifnot(identical(lt1, balancePOSIXlt(lt1)))
+> ## failed initially
+> ## The hard cases from above:
+> dltB   <- balancePOSIXlt(dlt)
+> dltv2B <- balancePOSIXlt(dltv2)
+> dltBm3 <- balancePOSIXlt(dltm3)
+> dltL <- unclass(dltB)
+> data.frame(dltL)
+        sec min hour mday mon year wday yday isdst
+1  24.14159  28   21    6   0  116    3    5    -1
+2  44.14159  31    6    6   1  116    6   36    -1
+3        NA  NA   NA   NA  NA   NA   NA   NA    -1
+4  46.14159  31    7    6   3  116    3   96    -1
+5  47.14159  31    0    7   4  116    6  127    -1
+6  48.14159  31    6    6   5  116    1  157    -1
+7        NA  NA   NA   NA  NA   NA   NA   NA    -1
+8  50.14159  31    7    6   7  116    6  218    -1
+9  51.14159  31    0    7   8  116    3  250    -1
+10 52.14159  31    6    6   9  116    4  279    -1
+11       NA  NA   NA   NA  NA   NA   NA   NA    -1
+12     -Inf  NA   NA   NA  NA   NA   NA   NA    -1
+13       NA  NA   NA   NA  NA   NA   NA   NA    -1
+14 24.14159  28    3    6   1  116    6   36    -1
+15       NA  NA   NA   NA  NA   NA   NA   NA    -1
+> stopifnot(exprs = {
++     is.list(dltL)
++     lengths(dltL) == n
++     identical(dltL, balancePOSIXlt(dlt, class=FALSE))
++     is.raggedPOSIXlt(dlt)
++     is.raggedPOSIXlt(dltv2)
++     is.raggedPOSIXlt(dltm3)
++    !is.raggedPOSIXlt(dltN)
++    !is.raggedPOSIXlt(dlt2N)
++    !is.raggedPOSIXlt(dlt2Nm3)
++    !is.raggedPOSIXlt(dltB)
++    !is.raggedPOSIXlt(dltv2B)
++    !is.raggedPOSIXlt(dltBm3)
++     ## equal with default tolerance:
++     all.equal(dlt2N,   dltN)
++     all.equal(dlt2Nm3, dltNm3)
++     identical(as.POSIXct(dlt2N),   as.POSIXct(dltN))
++     identical(as.POSIXct(dlt2Nm3), as.POSIXct(dltNm3))
++ })
+> ## First show (in a way it also works for older R), then check :
+> oldR <- getRversion() < "4.2.2"
+> (dd <- data.frame(dlt, dltN, asCT = dct, na = is.na(dlt),
++                   fin = if(oldR) rep_len(NA, n3) else is.finite(dlt)))
+                   dlt                dltN                asCT    na   fin
+1  2016-01-06 21:28:24 2016-01-06 21:28:24 2016-01-06 21:28:24 FALSE  TRUE
+2  2016-02-06 06:31:44 2016-02-06 06:31:44 2016-02-06 06:31:44 FALSE  TRUE
+3                 <NA>                <NA>                <NA>  TRUE FALSE
+4  2016-04-06 07:31:46 2016-04-06 07:31:46 2016-04-06 07:31:46 FALSE  TRUE
+5  2016-05-07 00:31:47 2016-05-07 00:31:47 2016-05-07 00:31:47 FALSE  TRUE
+6  2016-06-06 06:31:48 2016-06-06 06:31:48 2016-06-06 06:31:48 FALSE  TRUE
+7                 <NA>                <NA>                <NA>  TRUE FALSE
+8  2016-08-06 07:31:50 2016-08-06 07:31:50 2016-08-06 07:31:50 FALSE  TRUE
+9  2016-09-07 00:31:51 2016-09-07 00:31:51 2016-09-07 00:31:51 FALSE  TRUE
+10 2016-10-06 06:31:52 2016-10-06 06:31:52 2016-10-06 06:31:52 FALSE  TRUE
+11                <NA>                <NA>                <NA>  TRUE FALSE
+12                -Inf                -Inf                -Inf FALSE FALSE
+13                <NA>                <NA>                <NA>  TRUE FALSE
+14 2016-02-06 03:28:24 2016-02-06 03:28:24 2016-02-06 03:28:24 FALSE  TRUE
+15                <NA>                <NA>                <NA>  TRUE FALSE
+> ## Look at *all* current "POSIXlt" objects:
+> str(lts <- local({ oG <- as.list(.GlobalEnv)
++     oG[vapply(oG, inherits, TRUE, "POSIXlt")] }))
+List of 25
+ $ lt.                : POSIXlt[1:1], format: "-Inf"
+ $ dltNm3             : POSIXlt[1:13], format: "2016-12-06 21:28:24" NA ...
+ $ dltI               : POSIXlt[1:7], format: "-Inf" NA ...
+ $ lt1                : POSIXlt[1:1], format: "2001-02-03 04:05:00"
+ $ xf                 : POSIXlt[1:3], format: "2007-07-27 16:11:03" "2011-10-01 12:34:56" ...
+ $ dlt2Nm3            : POSIXlt[1:13], format: "2016-12-06 21:28:24" NA ...
+ $ dltN               : POSIXlt[1:15], format: "2016-01-06 21:28:24" "2016-02-06 06:31:44" ...
+ $ Dlt2               : POSIXlt[1:18], format: "1989-03-02" "1991-11-27" ...
+  ..- attr(*, "names")="A" "B" ...
+ $ dltv2              : POSIXlt[1:15], format: "2016-01-06 21:28:24" "2016-02-06 06:31:44" ...
+ $ dt                 : POSIXlt[1:1], format: "2007-07-27 16:11:00"
+ $ lt                 : POSIXlt[1:5], format: "1994-10-11" "1994-10-12" ...
+  ..- attr(*, "names")="a" "b" ...
+ $ dltBm3             : POSIXlt[1:13], format: "2016-12-06 21:28:24" NA ...
+ $ lt50               : POSIXlt[1:1], format: "2022-01-08"
+ $ dlt2N              : POSIXlt[1:15], format: "2016-01-06 21:28:24" "2016-02-06 06:31:44" ...
+ $ dlt2Nu             : POSIXlt[1:15], format: "2016-01-06 21:28:24" "2016-02-06 06:31:44" ...
+ $ ltI                : POSIXlt[1:12], format: "-Inf" "2016-02-06 21:45:00" ...
+ $ lE                 : POSIXlt[1:1], format: "2022-01-08"
+ $ Dlct2              : POSIXlt[1:18], format: "1989-03-02 05:00:00" "1991-11-27 05:00:00" ...
+  ..- attr(*, "names")="A" "B" ...
+ $ CharleMagne.crowned: POSIXlt[1:1], format: "774-07-10 12:00:00"
+ $ Dlt                : POSIXlt[1:18], format: "1989-03-02" "1991-11-27" ...
+  ..- attr(*, "names")="A" "B" ...
+ $ dlt                : POSIXlt[1:15], format: "2016-01-06 21:28:24" "2016-02-06 06:31:44" ...
+ $ dltv2B             : POSIXlt[1:15], format: "2016-01-06 21:28:24" "2016-02-06 06:31:44" ...
+ $ Dlct               : POSIXlt[1:18], format: "1989-03-02" "1991-11-27" ...
+  ..- attr(*, "names")="A" "B" ...
+ $ dltB               : POSIXlt[1:15], format: "2016-01-06 21:28:24" "2016-02-06 06:31:44" ...
+ $ dltm3              : POSIXlt[1:13], format: "2016-12-06 21:28:24" NA ...
+> ## Check if/when  balancePOSIXlt(.) is the identity for  "POSIXlt" objects
+> blts <- lapply(lts, balancePOSIXlt)
+> all.equal(blts, lts) # on Lnx Fedora 36 "ltI", "dlt", "dltI" and "dltm3" have been shifted by one hour - ok (??)
+[1] TRUE
+> ## all the others are *deemed* equal by the "tolerant"  all.equal.POSIXt()
+> (nmsLT <- setdiff(names(lts), c("ltI", "dlt", "dltI", "dltm3")))
+ [1] "lt."                 "dltNm3"              "lt1"                
+ [4] "xf"                  "dlt2Nm3"             "dltN"               
+ [7] "Dlt2"                "dltv2"               "dt"                 
+[10] "lt"                  "dltBm3"              "lt50"               
+[13] "dlt2N"               "dlt2Nu"              "lE"                 
+[16] "Dlct2"               "CharleMagne.crowned" "Dlt"                
+[19] "dltv2B"              "Dlct"                "dltB"               
+> at.b <- lapply(blts, attributes)
+> (cNms <- setdiff(names(at.b[[1]]), "balanced"))
+[1] "names" "class"
+> stopifnot(exprs = {
++     all.equal(lts[nmsLT], blts[nmsLT], tolerance = 0)
++     ## now blts are all balanced of course; lts only partly
++     vapply(at.b, `[[`, TRUE, "balanced")
++     identical(lapply(lapply( lts, attributes), `[`, cNms),
++               lapply(at.b,                     `[`, cNms))
++ })
+> chlts <- lapply( lts, as.character)
+> cblts <- lapply(blts, as.character)
+> stopifnot(identical(chlts, cblts))
+> ## only now that as.char..() uses balanceP..()
+> 
+> 
+> ## Indexing --
+> which(ina <- is.na(dlt))
+[1]  3  7 11 13 15
+> stopifnot(exprs = {
++     all.equal(format(ltI[-1]), format(ltI)[-1]) # ltI[-1] gave an error
++     all.equal(format(ltI[-2]), format(ltI)[-2])
++     identical(which(ina), c(3L, 7L, 11L, 13L, 15L))
++     !anyNA(dlt[!ina])
++     format(dlt[!ina]) == format(dlt)[!ina] # dlt[!ina] was mostly NA
++     !anyNA(dltm3[!is.na(dltm3)])
++     identical(as.POSIXct(dlt[-3], "UTC"),
++               as.POSIXct(dlt, "UTC")[-3])
++ })
+> ## subassigning  [<- :
+> tmp <- dlt
+> tmp[1] <- tmp[15]
+> stopifnot(exprs = {
++     identical(print(format(tmp)), # had badly failed
++               format(dlt)[c(15, 2:15)])
++     identical(tmp[1], dlt[15])
++     identical(tmp[-1], dlt[-1])
++ })
+ [1] NA                    "2016-02-06 06:31:44" NA                   
+ [4] "2016-04-06 07:31:46" "2016-05-07 00:31:47" "2016-06-06 06:31:48"
+ [7] NA                    "2016-08-06 07:31:50" "2016-09-07 00:31:51"
+[10] "2016-10-06 06:31:52" NA                    "-Inf"               
+[13] NA                    "2016-02-06 03:28:24" NA                   
+> ## badly failed in ragged case, before balancePOSIXlt() was used
+> 
+> 
+> ##
+> ## After fixes in as.Date.POSIXlt (and also as.Date.POSIXt)  methods
+> dD  <- as.Date(dlt)
+> dDc <- as.Date(dct)
+> dd2 <- data.frame(lt = dltN, ct = dct, dD, dDc, d.D = (dD - dDc), d.POSIX = (dlt - dct))
+> print(width = 101, dd2) ## look at [9,] -- do the date parts correspond ?
+                    lt                  ct         dD        dDc      d.D  d.POSIX
+1  2016-01-06 21:28:24 2016-01-06 21:28:24 2016-01-06 2016-01-06   0 days   0 secs
+2  2016-02-06 06:31:44 2016-02-06 06:31:44 2016-02-06 2016-02-05   1 days   0 secs
+3                 <NA>                <NA>       <NA>       <NA>  NA days  NA secs
+4  2016-04-06 07:31:46 2016-04-06 07:31:46 2016-04-06 2016-04-05   1 days   0 secs
+5  2016-05-07 00:31:47 2016-05-07 00:31:47 2016-05-07 2016-05-06   1 days   0 secs
+6  2016-06-06 06:31:48 2016-06-06 06:31:48 2016-06-06 2016-06-05   1 days   0 secs
+7                 <NA>                <NA>       <NA>       <NA>  NA days  NA secs
+8  2016-08-06 07:31:50 2016-08-06 07:31:50 2016-08-06 2016-08-05   1 days   0 secs
+9  2016-09-07 00:31:51 2016-09-07 00:31:51 2016-09-07 2016-09-06   1 days   0 secs
+10 2016-10-06 06:31:52 2016-10-06 06:31:52 2016-10-06 2016-10-05   1 days   0 secs
+11                <NA>                <NA>       <NA>       <NA>  NA days  NA secs
+12                -Inf                -Inf       -Inf       -Inf NaN days NaN secs
+13                <NA>                <NA>       <NA>       <NA>  NA days  NA secs
+14 2016-02-06 03:28:24 2016-02-06 03:28:24 2016-02-06 2016-02-05   1 days   0 secs
+15                <NA>                <NA>       <NA>       <NA>  NA days  NA secs
+> dDm3  <- as.Date(dltm3)
+> dDcm3 <- as.Date(dctm3)
+> nD  <- unclass(dD)
+> nDc <- unclass(dDc)
+> cbind(nD, nDc, diff = nD-nDc)
+         nD   nDc diff
+ [1,] 16806 16806    0
+ [2,] 16837 16836    1
+ [3,]    NA    NA   NA
+ [4,] 16897 16896    1
+ [5,] 16928 16927    1
+ [6,] 16958 16957    1
+ [7,]    NA    NA   NA
+ [8,] 17019 17018    1
+ [9,] 17051 17050    1
+[10,] 17080 17079    1
+[11,]    NA    NA   NA
+[12,]  -Inf  -Inf  NaN
+[13,]    NA    NA   NA
+[14,] 16837 16836    1
+[15,]    NA    NA   NA
+> ifi  <- is.finite(dct)
+> ifi3 <- is.finite(dctm3)
+> stopifnot(exprs = {
++     all.equal(dD, dDc, tolerance = 1e-4)
++     (dDm3 - dDcm3)[ifi3] %in% 0:1
++       (dD - dDc  )[ifi]  %in% 0:1
++       (nD - nDc  )[ifi]  %in% 0:1
++     is.na((dD   - dDc  )[!ifi])
++     is.na((dDm3 - dDcm3)[!ifi3])
++ })
+> ## as.Date.POSIXlt() failed badly for such ragged cases in  R <= 4.2.x
+> 
+> 
+> ## ragged, including names
+> (nlt <- c(P = as.POSIXlt("2000-1-2 3:45")))
+                         P 
+"2000-01-02 03:45:00 AEDT" 
+> r3n <- rep(nlt, 3)
+> lt2 <- nlt; lt2$min <- 45:49; lt2  # (names print wrongly)
+                         P                       <NA> 
+"2000-01-02 03:45:00 AEDT" "2000-01-02 03:46:00 AEDT" 
+                      <NA>                       <NA> 
+"2000-01-02 03:47:00 AEDT" "2000-01-02 03:48:00 AEDT" 
+                      <NA> 
+"2000-01-02 03:49:00 AEDT" 
+> names(lt2) # "P" is maybe ok
+[1] "P"
+> (b2 <- balancePOSIXlt(lt2))# now correct
+                         P                          P 
+"2000-01-02 03:45:00 AEDT" "2000-01-02 03:46:00 AEDT" 
+                         P                          P 
+"2000-01-02 03:47:00 AEDT" "2000-01-02 03:48:00 AEDT" 
+                         P 
+"2000-01-02 03:49:00 AEDT" 
+> t3 <- lt2; t3$year <- c(P = 100L, Q = 101L)
+> t3 # "works", not printing recycled names (FIXME?)
+                         P                          Q 
+"2000-01-02 03:45:00 AEDT" "2001-01-02 03:46:00 AEDT" 
+                      <NA>                       <NA> 
+"2000-01-02 03:47:00 AEDT" "2001-01-02 03:48:00 AEDT" 
+                      <NA> 
+"2000-01-02 03:49:00 AEDT" 
+> as.POSIXct(t3) # ditto FIXME
+                         P                          Q 
+"2000-01-02 03:45:00 AEDT" "2001-01-02 03:46:00 AEDT" 
+                      <NA>                       <NA> 
+"2000-01-02 03:47:00 AEDT" "2001-01-02 03:48:00 AEDT" 
+                      <NA> 
+"2000-01-02 03:49:00 AEDT" 
+> (b3 <- balancePOSIXlt(t3))
+                         P                          Q 
+"2000-01-02 03:45:00 AEDT" "2001-01-02 03:46:00 AEDT" 
+                         P                          Q 
+"2000-01-02 03:47:00 AEDT" "2001-01-02 03:48:00 AEDT" 
+                         P 
+"2000-01-02 03:49:00 AEDT" 
+> t4 <- lt2; names(t4) <- n4 <- c("P", "Q", "", "S", "T"); t4
+                         P                          Q 
+"2000-01-02 03:45:00 AEDT" "2000-01-02 03:46:00 AEDT" 
+                                                    S 
+"2000-01-02 03:47:00 AEDT" "2000-01-02 03:48:00 AEDT" 
+                         T 
+"2000-01-02 03:49:00 AEDT" 
+> t5 <- lt2; names(t5) <- n4[-5] ; t5 # works; last name is <NA>
+                         P                          Q 
+"2000-01-02 03:45:00 AEDT" "2000-01-02 03:46:00 AEDT" 
+                                                    S 
+"2000-01-02 03:47:00 AEDT" "2000-01-02 03:48:00 AEDT" 
+                      <NA> 
+"2000-01-02 03:49:00 AEDT" 
+> bare <- function(x) ## drop all attributes but names:
++     `attributes<-`(x, if(!is.null(n <- names(unclass(x)))) list(names=n))
+> stopifnot(exprs = {
++     identical("P", names(nlt))
++     identical(nlt, balancePOSIXlt(nlt))
++     length(r3n) == 3
++     identical(nlt, r3n[3])
++     identical(names(r3n), rep("P", 3))
++     length(lt2) == 5
++     identical(names(b2), rep("P", 5))
++     identical(bare(b2), bare(balancePOSIXlt(lt2, fill.only = TRUE)))# (here)
++     identical(names(b3), rep_len(c("P","Q"), length(b3)))
++     identical(n4, names(t4))
++     identical(n4, names(balancePOSIXlt(t4, fill.only = TRUE)))
++     identical(nn <- c(n4[-5], NA), names(t5))
++     identical(nn, names(b5 <- balancePOSIXlt(t5)))
++     identical(bare(b5), bare(balancePOSIXlt(t5, fill.only = TRUE))) # (here)
++ })
+> ## names(.) were not recycled correctly in original balanceP..()
+> 
+> 
+> ## moves from strptime.Rd
+> stopifnot(identical("Inf", format(.POSIXct(Inf)))) # (was NA in R <= 4.1.x)
+> notF <- c(-Inf,Inf,NaN,NA)
+> (fF <- format(tnF <- .POSIXct(notF))) # was all NA, now the last is still NA (not "NA")
+[1] "-Inf" "Inf"  "NaN"  NA    
+> stopifnot(identical(as.character(notF[-4]), fF[-4])) # [4] may change!
+> ##
+> ## balancePOSIXlt() *not* fixing  {zone, isdst, gmtoff}
+> cht <- "2022-10-20 15:09"
+> sec <- (0:18)*47^3
+> (lt. <- local({ t <- as.POSIXlt(cht          ); t$sec <- sec; t }))
+ [1] "2022-10-20 15:09:00 AEDT" "2022-10-21 19:59:23 AEDT"
+ [3] "2022-10-23 00:49:46 AEDT" "2022-10-24 05:40:09 AEDT"
+ [5] "2022-10-25 10:30:32 AEDT" "2022-10-26 15:20:55 AEDT"
+ [7] "2022-10-27 20:11:18 AEDT" "2022-10-29 01:01:41 AEDT"
+ [9] "2022-10-30 05:52:04 AEDT" "2022-10-31 10:42:27 AEDT"
+[11] "2022-11-01 15:32:50 AEDT" "2022-11-02 20:23:13 AEDT"
+[13] "2022-11-04 01:13:36 AEDT" "2022-11-05 06:03:59 AEDT"
+[15] "2022-11-06 10:54:22 AEDT" "2022-11-07 15:44:45 AEDT"
+[17] "2022-11-08 20:35:08 AEDT" "2022-11-10 01:25:31 AEDT"
+[19] "2022-11-11 06:15:54 AEDT"
+> (lte <- local({ t <- as.POSIXlt(cht, tz=""   ); t$sec <- sec; t }))
+ [1] "2022-10-20 15:09:00 AEDT" "2022-10-21 19:59:23 AEDT"
+ [3] "2022-10-23 00:49:46 AEDT" "2022-10-24 05:40:09 AEDT"
+ [5] "2022-10-25 10:30:32 AEDT" "2022-10-26 15:20:55 AEDT"
+ [7] "2022-10-27 20:11:18 AEDT" "2022-10-29 01:01:41 AEDT"
+ [9] "2022-10-30 05:52:04 AEDT" "2022-10-31 10:42:27 AEDT"
+[11] "2022-11-01 15:32:50 AEDT" "2022-11-02 20:23:13 AEDT"
+[13] "2022-11-04 01:13:36 AEDT" "2022-11-05 06:03:59 AEDT"
+[15] "2022-11-06 10:54:22 AEDT" "2022-11-07 15:44:45 AEDT"
+[17] "2022-11-08 20:35:08 AEDT" "2022-11-10 01:25:31 AEDT"
+[19] "2022-11-11 06:15:54 AEDT"
+> (ltU <- local({ t <- as.POSIXlt(cht, tz="UTC"); t$sec <- sec; t }))
+ [1] "2022-10-20 15:09:00 UTC" "2022-10-21 19:59:23 UTC"
+ [3] "2022-10-23 00:49:46 UTC" "2022-10-24 05:40:09 UTC"
+ [5] "2022-10-25 10:30:32 UTC" "2022-10-26 15:20:55 UTC"
+ [7] "2022-10-27 20:11:18 UTC" "2022-10-29 01:01:41 UTC"
+ [9] "2022-10-30 05:52:04 UTC" "2022-10-31 10:42:27 UTC"
+[11] "2022-11-01 15:32:50 UTC" "2022-11-02 20:23:13 UTC"
+[13] "2022-11-04 01:13:36 UTC" "2022-11-05 06:03:59 UTC"
+[15] "2022-11-06 10:54:22 UTC" "2022-11-07 15:44:45 UTC"
+[17] "2022-11-08 20:35:08 UTC" "2022-11-10 01:25:31 UTC"
+[19] "2022-11-11 06:15:54 UTC"
+> (ct.. <- as.POSIXct(lt.          )) # good, localtime, switch CEST -> CET
+ [1] "2022-10-20 15:09:00 AEDT" "2022-10-21 19:59:23 AEDT"
+ [3] "2022-10-23 00:49:46 AEDT" "2022-10-24 05:40:09 AEDT"
+ [5] "2022-10-25 10:30:32 AEDT" "2022-10-26 15:20:55 AEDT"
+ [7] "2022-10-27 20:11:18 AEDT" "2022-10-29 01:01:41 AEDT"
+ [9] "2022-10-30 05:52:04 AEDT" "2022-10-31 10:42:27 AEDT"
+[11] "2022-11-01 15:32:50 AEDT" "2022-11-02 20:23:13 AEDT"
+[13] "2022-11-04 01:13:36 AEDT" "2022-11-05 06:03:59 AEDT"
+[15] "2022-11-06 10:54:22 AEDT" "2022-11-07 15:44:45 AEDT"
+[17] "2022-11-08 20:35:08 AEDT" "2022-11-10 01:25:31 AEDT"
+[19] "2022-11-11 06:15:54 AEDT"
+> (ct.e <- as.POSIXct(lt., tz=""   ))
+ [1] "2022-10-20 15:09:00 AEDT" "2022-10-21 19:59:23 AEDT"
+ [3] "2022-10-23 00:49:46 AEDT" "2022-10-24 05:40:09 AEDT"
+ [5] "2022-10-25 10:30:32 AEDT" "2022-10-26 15:20:55 AEDT"
+ [7] "2022-10-27 20:11:18 AEDT" "2022-10-29 01:01:41 AEDT"
+ [9] "2022-10-30 05:52:04 AEDT" "2022-10-31 10:42:27 AEDT"
+[11] "2022-11-01 15:32:50 AEDT" "2022-11-02 20:23:13 AEDT"
+[13] "2022-11-04 01:13:36 AEDT" "2022-11-05 06:03:59 AEDT"
+[15] "2022-11-06 10:54:22 AEDT" "2022-11-07 15:44:45 AEDT"
+[17] "2022-11-08 20:35:08 AEDT" "2022-11-10 01:25:31 AEDT"
+[19] "2022-11-11 06:15:54 AEDT"
+> (ct.U <- as.POSIXct(lt., tz="UCT")) #  *very* bad: all NA but [14] ( = "1969-12-31 .." )
+ [1] "2022-10-20 14:09:00 UCT" "2022-10-21 18:59:23 UCT"
+ [3] "2022-10-22 23:49:46 UCT" "2022-10-24 04:40:09 UCT"
+ [5] "2022-10-25 09:30:32 UCT" "2022-10-26 14:20:55 UCT"
+ [7] "2022-10-27 19:11:18 UCT" "2022-10-29 00:01:41 UCT"
+ [9] "2022-10-30 04:52:04 UCT" "2022-10-31 09:42:27 UCT"
+[11] "2022-11-01 14:32:50 UCT" "2022-11-02 19:23:13 UCT"
+[13] "2022-11-04 00:13:36 UCT" "2022-11-05 05:03:59 UCT"
+[15] "2022-11-06 09:54:22 UCT" "2022-11-07 14:44:45 UCT"
+[17] "2022-11-08 19:35:08 UCT" "2022-11-10 00:25:31 UCT"
+[19] "2022-11-11 05:15:54 UCT"
+> (cte. <- as.POSIXct(lte          ))
+ [1] "2022-10-20 15:09:00 AEDT" "2022-10-21 19:59:23 AEDT"
+ [3] "2022-10-23 00:49:46 AEDT" "2022-10-24 05:40:09 AEDT"
+ [5] "2022-10-25 10:30:32 AEDT" "2022-10-26 15:20:55 AEDT"
+ [7] "2022-10-27 20:11:18 AEDT" "2022-10-29 01:01:41 AEDT"
+ [9] "2022-10-30 05:52:04 AEDT" "2022-10-31 10:42:27 AEDT"
+[11] "2022-11-01 15:32:50 AEDT" "2022-11-02 20:23:13 AEDT"
+[13] "2022-11-04 01:13:36 AEDT" "2022-11-05 06:03:59 AEDT"
+[15] "2022-11-06 10:54:22 AEDT" "2022-11-07 15:44:45 AEDT"
+[17] "2022-11-08 20:35:08 AEDT" "2022-11-10 01:25:31 AEDT"
+[19] "2022-11-11 06:15:54 AEDT"
+> (ctee <- as.POSIXct(lte, tz=""   ))
+ [1] "2022-10-20 15:09:00 AEDT" "2022-10-21 19:59:23 AEDT"
+ [3] "2022-10-23 00:49:46 AEDT" "2022-10-24 05:40:09 AEDT"
+ [5] "2022-10-25 10:30:32 AEDT" "2022-10-26 15:20:55 AEDT"
+ [7] "2022-10-27 20:11:18 AEDT" "2022-10-29 01:01:41 AEDT"
+ [9] "2022-10-30 05:52:04 AEDT" "2022-10-31 10:42:27 AEDT"
+[11] "2022-11-01 15:32:50 AEDT" "2022-11-02 20:23:13 AEDT"
+[13] "2022-11-04 01:13:36 AEDT" "2022-11-05 06:03:59 AEDT"
+[15] "2022-11-06 10:54:22 AEDT" "2022-11-07 15:44:45 AEDT"
+[17] "2022-11-08 20:35:08 AEDT" "2022-11-10 01:25:31 AEDT"
+[19] "2022-11-11 06:15:54 AEDT"
+> (cteU <- as.POSIXct(lte, tz="UCT")) #  *very* bad: all NA but [14] ( = "1969-12-31 .." )
+ [1] "2022-10-20 14:09:00 UCT" "2022-10-21 18:59:23 UCT"
+ [3] "2022-10-22 23:49:46 UCT" "2022-10-24 04:40:09 UCT"
+ [5] "2022-10-25 09:30:32 UCT" "2022-10-26 14:20:55 UCT"
+ [7] "2022-10-27 19:11:18 UCT" "2022-10-29 00:01:41 UCT"
+ [9] "2022-10-30 04:52:04 UCT" "2022-10-31 09:42:27 UCT"
+[11] "2022-11-01 14:32:50 UCT" "2022-11-02 19:23:13 UCT"
+[13] "2022-11-04 00:13:36 UCT" "2022-11-05 05:03:59 UCT"
+[15] "2022-11-06 09:54:22 UCT" "2022-11-07 14:44:45 UCT"
+[17] "2022-11-08 19:35:08 UCT" "2022-11-10 00:25:31 UCT"
+[19] "2022-11-11 05:15:54 UCT"
+> (ctU. <- as.POSIXct(ltU          )) # good, all UTC
+ [1] "2022-10-20 15:09:00 UTC" "2022-10-21 19:59:23 UTC"
+ [3] "2022-10-23 00:49:46 UTC" "2022-10-24 05:40:09 UTC"
+ [5] "2022-10-25 10:30:32 UTC" "2022-10-26 15:20:55 UTC"
+ [7] "2022-10-27 20:11:18 UTC" "2022-10-29 01:01:41 UTC"
+ [9] "2022-10-30 05:52:04 UTC" "2022-10-31 10:42:27 UTC"
+[11] "2022-11-01 15:32:50 UTC" "2022-11-02 20:23:13 UTC"
+[13] "2022-11-04 01:13:36 UTC" "2022-11-05 06:03:59 UTC"
+[15] "2022-11-06 10:54:22 UTC" "2022-11-07 15:44:45 UTC"
+[17] "2022-11-08 20:35:08 UTC" "2022-11-10 01:25:31 UTC"
+[19] "2022-11-11 06:15:54 UTC"
+> (ctUe <- as.POSIXct(ltU, tz=""   )) #"good", localtime, if not-int, shifted by 1 hour
+ [1] "2022-10-20 16:09:00 AEDT" "2022-10-21 20:59:23 AEDT"
+ [3] "2022-10-23 01:49:46 AEDT" "2022-10-24 06:40:09 AEDT"
+ [5] "2022-10-25 11:30:32 AEDT" "2022-10-26 16:20:55 AEDT"
+ [7] "2022-10-27 21:11:18 AEDT" "2022-10-29 02:01:41 AEDT"
+ [9] "2022-10-30 06:52:04 AEDT" "2022-10-31 11:42:27 AEDT"
+[11] "2022-11-01 16:32:50 AEDT" "2022-11-02 21:23:13 AEDT"
+[13] "2022-11-04 02:13:36 AEDT" "2022-11-05 07:03:59 AEDT"
+[15] "2022-11-06 11:54:22 AEDT" "2022-11-07 16:44:45 AEDT"
+[17] "2022-11-08 21:35:08 AEDT" "2022-11-10 02:25:31 AEDT"
+[19] "2022-11-11 07:15:54 AEDT"
+> (ctUU <- as.POSIXct(ltU, tz="UCT")) # "good", all UTC, but shifted by 1-2 hours (int <-> non-int)
+ [1] "2022-10-20 15:09:00 UCT" "2022-10-21 19:59:23 UCT"
+ [3] "2022-10-23 00:49:46 UCT" "2022-10-24 05:40:09 UCT"
+ [5] "2022-10-25 10:30:32 UCT" "2022-10-26 15:20:55 UCT"
+ [7] "2022-10-27 20:11:18 UCT" "2022-10-29 01:01:41 UCT"
+ [9] "2022-10-30 05:52:04 UCT" "2022-10-31 10:42:27 UCT"
+[11] "2022-11-01 15:32:50 UCT" "2022-11-02 20:23:13 UCT"
+[13] "2022-11-04 01:13:36 UCT" "2022-11-05 06:03:59 UCT"
+[15] "2022-11-06 10:54:22 UCT" "2022-11-07 15:44:45 UCT"
+[17] "2022-11-08 20:35:08 UCT" "2022-11-10 01:25:31 UCT"
+[19] "2022-11-11 06:15:54 UCT"
+> table(dUe <- ctUe - ct..) # all 0 for int-tzone,  all 1 otherwise !!
+
+ 1 
+19 
+> table(dUU <- ctUU - ct..) # all 11 x '1' and 8 x '2' for int-tzone,  all  '2'  otherwise !
+
+11 
+19 
+> stopifnot(exprs = {
++     all.equal(ct.e, ct.., check.tzone=FALSE)
++     identical(cte., ct..)
++     all.equal(ctee, ct.., check.tzone=FALSE)
++ })
+> (b1 <- balancePOSIXlt(lt., fill.only=TRUE))
+ [1] "2022-10-20 15:09:00 AEDT" "2022-10-21 19:59:23 AEDT"
+ [3] "2022-10-23 00:49:46 AEDT" "2022-10-24 05:40:09 AEDT"
+ [5] "2022-10-25 10:30:32 AEDT" "2022-10-26 15:20:55 AEDT"
+ [7] "2022-10-27 20:11:18 AEDT" "2022-10-29 01:01:41 AEDT"
+ [9] "2022-10-30 05:52:04 AEDT" "2022-10-31 10:42:27 AEDT"
+[11] "2022-11-01 15:32:50 AEDT" "2022-11-02 20:23:13 AEDT"
+[13] "2022-11-04 01:13:36 AEDT" "2022-11-05 06:03:59 AEDT"
+[15] "2022-11-06 10:54:22 AEDT" "2022-11-07 15:44:45 AEDT"
+[17] "2022-11-08 20:35:08 AEDT" "2022-11-10 01:25:31 AEDT"
+[19] "2022-11-11 06:15:54 AEDT"
+> (b2 <- balancePOSIXlt(lt.))
+ [1] "2022-10-20 15:09:00 AEDT" "2022-10-21 19:59:23 AEDT"
+ [3] "2022-10-23 00:49:46 AEDT" "2022-10-24 05:40:09 AEDT"
+ [5] "2022-10-25 10:30:32 AEDT" "2022-10-26 15:20:55 AEDT"
+ [7] "2022-10-27 20:11:18 AEDT" "2022-10-29 01:01:41 AEDT"
+ [9] "2022-10-30 05:52:04 AEDT" "2022-10-31 10:42:27 AEDT"
+[11] "2022-11-01 15:32:50 AEDT" "2022-11-02 20:23:13 AEDT"
+[13] "2022-11-04 01:13:36 AEDT" "2022-11-05 06:03:59 AEDT"
+[15] "2022-11-06 10:54:22 AEDT" "2022-11-07 15:44:45 AEDT"
+[17] "2022-11-08 20:35:08 AEDT" "2022-11-10 01:25:31 AEDT"
+[19] "2022-11-11 06:15:54 AEDT"
+> stopifnot(b1 == b2)
+> 
+> 
+> ## range(<Date>|<POSIXt>, finite = TRUE) [R-devel mails, Davis Vaughan and MM, April 28, 2023ff]
+> d <- .Date(c(10, Inf, 11, 12, Inf))
+> (dN <- c(d, .Date(c(NA, NaN))))
+[1] "1970-01-11" "Inf"        "1970-01-12" "1970-01-13" "Inf"       
+[6] NA           "NaN"       
+> ## Just the numbers :
+> str(x  <- unclass(d))
+ num [1:5] 10 Inf 11 12 Inf
+> str(xN <- unclass(dN), vec.len=9)
+ num [1:7] 10 Inf 11 12 Inf NA NaN
+> stopifnot(exprs = {
++     identical3(print(range(d)), .Date(range(unclass(d))),# "1970-01-11" "Inf"
++                c(min(d),max(d)))
++     is.na(range(dN))
++     identical3(range(d, finite = TRUE), .Date(range(x, finite=TRUE)),
++                range(dN,finite = TRUE) -> rd)
++     identical(rd, structure(c(10, 12), class = "Date"))
++ })
+[1] "1970-01-11" "Inf"       
+> ## POSIXct/lt -----
+> ct <- as.POSIXct(d)
+> ctN<- as.POSIXct(dN)
+> lt <- as.POSIXlt(ct)
+> ltN<- as.POSIXlt(ctN)
+> str(y  <- unclass(ct))
+ num [1:5] 864000 Inf 950400 1036800 Inf
+ - attr(*, "tzone")= chr "UTC"
+> str(yN <- unclass(ctN), vec.len=9)
+ num [1:7] 864000 Inf 950400 1036800 Inf NA NaN
+ - attr(*, "tzone")= chr "UTC"
+> stopifnot(exprs = {
++     identical(print(range(ct)), .POSIXct(range(unclass(ct)), tz="UTC"))
++     identical3(range(ct, finite = TRUE), .POSIXct(range(y, finite=TRUE), tz="UTC"),
++                range(ctN,finite = TRUE) -> rct)
++     is.na(range(ctN))
++     identical(range(ctN, na.rm=TRUE), range(ct))
++     identical(rct, structure(c(10, 12) * 24*60*60,
++                              class = c("POSIXct", "POSIXt"), tzone = "UTC"))
++     ## POSIXlt
++     identical3(print(range(lt)), as.POSIXlt(range(ct)), # "1970-01-11" "Inf"
++                c(min(lt), max(lt))) # failed for a few days
++     identical3(range(lt, finite = TRUE), as.POSIXlt(rct),
++                range(ltN,finite = TRUE))
++     is.na(range(ltN))
++     identical(range(ltN, na.rm=TRUE), range(lt))
++ })
+[1] "1970-01-11 UTC" "Inf"           
+[1] "1970-01-11 UTC" "Inf"           
+> 
+> 
+> ## Losing 1 sec in ct -> lt conversion for tzcode=internal (USE_INTERNAL_MKTIME) -- PR#16856
+> ct <- .POSIXct(c(-1.25, -1, 0, 1), tz = "UTC")
+> (d1 <- (lt <- as.POSIXlt(ct)) - ct)
+Time differences in secs
+[1] 0 0 0 0
+> (d2 <-        as.POSIXlt(as.POSIXct(lt)) - ct)
+Time differences in secs
+[1] 0 0 0 0
+> stopifnot(d1 == 0, d2 == 0)
+> ## where (1 0 0 0) and (2 0 0 0) {w/ "internal" tz src} in R <= 4.3.1
+> 
+> ## [[ method uses underlying class names as a backup
+> (pl <- as.POSIXlt(as.POSIXct("2024-04-25 12:34:56") + c(a = 0, mday = 10)))
+                         a                       mday 
+"2024-04-25 12:34:56 AEST" "2024-04-25 12:35:06 AEST" 
+> assertErrV(pl[["b"]])
+Asserted error: subscript out of bounds
+> stopifnot(exprs = {
++   identical(pl[["a"]],    pl[[1L]]) # both as previously
++   identical(pl[["mday"]], pl[[2L]])
++   identical(pl[,"mday"], rep(25L,  2))
++   identical(pl[,"yday"], rep(115L, 2))
++   grepl('x[, "yday"]', print(tryCmsg(pl[["yday"]])))# new error msg
++ })
+[1] "No element named \"yday\" found in x, did you mean x[, \"yday\"] instead?"
+> 
+> ## seq.Date() should preserve integer, seq(from, to) should work (default by = "1 day")
+> D1 <- .Date(i1 <- 11111L)
+> D2 <- .Date(i2 <- 11123L)
+> D3 <- .Date(i3 <- 12345L)
+> (seq1 <- seq(D1, D2))# 'by = "days" is now default
+ [1] "2000-06-03" "2000-06-04" "2000-06-05" "2000-06-06" "2000-06-07"
+ [6] "2000-06-08" "2000-06-09" "2000-06-10" "2000-06-11" "2000-06-12"
+[11] "2000-06-13" "2000-06-14" "2000-06-15"
+> head(seq3 <- seq(D1,D3, by = "weeks"))
+[1] "2000-06-03" "2000-06-10" "2000-06-17" "2000-06-24" "2000-07-01"
+[6] "2000-07-08"
+> stopifnot(exprs = {
++     identical(c("2000-06-03", "2000-06-15"), format(c(D1,D2)))
++     identical(unclass(seq1), i1:i2) # preserve integer type
++     typeof(seq3) == "integer"
++ })
+> 
+> 
+> ## fractional seconds print(<POSIXct>) --> format.POSIXlt() -- PR#17350 (and rdev day #83)
+> ## Original PR#17350 example (Vitalie Spinu):
+> op <- options(digits.secs = 6, scipen = 20, digits = 15)
+> ## what we'd desire for print()ing etc:
+> chx <- paste0("2009-08-03 12:01:59", c("", paste0(".",1:3)))
+> print(chx, width = 40)
+[1] "2009-08-03 12:01:59"  
+[2] "2009-08-03 12:01:59.1"
+[3] "2009-08-03 12:01:59.2"
+[4] "2009-08-03 12:01:59.3"
+> xl <- as.POSIXlt(chx)
+> stopifnot(identical(xl$sec, 59 + 0:3/10)) # POSIXlt keeping full precision (always did)
+> ## (but all arithmetic with POSIX*t currently happens via POSIXct, losing precision)
+> fxl <- format(xl) # is perfect {with getOption("digits.secs") > 0  !}
+> stopifnot(identical(sub(".*:59", '', fxl), paste0(".", 0:3)))
+> x <- as.POSIXct("2009-08-03 12:01:59") + 0:3/10 # using POSIXct looses prec
+> x. <- structure(x, tzone = "") ## == Vitalie's explicit original ex.
+> identical(x, x.) # FALSE :  x. contains `tzone = ""`
+[1] FALSE
+> print(x, width = 40) # now .000000 .099999 2.00000 2.999999 (as digits.secs = 6 !)
+[1] "2009-08-03 12:01:59.000000 AEST"
+[2] "2009-08-03 12:01:59.099999 AEST"
+[3] "2009-08-03 12:01:59.200000 AEST"
+[4] "2009-08-03 12:01:59.299999 AEST"
+> fx <- format(x)
+> stopifnot(identical(fx, format(x.))) # *are* the same (for a while now)
+> ## The %OS and  %OS<d> formats have been fine "always":
+> fD.OS <- function(d) format(x, format = paste0("%Y-%m-%d %H:%M:%OS", if(d=="_") "" else d))
+> f.OSss <- vapply(c("_",0:6), fD.OS, character(length(x)))
+> t(f.OSss) |> print(width=111, quote=FALSE) # shows  'trunc()'  instead of  'round()'
+  [,1]                       [,2]                       [,3]                       [,4]                      
+_ 2009-08-03 12:01:59.000000 2009-08-03 12:01:59.099999 2009-08-03 12:01:59.200000 2009-08-03 12:01:59.299999
+0 2009-08-03 12:01:59        2009-08-03 12:01:59        2009-08-03 12:01:59        2009-08-03 12:01:59       
+1 2009-08-03 12:01:59.0      2009-08-03 12:01:59.0      2009-08-03 12:01:59.2      2009-08-03 12:01:59.2     
+2 2009-08-03 12:01:59.00     2009-08-03 12:01:59.09     2009-08-03 12:01:59.20     2009-08-03 12:01:59.29    
+3 2009-08-03 12:01:59.000    2009-08-03 12:01:59.099    2009-08-03 12:01:59.200    2009-08-03 12:01:59.299   
+4 2009-08-03 12:01:59.0000   2009-08-03 12:01:59.0999   2009-08-03 12:01:59.2000   2009-08-03 12:01:59.2999  
+5 2009-08-03 12:01:59.00000  2009-08-03 12:01:59.09999  2009-08-03 12:01:59.20000  2009-08-03 12:01:59.29999 
+6 2009-08-03 12:01:59.000000 2009-08-03 12:01:59.099999 2009-08-03 12:01:59.200000 2009-08-03 12:01:59.299999
+> stopifnot(identical(f.OSss[,"_"], f.OSss[,"6"])) # by option digits.secs
+> (secDig <- sub(".*:59", '', f.OSss)) ## [,"1"] is  *.0 *.0 *.2 *.2 - "bad" from using trunc() by design
+     _         0  1    2     3      4       5        6        
+[1,] ".000000" "" ".0" ".00" ".000" ".0000" ".00000" ".000000"
+[2,] ".099999" "" ".0" ".09" ".099" ".0999" ".09999" ".099999"
+[3,] ".200000" "" ".2" ".20" ".200" ".2000" ".20000" ".200000"
+[4,] ".299999" "" ".2" ".29" ".299" ".2999" ".29999" ".299999"
+> ##      ___________   ___            __          __  "factory fresh" default
+> options(digits.secs = NULL, scipen = 0, digits = 7)
+> f.OSssD <- vapply(c("_",0:6), fD.OS, character(length(x))) # same call but different "digits.secs" option
+> ## digits = <d> now works "the same":
+> fdig <- vapply(c("_",0:6), \(d) format(x, digits = if(d != "_") d), character(length(x)))
+> stopifnot(exprs = {
++     nchar(t(secDig)) == c(7L, 0L, 2:7)     # as always
++     identical(f.OSssD[, 1], f.OSssD[,"0"]) # "" <--> "0"
++     identical(f.OSss [,-1], f.OSssD[, -1]) # only meaning of `empty' "%OS" changes with "digits.secs" option
++     identical(fdig, f.OSssD)
++ })
+> options(op)
+> ## Number of digits used differed in several cases in R <= 4.4.z
+> 
+> ## print(*, digits = n) now works, too -- compatibly with format()
+> print(x, digits = 6) # shows full digits
+[1] "2009-08-03 12:01:59.000000 AEST" "2009-08-03 12:01:59.099999 AEST"
+[3] "2009-08-03 12:01:59.200000 AEST" "2009-08-03 12:01:59.299999 AEST"
+> xx <- as.POSIXct("2009-08-03 12:01:59") + 0:8/8 # rare exact dbl prec
+> j <- 2L*(1:4) -1L # 1,3,5,7
+> (fxx2 <- format(xx, digits = 2)[j])
+[1] "2009-08-03 12:01:59.00" "2009-08-03 12:01:59.25" "2009-08-03 12:01:59.50"
+[4] "2009-08-03 12:01:59.75"
+> print(xx,  digits = 5, usetz=FALSE)# needs only 3 digits
+[1] "2009-08-03 12:01:59.000" "2009-08-03 12:01:59.125"
+[3] "2009-08-03 12:01:59.250" "2009-08-03 12:01:59.375"
+[5] "2009-08-03 12:01:59.500" "2009-08-03 12:01:59.625"
+[7] "2009-08-03 12:01:59.750" "2009-08-03 12:01:59.875"
+[9] "2009-08-03 12:02:00.000"
+> pxx <- capture.output(split = TRUE,
++  print(xx[j], digits = 5, width=140)) # 2 digits suffice
+[1] "2009-08-03 12:01:59.00 AEST" "2009-08-03 12:01:59.25 AEST" "2009-08-03 12:01:59.50 AEST" "2009-08-03 12:01:59.75 AEST"
+> stopifnot(exprs = {
++     identical(format(x, digits = 6) |> paste(collapse=' '), sub('^\\[1\\] ', '', gsub('"', '', capture.output(
++               print (x, digits = 6, usetz = FALSE, width = 120)))))
++     is.integer(nf2 <- nchar(fxx2))
++     substr   (fxx2, nf2-1L, nf2) == c("00", "25", "50", "75")
++     identical(fxx2, sub(" [A-Z].*$", '',
++                         strsplit(split = "@",
++                                  gsub('" "', '@', sub(".$", '', sub('^\\[1\\] "', '', pxx))))[[1L]]))
++ })
+> 
+> ## as.POSIXct({}) internally
+> L <- list(-1:1, {}, 2:4)
+> (r <- do.call(c, lapply(L, as.POSIXct)))
+[1] "1970-01-01 09:59:59 AEST" "1970-01-01 10:00:00 AEST"
+[3] "1970-01-01 10:00:01 AEST" "1970-01-01 10:00:02 AEST"
+[5] "1970-01-01 10:00:03 AEST" "1970-01-01 10:00:04 AEST"
+> stopifnot(exprs = {
++     inherits(r, "POSIXct")
++     identical(-1:4, as.vector(r))
++     identical(integer(0), as.vector(as.POSIXct({})))
++ })
+> ## was internally "double" in R <= 4.4.x
+> 
+> 
+> ## `from = *` now optional in seq.Date(), seq.POSIXt() ----- PR#17672 ----------------------------
+> ## somewhat full set of regression tests, given relatively large refactoring
+> ## 1)  seq.POSIXt()
+> from <- ISOdate(2024,1,2)
+> to   <- ISOdate(2024,3,4, 5,6,7, tz="Asia/Singapore")
+> by <- "2 weeks"
+> length.out <- 4L
+> frI <- `storage.mode<-`(from, "integer")
+> toI <- `storage.mode<-`( to , "integer")
+> ## 2 weeks in sec
+> wks2sec <- as.integer( 2*7*86400 )
+> All.eq0 <- function(x,y, ...) all.equal(x, y, tolerance = 0, ...)
+> ## (Checking assumptions (dbl <-> int) here which useRs/developers should *not* make)
+> stopifnot(exprs = {
++   ## NB: use 'from' on LHS of reference to ensure the time zone of 'from' is used in the result
++   identical(seq(from, to, by=by), from + wks2sec*(0:4))
++   identical(seq(from, to, by=by),
++             seq(from, to, by="2 w")) # may abbreviate
++   identical(seq(from, to, length.out=length.out),
++             from + seq(0, difftime(to, from, units="secs"), length.out=length.out))
++   ##
++   identical(seq(from,  by=by, length.out=length.out), frI + wks2sec*seq(0, length.out-1L))
++   identical(seq(to=to, by=by, length.out=length.out), toI - wks2sec*seq(length.out-1L, 0))
++   ##
++   ## variations on 'by'
++   identical(seq(from, to, by= '2 months'), from + c(0, 86400*c(31+29))) # + Warning .check_tzones() .. inconsistent
++   identical(seq(to, from, by='-2 months'),  to  - c(0, 86400*c(31+29))) # (ditto)
++   identical(seq(from, to, by=as.difftime(30, units='days')), from + 30*86400*(0:2))
++   identical(seq(from, to, by=30*86400), from + 30*86400*(0:2))
++   ##
++   ## missing from=
++   identical(seq(to=to, by='day',     length.out=6), toI -    86400L*(5:0))
++   identical(seq(to=to, by='-3 days', length.out=6), toI + 3L*86400L*(5:0))
++   identical(seq(to=to, by='2 months',length.out=3), to - 86400*c(31+29+31+30, 31+29, 0))
++   identical(seq(to=to, by='quarter', length.out=3), to - 86400*c(31+29+31+30+31+30, 31+29+31, 0))
++   identical(seq(to=to, by='year',    length.out=3), to - 86400*c(366+365, 366, 0))
++   ## type
++   is.double(from)
++   is.integer(ss <- seq(from, from+9, length.out=10L))
++ })
+Warning in .check_tzones(e1, e2) : 'tzone' attributes are inconsistent
+Warning in .check_tzones(e1, e2) : 'tzone' attributes are inconsistent
+> ## various invalid inputs
+> assertErrV(seq(from=from))
+Asserted error: exactly three of 'to', 'from', 'by' and 'length.out' / 'along.with' must be specified
+> assertErrV(seq(to=to))
+Asserted error: exactly three of 'to', 'from', 'by' and 'length.out' / 'along.with' must be specified
+> assertErrV(seq(from, to))
+Asserted error: exactly three of 'to', 'from', 'by' and 'length.out' / 'along.with' must be specified
+> assertErrV(seq(from, by=by))
+Asserted error: exactly three of 'to', 'from', 'by' and 'length.out' / 'along.with' must be specified
+> assertErrV(seq(from, length.out=length.out))
+Asserted error: exactly three of 'to', 'from', 'by' and 'length.out' / 'along.with' must be specified
+> assertErrV(seq(to=to, by=by))
+Asserted error: exactly three of 'to', 'from', 'by' and 'length.out' / 'along.with' must be specified
+> assertErrV(seq(to=to, length.out=length.out))
+Asserted error: exactly three of 'to', 'from', 'by' and 'length.out' / 'along.with' must be specified
+> assertErrV(seq(from, to, by=by, length.out=length.out))
+Asserted error: exactly three of 'to', 'from', 'by' and 'length.out' / 'along.with' must be specified
+> 
+> ## 2)  seq.Date()
+> to <- as.Date(to); from <- as.Date(from)
+> frI <- `storage.mode<-`(from, "integer")
+> toI <- `storage.mode<-`( to , "integer")
+> stopifnot(exprs = {
++   identical(seq(from, to, by=by), from + 2*7*(0:4))
++   identical(seq(from, to, length.out=length.out),
++             from + seq(0, difftime(to, from, units="days"), length.out=length.out))
++   All.eq0(seq(from,  by=by, length.out=length.out), from + 2*7*seq(0, length.out-1L))
++   All.eq0(seq(to=to, by=by, length.out=length.out),   to - 2*7*seq(length.out-1L, 0))
++   identical(seq(from, to), seq(from=from, to=to, by = "days") -> s.)
++   identical(structure(19724:19727, class = "Date"), seq(from , length.out=length.out) -> s.f)
++   identical(structure(19782:19785, class = "Date"), seq(to=to, length.out=length.out) -> s.t)
++   ##
++   ## variations on 'by'
++   identical(seq(from, to, by='2 months'), from + c(0, c(31+29)))
++   identical(seq(to, from, by='-2 months'), to - c(0, c(31+29)))
++   identical(seq(to, from, by='-2 m'     ), to - c(0, c(31+29)))
++   identical(seq(from, to, by=as.difftime(30, units='days')), from + 30*(0:2))
++   identical(seq(from, to, by=30), from + 30*(0:2))
++   all.equal(seq(from, to, by = "1 week"), seq(from, by = "w", length.out = 9)) # TODO ident. ?
++   identical(seq(frI, toI, by = "1 week"), seq(from, by = "w", length.out = 9))
++   ##
++   ## missing from=
++   identical(seq(to=to, by='day',     length.out=6),
++             seq(to=to,               length.out=6))
++   All.eq0 ( seq(to=to,               length.out=6), to - (5:0))
++   All.eq0 ( seq(to=to, by='-3 days', length.out=6), to + 3*(5:0))
++   identical(seq(to=to, by='2 months',length.out=3), to - c(31+29+31+30, 31+29, 0))
++   identical(seq(to=to, by='quarter', length.out=3), to - c(31+29+31+30+31+30, 31+29+31, 0))
++   identical(seq(to=to, by='year',    length.out=3), to - c(366+365, 366, 0))
++   is.integer(sI <- seq(frI, toI))
++   is.integer(s2 <- seq(to = toI, length.out = length.out))
++   is.integer(s3 <- seq(frI,      length.out = length.out))
++   identical(sI, s.)
++   identical(s2, s.t)
++   identical(s3, s.f)
++ })
+> ## various invalid inputs
+> assertErrV(seq(from=from))
+Asserted error: without 'by', when one of 'to', 'from' is missing, 'length.out' / 'along.with' must be specified
+> assertErrV(seq(to=to))
+Asserted error: without 'by', when one of 'to', 'from' is missing, 'length.out' / 'along.with' must be specified
+> assertErrV(seq(from, by=by))
+Asserted error: given 'by', exactly two of 'to', 'from' and 'length.out' / 'along.with' must be specified
+> assertErrV(seq(to=to, by=by))
+Asserted error: given 'by', exactly two of 'to', 'from' and 'length.out' / 'along.with' must be specified
+> assertErrV(seq(from, to, by=by, length.out=length.out))
+Asserted error: given 'by', exactly two of 'to', 'from' and 'length.out' / 'along.with' must be specified
+> 
+> 
+> ## keep at end
+> rbind(last =  proc.time() - .pt,
++       total = proc.time())
+      user.self sys.self elapsed user.child sys.child
+last      0.174    0.033   0.213      0.000     0.000
+total     0.342    0.354   0.367      0.001     0.006
+> 

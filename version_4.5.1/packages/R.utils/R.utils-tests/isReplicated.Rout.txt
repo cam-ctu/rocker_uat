@@ -1,0 +1,103 @@
+
+R version 4.5.1 (2025-06-13) -- "Great Square Root"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library("R.utils")
+Loading required package: R.oo
+Loading required package: R.methodsS3
+R.methodsS3 v1.8.2 (2022-06-13 22:00:14 UTC) successfully loaded. See ?R.methodsS3 for help.
+R.oo v1.27.1 (2025-05-02 21:00:05 UTC) successfully loaded. See ?R.oo for help.
+
+Attaching package: ‘R.oo’
+
+The following object is masked from ‘package:R.methodsS3’:
+
+    throw
+
+The following objects are masked from ‘package:methods’:
+
+    getClasses, getMethods
+
+The following objects are masked from ‘package:base’:
+
+    attach, detach, load, save
+
+R.utils v2.13.0 (2025-02-24 21:20:02 UTC) successfully loaded. See ?R.utils for help.
+
+Attaching package: ‘R.utils’
+
+The following object is masked from ‘package:utils’:
+
+    timestamp
+
+The following objects are masked from ‘package:base’:
+
+    cat, commandArgs, getOption, isOpen, nullfile, parse, use, warnings
+
+> 
+> 
+> x <- c(1,1,2,3,4,2,1)
+> x <- base::letters[x]
+> print(x)
+[1] "a" "a" "b" "c" "d" "b" "a"
+> 
+> # Identify entries with replicated values
+> reps <- isReplicated(x)
+> print(x[reps])
+[1] "a" "a" "b" "b" "a"
+> stopifnot(x[reps] == replicates(x))
+> 
+> # Identify entries with unique values
+> print(x[!reps])
+[1] "c" "d"
+> stopifnot(x[!reps] == singles(x))
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Validation
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> x <- c(1,1,2,3,4,2,1)
+> x <- base::letters[x]
+> reps <- isReplicated(x)
+> 
+> stopifnot(all(table(x[reps]) > 1))
+> stopifnot(all(table(x[!reps]) == 1))
+> stopifnot(all(reps == rev(isReplicated(rev(x)))))
+> stopifnot(all(reps == duplicated(x) | duplicated(x, fromLast=TRUE)))
+> stopifnot(all(reps == !is.element(x, setdiff(x, unique(x[duplicated(x)])))))
+> stopifnot(all(sort(c(singles(x), replicates(x))) == sort(x)))
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Benchmarking singles()
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> set.seed(0xBEEF)
+> n <- 1e6
+> x <- sample(1:(n/2), size=n, replace=TRUE)
+> t <- system.time({
++   s <- isSingle(x)
++ })
+> print(sum(s))
+[1] 135603
+> 
+> t0 <- system.time({
++   s0 <- !(x %in% x[duplicated(x)])
++ })
+> print(t/t0)
+     user    system   elapsed 
+0.9166667 0.8888889 0.9090909 
+> stopifnot(all(s == s0))
+> 

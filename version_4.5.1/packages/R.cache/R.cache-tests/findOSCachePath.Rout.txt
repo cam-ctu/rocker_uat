@@ -1,0 +1,81 @@
+
+R version 4.5.1 (2025-06-13) -- "Great Square Root"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(R.cache)
+R.cache v0.17.0 (2025-05-02 22:20:02 UTC) successfully loaded. See ?R.cache for help.
+> 
+> findOSCachePath <- R.cache:::findOSCachePath
+> getOS <- R.cache:::getOS
+> message("findOSCachePath() ...")
+findOSCachePath() ...
+> 
+> oses <- getOS()
+> if (isTRUE(as.logical(Sys.getenv("R_CHECK_FULL", "FALSE")))) {
++   oses <- c("unix", "windows", "macos")
++ }
+> 
+> for (os in oses) {
++   message("Operating system: ", sQuote(os))
++   message("- getOS(): ", sQuote(getOS()))
++ 
++   ## Fake the OS?
++   fake_os <- (os != getOS())
++   if (fake_os) {
++     if (os == "windows") {
++       Sys.setenv(LOCALAPPDATA = normalizePath("~/AppData/Local", mustWork = FALSE))
++     }
++   }
++ 
++   path <- findOSCachePath(os)
++   message("- findOSCachePath(): ", sQuote(path))
++   
++   if (getRversion() >= "4.0.0") {
++     R_user_dir <- tools::R_user_dir
++     path_R <- local({
++       if (fake_os) {
++         if (os == "macos") {
++           tracer <- quote(Sys.info <- function() c(sysname = "Darwin"))
++         } else {
++           tracer <- quote(.Platform <- list(OS.type = os))
++         }
++         trace(R_user_dir, tracer = tracer)
++         on.exit(untrace(R_user_dir))
++       }
++       R_user_dir("R.cache", which = "cache")
++     })
++     
++     message("- R_user_dir('R.cache', which = 'cache'): ", sQuote(path_R))
++     path_R <- normalizePath(path_R, mustWork = FALSE)
++     message("- Normalized version: ", sQuote(path_R))
++     res <- identical(path, path_R)
++     message("- Identical to findOSCachePath(): ", res)
++     if (!res) {
++       message("- findOSCachePath() differ from R_user_dir(): ",
++               sQuote(path), " != ", sQuote(path_R))
++     }    
++   }
++ } ## for (os ...)
+Operating system: ‘unix’
+- getOS(): ‘unix’
+- findOSCachePath(): ‘/github/home/.cache/R/R.cache’
+- R_user_dir('R.cache', which = 'cache'): ‘/github/home/.cache/R/R.cache’
+- Normalized version: ‘/github/home/.cache/R/R.cache’
+- Identical to findOSCachePath(): TRUE
+> 
+> message("findOSCachePath() ... done")
+findOSCachePath() ... done
+> 

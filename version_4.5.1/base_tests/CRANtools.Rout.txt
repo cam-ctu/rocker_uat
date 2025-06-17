@@ -1,0 +1,551 @@
+
+R version 4.5.1 (2025-06-13) -- "Great Square Root"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> ### This needs a local (partial) CRAN mirror or Internet access
+> ## Specifically, needs web/packages/packages.rds and web/checks/*.rds
+> 
+> ## This may need to download, so increase the timeout.
+> options(warn = 1L, timeout = max(600, getOption('timeout')))
+> 
+> .ptime <- proc.time()
+> 
+> ## Look up CRAN mirror in the same way the functions do.
+> ## Uses R_CRAN_WEB if set, otherwise getOption('repos')["CRAN"]
+> ## then the (possibly local) 'repositories' file
+> ## and if still unset, https://CRAN.R-project.org
+> mirror <- tools:::CRAN_baseurl_for_web_area()
+> message("Using CRAN mirror ",  sQuote(mirror))
+Using CRAN mirror 'https://CRAN.R-project.org'
+> 
+> ## Sanity check: the examples use /web/packages/packages.rds and
+> ## web/checks/check_*.rds,
+> ## but partial mirrors for package installation only need src/contrib.
+> ## This would fail with a file:// mirror but provides a cheap check
+> ## of the availability of a https:// one.
+> if(!startsWith(mirror, "file://")) {
++     foo <- tryCatch(readLines(paste0(mirror, "/web/packages")),
++                     error = function(e) {
++                     message(conditionMessage(e))
++                     ## and bail out
++                     cat("Time elapsed: ", proc.time() - .ptime,"\n")
++                     q("no")
++     })
++ }
+> 
+> ## no longer conditionalized on Internet access
+> library(tools)
+> example("CRAN_package_db", run.donttest = TRUE)
+
+CRAN__> ## No test: 
+CRAN__> ## This can be rather slow  with a non-local CRAN mirror
+CRAN__> ## and might fail (slowly) without Internet access in that case.
+CRAN__> 
+CRAN__> set.seed(11)  # but the packages chosen will change as soon as CRAN does.
+
+CRAN__> pdb <- CRAN_package_db()
+
+CRAN__> dim(pdb)
+[1] 22361    69
+
+CRAN__> ## DESCRIPTION fields included:
+CRAN__> colnames(pdb)
+ [1] "Package"                 "Version"                
+ [3] "Priority"                "Depends"                
+ [5] "Imports"                 "LinkingTo"              
+ [7] "Suggests"                "Enhances"               
+ [9] "License"                 "License_is_FOSS"        
+[11] "License_restricts_use"   "OS_type"                
+[13] "Archs"                   "MD5sum"                 
+[15] "NeedsCompilation"        "Additional_repositories"
+[17] "Author"                  "Authors@R"              
+[19] "Biarch"                  "BugReports"             
+[21] "BuildKeepEmpty"          "BuildManual"            
+[23] "BuildResaveData"         "BuildVignettes"         
+[25] "Built"                   "ByteCompile"            
+[27] "Classification/ACM"      "Classification/ACM-2012"
+[29] "Classification/JEL"      "Classification/MSC"     
+[31] "Classification/MSC-2010" "Collate"                
+[33] "Collate.unix"            "Collate.windows"        
+[35] "Contact"                 "Copyright"              
+[37] "Date"                    "Date/Publication"       
+[39] "Description"             "Encoding"               
+[41] "KeepSource"              "Language"               
+[43] "LazyData"                "LazyDataCompression"    
+[45] "LazyLoad"                "MailingList"            
+[47] "Maintainer"              "Note"                   
+[49] "Packaged"                "RdMacros"               
+[51] "StagedInstall"           "SysDataCompression"     
+[53] "SystemRequirements"      "Title"                  
+[55] "Type"                    "URL"                    
+[57] "UseLTO"                  "VignetteBuilder"        
+[59] "ZipData"                 "Path"                   
+[61] "X-CRAN-Comment"          "Published"              
+[63] "Reverse depends"         "Reverse imports"        
+[65] "Reverse linking to"      "Reverse suggests"       
+[67] "Reverse enhances"        "Deadline"               
+[69] "DOI"                    
+
+CRAN__> ## Summarize publication dates:
+CRAN__> summary(as.Date(pdb$Published))
+        Min.      1st Qu.       Median         Mean      3rd Qu.         Max. 
+"2008-10-28" "2021-08-25" "2023-09-27" "2022-11-22" "2024-11-10" "2025-06-17" 
+
+CRAN__> ## Summarize numbers of packages according to maintainer:
+CRAN__> summary(lengths(split(pdb$Package, pdb$Maintainer)))
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  1.000   1.000   1.000   1.784   2.000  76.000 
+
+CRAN__> ## Packages with 'LASSO' in their Description:
+CRAN__> pdb$Package[grepl("LASSO", pdb$Description)]
+ [1] "ablasso"               "ConnectednessApproach" "csmpv"                
+ [4] "difR"                  "emBayes"               "expandFunctions"      
+ [7] "extlasso"              "fastcmprsk"            "FeaLect"              
+[10] "frailtyMMpen"          "gcdnet"                "glassoFast"           
+[13] "glmmPen"               "glmnetr"               "glmnetSE"             
+[16] "glmvsd"                "grpnet"                "GWRLASSO"             
+[19] "hdmed"                 "higlasso"              "HTLR"                 
+[22] "MetabolicSurv"         "MicrobiomeSurv"        "midasml"              
+[25] "milr"                  "miselect"              "MTE"                  
+[28] "ncpen"                 "nets"                  "pgee.mixed"           
+[31] "planningML"            "polywog"               "ppmlasso"             
+[34] "pqrBayes"              "pqrfe"                 "predhy"               
+[37] "predhy.GUI"            "priorityelasticnet"    "rbridge"              
+[40] "REN"                   "rqPen"                 "rrat"                 
+[43] "SentimentAnalysis"     "SGPR"                  "sharp"                
+[46] "slasso"                "SparseBiplots"         "SpTe2M"               
+[49] "stR"                   "SuRF.vs"               "SurvHiDim"            
+[52] "VSOLassoBag"          
+
+CRAN__> results <- CRAN_check_results()
+
+CRAN__> ## Available variables:
+CRAN__> names(results)
+ [1] "Flavor"     "Package"    "Version"    "Priority"   "Maintainer"
+ [6] "Status"     "Flags"      "T_install"  "T_check"    "T_total"   
+
+CRAN__> ## Tabulate overall check status according to flavor:
+CRAN__> with(results, table(Flavor, Status))
+                                   Status
+Flavor                                 OK  NOTE WARNING ERROR FAILURE
+  r-devel-linux-x86_64-debian-clang 13921  8365      16    35       0
+  r-devel-linux-x86_64-debian-gcc   13920  8365      19    32       1
+  r-devel-linux-x86_64-fedora-clang 18563  3713       5    45       0
+  r-devel-linux-x86_64-fedora-gcc   18575  3714       6    39       0
+  r-devel-windows-x86_64            18881  3397       6    29       9
+  r-oldrel-macos-arm64              16993  5244      25    80       0
+  r-oldrel-macos-x86_64             16915  5279      15    68       0
+  r-oldrel-windows-x86_64           17797  4444      10    61       4
+  r-patched-linux-x86_64            18697  3584       6    18       0
+  r-release-linux-x86_64            18734  3566       5    24       0
+  r-release-macos-arm64             19565  2631      25   127       0
+  r-release-macos-x86_64            19533  2624      18   106       0
+  r-release-windows-x86_64          18863  3397       6    34      17
+
+CRAN__> details <- CRAN_check_details()
+
+CRAN__> ## Available variables:
+CRAN__> names(details)
+[1] "Package"    "Version"    "Flavor"     "Check"      "Status"    
+[6] "Output"     "Flags"      "Maintainer"
+
+CRAN__> ## Tabulate checks according to their status:
+CRAN__> tab <- with(details, table(Check, Status))
+
+CRAN__> ## Inspect some installation problems:
+CRAN__> bad <- subset(details,
+CRAN__+               ((Check == "whether package can be installed") &
+CRAN__+                (Status != "OK")))
+
+CRAN__> ## Show a random sample of up to 6
+CRAN__> head(bad[sample(seq_len(NROW(bad)), NROW(bad)), ])
+Package: RSP 0.4
+Flavor: r-patched-linux-x86_64
+Check: whether package can be installed, Result: WARNING
+  Found the following significant warnings:
+    Note: possible error in 'mvn(data = data, mvnTest = "hz")': unused argument (mvnTest = "hz") 
+    Note: possible error in 'mvn(data = data, mvnTest = "mardia")': unused argument (mvnTest = "mardia") 
+  See <U+2018>/home/hornik/tmp/R.check/r-patched-gcc/Work/PKGS/RSP.Rcheck/00install.out<U+2019> for details.
+  Information on the location(s) of code generating the <U+2018>Note<U+2019>s can be
+  obtained by re-running with environment variable R_KEEP_PKG_SOURCE set
+  to <U+2018>yes<U+2019>.
+
+Package: Rmpi 0.7-3.3
+Flavor: r-oldrel-macos-x86_64
+Check: whether package can be installed, Result: ERROR
+  Installation failed.
+  See <U+2018>/Volumes/Builds/packages/big-sur-x86_64/results/4.4/Rmpi.Rcheck/00install.out<U+2019> for details.
+
+Package: RSP 0.4
+Flavor: r-release-linux-x86_64
+Check: whether package can be installed, Result: WARNING
+  Found the following significant warnings:
+    Note: possible error in 'mvn(data = data, mvnTest = "hz")': unused argument (mvnTest = "hz") 
+    Note: possible error in 'mvn(data = data, mvnTest = "mardia")': unused argument (mvnTest = "mardia") 
+  See <U+2018>/home/hornik/tmp/R.check/r-release-gcc/Work/PKGS/RSP.Rcheck/00install.out<U+2019> for details.
+  Information on the location(s) of code generating the <U+2018>Note<U+2019>s can be
+  obtained by re-running with environment variable R_KEEP_PKG_SOURCE set
+  to <U+2018>yes<U+2019>.
+
+Package: RcppMeCab 0.0.1.2
+Flavor: r-release-macos-x86_64
+Check: whether package can be installed, Result: ERROR
+  Installation failed.
+  See <U+2018>/Volumes/Builds/packages/big-sur-x86_64/results/4.5/RcppMeCab.Rcheck/00install.out<U+2019> for details.
+
+Package: SurfRough 0.0.1.1
+Flavor: r-oldrel-macos-x86_64
+Check: whether package can be installed, Result: ERROR
+  Installation failed.
+  See <U+2018>/Volumes/Builds/packages/big-sur-x86_64/results/4.4/SurfRough.Rcheck/00install.out<U+2019> for details.
+
+Package: RmecabKo 0.1.6.2
+Flavor: r-release-macos-x86_64
+Check: whether package can be installed, Result: ERROR
+  Installation failed.
+  See <U+2018>/Volumes/Builds/packages/big-sur-x86_64/results/4.5/RmecabKo.Rcheck/00install.out<U+2019> for details.
+
+CRAN__> issues <- CRAN_check_issues()
+
+CRAN__> head(issues)
+    Package Version    kind
+1  EmbedSOM    <NA>    0len
+4     dartR    <NA>    0len
+5  fedmatch    <NA>    0len
+9  timeplyr    <NA>    0len
+17    NMsim   0.2.3   ATLAS
+71 raybevel   0.1.3 clang19
+                                                       href
+1      https://www.stats.ox.ac.uk/pub/bdr/0len/EmbedSOM.out
+4         https://www.stats.ox.ac.uk/pub/bdr/0len/dartR.out
+5      https://www.stats.ox.ac.uk/pub/bdr/0len/fedmatch.out
+9      https://www.stats.ox.ac.uk/pub/bdr/0len/timeplyr.out
+17 https://www.stats.ox.ac.uk/pub/bdr/Rblas/ATLAS/NMsim.out
+71  https://www.stats.ox.ac.uk/pub/bdr/clang19/raybevel.log
+
+CRAN__> ## Show counts of issues according to kind:
+CRAN__> table(issues[, "kind"])
+
+      0len      ATLAS      Intel        LTO      M1mac        MKL   OpenBLAS 
+         4          1         13          1         12          2          1 
+    Strict clang-ASAN    clang19   donttest        gcc       noLD    noRemap 
+         9          3          2         89          1          4          6 
+noSuggests       rchk      rcnst   valgrind 
+        45         88          1          2 
+
+CRAN__> ## Summarize CRAN check status for 10 randomly-selected packages
+CRAN__> ## (reusing the information already read in):
+CRAN__> pos <- sample(seq_len(NROW(pdb)), 10L)
+
+CRAN__> summarize_CRAN_check_status(pdb[pos, "Package"],
+CRAN__+                             results, details, issues)
+Package: SMVar
+**************
+
+Current CRAN status: OK: 11, NOTE: 2
+See: <https://CRAN.R-project.org/web/checks/check_results_SMVar.html>
+
+Version: 1.3.4
+Check: CRAN incoming feasibility, Result: NOTE
+  Maintainer: <U+2018>Samuel Blanck <samuel.blanck@univ-lille.fr><U+2019>
+  
+  No Authors@R field in DESCRIPTION.
+  Please add one, modifying
+    Authors@R: c(person(given = "Guillemette",
+                        family = "Marot",
+                        role = c("aut", "cre")),
+                 person(given = "Samuel",
+                        family = "Blanck",
+                        role = "cre",
+                        email = "samuel.blanck@univ-lille.fr"))
+  as necessary.
+See: <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-debian-clang/SMVar-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-debian-gcc/SMVar-00check.html>
+
+Package: SpectralClMixed
+************************
+
+Current CRAN status: OK: 13
+See: <https://CRAN.R-project.org/web/checks/check_results_SpectralClMixed.html>
+
+Package: sigclust
+*****************
+
+Current CRAN status: OK: 11, NOTE: 2
+See: <https://CRAN.R-project.org/web/checks/check_results_sigclust.html>
+
+Version: 1.1.0.1
+Check: CRAN incoming feasibility, Result: NOTE
+  Maintainer: <U+2018>Hanwen Huang <hanwenh.unc@gmail.com><U+2019>
+  
+  No Authors@R field in DESCRIPTION.
+  Please add one, modifying
+    Authors@R: c(person(given = "Hanwen",
+                        family = "Huang",
+                        role = c("aut", "cre"),
+                        email = "hanwenh.unc@gmail.com"),
+                 person(given = c("Yufeng", "Liu", "&", "J.", "S."),
+                        family = "Marron",
+                        role = "aut"))
+  as necessary.
+See: <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-debian-clang/sigclust-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-debian-gcc/sigclust-00check.html>
+
+Package: nmixgof
+****************
+
+Current CRAN status: OK: 13
+See: <https://CRAN.R-project.org/web/checks/check_results_nmixgof.html>
+
+Package: OptimalTiming
+**********************
+
+Current CRAN status: OK: 11, NOTE: 2
+See: <https://CRAN.R-project.org/web/checks/check_results_OptimalTiming.html>
+
+Version: 0.1.0
+Check: CRAN incoming feasibility, Result: NOTE
+  Maintainer: <U+2018>Xiao Lin <xlin3@mdanderson.org><U+2019>
+  
+  No Authors@R field in DESCRIPTION.
+  Please add one, modifying
+    Authors@R: c(person(given = "Xiao",
+                        family = "Lin",
+                        role = c("aut", "cre"),
+                        email = "xlin3@mdanderson.org"),
+                 person(given = "Xuelin",
+                        family = "Huang",
+                        role = "aut",
+                        email = "xlhuang@mdanderson.org"))
+  as necessary.
+See: <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-debian-clang/OptimalTiming-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-debian-gcc/OptimalTiming-00check.html>
+
+Package: hdpca
+**************
+
+Current CRAN status: OK: 11, NOTE: 2
+See: <https://CRAN.R-project.org/web/checks/check_results_hdpca.html>
+
+Version: 1.1.5
+Check: CRAN incoming feasibility, Result: NOTE
+  Maintainer: <U+2018>Rounak Dey <deyrnk@umich.edu><U+2019>
+  
+  No Authors@R field in DESCRIPTION.
+  Please add one, modifying
+    Authors@R: c(person(given = "Rounak",
+                        family = "Dey",
+                        role = c("aut", "cre"),
+                        email = "deyrnk@umich.edu"),
+                 person(given = "Seunggeun",
+                        family = "Lee",
+                        role = "aut"))
+  as necessary.
+See: <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-debian-clang/hdpca-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-debian-gcc/hdpca-00check.html>
+
+Package: probe
+**************
+
+Current CRAN status: OK: 11, NOTE: 2
+See: <https://CRAN.R-project.org/web/checks/check_results_probe.html>
+
+Version: 1.1
+Check: CRAN incoming feasibility, Result: NOTE
+  Maintainer: <U+2018>Alexander McLain <mclaina@mailbox.sc.edu><U+2019>
+  
+  The Description field contains
+    Zgodic, and Bondell (2022) <arXiv:2209.08139>.
+  Please refer to arXiv e-prints via their arXiv DOI <doi:10.48550/arXiv.YYMM.NNNNN>.
+See: <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-debian-clang/probe-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-debian-gcc/probe-00check.html>
+
+Package: dynpred
+****************
+
+Current CRAN status: NOTE: 13
+See: <https://CRAN.R-project.org/web/checks/check_results_dynpred.html>
+
+Version: 0.1.2
+Check: CRAN incoming feasibility, Result: NOTE
+  Maintainer: <U+2018>Hein Putter <H.Putter@lumc.nl><U+2019>
+  
+  No Authors@R field in DESCRIPTION.
+  Please add one, modifying
+    Authors@R: person(given = "Hein",
+                      family = "Putter",
+                      role = c("aut", "cre"),
+                      email = "h.putter@lumc.nl")
+  as necessary.
+See: <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-debian-clang/dynpred-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-debian-gcc/dynpred-00check.html>
+
+Version: 0.1.2
+Check: Rd files, Result: NOTE
+  checkRd: (-1) NKI-breast-cancer-clinical-data.Rd:26: Escaped LaTeX specials: \&
+  checkRd: (-1) NKI-breast-cancer-clinical-data.Rd:33: Escaped LaTeX specials: \&
+  checkRd: (-1) NKI-breast-cancer-clinical-data.Rd:37: Escaped LaTeX specials: \&
+  checkRd: (-1) WBC-follow-up-data.Rd:13: Escaped LaTeX specials: \&
+  checkRd: (-1) WBC-follow-up-data.Rd:14: Escaped LaTeX specials: \&
+  checkRd: (-1) WBC-follow-up-data.Rd:26: Escaped LaTeX specials: \&
+  checkRd: (-1) WBC-follow-up-data.Rd:31: Escaped LaTeX specials: \&
+  checkRd: (-1) WBC-follow-up-data.Rd:41: Escaped LaTeX specials: \&
+  checkRd: (-1) WBC-measurements-data.Rd:13: Escaped LaTeX specials: \&
+  checkRd: (-1) WBC-measurements-data.Rd:14: Escaped LaTeX specials: \&
+  checkRd: (-1) WBC-measurements-data.Rd:25: Escaped LaTeX specials: \&
+  checkRd: (-1) WBC-measurements-data.Rd:30: Escaped LaTeX specials: \&
+  checkRd: (-1) WBC-measurements-data.Rd:40: Escaped LaTeX specials: \&
+See: <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-debian-clang/dynpred-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-debian-gcc/dynpred-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-fedora-clang/dynpred-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-fedora-gcc/dynpred-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-devel-windows-x86_64/dynpred-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-patched-linux-x86_64/dynpred-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-release-linux-x86_64/dynpred-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-release-macos-arm64/dynpred-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-release-macos-x86_64/dynpred-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-release-windows-x86_64/dynpred-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-oldrel-macos-arm64/dynpred-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-oldrel-macos-x86_64/dynpred-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-oldrel-windows-x86_64/dynpred-00check.html>
+
+Version: 0.1.2
+Check: compiled code, Result: NOTE
+  File <U+2018>dynpred/libs/dynpred.so<U+2019>:
+    Found no calls to: <U+2018>R_registerRoutines<U+2019>, <U+2018>R_useDynamicSymbols<U+2019>
+  
+  It is good practice to register native routines and to disable symbol
+  search.
+  
+  See <U+2018>Writing portable packages<U+2019> in the <U+2018>Writing R Extensions<U+2019> manual.
+See: <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-fedora-clang/dynpred-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-fedora-gcc/dynpred-00check.html>
+
+Package: scrm
+*************
+
+Current CRAN status: OK: 13
+See: <https://CRAN.R-project.org/web/checks/check_results_scrm.html>
+
+Package: rotl
+*************
+
+Current CRAN status: NOTE: 13
+See: <https://CRAN.R-project.org/web/checks/check_results_rotl.html>
+
+Version: 3.1.0
+Check: Rd files, Result: NOTE
+  checkRd: (-1) get_study_meta.Rd:54-55: Lost braces in \itemize; meant \describe ?
+  checkRd: (-1) get_study_meta.Rd:57-60: Lost braces in \itemize; meant \describe ?
+  checkRd: (-1) get_study_meta.Rd:62-68: Lost braces in \itemize; meant \describe ?
+  checkRd: (-1) get_study_meta.Rd:66: Lost braces; missing escapes or markup?
+      66 |   \item {get_study_year} { The year of publication of the study. }
+         |         ^
+  checkRd: (-1) get_study_meta.Rd:66: Lost braces; missing escapes or markup?
+      66 |   \item {get_study_year} { The year of publication of the study. }
+         |                          ^
+  checkRd: (-1) rotl.Rd:27-31: Lost braces in \itemize; meant \describe ?
+  checkRd: (-1) rotl.Rd:33-36: Lost braces in \itemize; meant \describe ?
+  checkRd: (-1) taxonomy_about.Rd:17-18: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) taxonomy_about.Rd:20: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) taxonomy_about.Rd:22: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) taxonomy_about.Rd:24-25: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) taxonomy_about.Rd:27: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) taxonomy_mrca.Rd:43-45: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) taxonomy_mrca.Rd:47-48: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) taxonomy_mrca.Rd:50-51: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) taxonomy_mrca.Rd:53-54: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) taxonomy_subtree.Rd:35-38: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) taxonomy_subtree.Rd:40-42: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) taxonomy_subtree.Rd:44-45: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) taxonomy_subtree.Rd:47-49: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_about.Rd:38: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_about.Rd:40-41: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_about.Rd:43-44: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_about.Rd:46-47: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_about.Rd:49-50: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_about.Rd:52: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_about.Rd:54: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_about.Rd:56: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_about.Rd:58: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_about.Rd:60: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_about.Rd:62: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_about.Rd:64-65: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_about.Rd:67: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_about.Rd:69-71: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_about.Rd:75-80: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_about.Rd:82-85: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_about.Rd:88-89: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_about.Rd:91: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_about.Rd:93-94: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_about.Rd:97: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_mrca.Rd:42: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_mrca.Rd:45: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_mrca.Rd:47: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_mrca.Rd:49-51: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_mrca.Rd:54: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_mrca.Rd:56: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_mrca.Rd:58-59: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_mrca.Rd:61: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_mrca.Rd:63-65: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_mrca.Rd:73-75: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_mrca.Rd:77-79: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_mrca.Rd:81-84: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_mrca.Rd:86-88: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_mrca.Rd:91-93: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_mrca.Rd:96: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_mrca.Rd:98: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_mrca.Rd:100-101: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_mrca.Rd:103: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_mrca.Rd:105-107: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_mrca.Rd:110-112: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_mrca.Rd:115-116: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_mrca.Rd:118: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_mrca.Rd:120-121: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_node_info.Rd:55: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_node_info.Rd:57: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_node_info.Rd:59-61: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_node_info.Rd:63-64: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_node_info.Rd:66-67: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_node_info.Rd:70: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_node_info.Rd:72: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_node_info.Rd:74-75: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_node_info.Rd:77: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_node_info.Rd:79-81: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_node_info.Rd:88-90: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_node_info.Rd:92-96: Lost braces in \itemize; \value handles \item{}{} directly
+  checkRd: (-1) tol_node_info.Rd:98-100: Lost braces in \itemize; \value handles \item{}{} directly
+See: <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-debian-clang/rotl-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-debian-gcc/rotl-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-fedora-clang/rotl-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-fedora-gcc/rotl-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-devel-windows-x86_64/rotl-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-patched-linux-x86_64/rotl-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-release-linux-x86_64/rotl-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-release-macos-arm64/rotl-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-release-macos-x86_64/rotl-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-release-windows-x86_64/rotl-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-oldrel-macos-arm64/rotl-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-oldrel-macos-x86_64/rotl-00check.html>,
+     <https://www.r-project.org/nosvn/R.check/r-oldrel-windows-x86_64/rotl-00check.html>
+
+CRAN__> ## End(No test)
+CRAN__> 
+CRAN__> 
+> 
+> cat("Time elapsed: ", proc.time() - .ptime,"\n")
+Time elapsed:  2.433 0.098 6.76 0 0 
+> 

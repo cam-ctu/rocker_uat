@@ -1,0 +1,266 @@
+
+R version 4.5.1 (2025-06-13) -- "Great Square Root"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> # test_lmer.R
+> 
+> stopifnot(!"lmerTest" %in% .packages()) # ensure that lmerTest is NOT attached
+> data("sleepstudy", package="lme4")
+> f <- function(form, data) lmerTest::lmer(form, data=data)
+> form <- "Reaction ~ Days + (Days|Subject)"
+> fm <- f(form, data=sleepstudy)
+> anova(fm)
+Type III Analysis of Variance Table with Satterthwaite's method
+     Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+Days  30031   30031     1    17  45.853 3.264e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> summary(fm)
+Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: form
+   Data: data
+
+REML criterion at convergence: 1743.6
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-3.9536 -0.4634  0.0231  0.4634  5.1793 
+
+Random effects:
+ Groups   Name        Variance Std.Dev. Corr
+ Subject  (Intercept) 612.10   24.741       
+          Days         35.07    5.922   0.07
+ Residual             654.94   25.592       
+Number of obs: 180, groups:  Subject, 18
+
+Fixed effects:
+            Estimate Std. Error      df t value Pr(>|t|)    
+(Intercept)  251.405      6.825  17.000  36.838  < 2e-16 ***
+Days          10.467      1.546  17.000   6.771 3.26e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Correlation of Fixed Effects:
+     (Intr)
+Days -0.138
+> 
+> # cf. GitHub issue #2:
+> test <- function() {
++   tmp <- sleepstudy
++   m <- lmerTest::lmer(Reaction ~ Days + (Days | Subject), data = tmp)
++   summary(m)
++ }
+> test()
+Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: Reaction ~ Days + (Days | Subject)
+   Data: tmp
+
+REML criterion at convergence: 1743.6
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-3.9536 -0.4634  0.0231  0.4634  5.1793 
+
+Random effects:
+ Groups   Name        Variance Std.Dev. Corr
+ Subject  (Intercept) 612.10   24.741       
+          Days         35.07    5.922   0.07
+ Residual             654.94   25.592       
+Number of obs: 180, groups:  Subject, 18
+
+Fixed effects:
+            Estimate Std. Error      df t value Pr(>|t|)    
+(Intercept)  251.405      6.825  17.000  36.838  < 2e-16 ***
+Days          10.467      1.546  17.000   6.771 3.26e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Correlation of Fixed Effects:
+     (Intr)
+Days -0.138
+> test <- function() {
++   tmp <- sleepstudy
++   m <- lme4::lmer(Reaction ~ Days + (Days | Subject), data = tmp)
++   if(requireNamespace("lmerTest", quietly = TRUE)) {
++     summary(lmerTest::as_lmerModLmerTest(m))
++   }
++ }
+> test()
+Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: Reaction ~ Days + (Days | Subject)
+   Data: tmp
+
+REML criterion at convergence: 1743.6
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-3.9536 -0.4634  0.0231  0.4634  5.1793 
+
+Random effects:
+ Groups   Name        Variance Std.Dev. Corr
+ Subject  (Intercept) 612.10   24.741       
+          Days         35.07    5.922   0.07
+ Residual             654.94   25.592       
+Number of obs: 180, groups:  Subject, 18
+
+Fixed effects:
+            Estimate Std. Error      df t value Pr(>|t|)    
+(Intercept)  251.405      6.825  17.000  36.838  < 2e-16 ***
+Days          10.467      1.546  17.000   6.771 3.26e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Correlation of Fixed Effects:
+     (Intr)
+Days -0.138
+> 
+> library(lmerTest)
+Loading required package: lme4
+Loading required package: Matrix
+
+Attaching package: ‘lmerTest’
+
+The following object is masked from ‘package:lme4’:
+
+    lmer
+
+The following object is masked from ‘package:stats’:
+
+    step
+
+> 
+> # WRE says "using if(requireNamespace("pkgname")) is preferred, if possible."
+> # even in tests:
+> assertError <- function(expr, ...)
++   if(requireNamespace("tools")) tools::assertError(expr, ...) else invisible()
+> assertWarning <- function(expr, ...)
++   if(requireNamespace("tools")) tools::assertWarning(expr, ...) else invisible()
+> 
+> TOL <- 1e-4
+> 
+> #####################################################################
+> # Check that lme4::lmer and lmerTest::lmer have the same arguments
+> 
+> lmer_args <- formals(lme4::lmer)
+> names(lmer_args)
+ [1] "formula"    "data"       "REML"       "control"    "start"     
+ [6] "verbose"    "subset"     "weights"    "na.action"  "offset"    
+[11] "contrasts"  "devFunOnly"
+> lmerTest_args <- formals(lmerTest::lmer)
+> seq_args <- seq_along(lmerTest_args)
+> if(packageVersion("lme4") > '1.1.21') {
++   stopifnot(
++     all.equal(names(lmer_args), names(lmerTest_args)),
++     all.equal(lmer_args, lmerTest_args)
++   )
++ } else { # Older versions of 'lme4' has a "..." argument:
++   stopifnot(
++     all.equal(names(lmer_args)[seq_args], names(lmerTest_args[seq_args])),
++     all.equal(lmer_args[seq_args], lmerTest_args[seq_args])
++   )
++ }
+> 
+> #####################################################################
+> # Test evaluation of update inside a function:
+> myupdate <- function(m, ...) {
++   update(m, ...)
++ }
+> 
+> data("sleepstudy", package="lme4")
+> fm1 <- lmer(Reaction ~ Days + (Days|Subject), sleepstudy)
+> tmp <- sleepstudy
+> rm(sleepstudy)
+> fmA <- update(fm1, data = tmp) # works
+> fmB <- myupdate(fm1, data = tmp) # also works
+> # Same except for 'call':
+> fmB@call <- fmA@call
+> stopifnot(isTRUE(all.equal(fmA, fmB, tolerance=TOL)))
+> # Based on bug-report by Henrik Singmann, github issue #3
+> 
+> #####################################################################
+> # Test update when formula is a character vector:
+> 
+> form <- "Informed.liking ~ Product+Information+
++             (1|Consumer) + (1|Product:Consumer) + (1|Information:Consumer)"
+> m <- lmer(form, data=ham)
+> class(m)
+[1] "lmerModLmerTest"
+attr(,"package")
+[1] "lmerTest"
+> class(update(m, ~.- Product))
+[1] "lmerModLmerTest"
+attr(,"package")
+[1] "lmerTest"
+> stopifnot(inherits(update(m, ~.- Product), "lmerModLmerTest"))
+> 
+> # In version < 3.0-1.9002 class(update(m, ~.- Product)) was "lmerMod"
+> #####################################################################
+> # Test error message from as_lmerModLmerTest:
+> data("sleepstudy", package="lme4")
+> myfit <- function(formula, data) {
++   lme4::lmer(formula = formula, data = data)
++ }
+> fm2 <- myfit(Reaction ~ Days + (Days|Subject), sleepstudy)
+> m <- assertError(as_lmerModLmerTest(fm2))
+> stopifnot(
++   grepl("Unable to extract deviance function from model fit", m[[1]], fixed=TRUE)
++ )
+> 
+> #####################################################################
+> # Check that devFunOnly argument works:
+> data("sleepstudy", package="lme4")
+> fun <- lmer(Reaction ~ Days + (Days|Subject), sleepstudy, devFunOnly = TRUE)
+> stopifnot(is.function(fun) && names(formals(fun)[1]) == "theta")
+> fm1 <- lmer(Reaction ~ Days + (Days|Subject), sleepstudy)
+> fun <- update(fm1, devFunOnly=TRUE)
+> stopifnot(is.function(fun) && names(formals(fun)[1]) == "theta")
+> # devFunOnly = FALSE:
+> notfun <- lmer(Reaction ~ Days + (Days|Subject), sleepstudy, devFunOnly = FALSE)
+> stopifnot(inherits(notfun, "lmerModLmerTest"))
+> # Partial matching:
+> notfun <- lmer(Reaction ~ Days + (Days|Subject), sleepstudy, devFun = FALSE)
+> stopifnot(inherits(notfun, "lmerModLmerTest"))
+> 
+> #####################################################################
+> # Use of as_lmerModLmerTest
+> data("sleepstudy", package="lme4")
+> m <- lme4::lmer(Reaction ~ Days + (Days | Subject), sleepstudy)
+> bm <- lmerTest:::as_lmerModLmerTest(m)
+> stopifnot(
++   inherits(bm, "lmerModLmerTest"),
++   !inherits(m, "lmerModLmerTest"),
++   inherits(bm, "lmerMod"),
++   all(c("vcov_varpar", "Jac_list", "vcov_beta", "sigma") %in% slotNames(bm))
++ )
+> 
+> #####################################################################
+> # Update method
+> 
+> m <- lmer(Reaction ~ Days + (Days | Subject), sleepstudy)
+> m1 <- update(m, ~.-Days)
+> m2 <- lmer(Reaction ~ (Days | Subject), sleepstudy)
+> 
+> stopifnot(
++   inherits(m, "lmerModLmerTest"),
++   inherits(m1, "lmerModLmerTest"),
++   inherits(m2, "lmerModLmerTest"),
++   all.equal(m1, m2, tolerance=1e-6)
++ )
+> 
+> 

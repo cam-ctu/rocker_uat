@@ -1,0 +1,149 @@
+
+R version 4.5.1 (2025-06-13) -- "Great Square Root"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library("R.utils")
+Loading required package: R.oo
+Loading required package: R.methodsS3
+R.methodsS3 v1.8.2 (2022-06-13 22:00:14 UTC) successfully loaded. See ?R.methodsS3 for help.
+R.oo v1.27.1 (2025-05-02 21:00:05 UTC) successfully loaded. See ?R.oo for help.
+
+Attaching package: ‘R.oo’
+
+The following object is masked from ‘package:R.methodsS3’:
+
+    throw
+
+The following objects are masked from ‘package:methods’:
+
+    getClasses, getMethods
+
+The following objects are masked from ‘package:base’:
+
+    attach, detach, load, save
+
+R.utils v2.13.0 (2025-02-24 21:20:02 UTC) successfully loaded. See ?R.utils for help.
+
+Attaching package: ‘R.utils’
+
+The following object is masked from ‘package:utils’:
+
+    timestamp
+
+The following objects are masked from ‘package:base’:
+
+    cat, commandArgs, getOption, isOpen, nullfile, parse, use, warnings
+
+> 
+> message("*** mkdirs() ...")
+*** mkdirs() ...
+> 
+> message("*** mkdirs(..., recursive=TRUE) ...")
+*** mkdirs(..., recursive=TRUE) ...
+> 
+> pathT <- tempdir()
+> mprint(pathT)
+[1] "/tmp/Rtmp1d78eo"
+> stopifnot(isDirectory(pathT))
+> 
+> path <- file.path(pathT, "foo", "bar")
+> mprint(path)
+[1] "/tmp/Rtmp1d78eo/foo/bar"
+> mkdirs(path)
+[1] TRUE
+> stopifnot(isDirectory(path))
+> 
+> paths <- c(dirname(path), path)
+> stopifnot(all(isDirectory(paths)))
+> 
+> path <- dirname(path)
+> removeDirectory(path, recursive=TRUE)
+> stopifnot(!isDirectory(path))
+> 
+> message("*** mkdirs(..., recursive=TRUE) ... DONE")
+*** mkdirs(..., recursive=TRUE) ... DONE
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # EXCEPTIONS
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> message("*** mkdirs(..., mustWork=TRUE) ...")
+*** mkdirs(..., mustWork=TRUE) ...
+> 
+> path <- file.path(pathT, "foo")
+> res <- mkdirs(path)
+> stopifnot(isDirectory(path))
+> 
+> ## Create file with same name
+> pathname <- file.path(path, "bar")
+> cat("Hello", file=pathname)
+> stopifnot(isFile(pathname))
+> 
+> res <- mkdirs(pathname)
+> stopifnot(isFile(pathname), !isDirectory(pathname))
+> 
+> res <- try(mkdirs(pathname, mustWork=TRUE), silent=TRUE)
+> cat(res)
+Error in mkdirs.default(pathname, mustWork = TRUE) : 
+  Failed to create directory, because a file with the same pathname already exists: /tmp/Rtmp1d78eo/foo/bar
+> stopifnot(inherits(res, "try-error"))
+> stopifnot(isFile(pathname), !isDirectory(pathname))
+> 
+> ## Parent is a file, not a directory
+> path2 <- file.path(path, "bar", "yaa")
+> res <- try(mkdirs(path2, mustWork=TRUE), silent=TRUE)
+> cat(res)
+Error in mkdirs.default(path2, mustWork = TRUE) : 
+  Could not create directory, because parent ('/tmp/Rtmp1d78eo/foo/bar') is a file not a directory: /tmp/Rtmp1d78eo/foo/bar/yaa
+> stopifnot(inherits(res, "try-error"))
+> stopifnot(!isDirectory(path2))
+> 
+> removeDirectory(path, recursive=TRUE)
+> stopifnot(!isDirectory(path))
+> 
+> message("*** mkdirs(..., mustWork=TRUE) ... DONE")
+*** mkdirs(..., mustWork=TRUE) ... DONE
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # SPECIAL:
+> # Windows has a undocumented "feature" that for some set
+> # ups on some machines (not all) it will for instance
+> # silently drop a trailing period and create the directory
+> # without it, e.g. 'G.S.' becomes 'G.S', cf.help("dir.create").
+> # See also https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=15996
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> message("*** mkdirs('G.S.') ...")
+*** mkdirs('G.S.') ...
+> 
+> path <- file.path(pathT, "G.S.")
+> mprint(path)
+[1] "/tmp/Rtmp1d78eo/G.S."
+> mkdirs(path)
+[1] TRUE
+> tryCatch({
++   stopifnot(isDirectory(path))
++   removeDirectory(path)
++ }, error = function(ex) {
++   mprint(ex)
++ })
+> 
+> message("*** mkdirs('G.S.') ... DONE")
+*** mkdirs('G.S.') ... DONE
+> 
+> message("*** mkdirs() ... DONE")
+*** mkdirs() ... DONE
+> 

@@ -1,0 +1,478 @@
+
+R version 4.5.1 (2025-06-13) -- "Great Square Root"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "sass"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('sass')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("as_sass")
+> ### * as_sass
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: as_sass
+> ### Title: Convert an R object into Sass code
+> ### Aliases: as_sass
+> 
+> ### ** Examples
+> 
+> # Example of regular Sass input
+> as_sass("body { color: \"blue\"; }")
+/* Sass */
+body { color: "blue"; }
+> 
+> # There is support for adding variables
+> as_sass(
++   list(
++     list(color = "blue"),
++    "body { color: $color; }"
++    )
++ )
+/* Sass */
+$color: blue;
+body { color: $color; }
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("font_face")
+> ### * font_face
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: font_google
+> ### Title: Helpers for importing web fonts
+> ### Aliases: font_google font_link font_face font_collection
+> ###   is_font_collection
+> 
+> ### ** Examples
+> 
+> 
+> library(htmltools)
+> 
+> my_font <- list("my-font" = font_google("Pacifico"))
+> hello <- tags$body(
++   "Hello",
++   tags$style(
++     sass(
++       list(
++         my_font,
++         list("body {font-family: $my-font}")
++       )
++     )
++   )
++ )
+> 
+> if (interactive()) {
++   browsable(hello)
++ }
+> 
+> # Three different yet equivalent ways of importing a remotely-hosted Google Font
+> a <- font_google("Crimson Pro", wght = "200..900", local = FALSE)
+> b <- font_link(
++   "Crimson Pro",
++   href = "https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@200..900"
++ )
+> url <- "https://fonts.gstatic.com/s/crimsonpro/v13/q5uDsoa5M_tv7IihmnkabARboYF6CsKj.woff2"
+> c <- font_face(
++   family = "Crimson Pro",
++   style = "normal",
++   weight = "200 900",
++   src = paste0("url(", url, ") format('woff2')")
++ )
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:htmltools’
+
+> nameEx("output_template")
+> ### * output_template
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: output_template
+> ### Title: An intelligent (temporary) output file
+> ### Aliases: output_template
+> 
+> ### ** Examples
+> 
+> sass("body {color: red}", output = output_template())
+[1] "/tmp/RtmpNBDu4H/sasscb383a40e9ed6cdacef26b1bbd43692b/sass.css"
+> 
+> func <- output_template(basename = "foo", dirname = "bar-")
+> func(suffix = "baz")
+[1] "/tmp/RtmpNBDu4H/bar-baz/foo.css"
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("sass")
+> ### * sass
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: sass
+> ### Title: Compile Sass to CSS
+> ### Aliases: sass
+> 
+> ### ** Examples
+> 
+> # Raw Sass input
+> sass("foo { margin: 122px * .3; }")
+/* CSS */
+foo {
+  margin: 36.6px;
+}
+
+> 
+> # List of inputs, including named variables
+> sass(list(
++   list(width = "122px"),
++   "foo { margin: $width * .3; }"
++ ))
+/* CSS */
+foo {
+  margin: 36.6px;
+}
+
+> 
+> # Compile a .scss file
+> example_file <- system.file("examples/example-full.scss", package = "sass")
+> sass(sass_file(example_file))
+/* CSS */
+body {
+  background-color: #333;
+  color: white;
+  font-size: 16px;
+}
+
+> 
+> # Import a file
+> tmp_file <- tempfile()
+> writeLines("foo { margin: $width * .3; }", tmp_file)
+> sass(list(
++   list(width = "122px"),
++   sass_file(tmp_file)
++ ))
+/* CSS */
+foo {
+  margin: 36.6px;
+}
+
+> 
+> ## Not run: 
+> ##D # ======================
+> ##D # Caching examples
+> ##D # ======================
+> ##D # Very slow to compile
+> ##D fib_sass <- "@function fib($x) {
+> ##D   @if $x <= 1 {
+> ##D     @return $x
+> ##D   }
+> ##D   @return fib($x - 2) + fib($x - 1);
+> ##D }
+> ##D 
+> ##D body {
+> ##D   width: fib(27);
+> ##D }"
+> ##D 
+> ##D # The first time this runs it will be very slow
+> ##D system.time(sass(fib_sass))
+> ##D 
+> ##D # But on subsequent calls, it should be very fast
+> ##D system.time(sass(fib_sass))
+> ##D 
+> ##D # sass() can be called with cache=NULL; it will be slow
+> ##D system.time(sass(fib_sass, cache = NULL))
+> ##D 
+> ##D # Clear the cache
+> ##D sass_cache_get()$reset()
+> ## End(Not run)
+> 
+> ## Not run: 
+> ##D # Example of disabling cache by setting the default cache to NULL.
+> ##D 
+> ##D # Disable the default cache (save the original one first, so we can restore)
+> ##D old_cache <- sass_cache_get()
+> ##D sass_cache_set(NULL)
+> ##D # Will be slow, because no cache
+> ##D system.time(sass(fib_sass))
+> ##D 
+> ##D # Restore the original cache
+> ##D sass_cache_set(old_cache)
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("sass_file_cache")
+> ### * sass_file_cache
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: sass_file_cache
+> ### Title: Create a file cache object
+> ### Aliases: sass_file_cache
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D # Create a cache with the default settings
+> ##D cache <- sass_file_cache(sass_cache_context_dir())
+> ##D 
+> ##D # Clear the cache
+> ##D cache$reset()
+> ## End(Not run)
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("sass_import")
+> ### * sass_import
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: sass_import
+> ### Title: Sass Import
+> ### Aliases: sass_import sass_file
+> 
+> ### ** Examples
+> 
+> sass_import("foo")
+[1] "@import \"foo\";"
+> sass_import("$foo", FALSE)
+[1] "@import $foo;"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("sass_layer")
+> ### * sass_layer
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: sass_layer
+> ### Title: Bundling Sass layers
+> ### Aliases: sass_layer sass_layer_file sass_bundle sass_bundle_remove
+> ###   is_sass_bundle
+> 
+> ### ** Examples
+> 
+> blue <- list(color = "blue !default")
+> red <- list(color = "red !default")
+> green <- list(color = "green !default")
+> 
+> # a sass_layer() by itself is not very useful, it just defines some
+> # SASS to place before (defaults) and after (rules)
+> core <- sass_layer(defaults = blue, rules = "body { color: $color; }")
+> core
+/* Sass Bundle */
+$color: blue !default;
+body { color: $color; }
+/* *** */
+> sass(core)
+/* CSS */
+body {
+  color: blue;
+}
+
+> 
+> # However, by stacking sass_layer()s, we have ability to place
+> # SASS both before and after some other sass (e.g., core)
+> # Here we place a red default _before_ the blue default and export the
+> # color SASS variable as a CSS variable _after_ the core
+> red_layer <- sass_layer(red, rules = ":root{ --color: #{$color}; }")
+> sass(sass_bundle(core, red_layer))
+/* CSS */
+body {
+  color: red;
+}
+
+:root {
+  --color: red;
+}
+
+> sass(sass_bundle(core, red_layer, sass_layer(green)))
+/* CSS */
+body {
+  color: red;
+}
+
+:root {
+  --color: red;
+}
+
+> 
+> # Example of merging layers and removing a layer
+> # Remember to name the layers that are removable
+> core_layers <- sass_bundle(core, red = red_layer, green = sass_layer(green))
+> core_layers # pretty printed for console
+/* Sass Bundle: red, green */
+$color: red !default;
+$color: green !default;
+$color: blue !default;
+body { color: $color; }
+:root{ --color: #{$color}; }
+/* *** */
+> core_slim <- sass_bundle_remove(core_layers, "red")
+> sass(core_slim)
+/* CSS */
+body {
+  color: green;
+}
+
+> 
+> 
+> # File attachment example: Create a checkboard pattern .png, then
+> # use it from a sass layer
+> 
+> tmp_png <- tempfile(fileext = ".png")
+> grDevices::png(filename = tmp_png, width = 20, height = 20,
++   bg = "transparent", antialias = "none")
+> par(mar = rep_len(0,4), xaxs = "i", yaxs = "i")
+> plot.new()
+> rect(c(0,0.5), c(0,0.5), c(0.5,1), c(0.5,1), col = "#00000044", border=NA)
+> dev.off()
+pdf 
+  2 
+> 
+> layer <- sass_layer(
++   rules = ".bg-check { background-image: url(images/demo_checkboard_bg.png) }",
++   file_attachments = c("images/demo_checkboard_bg.png" = tmp_png)
++ )
+> 
+> output_path <- tempfile(fileext = ".css")
+> sass(layer, output = output_path, write_attachments = TRUE)
+[1] "/tmp/RtmpNBDu4H/file1e0f91bac2a86.css"
+> 
+> 
+> 
+> graphics::par(get("par.postscript", pos = 'CheckExEnv'))
+> cleanEx()
+> nameEx("sass_options")
+> ### * sass_options
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: sass_options
+> ### Title: Compiler Options for Sass
+> ### Aliases: sass_options sass_options_get sass_options_set
+> 
+> ### ** Examples
+> 
+> 
+> x <- "foo { margin: 122px * .001; }"
+> sass(x)
+/* CSS */
+foo {
+  margin: 0.122px;
+}
+
+> 
+> # Provide options directly to sass()
+> sass(x, options = sass_options(precision = 1, output_style = "compact"))
+/* CSS */
+foo { margin: 0.1px; }
+
+> 
+> # Or set some option(s) globally
+> old_options <- sass_options_set(precision = 1)
+> sass(x)
+/* CSS */
+foo {
+  margin: 0.1px;
+}
+
+> 
+> # Specify local options  while also respecting global options
+> sass(x, options = sass_options_get(output_style = "compact"))
+/* CSS */
+foo { margin: 0.1px; }
+
+> 
+> # Restore original state
+> sass_options_set(old_options)
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("sass_partial")
+> ### * sass_partial
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: sass_partial
+> ### Title: Compile rules against a Sass Bundle or Sass Layer object
+> ### Aliases: sass_partial
+> 
+> ### ** Examples
+> 
+> theme <- sass_layer(
++   defaults = sass_file(system.file("examples/variables.scss", package = "sass")),
++   rules = sass_file(system.file("examples/rules.scss", package = "sass"))
++ )
+> 
+> # Compile the theme
+> sass(theme)
+/* CSS */
+body {
+  background-color: #333;
+  color: white;
+  font-size: 16px;
+}
+
+> 
+> # Sometimes we want to use the variables from the theme to compile other sass
+> my_rules <- ".someclass { background-color: $bg; color: $fg; }"
+> sass_partial(my_rules, theme)
+/* CSS */
+.someclass {
+  background-color: #333;
+  color: white;
+}
+
+> 
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  0.43 0.03 0.459 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

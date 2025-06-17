@@ -1,0 +1,3741 @@
+
+R version 4.5.1 (2025-06-13) -- "Great Square Root"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "Rdpack"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('Rdpack')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("Rd_combo")
+> ### * Rd_combo
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rd_combo
+> ### Title: Manipulate a number of Rd files
+> ### Aliases: Rd_combo
+> ### Keywords: Rd
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D rdnames <- dir(path = "./man", pattern=".*[.]Rd$", full.names=TRUE)
+> ##D 
+> ##D ## which Rd files don't have a value section?
+> ##D counts <- unlist(Rd_combo(rdnames, function(x) length(Rdo_locate_core_section(x, "\value"))))
+> ##D rdnames[counts == 0]
+> ##D 
+> ##D ## reprompt all files
+> ##D Rd_combo(rdnames, reprompt)
+> ##D for(nam in rdnames) try(reprompt(nam))
+> ##D for(nam in rdnames) try(reprompt(nam, sec_copy=FALSE))
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Rdapply")
+> ### * Rdapply
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rdapply
+> ### Title: Apply a function over an Rd object
+> ### Aliases: Rdapply rattr Rdtagapply
+> ### Keywords: RdoProgramming
+> 
+> ### ** Examples
+> 
+> # create an Rd object for the sake of example
+> u1 <- list_Rd(name = "Dummyname", alias = "dummyfun",
++               title = "Dummy title", description = "Dummy description",
++               usage = "dummyfun(x)",
++               value = "numeric vector",
++               author = "A. Author",
++               examples = "\na <- matrix(1:6,nrow=2)\na %*% t(a)\nt(a) %*% a",
++               Rd_class=TRUE )
+> 
+> # correct R code for examples but wrong for saving in Rd files
+> Rdo_show(u1)
+_D_u_m_m_y _t_i_t_l_e
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     Dummy description
+
+_U_s_a_g_e:
+
+     dummyfun(x)
+     
+_V_a_l_u_e:
+
+     numeric vector
+
+_A_u_t_h_o_r(_s):
+
+     A. Author
+
+_E_x_a_m_p_l_e_s:
+
+     a <- matrix(1:6,nrow=2)
+     a %*% t(a)
+     t(a) %*% a
+     
+
+> 
+> # escape percents everywhere except in comments
+> #  (actually, .anypercent escapes only unescaped percents)
+> rdo <- Rdapply(u1, Rdpack:::.anypercent, classes = "character", how = "replace")
+> 
+> # syntactically wrong R code for examples but ok for saving in Rd files
+> Rdo_show(rdo)
+_D_u_m_m_y _t_i_t_l_e
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     Dummy description
+
+_U_s_a_g_e:
+
+     dummyfun(x)
+     
+_V_a_l_u_e:
+
+     numeric vector
+
+_A_u_t_h_o_r(_s):
+
+     A. Author
+
+_E_x_a_m_p_l_e_s:
+
+     a <- matrix(1:6,nrow=2)
+     a \%*\% t(a)
+     t(a) \%*\% a
+     
+
+> 
+> 
+> # Rdo2Rdf does this by default for examples and other R code,
+> #   so code can be kept syntactically correct while processing.
+> #   (reprompt() takes care of this too as it uses Rdo2Rdf for saving)
+> 
+> fn <- tempfile("u1", fileext="Rd")
+> Rdo2Rdf(u1, file = fn)
+	The Rd content was written to file  /tmp/RtmpqLYiNh/u16c56719fc077Rd 
+> 
+> # the saved file contains escaped percents but they disappear in parsing:
+> file.show(fn)
+\name{Dummyname}\alias{dummyfun}\title{Dummy title}\description{Dummy description}\usage{dummyfun(x)}\value{numeric vector}\author{A. Author}\examples{
+a <- matrix(1:6,nrow=2)
+a \%*\% t(a)
+t(a) \%*\% a}
+> Rdo_show(tools::parse_Rd(fn))
+_D_u_m_m_y _t_i_t_l_e
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     Dummy description
+
+_U_s_a_g_e:
+
+     dummyfun(x)
+     
+_V_a_l_u_e:
+
+     numeric vector
+
+_A_u_t_h_o_r(_s):
+
+     A. Author
+
+_E_x_a_m_p_l_e_s:
+
+     a <- matrix(1:6,nrow=2)
+     a %*% t(a)
+     t(a) %*% a
+     
+
+> 
+> # if you think that sections should start on new lines,
+> # the following makes the file a little more human-friendly
+> #   (by inserting new lines).
+> ## Don't show: 
+> # todo: additional arg. for list_Rd for this?
+> ## End(Don't show)
+> u2 <- Rdpack:::.Rd_tidy(u1)
+> Rdo2Rdf(u2, file = fn)
+	The Rd content was written to file  /tmp/RtmpqLYiNh/u16c56719fc077Rd 
+> file.show(fn)
+\name{Dummyname}
+\alias{dummyfun}
+\title{Dummy title}
+\description{Dummy description}
+\usage{dummyfun(x)}
+\value{numeric vector}
+\author{A. Author}
+\examples{
+a <- matrix(1:6,nrow=2)
+a \%*\% t(a)
+t(a) \%*\% a}
+> 
+> unlink(fn)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Rdo2Rdf")
+> ### * Rdo2Rdf
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rdo2Rdf
+> ### Title: Convert an Rd object to Rd file format
+> ### Aliases: Rdo2Rdf
+> ### Keywords: Rd
+> 
+> ### ** Examples
+> 
+> # # this keeps the backslashes in "author" (see Note above)
+> # reprompt(infile="./man/Rdo2Rdf.Rd")
+> 
+> # # this outputs "author" preceded by one backslash only.
+> # reprompt(infile="./man/Rdo2Rdf.Rd", sec_copy = FALSE)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Rdo_append_argument")
+> ### * Rdo_append_argument
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rdo_append_argument
+> ### Title: Append an item for a new argument to an Rd object
+> ### Aliases: Rdo_append_argument
+> ### Keywords: RdoBuild
+> 
+> ### ** Examples
+> 
+> ## the following creates Rd object rdo
+> dummyfun <- function(x) x
+> fn <- tempfile("dummyfun", fileext = ".Rd")
+> reprompt(dummyfun, filename = fn)
+Rd source not supplied, looking for installed documentation.
+Rd source not supplied and installed documentation not found.
+Trying a 'prompt' function to generate documentation for the object.
+	success: documentation generated using a 'prompt' function.
+	The Rd content was written to file  /tmp/RtmpqLYiNh/dummyfun6c563a4d5dcf.Rd 
+[1] "/tmp/RtmpqLYiNh/dummyfun6c563a4d5dcf.Rd"
+> rdo <- tools::parse_Rd(fn)
+> 
+> ## add documentation for arguments
+> ## that are not in the signature of 'dummyfun()'
+> dottext <- "further arguments to be passed on."
+> dots <- paste0("\\", "dots")
+> rdo2 <- Rdo_append_argument(rdo, dots, dottext, create = TRUE)
+> rdo2 <- Rdo_append_argument(rdo2, "z", "a numeric vector")
+> 
+> ## reprompt() warns to remove documentation for non-existing arguments:
+> Rdo_show(reprompt(rdo2, filename = fn))
+Processing the Rd object...
+Argument(s):  ... z 
+	are no longer in any usage statements in this Rd object.
+Please remove the corresponding \item's from section '\arguments'.
+
+	The Rd content was written to file  /tmp/RtmpqLYiNh/dummyfun6c563a4d5dcf.Rd 
+~~ _D_u_m_m_y _t_i_t_l_e ~~
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     ~~ Dummy description ~~
+
+_U_s_a_g_e:
+
+     dummyfun(x)
+     
+_A_r_g_u_m_e_n_t_s:
+
+       x:
+
+     ...: further arguments to be passed on.
+
+       z: a numeric vector
+
+_E_x_a_m_p_l_e_s:
+
+     ##---- Should be DIRECTLY executable !! ----
+     ##-- ==>  Define data, use random,
+     ##--    or standard data sets, see data().
+     
+     ## The function is currently defined as
+     function (x) 
+     x
+     
+
+> 
+> unlink(fn)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Rdo_collect_metadata")
+> ### * Rdo_collect_metadata
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rdo_collect_aliases
+> ### Title: Collect aliases or other metadata from an Rd object
+> ### Aliases: Rdo_collect_aliases Rdo_collect_metadata
+> ### Keywords: Rd
+> 
+> ### ** Examples
+> 
+> ## this example originally (circa 2012) was:
+> ##     infile <- file.path(R.home(), "src/library/base/man/timezones.Rd")
+> ## but the OS conditional alias in that file has been removed.
+> ## So, create an artificial example:
+> infile <- system.file("examples", "tz.Rd", package = "Rdpack")
+> 
+> ## file.show(infile)
+> rd <- tools::parse_Rd(infile)
+> 
+> ## The functions described here handle "ifdef" and similar directives.
+> ## This detects OS specific aliases (windows = "onlywin" and unix = "onlyunix"):
+> Rdo_collect_aliases(rd)
+                                    windows       unix 
+      "a1"       "a2"       "a3"  "onlywin" "onlyunix" 
+> Rdpack:::Rdo_collect_metadata(rd, "alias") # same
+                                    windows       unix 
+      "a1"       "a2"       "a3"  "onlywin" "onlyunix" 
+> 
+> ## In contrast, the following do not find "onlywin" and "onlyunix":
+> sapply(rd[which(tools:::RdTags(rd)=="\alias")], as.character)
+list()
+> tools:::.Rd_get_metadata(rd, "alias")
+[1] "a1" "a2" "a3"
+> 
+> Rdpack:::Rdo_collect_metadata(rd, "name")
+           
+"dummyfun" 
+> Rdpack:::Rdo_collect_metadata(rd, "keyword")
+            
+"kw1" "kw2" 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Rdo_empty_sections")
+> ### * Rdo_empty_sections
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rdo_empty_sections
+> ### Title: Find or remove empty sections in Rd objects
+> ### Aliases: Rdo_empty_sections Rdo_drop_empty
+> ### Keywords: RdoBuild
+> 
+> ### ** Examples
+> 
+> dummyfun <- function(x) x
+> rdo8 <- list_Rd(name = "Dummyname", alias = "dummyfun",
++               title = "Dummy title", description = "Dummy description",
++               usage = "dummyfun(x,y)",
++               value = "numeric vector",
++               author = "",
++               details = "",
++               note = "",
++               Rd_class=TRUE )
+> 
+> Rdo_empty_sections(rdo8)        # "details" "note"    "author"
+[1] "details" "note"    "author" 
+> 
+> rdo8a <- Rdo_drop_empty(rdo8)
+> Rdo_empty_sections(rdo8a)       # character(0)
+character(0)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Rdo_fetch")
+> ### * Rdo_fetch
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rdo_fetch
+> ### Title: Get help pages as Rd objects
+> ### Aliases: Rdo_fetch
+> ### Keywords: documentation
+> 
+> ### ** Examples
+> 
+> ## get a single help page
+> rdo <- Rdo_fetch("viewRd", package = "Rdpack")
+> Rdo_show(rdo)
+_V_i_e_w _R_d _f_i_l_e_s _i_n _a _s_o_u_r_c_e _p_a_c_k_a_g_e
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     View Rd files in a source package.
+
+_U_s_a_g_e:
+
+     viewRd(infile, type = getOption("help_type"), stages = NULL)
+     
+_A_r_g_u_m_e_n_t_s:
+
+  infile: name of an Rd file, a character string.
+
+    type: one of ‘"text"’ or ‘"html"’
+
+  stages: a character vector specifying which stages of the R
+          installation process to immitate. The default, ‘c("build",
+          "install", "render")’, should be fine in most cases.
+
+_D_e_t_a_i_l_s:
+
+     This function can be used to view Rd files from the source
+     directory of a package. The page is presented in text format or in
+     html browser, according to the setting of argument ‘type’. The
+     default is ‘getOption("help_type")’.
+
+_V_a_l_u_e:
+
+     the function is used for the side effect of showing the help page
+     in a text help window or a web browser.
+
+_N_o_t_e:
+
+     Developers with ‘"devtools"’ can use ‘viewRd()’ instead of
+     ‘help()’ for documentation objects that contain Rd macros, such as
+     ‘insertRef’, see vignette:
+
+     ‘vignette("Inserting_bibtex_references", package = "Rdpack")’.
+
+_A_u_t_h_o_r(_s):
+
+     Georgi N. Boshnakov
+
+
+> 
+> ## get a list of help pages
+> rdo <- Rdo_fetch(c("viewRd", "reprompt"), package = "Rdpack")
+> names(rdo)
+[1] "viewRd.Rd"   "reprompt.Rd"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Rdo_get_argument_names")
+> ### * Rdo_get_argument_names
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rdo_get_argument_names
+> ### Title: Get the names of arguments in usage sections of Rd objects
+> ### Aliases: Rdo_get_argument_names
+> 
+> ### ** Examples
+> 
+> ##---- Should be DIRECTLY executable !! ----
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Rdo_get_insert_pos")
+> ### * Rdo_get_insert_pos
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rdo_get_insert_pos
+> ### Title: Find the position of an "Rd_tag"
+> ### Aliases: Rdo_get_insert_pos
+> ### Keywords: RdoProgramming
+> 
+> ### ** Examples
+> 
+> #h <- help("Rdo_macro")
+> #rdo <- utils:::.getHelpFile(h)
+> rdo <- Rdo_fetch("Rdo_macro", "Rdpack")
+> 
+> ialias <- which(tools:::RdTags(rdo) == "\\alias")
+> ialias
+[1] 3 4 5 6 7
+> next_pos <- Rdo_get_insert_pos(rdo, "\\alias") # 1 + max(ialias)
+> next_pos
+[1] 8
+> stopifnot(next_pos == max(ialias) + 1)
+> 
+> ikeyword <- which(tools:::RdTags(rdo) == "\\keyword")
+> ikeyword
+[1] 8
+> next_pos <- Rdo_get_insert_pos(rdo, "\\keyword") # 1 + max(ikeyword)
+> next_pos
+[1] 9
+> stopifnot(next_pos == max(ikeyword) + 1)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Rdo_get_item_labels")
+> ### * Rdo_get_item_labels
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rdo_get_item_labels
+> ### Title: Get the labels of items in an Rd object
+> ### Aliases: Rdo_get_item_labels
+> ### Keywords: RdoProgramming
+> 
+> ### ** Examples
+> 
+> infile <- system.file("examples", "tz.Rd", package = "Rdpack")
+> rd <- tools::parse_Rd(infile)
+> 
+> ## get item labels found anywhere in the Rd object
+> (items <- Rdo_get_item_labels(rd))
+[1] "x"           "y"           "type"        "flag"        "res"        
+[6] "convergence"
+> 
+> ## search only in section "arguments" (i.e., get argument names)
+> ## (note [[1]] - there is only one arguments section)
+> pos.args <- Rdo_locate_core_section(rd, "\\arguments")[[1]]
+> (args <- Rdo_get_item_labels(rd[[pos.args$pos]]))
+[1] "x"    "y"    "type" "flag"
+> 
+> ## search only in section "value"
+> pos.val <- Rdo_locate_core_section(rd, "\\value")[[1]]
+> (vals <- Rdo_get_item_labels(rd[[pos.val$pos]]))
+[1] "res"         "convergence"
+> 
+> ## There are no other items in 'rd', so this gives TRUE:
+> all.equal(items, c(args, vals)) # TRUE
+[1] TRUE
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Rdo_locate")
+> ### * Rdo_locate
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rdo_locate
+> ### Title: Find positions of elements in an Rd object
+> ### Aliases: Rdo_locate
+> ### Keywords: Rd
+> 
+> ### ** Examples
+> 
+> # todo: put examples here!
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Rdo_locate_leaves")
+> ### * Rdo_locate_leaves
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rdo_locate_leaves
+> ### Title: Find leaves of an Rd object using a predicate
+> ### Aliases: Rdo_locate_leaves
+> ### Keywords: Rd
+> 
+> ### ** Examples
+> 
+> dummyfun <- function(x) x
+> 
+> fn <- tempfile("dummyfun", fileext = "Rd")
+> reprompt(dummyfun, filename = fn)
+Rd source not supplied, looking for installed documentation.
+Rd source not supplied and installed documentation not found.
+Trying a 'prompt' function to generate documentation for the object.
+	success: documentation generated using a 'prompt' function.
+	The Rd content was written to file  /tmp/RtmpqLYiNh/dummyfun6c5618f31064Rd 
+[1] "/tmp/RtmpqLYiNh/dummyfun6c5618f31064Rd"
+> rdo <- tools::parse_Rd(fn)
+> 
+> f <-  function(x) Rdo_is_newline(x)
+> 
+> nl <- Rdo_locate_leaves(rdo, f )
+> 
+> length(nl)  # there are quite a few newline leaves!
+[1] 50
+> 
+> unlink(fn)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Rdo_modify")
+> ### * Rdo_modify
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rdo_modify
+> ### Title: Replace or modify parts of Rd objects
+> ### Aliases: Rdo_replace_section Rdo_modify
+> ### Keywords: RdoBuild
+> 
+> ### ** Examples
+> 
+> # a <- tools::parse_Rd("./man/promptUsage.Rd")
+> # char2Rdpiece("documentation", "keyword")
+> 
+> # this changes a keyword from Rd to documentation
+> # Rdo_replace_section(a, char2Rdpiece("documentation", "keyword"), replace = "Rd")
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Rdo_piecetag")
+> ### * Rdo_piecetag
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rdo_piecetag
+> ### Title: Give information about Rd elements
+> ### Aliases: Rdo_piecetag Rdo_sectype is_Rdsecname
+> ### Keywords: RdoProgramming
+> 
+> ### ** Examples
+> 
+> Rdo_piecetag("eqn")  # ==> "VERB"
+[1] "VERB"
+> Rdo_piecetag("code") # ==> "RCODE"
+[1] "RCODE"
+> 
+> Rdo_sectype("usage") # ==> "RCODE"
+[1] "RCODE"
+> Rdo_sectype("title") # ==> "TEXT"
+[1] "TEXT"
+> 
+> Rdo_sectype("arguments")
+[1] "TEXT"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Rdo_reparse")
+> ### * Rdo_reparse
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rdo_reparse
+> ### Title: Reparse an Rd object
+> ### Aliases: Rdo_reparse
+> ### Keywords: Rd
+> 
+> ### ** Examples
+> 
+> # the following creates Rd object rdo
+> dummyfun <- function(x) x
+> fn <- tempfile("dummyfun", fileext = "Rd")
+> 
+> reprompt(dummyfun, filename = fn)
+Rd source not supplied, looking for installed documentation.
+Rd source not supplied and installed documentation not found.
+Trying a 'prompt' function to generate documentation for the object.
+	success: documentation generated using a 'prompt' function.
+	The Rd content was written to file  /tmp/RtmpqLYiNh/dummyfun6c56214c1b01Rd 
+[1] "/tmp/RtmpqLYiNh/dummyfun6c56214c1b01Rd"
+> rdo <- tools::parse_Rd(fn)
+> 
+> dottext <- "further arguments to be passed on."
+> 
+> dots <- paste0("\\", "dots")
+> rdo2 <- Rdo_append_argument(rdo, dots, dottext, create = TRUE)
+> rdo2 <- Rdo_append_argument(rdo2, "z", "a numeric vector")
+> 
+> Rdo_show(Rdo_reparse(rdo2))
+	The Rd content was written to file  /tmp/RtmpqLYiNh/file6c5611778e72Rd 
+~~ _D_u_m_m_y _t_i_t_l_e ~~
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     ~~ Dummy description ~~
+
+_U_s_a_g_e:
+
+     dummyfun(x)
+     
+_A_r_g_u_m_e_n_t_s:
+
+       x:
+
+     ...: further arguments to be passed on.
+
+       z: a numeric vector
+
+_E_x_a_m_p_l_e_s:
+
+     ##---- Should be DIRECTLY executable !! ----
+     ##-- ==>  Define data, use random,
+     ##--    or standard data sets, see data().
+     
+     ## The function is currently defined as
+     function (x) 
+     x
+     
+
+> 
+> # the following does ot show the arguments. (todo: why?)
+> #    (see also examples in Rdo_append_argument)
+> Rdo_show(rdo2)
+~~ _D_u_m_m_y _t_i_t_l_e ~~
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     ~~ Dummy description ~~
+
+_U_s_a_g_e:
+
+     dummyfun(x)
+     
+_A_r_g_u_m_e_n_t_s:
+
+_E_x_a_m_p_l_e_s:
+
+     ##---- Should be DIRECTLY executable !! ----
+     ##-- ==>  Define data, use random,
+     ##--    or standard data sets, see data().
+     
+     ## The function is currently defined as
+     function (x) 
+     x
+     
+
+> 
+> unlink(fn)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Rdo_sections")
+> ### * Rdo_sections
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rdo_sections
+> ### Title: Locate the sections in Rd objects
+> ### Aliases: Rdo_sections Rdo_locate_core_section
+> ### Keywords: Rd
+> 
+> ### ** Examples
+> 
+> infile <- system.file("examples", "tz.Rd", package = "Rdpack")
+> rd <- tools::parse_Rd(infile)
+> 
+> ## Locate all top level sections in rd
+> sections <- Rdo_sections(rd)
+> ## How many sections there are in rd?
+> length(sections)
+[1] 16
+> ## What are their titles?
+> sapply(sections, function(x) x$title)
+ [1] "\\name"              "\\alias"             "\\alias"            
+ [4] "\\alias"             "\\alias"             "\\alias"            
+ [7] "\\title"             "\\description"       "\\usage"            
+[10] "\\arguments"         "\\details"           "\\value"            
+[13] "Further information" "\\examples"          "\\keyword"          
+[16] "\\keyword"          
+> 
+> ## The names of builtin sections include the backslash
+> Rdo_locate_core_section(rd, "\\title")
+[[1]]
+[[1]]$pos
+[1] 11
+
+[[1]]$title
+[1] "\\title"
+
+
+> 
+> ## Locate a user defined secion
+> Rdo_locate_core_section(rd, "Further information")
+[[1]]
+[[1]]$pos
+[1] 23
+
+[[1]]$title
+[1] "Further information"
+
+
+> 
+> ## The names of builtin sections include the backslash
+> Rdo_locate_core_section(rd, "\\details")
+[[1]]
+[[1]]$pos
+[1] 19
+
+[[1]]$title
+[1] "\\details"
+
+
+> 
+> ## All appearances of the requested section are returned
+> Rdo_locate_core_section(rd, "\\alias")
+[[1]]
+[[1]]$pos
+[1] 3
+
+[[1]]$title
+[1] "\\alias"
+
+
+[[2]]
+[[2]]$pos
+[1] 5
+
+[[2]]$title
+[1] "\\alias"
+
+
+[[3]]
+[[3]]$pos
+[1] 7
+
+[[3]]$title
+[1] "\\alias"
+
+
+[[4]]
+[[4]]$pos
+[1] 9 2 1
+
+[[4]]$title
+[1] "\\alias"
+
+
+[[5]]
+[[5]]$pos
+[1] 10  2  1
+
+[[5]]$title
+[1] "\\alias"
+
+
+> Rdo_locate_core_section(rd, "\\keyword")
+[[1]]
+[[1]]$pos
+[1] 27
+
+[[1]]$title
+[1] "\\keyword"
+
+
+[[2]]
+[[2]]$pos
+[1] 29
+
+[[2]]$title
+[1] "\\keyword"
+
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Rdo_set_section")
+> ### * Rdo_set_section
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rdo_set_section
+> ### Title: Replace a section in an Rd file
+> ### Aliases: Rdo_set_section
+> ### Keywords: RdoBuild
+> 
+> ### ** Examples
+> 
+> fnA <- tempfile("dummyfun", fileext = "Rd")
+> dummyfun <- function(x) x
+> reprompt(dummyfun, filename = fnA)
+Rd source not supplied, looking for installed documentation.
+Rd source not supplied and installed documentation not found.
+Trying a 'prompt' function to generate documentation for the object.
+	success: documentation generated using a 'prompt' function.
+	The Rd content was written to file  /tmp/RtmpqLYiNh/dummyfun6c566d08f624Rd 
+[1] "/tmp/RtmpqLYiNh/dummyfun6c566d08f624Rd"
+> Rdo_show(tools::parse_Rd(fnA))
+~~ _D_u_m_m_y _t_i_t_l_e ~~
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     ~~ Dummy description ~~
+
+_U_s_a_g_e:
+
+     dummyfun(x)
+     
+_A_r_g_u_m_e_n_t_s:
+
+       x:
+
+_E_x_a_m_p_l_e_s:
+
+     ##---- Should be DIRECTLY executable !! ----
+     ##-- ==>  Define data, use random,
+     ##--    or standard data sets, see data().
+     
+     ## The function is currently defined as
+     function (x) 
+     x
+     
+
+> 
+> ## set the author section, create it if necessary.
+> Rdo_set_section("A.A. Author", "author", fnA, create = TRUE)
+	The Rd content was written to file  /tmp/RtmpqLYiNh/dummyfun6c566d08f624Rd 
+> Rdo_show(tools::parse_Rd(fnA))
+~~ _D_u_m_m_y _t_i_t_l_e ~~
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     ~~ Dummy description ~~
+
+_U_s_a_g_e:
+
+     dummyfun(x)
+     
+_A_r_g_u_m_e_n_t_s:
+
+       x:
+
+_A_u_t_h_o_r(_s):
+
+     A.A. Author
+
+_E_x_a_m_p_l_e_s:
+
+     ##---- Should be DIRECTLY executable !! ----
+     ##-- ==>  Define data, use random,
+     ##--    or standard data sets, see data().
+     
+     ## The function is currently defined as
+     function (x) 
+     x
+     
+
+> 
+> ## replace the author section
+> Rdo_set_section("Georgi N. Boshnakov", "author", fnA)
+	The Rd content was written to file  /tmp/RtmpqLYiNh/dummyfun6c566d08f624Rd 
+> Rdo_show(tools::parse_Rd(fnA))
+~~ _D_u_m_m_y _t_i_t_l_e ~~
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     ~~ Dummy description ~~
+
+_U_s_a_g_e:
+
+     dummyfun(x)
+     
+_A_r_g_u_m_e_n_t_s:
+
+       x:
+
+_A_u_t_h_o_r(_s):
+
+     Georgi N. Boshnakov
+
+_E_x_a_m_p_l_e_s:
+
+     ##---- Should be DIRECTLY executable !! ----
+     ##-- ==>  Define data, use random,
+     ##--    or standard data sets, see data().
+     
+     ## The function is currently defined as
+     function (x) 
+     x
+     
+
+> 
+> unlink(fnA)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Rdo_show")
+> ### * Rdo_show
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rdo_show
+> ### Title: Convert an Rd object to text and show it
+> ### Aliases: Rdo_show
+> ### Keywords: Rd
+> 
+> ### ** Examples
+> 
+> ## create a minimal Rd object
+> u1 <- list_Rd(name = "Dummyname", alias = "Dummyallias1",
++               title = "Dummy title", description = "Dummy description",
++               Rd_class = TRUE )
+> ## Not run: 
+> ##D ## run this interactively:    
+> ##D Rdo_show(u1)
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Rdo_tags")
+> ### * Rdo_tags
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rdo_tags
+> ### Title: Give the Rd tags at the top level of an Rd object
+> ### Aliases: Rdo_tags
+> ### Keywords: Rd
+> 
+> ### ** Examples
+> 
+> ##---- Should be DIRECTLY executable !! ----
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Rdo_which")
+> ### * Rdo_which
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rdo_which
+> ### Title: Find elements of Rd objects for which a condition is true
+> ### Aliases: Rdo_which Rdo_which_tag_eq Rdo_which_tag_in
+> ### Keywords: Rd
+> 
+> ### ** Examples
+> 
+> ## get the help page for topoc seq()
+> rdo_seq <- tools::Rd_db("base")[["seq.Rd"]]
+> ## find location of aliases in the topic
+> ( ind <- Rdo_which_tag_eq(rdo_seq, "\alias") )
+integer(0)
+> ## extract the first alias
+> rdo_seq[[ ind[1] ]]
+NULL
+> ## Not run: 
+> ##D ## extract all aliases
+> ##D rdo_seq[ind]
+> ## End(Not run)
+> 
+> ## db_bibtex <- tools::Rd_db("bibtex")
+> ## names(db_bibtex)
+> ## ## Rdo object for read.bib()
+> ## rdo_read.bib <- db_bibtex[["read.bib.Rd"]]
+> ## Rdo_tags(rdo_read.bib)
+> ## 
+> ## ## which elements of read.bib are aliases?
+> ## Rdo_which_tag_eq(rdo_read.bib, "\alias")
+> ## rdo_read.bib[[3]]
+> ## 
+> ## ## which elements of read.bib contain R code?
+> ## Rdo_which(rdo_read.bib, function(x) any(Rdo_tags(x) == "RCODE") )
+> ## rdo_read.bib[[5]]
+> ## ## which contain prose?
+> ## Rdo_which(rdo_read.bib, function(x) any(Rdo_tags(x) == "TEXT") )
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Rdpack-package")
+> ### * Rdpack-package
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rdpack-package
+> ### Title: Update and Manipulate Rd Documentation Objects
+> ### Aliases: Rdpack-package Rdpack
+> ### Keywords: package
+> 
+> ### ** Examples
+> 
+> ## The examples below show typical use but are not executable.
+> ## For executable examples see the help pages of 
+> ## reprompt, promptPackageSexpr, and rebib.
+> 
+> ## To make the examples executable, replace "myfun" with a real
+> ## function, and similarly for classes and paths to files.
+> 
+> ## Not run: 
+> ##D ## update the doc. from the Rd source and save myfun.Rd
+> ##D ##     in the current directory (like prompt)
+> ##D reprompt(infile="path/to/mypackage/man/myfun.Rd")
+> ##D 
+> ##D ## update doc of myfun() from the installed doc (if any);
+> ##D ##     if none is found, create it like prompt
+> ##D reprompt("myfun")
+> ##D reprompt(myfun)      # same
+> ##D 
+> ##D ## update doc. for S4 methods from Rd source
+> ##D reprompt(infile="path/to/mypackage/man/myfun-methods.Rd")
+> ##D 
+> ##D ## update doc. for S4 methods from installed doc (if any);
+> ##D ##     if none is found, create it like promptMethods
+> ##D reprompt("myfun", type = "methods")
+> ##D reprompt("myfun-methods")  # same
+> ##D 
+> ##D 
+> ##D ## update doc. for S4 class from Rd source
+> ##D reprompt(infile="path/to/mypackage/man/myclass-class.Rd")
+> ##D 
+> ##D ## update doc. of S4 class from installed doc.
+> ##D ##     if none is found, create it like promptClass
+> ##D reprompt("myclass-class")
+> ##D reprompt("myclass", type = "class")  # same
+> ##D 
+> ##D 
+> ##D ## create a skeleton "mypackage-package.Rd"
+> ##D promptPackageSexpr("mypackage")
+> ##D 
+> ##D ## update the references in "mypackage-package.Rd"
+> ##D rebib(infile="path/to/mypackage/man/mypackage-package.Rd", force=TRUE)
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Rdreplace_section")
+> ### * Rdreplace_section
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Rdreplace_section
+> ### Title: Replace the contents of a section in one or more Rd files
+> ### Aliases: Rdreplace_section
+> ### Keywords: RdoBuild
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D # replace the author in all Rd files except pkgname-package
+> ##D Rdreplace_section("A. Author", "author", ".*[.]Rd$", exclude = "-package[.]Rd$")
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("S4formals")
+> ### * S4formals
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: S4formals
+> ### Title: Give the formal arguments of an S4 method
+> ### Aliases: S4formals
+> ### Keywords: methods
+> 
+> ### ** Examples
+> 
+> require(stats4) # makes plot() S4 generic
+Loading required package: stats4
+> 
+> S4formals("plot", c(x = "profile.mle", y = "missing"))
+$x
+
+
+$levels
+
+
+$conf
+c(99, 95, 90, 80, 50)/100
+
+$nseg
+[1] 50
+
+$absVal
+[1] TRUE
+
+$...
+
+
+> 
+> m1 <- getMethod("plot", c(x = "profile.mle", y = "missing"))
+> S4formals(m1)
+$x
+
+
+$levels
+
+
+$conf
+c(99, 95, 90, 80, 50)/100
+
+$nseg
+[1] 50
+
+$absVal
+[1] TRUE
+
+$...
+
+
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:stats4’
+
+> nameEx("append_to_Rd_list")
+> ### * append_to_Rd_list
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: append_to_Rd_list
+> ### Title: Add content to the element of an Rd object or fragment at a
+> ###   given position
+> ### Aliases: append_to_Rd_list
+> ### Keywords: RdoBuild
+> 
+> ### ** Examples
+> 
+> #rdoseq <- utils:::.getHelpFile(help("seq"))
+> rdoseq <- Rdo_fetch("seq", "base")
+> iusage <- which(tools:::RdTags(rdoseq) == "\\usage")
+> iusage
+[1] 10
+> attr(rdoseq[[iusage]], "Rd_tag")
+[1] "\\usage"
+> 
+> ## append a new line after the last usage line
+> rdoseq2 <- append_to_Rd_list(rdoseq, list(Rdo_newline()), iusage)
+> 
+> ## Suppose that we wish to describe the function 'sequence' in the same Rd file.
+> ## We append an usage statement for 'sequence()', without worrying about its
+> ## actual signature.
+> rdoseq2 <- append_to_Rd_list(rdoseq2, list(Rdo_Rcode("sequence()")), iusage)
+> Rdo_show(rdoseq2)
+_S_e_q_u_e_n_c_e _G_e_n_e_r_a_t_i_o_n
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     Generate regular sequences.  ‘seq’ is a standard generic with a
+     default method.  ‘seq.int’ is a primitive which can be much faster
+     but has a few restrictions.  ‘seq_along’ and ‘seq_len’ are very
+     fast primitives for two common cases.
+
+_U_s_a_g_e:
+
+     seq(...)
+     
+     ## Default S3 method:
+     seq(from = 1, to = 1, by = ((to - from)/(length.out - 1)),
+         length.out = NULL, along.with = NULL, ...)
+     
+     seq.int(from, to, by, length.out, along.with, ...)
+     
+     seq_along(along.with)
+     seq_len(length.out)
+     
+     sequence()
+     
+_A_r_g_u_m_e_n_t_s:
+
+     ...: arguments passed to or from methods.
+
+from, to: the starting and (maximal) end values of the sequence.  Of
+          length ‘1’ unless just ‘from’ is supplied as an unnamed
+          argument.
+
+      by: number: increment of the sequence.
+
+length.out: desired length of the sequence.  A non-negative number,
+          which for ‘seq’ and ‘seq.int’ will be rounded up if
+          fractional.
+
+along.with: take the length from the length of this argument.
+
+_D_e_t_a_i_l_s:
+
+     Numerical inputs should all be finite (that is, not infinite,
+     ‘NaN’ or ‘NA’).
+
+     The interpretation of the unnamed arguments of ‘seq’ and ‘seq.int’
+     is _not_ standard, and it is recommended always to name the
+     arguments when programming.
+
+     ‘seq’ is generic, and only the default method is described here.
+     Note that it dispatches on the class of the *first* argument
+     irrespective of argument names.  This can have unintended
+     consequences if it is called with just one argument intending this
+     to be taken as ‘along.with’: it is much better to use ‘seq_along’
+     in that case.
+
+     ‘seq.int’ is an internal generic which dispatches on methods for
+     ‘"seq"’ based on the class of the first supplied argument (before
+     argument matching).
+
+     Typical usages are
+
+     seq(from, to)
+     seq(from, to, by= )
+     seq(from, to, length.out= )
+     seq(along.with= )
+     seq(from)
+     seq(length.out= )
+     
+     The first form generates the sequence ‘from, from+/-1, ..., to’
+     (identical to ‘from:to’).
+
+     The second form generates ‘from, from+by’, ..., up to the sequence
+     value less than or equal to ‘to’.  Specifying ‘to - from’ and ‘by’
+     of opposite signs is an error.  Note that the computed final value
+     can go just beyond ‘to’ to allow for rounding error, but is
+     truncated to ‘to’.  (‘Just beyond’ is by up to 1e-10 times
+     ‘abs(from - to)’.)
+
+     The third generates a sequence of ‘length.out’ equally spaced
+     values from ‘from’ to ‘to’.  (‘length.out’ is usually abbreviated
+     to ‘length’ or ‘len’, and ‘seq_len’ is much faster.)
+
+     The fourth form generates the integer sequence ‘1, 2, ...,
+     length(along.with)’.  (‘along.with’ is usually abbreviated to
+     ‘along’, and ‘seq_along’ is much faster.)
+
+     The fifth form generates the sequence ‘1, 2, ..., length(from)’
+     (as if argument ‘along.with’ had been specified), _unless_ the
+     argument is numeric of length 1 when it is interpreted as ‘1:from’
+     (even for ‘seq(0)’ for compatibility with S).  Using either
+     ‘seq_along’ or ‘seq_len’ is much preferred (unless strict S
+     compatibility is essential).
+
+     The final form generates the integer sequence ‘1, 2, ...,
+     length.out’ unless ‘length.out = 0’, when it generates
+     ‘integer(0)’.
+
+     Very small sequences (with ‘from - to’ of the order of 10^{-14}
+     times the larger of the ends) will return ‘from’.
+
+     For ‘seq’ (only), up to two of ‘from’, ‘to’ and ‘by’ can be
+     supplied as complex values provided ‘length.out’ or ‘along.with’
+     is specified.  More generally, the default method of ‘seq’ will
+     handle classed objects with methods for the ‘Math’, ‘Ops’ and
+     ‘Summary’ group generics.
+
+     ‘seq.int’, ‘seq_along’ and ‘seq_len’ are primitive.
+
+_V_a_l_u_e:
+
+     ‘seq.int’ and the default method of ‘seq’ for numeric arguments
+     return a vector of type ‘"integer"’ or ‘"double"’: programmers
+     should not rely on which.
+
+     ‘seq_along’ and ‘seq_len’ return an integer vector, unless it is a
+     _long vector_ when it will be double.
+
+_R_e_f_e_r_e_n_c_e_s:
+
+     Becker, R. A., Chambers, J. M. and Wilks, A. R. (1988) _The New S
+     Language_.  Wadsworth & Brooks/Cole.
+
+_S_e_e _A_l_s_o:
+
+     The methods ‘seq.Date’ and ‘seq.POSIXt’.
+
+     ‘:’, ‘rep’, ‘sequence’, ‘row’, ‘col’.
+
+_E_x_a_m_p_l_e_s:
+
+     seq(0, 1, length.out = 11)
+     seq(stats::rnorm(20)) # effectively 'along'
+     seq(1, 9, by = 2)     # matches 'end'
+     seq(1, 9, by = pi)    # stays below 'end'
+     seq(1, 6, by = 3)
+     seq(1.575, 5.125, by = 0.05)
+     seq(17) # same as 1:17, or even better seq_len(17)
+     
+
+> 
+> ## the two operations can be done in one step
+> rdoseq3 <- append_to_Rd_list(rdoseq, list(Rdo_newline(), Rdo_Rcode("sequence()")), iusage)
+> Rdo_show(rdoseq3)
+_S_e_q_u_e_n_c_e _G_e_n_e_r_a_t_i_o_n
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     Generate regular sequences.  ‘seq’ is a standard generic with a
+     default method.  ‘seq.int’ is a primitive which can be much faster
+     but has a few restrictions.  ‘seq_along’ and ‘seq_len’ are very
+     fast primitives for two common cases.
+
+_U_s_a_g_e:
+
+     seq(...)
+     
+     ## Default S3 method:
+     seq(from = 1, to = 1, by = ((to - from)/(length.out - 1)),
+         length.out = NULL, along.with = NULL, ...)
+     
+     seq.int(from, to, by, length.out, along.with, ...)
+     
+     seq_along(along.with)
+     seq_len(length.out)
+     
+     sequence()
+     
+_A_r_g_u_m_e_n_t_s:
+
+     ...: arguments passed to or from methods.
+
+from, to: the starting and (maximal) end values of the sequence.  Of
+          length ‘1’ unless just ‘from’ is supplied as an unnamed
+          argument.
+
+      by: number: increment of the sequence.
+
+length.out: desired length of the sequence.  A non-negative number,
+          which for ‘seq’ and ‘seq.int’ will be rounded up if
+          fractional.
+
+along.with: take the length from the length of this argument.
+
+_D_e_t_a_i_l_s:
+
+     Numerical inputs should all be finite (that is, not infinite,
+     ‘NaN’ or ‘NA’).
+
+     The interpretation of the unnamed arguments of ‘seq’ and ‘seq.int’
+     is _not_ standard, and it is recommended always to name the
+     arguments when programming.
+
+     ‘seq’ is generic, and only the default method is described here.
+     Note that it dispatches on the class of the *first* argument
+     irrespective of argument names.  This can have unintended
+     consequences if it is called with just one argument intending this
+     to be taken as ‘along.with’: it is much better to use ‘seq_along’
+     in that case.
+
+     ‘seq.int’ is an internal generic which dispatches on methods for
+     ‘"seq"’ based on the class of the first supplied argument (before
+     argument matching).
+
+     Typical usages are
+
+     seq(from, to)
+     seq(from, to, by= )
+     seq(from, to, length.out= )
+     seq(along.with= )
+     seq(from)
+     seq(length.out= )
+     
+     The first form generates the sequence ‘from, from+/-1, ..., to’
+     (identical to ‘from:to’).
+
+     The second form generates ‘from, from+by’, ..., up to the sequence
+     value less than or equal to ‘to’.  Specifying ‘to - from’ and ‘by’
+     of opposite signs is an error.  Note that the computed final value
+     can go just beyond ‘to’ to allow for rounding error, but is
+     truncated to ‘to’.  (‘Just beyond’ is by up to 1e-10 times
+     ‘abs(from - to)’.)
+
+     The third generates a sequence of ‘length.out’ equally spaced
+     values from ‘from’ to ‘to’.  (‘length.out’ is usually abbreviated
+     to ‘length’ or ‘len’, and ‘seq_len’ is much faster.)
+
+     The fourth form generates the integer sequence ‘1, 2, ...,
+     length(along.with)’.  (‘along.with’ is usually abbreviated to
+     ‘along’, and ‘seq_along’ is much faster.)
+
+     The fifth form generates the sequence ‘1, 2, ..., length(from)’
+     (as if argument ‘along.with’ had been specified), _unless_ the
+     argument is numeric of length 1 when it is interpreted as ‘1:from’
+     (even for ‘seq(0)’ for compatibility with S).  Using either
+     ‘seq_along’ or ‘seq_len’ is much preferred (unless strict S
+     compatibility is essential).
+
+     The final form generates the integer sequence ‘1, 2, ...,
+     length.out’ unless ‘length.out = 0’, when it generates
+     ‘integer(0)’.
+
+     Very small sequences (with ‘from - to’ of the order of 10^{-14}
+     times the larger of the ends) will return ‘from’.
+
+     For ‘seq’ (only), up to two of ‘from’, ‘to’ and ‘by’ can be
+     supplied as complex values provided ‘length.out’ or ‘along.with’
+     is specified.  More generally, the default method of ‘seq’ will
+     handle classed objects with methods for the ‘Math’, ‘Ops’ and
+     ‘Summary’ group generics.
+
+     ‘seq.int’, ‘seq_along’ and ‘seq_len’ are primitive.
+
+_V_a_l_u_e:
+
+     ‘seq.int’ and the default method of ‘seq’ for numeric arguments
+     return a vector of type ‘"integer"’ or ‘"double"’: programmers
+     should not rely on which.
+
+     ‘seq_along’ and ‘seq_len’ return an integer vector, unless it is a
+     _long vector_ when it will be double.
+
+_R_e_f_e_r_e_n_c_e_s:
+
+     Becker, R. A., Chambers, J. M. and Wilks, A. R. (1988) _The New S
+     Language_.  Wadsworth & Brooks/Cole.
+
+_S_e_e _A_l_s_o:
+
+     The methods ‘seq.Date’ and ‘seq.POSIXt’.
+
+     ‘:’, ‘rep’, ‘sequence’, ‘row’, ‘col’.
+
+_E_x_a_m_p_l_e_s:
+
+     seq(0, 1, length.out = 11)
+     seq(stats::rnorm(20)) # effectively 'along'
+     seq(1, 9, by = 2)     # matches 'end'
+     seq(1, 9, by = pi)    # stays below 'end'
+     seq(1, 6, by = 3)
+     seq(1.575, 5.125, by = 0.05)
+     seq(17) # same as 1:17, or even better seq_len(17)
+     
+
+> 
+> ## now run reprompt() to update rdoseq3, namely:
+> ##    (1) it corrects the signature of 'sequence' in section \usage.
+> ##    (2) reports new argument "nvec"
+> ##    (3) inserts \item for the new argument(s) in section \arguments.
+> reprompt(rdoseq3, filename=NA)
+Processing the Rd object...
+
+newargs is: nvec 
+\title{Sequence Generation}\name{seq}\alias{seq}\alias{seq.default}\alias{seq.int}\alias{seq_along}\alias{seq_len}
+\alias{sequence}
+\keyword{manip}\description{
+  Generate regular sequences.  \code{seq} is a standard generic with a
+  default method.  \code{seq.int} is a primitive which can be
+  much faster but has a few restrictions.  \code{seq_along} and
+  \code{seq_len} are very fast primitives for two common cases.
+}\usage{
+seq(\dots)
+
+\method{seq}{default}(from = 1, to = 1, by = ((to - from)/(length.out - 1)), 
+    length.out = NULL, along.with = NULL, \dots)
+
+seq.int(from, to, by, length.out, along.with, \dots)
+
+seq_along(along.with)
+
+seq_len(length.out)
+
+sequence(nvec, \dots)
+}\arguments{
+  \item{\dots}{arguments passed to or from methods.}
+  \item{from, to}{the starting and (maximal) end values of the
+    sequence.  Of length \code{1} unless just \code{from} is supplied as
+    an unnamed argument.}
+  \item{by}{number: increment of the sequence.}
+  \item{length.out}{desired length of the sequence.  A
+    non-negative number, which for \code{seq} and \code{seq.int} will be
+    rounded up if fractional.}
+  \item{along.with}{take the length from the length of this argument.}
+  \item{nvec}{~~ TODO: describe this argument. ~~}
+}\details{
+  Numerical inputs should all be \link{finite} (that is, not infinite,
+  \code{\link{NaN}} or \code{NA}).
+
+  The interpretation of the unnamed arguments of \code{seq} and
+  \code{seq.int} is \emph{not} standard, and it is recommended always to
+  name the arguments when programming.
+
+  \code{seq} is  generic, and only the default method is described here.
+  Note that it dispatches on the class of the \strong{first} argument
+  irrespective of argument names.  This can have unintended consequences
+  if it is called with just one argument intending this to be taken as
+  \code{along.with}: it is much better to use \code{seq_along} in that
+  case.
+
+  \code{seq.int} is an \link{internal generic} which dispatches on
+  methods for \code{"seq"} based on the class of the first supplied
+  argument (before argument matching).
+
+  Typical usages are
+\preformatted{seq(from, to)
+seq(from, to, by= )
+seq(from, to, length.out= )
+seq(along.with= )
+seq(from)
+seq(length.out= )
+}
+  The first form generates the sequence \code{from, from+/-1, \dots, to}
+  (identical to \code{from:to}).
+
+  The second form generates \code{from, from+by}, \ldots, up to the
+  sequence value less than or equal to \code{to}.  Specifying \code{to -
+  from} and \code{by} of opposite signs is an error.  Note that the
+  computed final value can go just beyond \code{to} to allow for
+  rounding error, but is truncated to \code{to}.  (\sQuote{Just beyond}
+  is by up to \eqn{10^{-10}}{1e-10} times \code{abs(from - to)}.)
+
+  The third generates a sequence of \code{length.out} equally spaced
+  values from \code{from} to \code{to}.  (\code{length.out} is usually
+  abbreviated to \code{length} or \code{len}, and \code{seq_len} is much
+  faster.)
+
+  The fourth form generates the integer sequence \code{1, 2, \dots,
+    length(along.with)}.  (\code{along.with} is usually abbreviated to
+  \code{along}, and \code{seq_along} is much faster.)
+
+  The fifth form generates the sequence \code{1, 2, \dots, length(from)}
+  (as if argument \code{along.with} had been specified), \emph{unless}
+  the argument is numeric of length 1 when it is interpreted as
+  \code{1:from} (even for \code{seq(0)} for compatibility with S).
+  Using either \code{seq_along} or \code{seq_len} is much preferred
+  (unless strict S compatibility is essential).
+
+  The final form generates the integer sequence \code{1, 2, \dots,
+  length.out} unless \code{length.out = 0}, when it generates
+  \code{integer(0)}.
+
+  Very small sequences (with \code{from - to} of the order of \eqn{10^{-14}}
+  times the larger of the ends) will return \code{from}.
+
+  For \code{seq} (only), up to two of \code{from}, \code{to} and
+  \code{by} can be supplied as complex values provided \code{length.out}
+  or \code{along.with} is specified.  More generally, the default method
+  of \code{seq} will handle classed objects with methods for
+  the \code{Math}, \code{Ops} and \code{Summary} group generics.
+
+  \code{seq.int}, \code{seq_along} and \code{seq_len} are
+  \link{primitive}.
+}\value{
+  \code{seq.int} and the default method of \code{seq} for numeric
+  arguments return a vector of type \code{"integer"} or \code{"double"}:
+  programmers should not rely on which.
+
+  \code{seq_along} and \code{seq_len} return an integer vector, unless
+  it is a \emph{\link{long vector}} when it will be double.
+}\references{
+  Becker, R. A., Chambers, J. M. and Wilks, A. R. (1988)
+  \emph{The New S Language}.
+  Wadsworth & Brooks/Cole.
+}\seealso{
+  The methods \code{\link{seq.Date}} and \code{\link{seq.POSIXt}}.
+
+  \code{\link{:}},
+  \code{\link{rep}},
+  \code{\link{sequence}},
+  \code{\link{row}},
+  \code{\link{col}}.
+}\examples{
+seq(0, 1, length.out = 11)
+seq(stats::rnorm(20)) # effectively 'along'
+seq(1, 9, by = 2)     # matches 'end'
+seq(1, 9, by = pi)    # stays below 'end'
+seq(1, 6, by = 3)
+seq(1.575, 5.125, by = 0.05)
+seq(17) # same as 1:17, or even better seq_len(17)
+}> 
+> 
+> 
+> cleanEx()
+> nameEx("c_Rd")
+> ### * c_Rd
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: c_Rd
+> ### Title: Concatenate Rd objects or pieces
+> ### Aliases: c_Rd
+> ### Keywords: RdoBuild
+> 
+> ### ** Examples
+> 
+> a1 <- char2Rdpiece("Dummyname", "name")
+> a2 <- char2Rdpiece("Dummyallias1", "alias")
+> a3 <- char2Rdpiece("Dummy title", "title")
+> a4 <- char2Rdpiece("Dummy description", "description")
+> 
+> ## The following are equivalent
+> ## (gbRd::Rdo_empty() creates an empty list of class 'Rd')
+> if(requireNamespace("gbRd")){
++ b1 <- c_Rd(gbRd::Rdo_empty(), list(a1), list(a2), list(a3), list(a4))
++ c1 <- c_Rd(gbRd::Rdo_empty(), list(a1, a2, a3, a4))
++ d1 <- c_Rd(gbRd::Rdo_empty(), list(a1, a2), list(a3, a4))
++ identical(c1, b1)
++ identical(c1, d1)
++ Rdo_show(b1)
++ 
++ ## insert a newline
++ d1n <- c_Rd(gbRd::Rdo_empty(), list(a1, a2), Rdo_newline(), list(a3, a4))
++ str(d1n)
++ }
+Loading required namespace: gbRd
+_D_u_m_m_y _t_i_t_l_e
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     Dummy description
+
+
+List of 5
+ $ :List of 1
+  ..$ : chr "Dummyname"
+  .. ..- attr(*, "Rd_tag")= chr "VERB"
+  ..- attr(*, "Rd_tag")= chr "\\name"
+ $ :List of 1
+  ..$ : chr "Dummyallias1"
+  .. ..- attr(*, "Rd_tag")= chr "VERB"
+  ..- attr(*, "Rd_tag")= chr "\\alias"
+ $ : chr "\n"
+  ..- attr(*, "Rd_tag")= chr "TEXT"
+ $ :List of 1
+  ..$ : chr "Dummy title"
+  .. ..- attr(*, "Rd_tag")= chr "TEXT"
+  ..- attr(*, "Rd_tag")= chr "\\title"
+ $ :List of 1
+  ..$ : chr "Dummy description"
+  .. ..- attr(*, "Rd_tag")= chr "TEXT"
+  ..- attr(*, "Rd_tag")= chr "\\description"
+ - attr(*, "class")= chr "Rd"
+> 
+> ## When most of the arguments are character strings
+> ## the function 'list_Rd' may be more convenient.
+> u1 <- list_Rd(name = "Dummyname", alias = "Dummyallias1",
++               title = "Dummy title", description = "Dummy description",
++               Rd_class = TRUE )
+> Rdo_show(u1)
+_D_u_m_m_y _t_i_t_l_e
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     Dummy description
+
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("char2Rdpiece")
+> ### * char2Rdpiece
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: char2Rdpiece
+> ### Title: Convert a character vector to Rd piece
+> ### Aliases: char2Rdpiece
+> ### Keywords: RdoBuild
+> 
+> ### ** Examples
+> 
+> ## add a keyword section
+> a1 <- char2Rdpiece("graphics", "keyword")
+> a1
+[[1]]
+[1] "graphics"
+attr(,"Rd_tag")
+[1] "TEXT"
+
+attr(,"Rd_tag")
+[1] "\\keyword"
+> ## "keyword" is a standard Rd top level section, so 'force.sec' is irrelevant
+> a2 <- char2Rdpiece("graphics", "keyword", force.sec = TRUE)
+> identical(a1, a2)
+[1] TRUE
+> 
+> ## an element suitable to be put in a "usage" section
+> char2Rdpiece("log(x, base = exp(1))", "usage")
+[[1]]
+[1] "log(x, base = exp(1))"
+attr(,"Rd_tag")
+[1] "RCODE"
+
+attr(,"Rd_tag")
+[1] "\\usage"
+> 
+> ## a user defined section "Todo"
+> char2Rdpiece("Give more examples for this function.", "Todo", force.sec = TRUE)
+[[1]]
+[[1]][[1]]
+[1] "Todo"
+attr(,"Rd_tag")
+[1] "TEXT"
+
+
+[[2]]
+[[2]][[1]]
+[1] "Give more examples for this function."
+attr(,"Rd_tag")
+[1] "TEXT"
+
+
+attr(,"Rd_tag")
+[1] "\\section"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("deparse_usage")
+> ### * deparse_usage
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: deparse_usage
+> ### Title: Convert f_usage objects to text appropriate for usage sections
+> ###   in Rd files
+> ### Aliases: deparse_usage deparse_usage1 as.character.f_usage
+> ### Keywords: RdoUsage
+> 
+> ### ** Examples
+> 
+> cur_wd <- getwd()
+> tmpdir <- tempdir()
+> setwd(tmpdir)
+> 
+> ## prepare a list of "f_usage" objects
+> fnseq <- reprompt(seq)            # get and save the help page of "seq"
+Rd source not supplied, looking for installed documentation.
+Installed documentation found, processing it...
+	The Rd content was written to file  seq.Rd 
+> rdoseq <- tools::parse_Rd(fnseq)  # parse the Rd file
+> ut <- get_usage_text(rdoseq)      # get the contents of the usage section
+> cat(ut, "\n")                     #     of seq() (a character string)
+
+seq(\dots)
+
+\method{seq}{default}(from = 1, to = 1, by = ((to - from)/(length.out - 1)),
+    length.out = NULL, along.with = NULL, \dots)
+
+seq.int(from, to, by, length.out, along.with, \dots)
+
+seq_along(along.with)
+seq_len(length.out) 
+> utp <- parse_usage_text(ut)       # parse to a list of "f_usage" objects
+> 
+> ## deparse the "f_usage" list - each statement gets a separate string
+> cat(deparse_usage(utp), sep = "\n")
+seq(\dots)
+\method{seq}{default}(from = 1, to = 1, by = ((to - from)/(length.out - 1)), 
+    length.out = NULL, along.with = NULL, \dots)
+seq.int(from, to, by, length.out, along.with, \dots)
+seq_along(along.with)
+seq_len(length.out)
+> 
+> ## explore some of the usage entries individually;
+> ## the generic seq() has a boring signature
+> utp[[1]]
+name      = seq 
+S3class   =  
+S4sig     =  
+infix     = FALSE 
+fu        = TRUE 
+argnames  = ... 
+
+> as.character(utp[[1]])
+          seq 
+"seq(\\dots)" 
+> deparse_usage1(utp[[1]])  # same
+          seq 
+"seq(\\dots)" 
+> 
+> ## the default S3 method is more interesting
+> utp[[2]]
+name      = seq 
+S3class   = default 
+S4sig     =  
+infix     = FALSE 
+fu        = TRUE 
+argnames  = from to by length.out along.with ... 
+defaults  : from = 1 
+            to = 1 
+            by = ((to - from)/(length.out - 1)) 
+            length.out = NULL 
+            along.with = NULL 
+
+> cat(deparse_usage1(utp[[2]]))
+\method{seq}{default}(from = 1, to = 1, by = ((to - from)/(length.out - 1)), 
+    length.out = NULL, along.with = NULL, \dots)> cat(as.character(utp[[2]]))   # same
+\method{seq}{default}(from = 1, to = 1, by = ((to - from)/(length.out - 1)), 
+    length.out = NULL, along.with = NULL, \dots)> 
+> unlink(fnseq)
+> setwd(cur_wd)
+> unlink(tmpdir)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("ereprompt")
+> ### * ereprompt
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: ereprompt
+> ### Title: Update an Rd file and open it in an editor
+> ### Aliases: ereprompt
+> ### Keywords: documentation
+> 
+> ### ** Examples
+> 
+> ## this assumes that the current working directory is
+> ## in any subdirectory of the development directory of  Rdpack 
+> ## Not run: 
+> ##D ereprompt(infile = "reprompt.Rd")
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("format_funusage")
+> ### * format_funusage
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: format_funusage
+> ### Title: Format the usage text of functions
+> ### Aliases: format_funusage
+> ### Keywords: RdoUsage
+> 
+> ### ** Examples
+> 
+> # this function is essentially internal,
+> # see deparse_usage1 and as.character.f_usage which use it.
+> 
+> 
+> 
+> cleanEx()
+> nameEx("get_bibentries")
+> ### * get_bibentries
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: get_bibentries
+> ### Title: Get all references from a Bibtex file
+> ### Aliases: get_bibentries
+> ### Keywords: bibtex programming
+> 
+> ### ** Examples
+> 
+> r <- get_bibentries(package = "Rdpack")
+> r
+Francois R (2014). _bibtex: bibtex parser_. R package version 0.4.0.
+
+Boshnakov GN, Putman C (2020). _rbibutils: Convert Between Bibliography
+Formats_. <https://CRAN.R-project.org/package=rbibutils>.
+
+Murdoch D (2010). “Parsing Rd files.”
+<https://developer.r-project.org/parseRd.pdf>.
+
+Wickham H, Hester J, Chang W (2018). _devtools: Tools to Make
+Developing R Packages Easier_. R package version 1.13.5,
+<https://CRAN.R-project.org/package=devtools>.
+
+ZZZ A (2018). “A relation between several fundamental constants:
+$e^i\pi=-1$; Also, a test that slash is fine: Something\slash
+Something.” _A non-existent journal with the formula $L_2$ in its name
+& an ampersand which is preceded by a backslash in the bib file._. This
+reference does not exist. It is a test/demo that simple formulas in
+BibTeX files are OK. A formula in field 'note': $c^2 = a^2 + b^2$.
+
+Diaz JE, López-Ibáñez M (2021). “Incorporating Decision-Maker's
+Preferences into the Automatic Configuration of Bi-Objective
+Optimisation Algorithms.” _European Journal of Operational Research_,
+*289*(3), 1209-1222. doi:10.1016/j.ejor.2020.07.059
+<https://doi.org/10.1016/j.ejor.2020.07.059>,
+<https://doi.org/10.1016/j.ejor.2020.07.059>.
+> print(r, style = "html")
+<p>Francois R (2014).
+<em>bibtex: bibtex parser</em>.
+R package version 0.4.0. 
+</p>
+
+<p>Boshnakov GN, Putman C (2020).
+<em>rbibutils: Convert Between Bibliography Formats</em>.
+<a href="https://CRAN.R-project.org/package=rbibutils">https://CRAN.R-project.org/package=rbibutils</a>. 
+</p>
+
+<p>Murdoch D (2010).
+&ldquo;Parsing Rd files.&rdquo;
+<a href="https://developer.r-project.org/parseRd.pdf">https://developer.r-project.org/parseRd.pdf</a>. 
+</p>
+
+<p>Wickham H, Hester J, Chang W (2018).
+<em>devtools: Tools to Make Developing R Packages Easier</em>.
+R package version 1.13.5, <a href="https://CRAN.R-project.org/package=devtools">https://CRAN.R-project.org/package=devtools</a>. 
+</p>
+
+<p>ZZZ A (2018).
+&ldquo;A relation between several fundamental constants: $e^i\pi=-1$; Also, a test that slash is fine: Something\slash Something.&rdquo;
+<em>A non-existent journal with the formula $L_2$ in its name &amp; an ampersand which is preceded by a backslash in the bib file.</em>.
+This reference does not exist. It is a test/demo that simple formulas in BibTeX files are OK. A formula in field 'note': $c^2 = a^2 + b^2$. 
+</p>
+
+<p>Diaz JE, López-Ibáñez M (2021).
+&ldquo;Incorporating Decision-Maker's Preferences into the Automatic Configuration of Bi-Objective Optimisation Algorithms.&rdquo;
+<em>European Journal of Operational Research</em>, <b>289</b>(3), 1209&ndash;1222.
+<a href="https://doi.org/10.1016/j.ejor.2020.07.059">doi:10.1016/j.ejor.2020.07.059</a>, <a href="https://doi.org/10.1016/j.ejor.2020.07.059">https://doi.org/10.1016/j.ejor.2020.07.059</a>. 
+</p>
+> 
+> ## Bib from base R packages are disabled in Rdpack v2 (notify the
+> ## maintainer of Rdpack or raise an issue on github if you wish this back).
+> ##
+> ## b <- get_bibentries(package = "stats")
+> ## print(b[[1]], style = "R")
+> ## print(b[[1]], style = "citation")
+> 
+> ## here the url field contains percent encoding
+> fn_url <- system.file("examples", "url_with_percents.bib", package = "Rdpack") 
+> u <- get_bibentries(bibfile = fn_url)
+> 
+> ## the links produced by all of the following are valid
+> ## and can be put in a browser
+> print(u, style = "html")
+<p>Boshnakov GN (2018).
+&ldquo;Dummy example of URL with percents.&rdquo;
+<em>Example bibtex file</em>, <b>51</b>, 1&ndash;1.
+<a href="https://github.com/GeoBosh/zzfiles/blob/master/url%20with%20percents.bib">https://github.com/GeoBosh/zzfiles/blob/master/url%20with%20percents.bib</a>. 
+</p>
+> print(u, style = "bibtex")
+@Article{urlWithPercents,
+  author = {Georgi N. Boshnakov},
+  title = {Dummy example of {URL} with percents},
+  volume = {51},
+  url = {https://github.com/GeoBosh/zzfiles/blob/master/url%20with%20percents.bib},
+  journal = {Example bibtex file},
+  year = {2018},
+  pages = {1--1},
+}
+> print(u, style = "R")
+bibentry(bibtype = "Article",
+         key = "urlWithPercents",
+         author = person(given = c("Georgi", "N."),
+                         family = "Boshnakov"),
+         title = "Dummy example of {URL} with percents",
+         volume = "51",
+         url = "https://github.com/GeoBosh/zzfiles/blob/master/url%20with%20percents.bib",
+         journal = "Example bibtex file",
+         year = "2018",
+         pages = "1--1")
+> print(u, style = "text")
+Boshnakov GN (2018). “Dummy example of URL with percents.” _Example
+bibtex file_, *51*, 1-1.
+<https://github.com/GeoBosh/zzfiles/blob/master/url%20with%20percents.bib>.
+> print(u, style = "citation")
+
+
+Boshnakov GN (2018). “Dummy example of URL with percents.” _Example
+bibtex file_, *51*, 1-1.
+<https://github.com/GeoBosh/zzfiles/blob/master/url%20with%20percents.bib>.
+
+A BibTeX entry for LaTeX users is
+
+  @Misc{urlWithPercents,
+    author = {Georgi N. Boshnakov},
+    title = {Dummy example of {URL} with percents},
+    volume = {51},
+    url = {https://github.com/GeoBosh/zzfiles/blob/master/url%20with%20percents.bib},
+    journal = {Example bibtex file},
+    year = {2018},
+    pages = {1--1},
+    truebibtype = {Article},
+  }
+
+
+> 
+> ## The link here contains escapes but when put in a LaTeX document
+> ## which uses the JSS style it generates correct clickable link,
+> ## (see Details section) 
+> print(u, style = "latex")
+Boshnakov GN (2018).
+``Dummy example of URL with percents.''
+\emph{Example bibtex file}, \bold{51}, 1--1.
+\url{https://github.com/GeoBosh/zzfiles/blob/master/url\%20with\%20percents.bib}.
+> 
+> ## here the journal field contains percent encoding
+> fn_other <- system.file("examples", "journal_with_percents.bib", package = "Rdpack") 
+> j <- get_bibentries(bibfile = fn_url)
+> print(j, style = "html")
+<p>Boshnakov GN (2018).
+&ldquo;Dummy example of URL with percents.&rdquo;
+<em>Example bibtex file</em>, <b>51</b>, 1&ndash;1.
+<a href="https://github.com/GeoBosh/zzfiles/blob/master/url%20with%20percents.bib">https://github.com/GeoBosh/zzfiles/blob/master/url%20with%20percents.bib</a>. 
+</p>
+> print(j, style = "bibtex")
+@Article{urlWithPercents,
+  author = {Georgi N. Boshnakov},
+  title = {Dummy example of {URL} with percents},
+  volume = {51},
+  url = {https://github.com/GeoBosh/zzfiles/blob/master/url%20with%20percents.bib},
+  journal = {Example bibtex file},
+  year = {2018},
+  pages = {1--1},
+}
+> print(j, style = "R")
+bibentry(bibtype = "Article",
+         key = "urlWithPercents",
+         author = person(given = c("Georgi", "N."),
+                         family = "Boshnakov"),
+         title = "Dummy example of {URL} with percents",
+         volume = "51",
+         url = "https://github.com/GeoBosh/zzfiles/blob/master/url%20with%20percents.bib",
+         journal = "Example bibtex file",
+         year = "2018",
+         pages = "1--1")
+> print(j, style = "text")
+Boshnakov GN (2018). “Dummy example of URL with percents.” _Example
+bibtex file_, *51*, 1-1.
+<https://github.com/GeoBosh/zzfiles/blob/master/url%20with%20percents.bib>.
+> print(j, style = "citation")
+
+
+Boshnakov GN (2018). “Dummy example of URL with percents.” _Example
+bibtex file_, *51*, 1-1.
+<https://github.com/GeoBosh/zzfiles/blob/master/url%20with%20percents.bib>.
+
+A BibTeX entry for LaTeX users is
+
+  @Misc{urlWithPercents,
+    author = {Georgi N. Boshnakov},
+    title = {Dummy example of {URL} with percents},
+    volume = {51},
+    url = {https://github.com/GeoBosh/zzfiles/blob/master/url%20with%20percents.bib},
+    journal = {Example bibtex file},
+    year = {2018},
+    pages = {1--1},
+    truebibtype = {Article},
+  }
+
+
+>       
+> print(j, style = "latex")
+Boshnakov GN (2018).
+``Dummy example of URL with percents.''
+\emph{Example bibtex file}, \bold{51}, 1--1.
+\url{https://github.com/GeoBosh/zzfiles/blob/master/url\%20with\%20percents.bib}.
+> 
+> 
+> 
+> cleanEx()
+> nameEx("get_sig_text")
+> ### * get_sig_text
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: get_sig_text
+> ### Title: Produce the textual form of the signatures of available methods
+> ###   for an S4 generic function
+> ### Aliases: get_sig_text
+> ### Keywords: RdoS4
+> 
+> ### ** Examples
+> 
+> ## load another package with some S4 methods ("methods" is already loaded)
+> require("stats4") 
+Loading required package: stats4
+> 
+> rdo <- Rdo_fetch("show", package = "methods")
+> ## alternatively:
+> #fn <- help("show-methods", package = "methods")
+> #rdo <- utils:::.getHelpFile(fn)
+> 
+> ## this will find all methods for "show" in currently loaded packages
+> ## (print only some of them)
+> head(get_sig_text(rdo))
+[1] "signature(object = \"ANY\")"                   
+[2] "signature(object = \"classGeneratorFunction\")"
+[3] "signature(object = \"classRepresentation\")"   
+[4] "signature(object = \"envRefClass\")"           
+[5] "signature(object = \"externalRefMethod\")"     
+[6] "signature(object = \"genericFunction\")"       
+> 
+> ## this will select only the ones from package "stats4"
+> get_sig_text(rdo, package = "stats4")
+[1] "signature(object = \"mle\")"         "signature(object = \"summary.mle\")"
+> 
+> ## this is also fine (interactively) but need to choose
+> ## the appropriate element of "fn" if length(fn) > 1
+> #fn <- help("show-methods")
+> 
+> ## this finds nothing
+> #fn <- help("logLik-methods", package = "methods")
+> #fn
+> Rdo_fetch("logLik-methods", package = "methods")
+NULL
+> 
+> ## this does
+> #fn <- help("logLik-methods", package = "stats4")
+> #rdo <- utils:::.getHelpFile(fn)
+> rdo2 <- Rdo_fetch("logLik-methods", package = "stats4")
+> 
+> get_sig_text(rdo2)
+[1] "signature(object = \"ANY\")" "signature(object = \"mle\")"
+> get_sig_text(rdo2, package = "stats4")
+[1] "signature(object = \"ANY\")" "signature(object = \"mle\")"
+> 
+> ## only default method defined
+> ## using this:
+> setGeneric("f1", function(x, y){NULL})
+[1] "f1"
+> ## since the following gives error in pkgdown:
+> #f1 <- function(x, y){NULL}
+> #setGeneric("f1")
+> 
+> fn <- tempfile()
+> 
+> reprompt("f1", filename = fn)
+Rd source not supplied, looking for installed documentation.
+Rd source not supplied and installed documentation not found.
+Trying a 'prompt' function to generate documentation for the object.
+	success: documentation generated using a 'prompt' function.
+	The Rd content was written to file  /tmp/RtmpqLYiNh/file6c5620f31861 
+[1] "/tmp/RtmpqLYiNh/file6c5620f31861"
+> rdo <- tools::parse_Rd(fn)
+> get_sig_text(rdo)
+[1] "signature(x = \"ANY\")"
+> 
+> setClass("aRdpack")
+> setClass("bRdpack")
+> 
+> ## several methods defined
+> setGeneric("f4", function(x, y){NULL})
+[1] "f4"
+> setMethod("f4", c("numeric", "numeric"), function(x, y){NULL})
+> setMethod("f4", c("aRdpack", "numeric"), function(x, y){NULL})
+> setMethod("f4", c("bRdpack", "numeric"), function(x, y){NULL})
+> setMethod("f4", c("aRdpack", "bRdpack"), function(x, y){NULL})
+> 
+> reprompt("f4", filename = fn)
+Rd source not supplied, looking for installed documentation.
+Rd source not supplied and installed documentation not found.
+Trying a 'prompt' function to generate documentation for the object.
+	success: documentation generated using a 'prompt' function.
+	The Rd content was written to file  /tmp/RtmpqLYiNh/file6c5620f31861 
+[1] "/tmp/RtmpqLYiNh/file6c5620f31861"
+> rdo <- tools::parse_Rd(fn)
+> get_sig_text(rdo)
+[1] "signature(x = \"ANY\", y = \"ANY\")"        
+[2] "signature(x = \"aRdpack\", y = \"bRdpack\")"
+[3] "signature(x = \"aRdpack\", y = \"numeric\")"
+[4] "signature(x = \"bRdpack\", y = \"numeric\")"
+[5] "signature(x = \"numeric\", y = \"numeric\")"
+> 
+> unlink(fn)
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:stats4’
+
+> nameEx("get_usage_text")
+> ### * get_usage_text
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: get_usage_text
+> ### Title: Get the text of the usage section of Rd documentation
+> ### Aliases: get_usage_text
+> ### Keywords: RdoUsage
+> 
+> ### ** Examples
+> 
+> ## get the Rd object documenting Rdo_macro
+> #h <- utils::help("Rdo_macro", lib.loc = .libPaths())
+> #rdo <- utils:::.getHelpFile(h)
+> rdo <- Rdo_fetch("Rdo_macro", "Rdpack")
+> # extract the usage section and print it:
+> ut <- get_usage_text(rdo)
+> cat(ut, sep = "\n")
+
+Rdo_macro(x, name)
+
+Rdo_macro1(x, name)
+
+Rdo_macro2(x, y, name)
+
+Rdo_item(x, y)
+
+Rdo_sigitem(x, y, newline = TRUE)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("insert_all_ref")
+> ### * insert_all_ref
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: insert_all_ref
+> ### Title: Insert references cited in packages
+> ### Aliases: insert_all_ref
+> ### Keywords: documentation
+> 
+> ### ** Examples
+> 
+> ## a reference from package Rdpack
+> cat(insert_all_ref(matrix(c("Rpack:bibtex", "Rdpack"), ncol = 2)), "\n")
+Romain Francois (2014).
+\emph{bibtex: bibtex parser}.
+R package version 0.4.0. 
+> 
+> ## more than one reference from package Rdpack, separate the keys with commas
+> cat(insert_all_ref(matrix(c("parseRd,Rpack:bibtex", "Rdpack"), ncol = 2)), "\n")
+Romain Francois (2014).
+\emph{bibtex: bibtex parser}.
+R package version 0.4.0.\cr\cr Duncan Murdoch (2010).
+\dQuote{Parsing Rd files.}
+\url{https://developer.r-project.org/parseRd.pdf}. 
+> 
+> ## all references from package Rdpack
+> cat(insert_all_ref(matrix(c("*", "Rdpack"), ncol = 2)), "\n")
+Georgi
+N. Boshnakov, Chris Putman (2020).
+\emph{rbibutils: Convert Between Bibliography Formats}.
+\url{https://CRAN.R-project.org/package=rbibutils}.\cr\cr Juan
+Esteban Diaz, Manuel López-Ibáñez (2021).
+\dQuote{Incorporating Decision-Maker's Preferences into the Automatic Configuration of Bi-Objective Optimisation Algorithms.}
+\emph{European Journal of Operational Research}, \bold{289}(3), 1209--1222.
+\doi{10.1016/j.ejor.2020.07.059}.\cr\cr Romain Francois (2014).
+\emph{bibtex: bibtex parser}.
+R package version 0.4.0.\cr\cr Duncan Murdoch (2010).
+\dQuote{Parsing Rd files.}
+\url{https://developer.r-project.org/parseRd.pdf}.\cr\cr Hadley Wickham, Jim Hester, Winston Chang (2018).
+\emph{devtools: Tools to Make Developing R Packages Easier}.
+R package version 1.13.5, \url{https://CRAN.R-project.org/package=devtools}.\cr\cr A. ZZZ (2018).
+\dQuote{A relation between several fundamental constants: \eqn{e^{i\pi}=-1}; Also, a test that slash is fine: Something\ifelse{latex}{\out{\slash }}{/}Something.}
+\emph{A non-existent journal with the formula \eqn{L_2} in its name & an ampersand which is preceded by a backslash in the bib file.}.
+This reference does not exist. It is a test/demo that simple formulas in BibTeX files are OK. A formula in field 'note': \eqn{c^2 = a^2 + b^2}. 
+> 
+> ## all references from package Rdpack and rbibutils
+> m <- matrix(c("*", "Rdpack",  "*", "rbibutils"), ncol = 2, byrow = TRUE)
+> cat(insert_all_ref(m), "\n")
+Georgi
+N. Boshnakov (2020).
+\dQuote{Rdpack: Update and Manipulate Rd Documentation Objects.}
+\doi{10.5281/zenodo.3925612}, R package version 2.0.0.\cr\cr Georgi
+N. Boshnakov, Chris Putman (2020).
+\emph{rbibutils: Convert Between Bibliography Formats}.
+\url{https://CRAN.R-project.org/package=rbibutils}.\cr\cr Juan
+Esteban Diaz, Manuel López-Ibáñez (2021).
+\dQuote{Incorporating Decision-Maker's Preferences into the Automatic Configuration of Bi-Objective Optimisation Algorithms.}
+\emph{European Journal of Operational Research}, \bold{289}(3), 1209--1222.
+\doi{10.1016/j.ejor.2020.07.059}.\cr\cr Damiano Fantini (2019).
+\dQuote{easyPubMed: Search and Retrieve Scientific Publication Records from PubMed.}
+R package version 2.13, \url{https://CRAN.R-project.org/package=easyPubMed}.\cr\cr Romain Francois (2014).
+\emph{bibtex: bibtex parser}.
+R package version 0.4.0.\cr\cr Romain Francois (2014).
+\emph{bibtex: bibtex parser}.
+R package version 0.4.0.\cr\cr Mathew
+William McLean (2017).
+\dQuote{RefManageR: Import and Manage BibTeX and BibLaTeX References in R.}
+\emph{The Journal of Open Source Software}.
+\doi{10.21105/joss.00338}.\cr\cr Duncan Murdoch (2010).
+\dQuote{Parsing Rd files.}
+\url{https://developer.r-project.org/parseRd.pdf}.\cr\cr Chris Putnam (2020).
+\dQuote{Library bibutils, version 6.10.}
+\url{https://sourceforge.net/projects/bibutils/}.\cr\cr Hadley Wickham, Jim Hester, Winston Chang (2018).
+\emph{devtools: Tools to Make Developing R Packages Easier}.
+R package version 1.13.5, \url{https://CRAN.R-project.org/package=devtools}.\cr\cr A. ZZZ (2018).
+\dQuote{A relation between several fundamental constants: \eqn{e^{i\pi}=-1}; Also, a test that slash is fine: Something\ifelse{latex}{\out{\slash }}{/}Something.}
+\emph{A non-existent journal with the formula \eqn{L_2} in its name & an ampersand which is preceded by a backslash in the bib file.}.
+This reference does not exist. It is a test/demo that simple formulas in BibTeX files are OK. A formula in field 'note': \eqn{c^2 = a^2 + b^2}. 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("insert_citeOnly")
+> ### * insert_citeOnly
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: insert_citeOnly
+> ### Title: Generate citations from bibtex keys
+> ### Aliases: insert_citeOnly
+> ### Keywords: documentation
+> 
+> ### ** Examples
+> 
+> insert_citeOnly("@see also @Rpackage:rbibutils and @parseRd", package = "Rdpack")
+[1] "(see also Boshnakov and Putman 2020 and Murdoch 2010)"
+> ## (see also Boshnakov and Putman 2020 and Murdoch 2010)
+> 
+> insert_citeOnly("@see also @Rpackage:rbibutils and @parseRd;nobrackets",
++   package = "Rdpack")
+[1] "see also Boshnakov and Putman 2020 and Murdoch 2010"
+> ## see also Boshnakov and Putman 2020 and Murdoch 2010
+> 
+> insert_citeOnly("@see also @Rpackage:rbibutils and @parseRd;textual",
++   package = "Rdpack")
+[1] "see also Boshnakov and Putman (2020) and Murdoch (2010)"
+> ## see also Boshnakov and Putman (2020) and Murdoch (2010)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("insert_ref")
+> ### * insert_ref
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: insert_ref
+> ### Title: Insert bibtex references in Rd and roxygen2 documentation
+> ### Aliases: insert_ref insertRef
+> ### Keywords: documentation Rd
+> 
+> ### ** Examples
+> 
+> cat(insert_ref("Rpackage:rbibutils", "Rdpack"), "\n")
+Georgi
+N. Boshnakov, Chris Putman (2020).
+\emph{rbibutils: Convert Between Bibliography Formats}.
+\url{https://CRAN.R-project.org/package=rbibutils}. 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("list_Rd")
+> ### * list_Rd
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: list_Rd
+> ### Title: Combine Rd fragments
+> ### Aliases: list_Rd
+> ### Keywords: RdoBuild
+> 
+> ### ** Examples
+> 
+> ## see also the examples for c_Rd
+> 
+> dummyfun <- function(x, ...) x
+> 
+> u1 <- list_Rd(name = "Dummyname", alias = "dummyfun",
++               title = "Dummy title", description = "Dummy description",
++               usage = "dummyfun(x)",
++               value = "numeric vector",
++               author = "A. Author",
++               Rd_class=TRUE )
+> Rdo_show(u1)
+_D_u_m_m_y _t_i_t_l_e
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     Dummy description
+
+_U_s_a_g_e:
+
+     dummyfun(x)
+     
+_V_a_l_u_e:
+
+     numeric vector
+
+_A_u_t_h_o_r(_s):
+
+     A. Author
+
+
+> 
+> # call reprompt to fill the arguments section (and correct the usage)
+> fn <- tempfile("dummyfun", fileext = "Rd")
+> reprompt(dummyfun, filename = fn)
+Rd source not supplied, looking for installed documentation.
+Rd source not supplied and installed documentation not found.
+Trying a 'prompt' function to generate documentation for the object.
+	success: documentation generated using a 'prompt' function.
+	The Rd content was written to file  /tmp/RtmpqLYiNh/dummyfun6c5622c4c48Rd 
+[1] "/tmp/RtmpqLYiNh/dummyfun6c5622c4c48Rd"
+> 
+> # check that the result can be parsed and show it.
+> Rdo_show(tools::parse_Rd(fn))
+~~ _D_u_m_m_y _t_i_t_l_e ~~
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     ~~ Dummy description ~~
+
+_U_s_a_g_e:
+
+     dummyfun(x, ...)
+     
+_A_r_g_u_m_e_n_t_s:
+
+       x:
+
+     ...:
+
+_E_x_a_m_p_l_e_s:
+
+     ##---- Should be DIRECTLY executable !! ----
+     ##-- ==>  Define data, use random,
+     ##--    or standard data sets, see data().
+     
+     ## The function is currently defined as
+     function (x, ...) 
+     x
+     
+
+> 
+> unlink(fn)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("makeVignetteReference")
+> ### * makeVignetteReference
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: makeVignetteReference
+> ### Title: Make bibtex references for vignettes
+> ### Aliases: makeVignetteReference vigbib
+> ### Keywords: bibtex
+> 
+> ### ** Examples
+> 
+> ## NOTE (2020-01-21): the following examples work fine, but are not
+> ##   rendered correctly by pkgdown::build_site(), so there may be errors
+> ##   on the site produced by it, https://geobosh.github.io/Rdpack/.
+> 
+> vigbib("Rdpack")
+@Article{vigRdpack:Inserting_figures_and_evaluated_examples,
+  title = {Inserting figures and evaluated examples},
+  author = {Georgi N. Boshnakov and Duncan Murdoch},
+  journal = {URL https://CRAN.R-Project.org/package=Rdpack. Vignette included in R package Rdpack, version 2.6.4},
+  year = {2025},
+  publisher = {CRAN},
+  url = {https://CRAN.R-Project.org/package=Rdpack},
+}
+
+@Article{vigRdpack:Inserting_bibtex_references,
+  title = {Inserting references in Rd and roxygen2 documentation},
+  author = {Georgi N. Boshnakov and Duncan Murdoch},
+  journal = {URL https://CRAN.R-Project.org/package=Rdpack. Vignette included in R package Rdpack, version 2.6.4},
+  year = {2025},
+  publisher = {CRAN},
+  url = {https://CRAN.R-Project.org/package=Rdpack},
+}
+> makeVignetteReference("Rdpack", vig = 1)
+@Article{vigRdpack:Inserting_figures_and_evaluated_examples,
+  title = {Inserting figures and evaluated examples},
+  author = {Georgi N. Boshnakov and Duncan Murdoch},
+  journal = {URL https://CRAN.R-Project.org/package=Rdpack. Vignette included in R package Rdpack, version 2.6.4},
+  year = {2025},
+  publisher = {CRAN},
+  url = {https://CRAN.R-Project.org/package=Rdpack},
+}
+
+Boshnakov GN, Murdoch D (2025). “Inserting figures and evaluated
+examples.” _URL https://CRAN.R-Project.org/package=Rdpack. Vignette
+included in R package Rdpack, version 2.6.4_.
+<https://CRAN.R-Project.org/package=Rdpack>.
+> makeVignetteReference("Rdpack", vig = "Inserting_bibtex_references")
+@Article{vigRdpack:Inserting_bibtex_references,
+  title = {Inserting references in Rd and roxygen2 documentation},
+  author = {Georgi N. Boshnakov and Duncan Murdoch},
+  journal = {URL https://CRAN.R-Project.org/package=Rdpack. Vignette included in R package Rdpack, version 2.6.4},
+  year = {2025},
+  publisher = {CRAN},
+  url = {https://CRAN.R-Project.org/package=Rdpack},
+}
+
+Boshnakov GN, Murdoch D (2025). “Inserting references in Rd and
+roxygen2 documentation.” _URL
+https://CRAN.R-Project.org/package=Rdpack. Vignette included in R
+package Rdpack, version 2.6.4_.
+<https://CRAN.R-Project.org/package=Rdpack>.
+> ## the first few characters of the name suffice:
+> makeVignetteReference("Rdpack", vig = "Inserting_bib")
+@Article{vigRdpack:Inserting_bibtex_references,
+  title = {Inserting references in Rd and roxygen2 documentation},
+  author = {Georgi N. Boshnakov and Duncan Murdoch},
+  journal = {URL https://CRAN.R-Project.org/package=Rdpack. Vignette included in R package Rdpack, version 2.6.4},
+  year = {2025},
+  publisher = {CRAN},
+  url = {https://CRAN.R-Project.org/package=Rdpack},
+}
+
+Boshnakov GN, Murdoch D (2025). “Inserting references in Rd and
+roxygen2 documentation.” _URL
+https://CRAN.R-Project.org/package=Rdpack. Vignette included in R
+package Rdpack, version 2.6.4_.
+<https://CRAN.R-Project.org/package=Rdpack>.
+> 
+> ## this gives an error but also prints the available vignettes:
+> ## makeVignetteReference("Matrix", vig = "NoSuchVignette")
+> 
+> vigbib("utils")
+@Article{vigutils:Sweave,
+  title = {Sweave User Manual},
+  author = {R Core Team and contributors worldwide},
+  journal = {URL https://CRAN.R-Project.org. Vignette included in R package utils (Part of R 4.5.1)},
+  year = {2025},
+  publisher = {CRAN},
+  url = {https://CRAN.R-Project.org},
+}
+> makeVignetteReference("utils", vig = 1)
+@Article{vigutils:Sweave,
+  title = {Sweave User Manual},
+  author = {R Core Team and contributors worldwide},
+  journal = {URL https://CRAN.R-Project.org. Vignette included in R package utils (Part of R 4.5.1)},
+  year = {2025},
+  publisher = {CRAN},
+  url = {https://CRAN.R-Project.org},
+}
+
+Team RC, worldwide c (2025). “Sweave User Manual.” _URL
+https://CRAN.R-Project.org. Vignette included in R package utils (Part
+of R 4.5.1)_. <https://CRAN.R-Project.org>.
+> ## commented out since can be slow:
+> ## high <- installed.packages(priority = "high")
+> ## highbib <- lapply(rownames(high), function(x) try(Rdpack:::vigbib(x, verbose = FALSE)))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("parse_Rdname")
+> ### * parse_Rdname
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: parse_Rdname
+> ### Title: Parse the name section of an Rd object
+> ### Aliases: parse_Rdname
+> ### Keywords: RdoProgramming
+> 
+> ### ** Examples
+> 
+> u1 <- list_Rd(name = "Dummyname", alias = "Dummyallias1",
++               title = "Dummy title", description = "Dummy description",
++               Rd_class=TRUE )
+> 
+> parse_Rdname(u1)
+$fname
+       name 
+"Dummyname" 
+
+$type
+type 
+  "" 
+
+> 
+> u2 <- list_Rd(name = "dummyclass-class", alias = "Dummyclass",
++               title = "Class dummyclass",
++               description = "Objects and methods for something.",
++               Rd_class=TRUE )
+> 
+> parse_Rdname(u2)
+$fname
+        name 
+"dummyclass" 
+
+$type
+   type 
+"class" 
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("parse_Rdpiece")
+> ### * parse_Rdpiece
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: parse_Rdpiece
+> ### Title: Parse a piece of Rd source text
+> ### Aliases: parse_Rdpiece
+> ### Keywords: RdoProgramming
+> 
+> ### ** Examples
+> 
+> # the following creates Rd object rdo
+> dummyfun <- function(x) x
+> u1 <- list_Rd(name = "Dummyname", alias = "dummyfun",
++               title = "Dummy title", description = "Dummy description",
++               usage = "dummyfun(x,y)",
++               value = "numeric vector",
++               author = "A. Author",
++               Rd_class = TRUE )
+> fn <- tempfile("dummyfun", fileext = "Rd")
+> reprompt(dummyfun, filename = fn)
+Rd source not supplied, looking for installed documentation.
+Rd source not supplied and installed documentation not found.
+Trying a 'prompt' function to generate documentation for the object.
+	success: documentation generated using a 'prompt' function.
+	The Rd content was written to file  /tmp/RtmpqLYiNh/dummyfun6c56205f0541Rd 
+[1] "/tmp/RtmpqLYiNh/dummyfun6c56205f0541Rd"
+> rdo <- tools::parse_Rd(fn)
+> 
+> # let's prepare a new item
+> rd <- "\\item{...}{further arguments to be passed on.}"
+> newarg <- parse_Rdtext(rd, section = "\\arguments")
+> 
+> # now append 'newarg' to the arguments section of rdo
+> iarg <- which(tools:::RdTags(rdo) == "\\arguments")
+> rdoa <- append_to_Rd_list(rdo, newarg, iarg)
+> 
+> Rdo_show(rdoa)
+~~ _D_u_m_m_y _t_i_t_l_e ~~
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     ~~ Dummy description ~~
+
+_U_s_a_g_e:
+
+     dummyfun(x)
+     
+_A_r_g_u_m_e_n_t_s:
+
+       x:
+
+     ...: further arguments to be passed on.
+
+_E_x_a_m_p_l_e_s:
+
+     ##---- Should be DIRECTLY executable !! ----
+     ##-- ==>  Define data, use random,
+     ##--    or standard data sets, see data().
+     
+     ## The function is currently defined as
+     function (x) 
+     x
+     
+
+> 
+> # for arguments and other frequent tasks, there are specialised functions
+> dots <- paste0("\\", "dots")
+> rdob <- Rdo_append_argument(rdo, dots, "further arguments to be passed on.")
+> 
+> Rdo_show(reprompt(rdob, filename = fn))
+Processing the Rd object...
+Argument(s):  ... 
+	are no longer in any usage statements in this Rd object.
+Please remove the corresponding \item's from section '\arguments'.
+
+	The Rd content was written to file  /tmp/RtmpqLYiNh/dummyfun6c56205f0541Rd 
+~~ _D_u_m_m_y _t_i_t_l_e ~~
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     ~~ Dummy description ~~
+
+_U_s_a_g_e:
+
+     dummyfun(x)
+     
+_A_r_g_u_m_e_n_t_s:
+
+       x:
+
+     ...: further arguments to be passed on.
+
+_E_x_a_m_p_l_e_s:
+
+     ##---- Should be DIRECTLY executable !! ----
+     ##-- ==>  Define data, use random,
+     ##--    or standard data sets, see data().
+     
+     ## The function is currently defined as
+     function (x) 
+     x
+     
+
+> 
+> unlink(fn)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("parse_pairlist")
+> ### * parse_pairlist
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: parse_pairlist
+> ### Title: Parse formal arguments of functions
+> ### Aliases: parse_pairlist pairlist2f_usage1
+> ### Keywords: RdoBuild
+> 
+> ### ** Examples
+> 
+> parse_pairlist(formals(lm))
+$argnames
+ [1] "formula"     "data"        "subset"      "weights"     "na.action"  
+ [6] "method"      "model"       "x"           "y"           "qr"         
+[11] "singular.ok" "contrasts"   "offset"      "..."        
+
+$defaults
+     method       model           x           y          qr singular.ok 
+   "\"qr\""      "TRUE"     "FALSE"     "FALSE"      "TRUE"      "TRUE" 
+  contrasts 
+     "NULL" 
+
+> parse_pairlist(formals(system.file))
+$argnames
+[1] "..."      "package"  "lib.loc"  "mustWork"
+
+$defaults
+   package    lib.loc   mustWork 
+"\"base\""     "NULL"    "FALSE" 
+
+> s_lm <- pairlist2f_usage1(formals(summary.lm), "summary", S3class = "lm")
+> s_lm
+name      = summary 
+S3class   = lm 
+S4sig     =  
+infix     = FALSE 
+fu        = TRUE 
+argnames  = object correlation symbolic.cor ... 
+defaults  : correlation = FALSE 
+            symbolic.cor = FALSE 
+
+> as.character(s_lm)
+                                                                           summary 
+"\\method{summary}{lm}(object, correlation = FALSE, symbolic.cor = FALSE, \\dots)" 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("promptUsage")
+> ### * promptUsage
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: promptUsage
+> ### Title: Generate usage text for functions and methods
+> ### Aliases: promptUsage get_usage
+> ### Keywords: documentation Rd
+> 
+> ### ** Examples
+> 
+> u <- get_usage(lm)    # a long usage text
+> cat(u)
+lm(formula, data, subset, weights, na.action, method = "qr", 
+   model = TRUE, x = FALSE, y = FALSE, qr = TRUE, singular.ok = TRUE, 
+   contrasts = NULL, offset, \dots)> 
+> # if there are additional arguments in S3 methods,
+> # use names of the functions, not the objects, e.g.
+> get_usage("droplevels", S3class = "data.frame")
+                                                           droplevels 
+"\\method{droplevels}{data.frame}(x, except = NULL, exclude, \\dots)" 
+> get_usage(name = "droplevels", S3class = "data.frame")
+                                                           droplevels 
+"\\method{droplevels}{data.frame}(x, except = NULL, exclude, \\dots)" 
+> # (both give "\method{droplevels}{data.frame}(x, except = NULL, \dots)")
+> 
+> # but this gives the args of the generic:  "\method{droplevels}{data.frame}(x, \dots)"
+> get_usage(droplevels, S3class = "data.frame")
+                                   droplevels 
+"\\method{droplevels}{data.frame}(x, \\dots)" 
+> 
+> ## a list containing some functions
+> summaries <- list(xbar = function(x) mean(x), rho = function(x, y) cor(x,y))
+> get_usage(summaries$xbar, name = "xbar")
+     xbar 
+"xbar(x)" 
+> get_usage(summaries$rho, name = "rho")
+        rho 
+"rho(x, y)" 
+> 
+> ## functions in an environment
+> esummaries <- list2env(summaries)
+> get_usage(esummaries$xbar, name = "xbar")
+     xbar 
+"xbar(x)" 
+> get_usage(esummaries$rho, name = "rho")
+        rho 
+"rho(x, y)" 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("rebib")
+> ### * rebib
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: rebib
+> ### Title: Work with bibtex references in Rd documentation
+> ### Aliases: rebib inspect_Rdbib
+> ### Keywords: bibtex Rd
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D # update references in all Rd files in the package's 'man' directory
+> ##D #
+> ##D rdnames <- dir(path = "./man", pattern=".*[.]Rd$", full.names=TRUE)
+> ##D lapply(rdnames, function(x) rebib(x, package="Rdpack"))
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("reprompt")
+> ### * reprompt
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: reprompt
+> ### Title: Update the documentation of a topic
+> ### Aliases: reprompt
+> ### Keywords: Rd
+> 
+> ### ** Examples
+> 
+> ## note: usage of reprompt() is simple.  the examples below are bulky
+> ##       because they simulate various usage scenarios with commands,
+> ##       while in normal usage they would be due to editing.
+> 
+> ## change to a temporary directory to avoid clogging up user's
+> cur_wd <- getwd()
+> tmpdir <- tempdir()
+> setwd(tmpdir)
+> 
+> ## as for prompt() the default is to save in current dir as "seq.Rd".
+> ## the argument here is a function, reprompt finds its doc and
+> ## updates all objects described along with `seq'.
+> ## (In this case there is nothing to update, we have not changed `seq'.)
+> 
+> fnseq <- reprompt(seq)
+Rd source not supplied, looking for installed documentation.
+Installed documentation found, processing it...
+	The Rd content was written to file  seq.Rd 
+> 
+> ## let's parse the saved Rd file (the filename is returned by reprompt)
+> rdoseq <- tools::parse_Rd(fnseq)   # parse fnseq to see the result.
+> Rdo_show(rdoseq)
+_S_e_q_u_e_n_c_e _G_e_n_e_r_a_t_i_o_n
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     Generate regular sequences.  ‘seq’ is a standard generic with a
+     default method.  ‘seq.int’ is a primitive which can be much faster
+     but has a few restrictions.  ‘seq_along’ and ‘seq_len’ are very
+     fast primitives for two common cases.
+
+_U_s_a_g_e:
+
+     seq(...)
+     
+     ## Default S3 method:
+     seq(from = 1, to = 1, by = ((to - from)/(length.out - 1)),
+         length.out = NULL, along.with = NULL, ...)
+     
+     seq.int(from, to, by, length.out, along.with, ...)
+     
+     seq_along(along.with)
+     seq_len(length.out)
+     
+_A_r_g_u_m_e_n_t_s:
+
+     ...: arguments passed to or from methods.
+
+from, to: the starting and (maximal) end values of the sequence.  Of
+          length ‘1’ unless just ‘from’ is supplied as an unnamed
+          argument.
+
+      by: number: increment of the sequence.
+
+length.out: desired length of the sequence.  A non-negative number,
+          which for ‘seq’ and ‘seq.int’ will be rounded up if
+          fractional.
+
+along.with: take the length from the length of this argument.
+
+_D_e_t_a_i_l_s:
+
+     Numerical inputs should all be finite (that is, not infinite,
+     ‘NaN’ or ‘NA’).
+
+     The interpretation of the unnamed arguments of ‘seq’ and ‘seq.int’
+     is _not_ standard, and it is recommended always to name the
+     arguments when programming.
+
+     ‘seq’ is generic, and only the default method is described here.
+     Note that it dispatches on the class of the *first* argument
+     irrespective of argument names.  This can have unintended
+     consequences if it is called with just one argument intending this
+     to be taken as ‘along.with’: it is much better to use ‘seq_along’
+     in that case.
+
+     ‘seq.int’ is an internal generic which dispatches on methods for
+     ‘"seq"’ based on the class of the first supplied argument (before
+     argument matching).
+
+     Typical usages are
+
+     seq(from, to)
+     seq(from, to, by= )
+     seq(from, to, length.out= )
+     seq(along.with= )
+     seq(from)
+     seq(length.out= )
+     
+     The first form generates the sequence ‘from, from+/-1, ..., to’
+     (identical to ‘from:to’).
+
+     The second form generates ‘from, from+by’, ..., up to the sequence
+     value less than or equal to ‘to’.  Specifying ‘to - from’ and ‘by’
+     of opposite signs is an error.  Note that the computed final value
+     can go just beyond ‘to’ to allow for rounding error, but is
+     truncated to ‘to’.  (‘Just beyond’ is by up to 1e-10 times
+     ‘abs(from - to)’.)
+
+     The third generates a sequence of ‘length.out’ equally spaced
+     values from ‘from’ to ‘to’.  (‘length.out’ is usually abbreviated
+     to ‘length’ or ‘len’, and ‘seq_len’ is much faster.)
+
+     The fourth form generates the integer sequence ‘1, 2, ...,
+     length(along.with)’.  (‘along.with’ is usually abbreviated to
+     ‘along’, and ‘seq_along’ is much faster.)
+
+     The fifth form generates the sequence ‘1, 2, ..., length(from)’
+     (as if argument ‘along.with’ had been specified), _unless_ the
+     argument is numeric of length 1 when it is interpreted as ‘1:from’
+     (even for ‘seq(0)’ for compatibility with S).  Using either
+     ‘seq_along’ or ‘seq_len’ is much preferred (unless strict S
+     compatibility is essential).
+
+     The final form generates the integer sequence ‘1, 2, ...,
+     length.out’ unless ‘length.out = 0’, when it generates
+     ‘integer(0)’.
+
+     Very small sequences (with ‘from - to’ of the order of 10^{-14}
+     times the larger of the ends) will return ‘from’.
+
+     For ‘seq’ (only), up to two of ‘from’, ‘to’ and ‘by’ can be
+     supplied as complex values provided ‘length.out’ or ‘along.with’
+     is specified.  More generally, the default method of ‘seq’ will
+     handle classed objects with methods for the ‘Math’, ‘Ops’ and
+     ‘Summary’ group generics.
+
+     ‘seq.int’, ‘seq_along’ and ‘seq_len’ are primitive.
+
+_V_a_l_u_e:
+
+     ‘seq.int’ and the default method of ‘seq’ for numeric arguments
+     return a vector of type ‘"integer"’ or ‘"double"’: programmers
+     should not rely on which.
+
+     ‘seq_along’ and ‘seq_len’ return an integer vector, unless it is a
+     _long vector_ when it will be double.
+
+_R_e_f_e_r_e_n_c_e_s:
+
+     Becker, R. A., Chambers, J. M. and Wilks, A. R. (1988) _The New S
+     Language_.  Wadsworth & Brooks/Cole.
+
+_S_e_e _A_l_s_o:
+
+     The methods ‘seq.Date’ and ‘seq.POSIXt’.
+
+     ‘:’, ‘rep’, ‘sequence’, ‘row’, ‘col’.
+
+_E_x_a_m_p_l_e_s:
+
+     seq(0, 1, length.out = 11)
+     seq(stats::rnorm(20)) # effectively 'along'
+     seq(1, 9, by = 2)     # matches 'end'
+     seq(1, 9, by = pi)    # stays below 'end'
+     seq(1, 6, by = 3)
+     seq(1.575, 5.125, by = 0.05)
+     seq(17) # same as 1:17, or even better seq_len(17)
+     
+
+> 
+> ## we replace usage statements with wrong ones for illustration.
+> ## (note there is an S3 method along with the functions)
+> dummy_usage <- char2Rdpiece(paste("seq()", "\\method{seq}{default}()",
++                    "seq.int()", "seq_along()", "seq_len()", sep="\n"),
++                    "usage")
+> rdoseq_dummy <- Rdo_replace_section(rdoseq, dummy_usage)
+> Rdo_show(rdoseq_dummy)  # usage statements are wrong
+_S_e_q_u_e_n_c_e _G_e_n_e_r_a_t_i_o_n
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     Generate regular sequences.  ‘seq’ is a standard generic with a
+     default method.  ‘seq.int’ is a primitive which can be much faster
+     but has a few restrictions.  ‘seq_along’ and ‘seq_len’ are very
+     fast primitives for two common cases.
+
+_U_s_a_g_e:
+
+     seq()
+     \method{seq}{default}()
+     seq.int()
+     seq_along()
+     seq_len()
+     
+_A_r_g_u_m_e_n_t_s:
+
+     ...: arguments passed to or from methods.
+
+from, to: the starting and (maximal) end values of the sequence.  Of
+          length ‘1’ unless just ‘from’ is supplied as an unnamed
+          argument.
+
+      by: number: increment of the sequence.
+
+length.out: desired length of the sequence.  A non-negative number,
+          which for ‘seq’ and ‘seq.int’ will be rounded up if
+          fractional.
+
+along.with: take the length from the length of this argument.
+
+_D_e_t_a_i_l_s:
+
+     Numerical inputs should all be finite (that is, not infinite,
+     ‘NaN’ or ‘NA’).
+
+     The interpretation of the unnamed arguments of ‘seq’ and ‘seq.int’
+     is _not_ standard, and it is recommended always to name the
+     arguments when programming.
+
+     ‘seq’ is generic, and only the default method is described here.
+     Note that it dispatches on the class of the *first* argument
+     irrespective of argument names.  This can have unintended
+     consequences if it is called with just one argument intending this
+     to be taken as ‘along.with’: it is much better to use ‘seq_along’
+     in that case.
+
+     ‘seq.int’ is an internal generic which dispatches on methods for
+     ‘"seq"’ based on the class of the first supplied argument (before
+     argument matching).
+
+     Typical usages are
+
+     seq(from, to)
+     seq(from, to, by= )
+     seq(from, to, length.out= )
+     seq(along.with= )
+     seq(from)
+     seq(length.out= )
+     
+     The first form generates the sequence ‘from, from+/-1, ..., to’
+     (identical to ‘from:to’).
+
+     The second form generates ‘from, from+by’, ..., up to the sequence
+     value less than or equal to ‘to’.  Specifying ‘to - from’ and ‘by’
+     of opposite signs is an error.  Note that the computed final value
+     can go just beyond ‘to’ to allow for rounding error, but is
+     truncated to ‘to’.  (‘Just beyond’ is by up to 1e-10 times
+     ‘abs(from - to)’.)
+
+     The third generates a sequence of ‘length.out’ equally spaced
+     values from ‘from’ to ‘to’.  (‘length.out’ is usually abbreviated
+     to ‘length’ or ‘len’, and ‘seq_len’ is much faster.)
+
+     The fourth form generates the integer sequence ‘1, 2, ...,
+     length(along.with)’.  (‘along.with’ is usually abbreviated to
+     ‘along’, and ‘seq_along’ is much faster.)
+
+     The fifth form generates the sequence ‘1, 2, ..., length(from)’
+     (as if argument ‘along.with’ had been specified), _unless_ the
+     argument is numeric of length 1 when it is interpreted as ‘1:from’
+     (even for ‘seq(0)’ for compatibility with S).  Using either
+     ‘seq_along’ or ‘seq_len’ is much preferred (unless strict S
+     compatibility is essential).
+
+     The final form generates the integer sequence ‘1, 2, ...,
+     length.out’ unless ‘length.out = 0’, when it generates
+     ‘integer(0)’.
+
+     Very small sequences (with ‘from - to’ of the order of 10^{-14}
+     times the larger of the ends) will return ‘from’.
+
+     For ‘seq’ (only), up to two of ‘from’, ‘to’ and ‘by’ can be
+     supplied as complex values provided ‘length.out’ or ‘along.with’
+     is specified.  More generally, the default method of ‘seq’ will
+     handle classed objects with methods for the ‘Math’, ‘Ops’ and
+     ‘Summary’ group generics.
+
+     ‘seq.int’, ‘seq_along’ and ‘seq_len’ are primitive.
+
+_V_a_l_u_e:
+
+     ‘seq.int’ and the default method of ‘seq’ for numeric arguments
+     return a vector of type ‘"integer"’ or ‘"double"’: programmers
+     should not rely on which.
+
+     ‘seq_along’ and ‘seq_len’ return an integer vector, unless it is a
+     _long vector_ when it will be double.
+
+_R_e_f_e_r_e_n_c_e_s:
+
+     Becker, R. A., Chambers, J. M. and Wilks, A. R. (1988) _The New S
+     Language_.  Wadsworth & Brooks/Cole.
+
+_S_e_e _A_l_s_o:
+
+     The methods ‘seq.Date’ and ‘seq.POSIXt’.
+
+     ‘:’, ‘rep’, ‘sequence’, ‘row’, ‘col’.
+
+_E_x_a_m_p_l_e_s:
+
+     seq(0, 1, length.out = 11)
+     seq(stats::rnorm(20)) # effectively 'along'
+     seq(1, 9, by = 2)     # matches 'end'
+     seq(1, 9, by = pi)    # stays below 'end'
+     seq(1, 6, by = 3)
+     seq(1.575, 5.125, by = 0.05)
+     seq(17) # same as 1:17, or even better seq_len(17)
+     
+
+> 
+> reprompt(rdoseq_dummy, file = "seqA.Rd")
+Processing the Rd object...
+	The Rd content was written to file  seqA.Rd 
+[1] "seqA.Rd"
+> Rdo_show(tools::parse_Rd("seqA.Rd"))  # usage ok after reprompt
+_S_e_q_u_e_n_c_e _G_e_n_e_r_a_t_i_o_n
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     Generate regular sequences.  ‘seq’ is a standard generic with a
+     default method.  ‘seq.int’ is a primitive which can be much faster
+     but has a few restrictions.  ‘seq_along’ and ‘seq_len’ are very
+     fast primitives for two common cases.
+
+_U_s_a_g_e:
+
+     seq(...)
+     
+     ## Default S3 method:
+     seq(from = 1, to = 1, by = ((to - from)/(length.out - 1)), 
+         length.out = NULL, along.with = NULL, ...)
+     
+     seq.int(from, to, by, length.out, along.with, ...)
+     
+     seq_along(along.with)
+     
+     seq_len(length.out)
+     
+_A_r_g_u_m_e_n_t_s:
+
+     ...: arguments passed to or from methods.
+
+from, to: the starting and (maximal) end values of the sequence.  Of
+          length ‘1’ unless just ‘from’ is supplied as an unnamed
+          argument.
+
+      by: number: increment of the sequence.
+
+length.out: desired length of the sequence.  A non-negative number,
+          which for ‘seq’ and ‘seq.int’ will be rounded up if
+          fractional.
+
+along.with: take the length from the length of this argument.
+
+_D_e_t_a_i_l_s:
+
+     Numerical inputs should all be finite (that is, not infinite,
+     ‘NaN’ or ‘NA’).
+
+     The interpretation of the unnamed arguments of ‘seq’ and ‘seq.int’
+     is _not_ standard, and it is recommended always to name the
+     arguments when programming.
+
+     ‘seq’ is generic, and only the default method is described here.
+     Note that it dispatches on the class of the *first* argument
+     irrespective of argument names.  This can have unintended
+     consequences if it is called with just one argument intending this
+     to be taken as ‘along.with’: it is much better to use ‘seq_along’
+     in that case.
+
+     ‘seq.int’ is an internal generic which dispatches on methods for
+     ‘"seq"’ based on the class of the first supplied argument (before
+     argument matching).
+
+     Typical usages are
+
+     seq(from, to)
+     seq(from, to, by= )
+     seq(from, to, length.out= )
+     seq(along.with= )
+     seq(from)
+     seq(length.out= )
+     
+     The first form generates the sequence ‘from, from+/-1, ..., to’
+     (identical to ‘from:to’).
+
+     The second form generates ‘from, from+by’, ..., up to the sequence
+     value less than or equal to ‘to’.  Specifying ‘to - from’ and ‘by’
+     of opposite signs is an error.  Note that the computed final value
+     can go just beyond ‘to’ to allow for rounding error, but is
+     truncated to ‘to’.  (‘Just beyond’ is by up to 1e-10 times
+     ‘abs(from - to)’.)
+
+     The third generates a sequence of ‘length.out’ equally spaced
+     values from ‘from’ to ‘to’.  (‘length.out’ is usually abbreviated
+     to ‘length’ or ‘len’, and ‘seq_len’ is much faster.)
+
+     The fourth form generates the integer sequence ‘1, 2, ...,
+     length(along.with)’.  (‘along.with’ is usually abbreviated to
+     ‘along’, and ‘seq_along’ is much faster.)
+
+     The fifth form generates the sequence ‘1, 2, ..., length(from)’
+     (as if argument ‘along.with’ had been specified), _unless_ the
+     argument is numeric of length 1 when it is interpreted as ‘1:from’
+     (even for ‘seq(0)’ for compatibility with S).  Using either
+     ‘seq_along’ or ‘seq_len’ is much preferred (unless strict S
+     compatibility is essential).
+
+     The final form generates the integer sequence ‘1, 2, ...,
+     length.out’ unless ‘length.out = 0’, when it generates
+     ‘integer(0)’.
+
+     Very small sequences (with ‘from - to’ of the order of 10^{-14}
+     times the larger of the ends) will return ‘from’.
+
+     For ‘seq’ (only), up to two of ‘from’, ‘to’ and ‘by’ can be
+     supplied as complex values provided ‘length.out’ or ‘along.with’
+     is specified.  More generally, the default method of ‘seq’ will
+     handle classed objects with methods for the ‘Math’, ‘Ops’ and
+     ‘Summary’ group generics.
+
+     ‘seq.int’, ‘seq_along’ and ‘seq_len’ are primitive.
+
+_V_a_l_u_e:
+
+     ‘seq.int’ and the default method of ‘seq’ for numeric arguments
+     return a vector of type ‘"integer"’ or ‘"double"’: programmers
+     should not rely on which.
+
+     ‘seq_along’ and ‘seq_len’ return an integer vector, unless it is a
+     _long vector_ when it will be double.
+
+_R_e_f_e_r_e_n_c_e_s:
+
+     Becker, R. A., Chambers, J. M. and Wilks, A. R. (1988) _The New S
+     Language_.  Wadsworth & Brooks/Cole.
+
+_S_e_e _A_l_s_o:
+
+     The methods ‘seq.Date’ and ‘seq.POSIXt’.
+
+     ‘:’, ‘rep’, ‘sequence’, ‘row’, ‘col’.
+
+_E_x_a_m_p_l_e_s:
+
+     seq(0, 1, length.out = 11)
+     seq(stats::rnorm(20)) # effectively 'along'
+     seq(1, 9, by = 2)     # matches 'end'
+     seq(1, 9, by = pi)    # stays below 'end'
+     seq(1, 6, by = 3)
+     seq(1.575, 5.125, by = 0.05)
+     seq(17) # same as 1:17, or even better seq_len(17)
+     
+
+> 
+> ## define function myseq() 
+> myseq <- function(from, to, x){
++     if(to < 0) {
++         seq(from = from, to = length(x) + to)
++     } else seq(from, to)
++ }
+> 
+> ## we wish to describe  myseq() along with seq();
+> ##    it is sufficient to put myseq() in the usage section
+> ##    and let reprompt() do the rest
+> rdo2 <- Rdo_modify_simple(rdoseq, "myseq()", "usage")
+> reprompt(rdo2, file = "seqB.Rd")  # updates usage of myseq
+Processing the Rd object...
+
+newargs is: x 
+	The Rd content was written to file  seqB.Rd 
+[1] "seqB.Rd"
+> 
+> ## show the rendered result:
+> Rdo_show(tools::parse_Rd("seqB.Rd"))
+_S_e_q_u_e_n_c_e _G_e_n_e_r_a_t_i_o_n
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     Generate regular sequences.  ‘seq’ is a standard generic with a
+     default method.  ‘seq.int’ is a primitive which can be much faster
+     but has a few restrictions.  ‘seq_along’ and ‘seq_len’ are very
+     fast primitives for two common cases.
+
+_U_s_a_g_e:
+
+     seq(...)
+     
+     ## Default S3 method:
+     seq(from = 1, to = 1, by = ((to - from)/(length.out - 1)), 
+         length.out = NULL, along.with = NULL, ...)
+     
+     seq.int(from, to, by, length.out, along.with, ...)
+     
+     seq_along(along.with)
+     
+     seq_len(length.out)
+     
+     myseq(from, to, x)
+     
+_A_r_g_u_m_e_n_t_s:
+
+     ...: arguments passed to or from methods.
+
+from, to: the starting and (maximal) end values of the sequence.  Of
+          length ‘1’ unless just ‘from’ is supplied as an unnamed
+          argument.
+
+      by: number: increment of the sequence.
+
+length.out: desired length of the sequence.  A non-negative number,
+          which for ‘seq’ and ‘seq.int’ will be rounded up if
+          fractional.
+
+along.with: take the length from the length of this argument.
+
+       x: ~~ TODO: describe this argument. ~~
+
+_D_e_t_a_i_l_s:
+
+     Numerical inputs should all be finite (that is, not infinite,
+     ‘NaN’ or ‘NA’).
+
+     The interpretation of the unnamed arguments of ‘seq’ and ‘seq.int’
+     is _not_ standard, and it is recommended always to name the
+     arguments when programming.
+
+     ‘seq’ is generic, and only the default method is described here.
+     Note that it dispatches on the class of the *first* argument
+     irrespective of argument names.  This can have unintended
+     consequences if it is called with just one argument intending this
+     to be taken as ‘along.with’: it is much better to use ‘seq_along’
+     in that case.
+
+     ‘seq.int’ is an internal generic which dispatches on methods for
+     ‘"seq"’ based on the class of the first supplied argument (before
+     argument matching).
+
+     Typical usages are
+
+     seq(from, to)
+     seq(from, to, by= )
+     seq(from, to, length.out= )
+     seq(along.with= )
+     seq(from)
+     seq(length.out= )
+     
+     The first form generates the sequence ‘from, from+/-1, ..., to’
+     (identical to ‘from:to’).
+
+     The second form generates ‘from, from+by’, ..., up to the sequence
+     value less than or equal to ‘to’.  Specifying ‘to - from’ and ‘by’
+     of opposite signs is an error.  Note that the computed final value
+     can go just beyond ‘to’ to allow for rounding error, but is
+     truncated to ‘to’.  (‘Just beyond’ is by up to 1e-10 times
+     ‘abs(from - to)’.)
+
+     The third generates a sequence of ‘length.out’ equally spaced
+     values from ‘from’ to ‘to’.  (‘length.out’ is usually abbreviated
+     to ‘length’ or ‘len’, and ‘seq_len’ is much faster.)
+
+     The fourth form generates the integer sequence ‘1, 2, ...,
+     length(along.with)’.  (‘along.with’ is usually abbreviated to
+     ‘along’, and ‘seq_along’ is much faster.)
+
+     The fifth form generates the sequence ‘1, 2, ..., length(from)’
+     (as if argument ‘along.with’ had been specified), _unless_ the
+     argument is numeric of length 1 when it is interpreted as ‘1:from’
+     (even for ‘seq(0)’ for compatibility with S).  Using either
+     ‘seq_along’ or ‘seq_len’ is much preferred (unless strict S
+     compatibility is essential).
+
+     The final form generates the integer sequence ‘1, 2, ...,
+     length.out’ unless ‘length.out = 0’, when it generates
+     ‘integer(0)’.
+
+     Very small sequences (with ‘from - to’ of the order of 10^{-14}
+     times the larger of the ends) will return ‘from’.
+
+     For ‘seq’ (only), up to two of ‘from’, ‘to’ and ‘by’ can be
+     supplied as complex values provided ‘length.out’ or ‘along.with’
+     is specified.  More generally, the default method of ‘seq’ will
+     handle classed objects with methods for the ‘Math’, ‘Ops’ and
+     ‘Summary’ group generics.
+
+     ‘seq.int’, ‘seq_along’ and ‘seq_len’ are primitive.
+
+_V_a_l_u_e:
+
+     ‘seq.int’ and the default method of ‘seq’ for numeric arguments
+     return a vector of type ‘"integer"’ or ‘"double"’: programmers
+     should not rely on which.
+
+     ‘seq_along’ and ‘seq_len’ return an integer vector, unless it is a
+     _long vector_ when it will be double.
+
+_R_e_f_e_r_e_n_c_e_s:
+
+     Becker, R. A., Chambers, J. M. and Wilks, A. R. (1988) _The New S
+     Language_.  Wadsworth & Brooks/Cole.
+
+_S_e_e _A_l_s_o:
+
+     The methods ‘seq.Date’ and ‘seq.POSIXt’.
+
+     ‘:’, ‘rep’, ‘sequence’, ‘row’, ‘col’.
+
+_E_x_a_m_p_l_e_s:
+
+     seq(0, 1, length.out = 11)
+     seq(stats::rnorm(20)) # effectively 'along'
+     seq(1, 9, by = 2)     # matches 'end'
+     seq(1, 9, by = pi)    # stays below 'end'
+     seq(1, 6, by = 3)
+     seq(1.575, 5.125, by = 0.05)
+     seq(17) # same as 1:17, or even better seq_len(17)
+     
+
+> 
+> ## Run this if you wish to see the Rd file:
+> ##   file.show("seqB.Rd")
+> 
+> reprompt(infile = "seq.Rd", filename = "seq2.Rd")
+
+Parsing the Rd documentation in file seq.Rd ...
+	The Rd content was written to file  seq2.Rd 
+[1] "seq2.Rd"
+> reprompt(infile = "seq2.Rd", filename = "seq3.Rd")
+
+Parsing the Rd documentation in file seq2.Rd ...
+	The Rd content was written to file  seq3.Rd 
+[1] "seq3.Rd"
+> 
+> ## Rd objects for installed help may need some tidying for human editing.
+> #hseq_inst <- help("seq")
+> #rdo <- utils:::.getHelpFile(hseq_inst)
+> rdo <- Rdo_fetch("seq", "base")
+> rdo
+\title{Sequence Generation}\name{seq}\alias{seq}\alias{seq.default}\alias{seq.int}\alias{seq_along}\alias{seq_len}\keyword{manip}\description{
+  Generate regular sequences.  \code{seq} is a standard generic with a
+  default method.  \code{seq.int} is a primitive which can be
+  much faster but has a few restrictions.  \code{seq_along} and
+  \code{seq_len} are very fast primitives for two common cases.
+}\usage{
+seq(\dots)
+
+\method{seq}{default}(from = 1, to = 1, by = ((to - from)/(length.out - 1)),
+    length.out = NULL, along.with = NULL, \dots)
+
+seq.int(from, to, by, length.out, along.with, \dots)
+
+seq_along(along.with)
+seq_len(length.out)
+}\arguments{
+  \item{\dots}{arguments passed to or from methods.}
+  \item{from, to}{the starting and (maximal) end values of the
+    sequence.  Of length \code{1} unless just \code{from} is supplied as
+    an unnamed argument.}
+  \item{by}{number: increment of the sequence.}
+  \item{length.out}{desired length of the sequence.  A
+    non-negative number, which for \code{seq} and \code{seq.int} will be
+    rounded up if fractional.}
+  \item{along.with}{take the length from the length of this argument.}
+}\details{
+  Numerical inputs should all be \link{finite} (that is, not infinite,
+  \code{\link{NaN}} or \code{NA}).
+
+  The interpretation of the unnamed arguments of \code{seq} and
+  \code{seq.int} is \emph{not} standard, and it is recommended always to
+  name the arguments when programming.
+
+  \code{seq} is  generic, and only the default method is described here.
+  Note that it dispatches on the class of the \strong{first} argument
+  irrespective of argument names.  This can have unintended consequences
+  if it is called with just one argument intending this to be taken as
+  \code{along.with}: it is much better to use \code{seq_along} in that
+  case.
+
+  \code{seq.int} is an \link{internal generic} which dispatches on
+  methods for \code{"seq"} based on the class of the first supplied
+  argument (before argument matching).
+
+  Typical usages are
+\preformatted{seq(from, to)
+seq(from, to, by= )
+seq(from, to, length.out= )
+seq(along.with= )
+seq(from)
+seq(length.out= )
+}
+  The first form generates the sequence \code{from, from+/-1, \dots, to}
+  (identical to \code{from:to}).
+
+  The second form generates \code{from, from+by}, \ldots, up to the
+  sequence value less than or equal to \code{to}.  Specifying \code{to -
+  from} and \code{by} of opposite signs is an error.  Note that the
+  computed final value can go just beyond \code{to} to allow for
+  rounding error, but is truncated to \code{to}.  (\sQuote{Just beyond}
+  is by up to \eqn{10^{-10}}{1e-10} times \code{abs(from - to)}.)
+
+  The third generates a sequence of \code{length.out} equally spaced
+  values from \code{from} to \code{to}.  (\code{length.out} is usually
+  abbreviated to \code{length} or \code{len}, and \code{seq_len} is much
+  faster.)
+
+  The fourth form generates the integer sequence \code{1, 2, \dots,
+    length(along.with)}.  (\code{along.with} is usually abbreviated to
+  \code{along}, and \code{seq_along} is much faster.)
+
+  The fifth form generates the sequence \code{1, 2, \dots, length(from)}
+  (as if argument \code{along.with} had been specified), \emph{unless}
+  the argument is numeric of length 1 when it is interpreted as
+  \code{1:from} (even for \code{seq(0)} for compatibility with S).
+  Using either \code{seq_along} or \code{seq_len} is much preferred
+  (unless strict S compatibility is essential).
+
+  The final form generates the integer sequence \code{1, 2, \dots,
+  length.out} unless \code{length.out = 0}, when it generates
+  \code{integer(0)}.
+
+  Very small sequences (with \code{from - to} of the order of \eqn{10^{-14}}
+  times the larger of the ends) will return \code{from}.
+
+  For \code{seq} (only), up to two of \code{from}, \code{to} and
+  \code{by} can be supplied as complex values provided \code{length.out}
+  or \code{along.with} is specified.  More generally, the default method
+  of \code{seq} will handle classed objects with methods for
+  the \code{Math}, \code{Ops} and \code{Summary} group generics.
+
+  \code{seq.int}, \code{seq_along} and \code{seq_len} are
+  \link{primitive}.
+}\value{
+  \code{seq.int} and the default method of \code{seq} for numeric
+  arguments return a vector of type \code{"integer"} or \code{"double"}:
+  programmers should not rely on which.
+
+  \code{seq_along} and \code{seq_len} return an integer vector, unless
+  it is a \emph{\link{long vector}} when it will be double.
+}\references{
+  Becker, R. A., Chambers, J. M. and Wilks, A. R. (1988)
+  \emph{The New S Language}.
+  Wadsworth & Brooks/Cole.
+}\seealso{
+  The methods \code{\link{seq.Date}} and \code{\link{seq.POSIXt}}.
+
+  \code{\link{:}},
+  \code{\link{rep}},
+  \code{\link{sequence}},
+  \code{\link{row}},
+  \code{\link{col}}.
+}\examples{
+seq(0, 1, length.out = 11)
+seq(stats::rnorm(20)) # effectively 'along'
+seq(1, 9, by = 2)     # matches 'end'
+seq(1, 9, by = pi)    # stays below 'end'
+seq(1, 6, by = 3)
+seq(1.575, 5.125, by = 0.05)
+seq(17) # same as 1:17, or even better seq_len(17)
+}> rdo <- Rdpack:::.Rd_tidy(rdo)          # tidy up (e.g. insert new lines
+>                                        #          for human readers)
+> reprompt(rdo) # rdo and rdoseq are equivalent
+Processing the Rd object...
+	The Rd content was written to file  seq.Rd 
+[1] "seq.Rd"
+> all.equal(reprompt(rdo), reprompt(rdoseq)) # TRUE
+Processing the Rd object...
+	The Rd content was written to file  seq.Rd 
+Processing the Rd object...
+	The Rd content was written to file  seq.Rd 
+[1] TRUE
+> 
+> ## clean up 
+> unlink("seq.Rd")         # remove temporary files
+> unlink("seq2.Rd")
+> unlink("seq3.Rd")
+> unlink("seqA.Rd")
+> unlink("seqB.Rd")
+> 
+> setwd(cur_wd)            # restore user's working directory
+> unlink(tmpdir)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("zzasym_compare")
+> ### * zzasym_compare
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: .asym_compare
+> ### Title: Tensor comparison and asymmetric comparison between two vectors
+> ### Aliases: .asym_compare .ocompare
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> ##---- Should be DIRECTLY executable !! ----
+> 
+> 
+> 
+> cleanEx()
+> nameEx("zzbsdup")
+> ### * zzbsdup
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: .bsdup
+> ### Title: Escape backslashes and percent in Rd code
+> ### Aliases: .bsdup .bspercent .anypercent
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> ##---- Should be DIRECTLY executable !! ----
+> 
+> 
+> 
+> cleanEx()
+> nameEx("zzcapture_promptany")
+> ### * zzcapture_promptany
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: .capture_promptAny
+> ### Title: Internal functions used by reprompt
+> ### Aliases: .capture_promptAny .capture_installed_help
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> ##---- Should be DIRECTLY executable !! ----
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  3.335 0.134 3.536 0.024 0.043 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

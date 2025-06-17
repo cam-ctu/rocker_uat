@@ -1,0 +1,162 @@
+
+R version 4.5.1 (2025-06-13) -- "Great Square Root"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(ordinal)
+> data(wine)
+> 
+> #################################
+> ## Estimation with a single simple RE term:
+> ## Laplace:
+> fmm1 <- clmm(rating ~ contact + temp + (1|judge), data=wine)
+> summary(fmm1)
+Cumulative Link Mixed Model fitted with the Laplace approximation
+
+formula: rating ~ contact + temp + (1 | judge)
+data:    wine
+
+ link  threshold nobs logLik AIC    niter    max.grad cond.H 
+ logit flexible  72   -81.57 177.13 332(999) 1.02e-05 2.8e+01
+
+Random effects:
+ Groups Name        Variance Std.Dev.
+ judge  (Intercept) 1.279    1.131   
+Number of groups:  judge 9 
+
+Coefficients:
+           Estimate Std. Error z value Pr(>|z|)    
+contactyes   1.8349     0.5125   3.580 0.000344 ***
+tempwarm     3.0630     0.5954   5.145 2.68e-07 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+    Estimate Std. Error z value
+1|2  -1.6237     0.6824  -2.379
+2|3   1.5134     0.6038   2.507
+3|4   4.2285     0.8090   5.227
+4|5   6.0888     0.9725   6.261
+> ## GHQ:
+> fmm.ghq <- clmm(rating ~ contact + temp + (1|judge), data=wine,
++                 nAGQ=-10)
+> summary(fmm.ghq)
+Cumulative Link Mixed Model fitted with the Gauss-Hermite 
+quadrature approximation with 10 quadrature points 
+
+formula: rating ~ contact + temp + (1 | judge)
+data:    wine
+
+ link  threshold nobs logLik AIC    niter  max.grad cond.H 
+ logit flexible  72   -81.53 177.06 304(3) 1.67e-05 2.8e+01
+
+Random effects:
+ Groups Name        Variance Std.Dev.
+ judge  (Intercept) 1.288    1.135   
+Number of groups:  judge 9 
+
+Coefficients:
+           Estimate Std. Error z value Pr(>|z|)    
+contactyes   1.8335     0.5122   3.580 0.000344 ***
+tempwarm     3.0620     0.5951   5.145 2.67e-07 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+    Estimate Std. Error z value
+1|2  -1.6231     0.6829  -2.377
+2|3   1.5133     0.6045   2.503
+3|4   4.2277     0.8094   5.223
+4|5   6.0869     0.9726   6.258
+> ## AGQ:
+> fmm.agq <- clmm(rating ~ contact + temp + (1|judge), data=wine,
++                 nAGQ=10)
+> summary(fmm.agq)
+Cumulative Link Mixed Model fitted with the adaptive Gauss-Hermite 
+quadrature approximation with 10 quadrature points 
+
+formula: rating ~ contact + temp + (1 | judge)
+data:    wine
+
+ link  threshold nobs logLik AIC    niter    max.grad cond.H 
+ logit flexible  72   -81.53 177.06 304(915) 2.26e-05 2.8e+01
+
+Random effects:
+ Groups Name        Variance Std.Dev.
+ judge  (Intercept) 1.288    1.135   
+Number of groups:  judge 9 
+
+Coefficients:
+           Estimate Std. Error z value Pr(>|z|)    
+contactyes   1.8334     0.5122   3.580 0.000344 ***
+tempwarm     3.0619     0.5951   5.145 2.67e-07 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+    Estimate Std. Error z value
+1|2  -1.6235     0.6834  -2.376
+2|3   1.5128     0.6044   2.503
+3|4   4.2271     0.8090   5.225
+4|5   6.0862     0.9719   6.262
+> ## tests:
+> ## Notice warning about Laplace with multiple REs when nAGQ != 1:
+> fmm1 <- try(clmm(rating ~ contact + temp + (1|judge) + (1|bottle),
++                  data=wine, nAGQ=10))
+Error : Quadrature methods are not available with more than one random effects term
+> stopifnot(inherits(fmm1, "try-error"))
+> 
+> #################################
+> ## Estimation with several RE terms:
+> data(soup, package="ordinal")
+> fmm <- clmm(SURENESS ~ PROD + (1|RESP) + (1|PROD:RESP), data=soup,
++             threshold="equidistant")
+> summary(fmm)
+Cumulative Link Mixed Model fitted with the Laplace approximation
+
+formula: SURENESS ~ PROD + (1 | RESP) + (1 | PROD:RESP)
+data:    soup
+
+ link  threshold   nobs logLik   AIC     niter    max.grad cond.H 
+ logit equidistant 1847 -2766.32 5542.63 261(837) 1.55e-03 1.3e+02
+
+Random effects:
+ Groups    Name        Variance Std.Dev.
+ PROD:RESP (Intercept) 0.4069   0.6379  
+ RESP      (Intercept) 0.1308   0.3616  
+Number of groups:  PROD:RESP 370,  RESP 185 
+
+Coefficients:
+         Estimate Std. Error z value Pr(>|z|)    
+PRODTest   1.2865     0.1156   11.12   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+            Estimate Std. Error z value
+threshold.1 -1.35103    0.09526  -14.18
+spacing      0.56472    0.01905   29.65
+> 
+> #################################
+> 
+> ## Estimation with implicit intercept:
+> fm1 <- clmm(rating ~ 1 + (1|judge), data = wine) 
+> fm2 <- clmm(rating ~ (1|judge), data = wine) 
+> fm3 <- clmm(rating ~ 0 + (1|judge), data = wine)
+Warning message:
+In getX(fullmf, fixedmf, contrasts) : an intercept is needed and assumed
+> stopifnot(isTRUE(all.equal(coef(fm1), coef(fm2), tolerance=1e-5)),
++           isTRUE(all.equal(coef(fm1), coef(fm3), tolerance=1e-5)))
+> 

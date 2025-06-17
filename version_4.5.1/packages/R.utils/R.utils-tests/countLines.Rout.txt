@@ -1,0 +1,187 @@
+
+R version 4.5.1 (2025-06-13) -- "Great Square Root"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library("R.utils")
+Loading required package: R.oo
+Loading required package: R.methodsS3
+R.methodsS3 v1.8.2 (2022-06-13 22:00:14 UTC) successfully loaded. See ?R.methodsS3 for help.
+R.oo v1.27.1 (2025-05-02 21:00:05 UTC) successfully loaded. See ?R.oo for help.
+
+Attaching package: ‘R.oo’
+
+The following object is masked from ‘package:R.methodsS3’:
+
+    throw
+
+The following objects are masked from ‘package:methods’:
+
+    getClasses, getMethods
+
+The following objects are masked from ‘package:base’:
+
+    attach, detach, load, save
+
+R.utils v2.13.0 (2025-02-24 21:20:02 UTC) successfully loaded. See ?R.utils for help.
+
+Attaching package: ‘R.utils’
+
+The following object is masked from ‘package:utils’:
+
+    timestamp
+
+The following objects are masked from ‘package:base’:
+
+    cat, commandArgs, getOption, isOpen, nullfile, parse, use, warnings
+
+> 
+> pathname <- tempfile()
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Local functions
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> writeString <- function(s, file) {
++   raw <- charToRaw(s)
++   writeBin(raw, con=file)
++   if (is.character(file)) {
++     # Sanity check
++     stopifnot(file.info(file)$size == length(raw))
++   }
++ } # writeString()
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Empty file
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> cat("", file=pathname)
+> # Sanity check
+> stopifnot(file.info(pathname)$size == 0L)
+> 
+> n <- countLines(pathname)
+> stopifnot(n == 0L)
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # File with one line
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # File: Ending with a new line
+> writeString("Hello world!\n", file=pathname)
+> n <- countLines(pathname)
+> stopifnot(n == 1L)
+> 
+> # File: Last line does not end with a new line
+> writeString("Hello world!", file=pathname)
+> n <- countLines(pathname)
+> stopifnot(n == 1L)
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Files with multiple lines
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> bfr <- letters[1:9]
+> 
+> # File: All lines ending with a new line
+> writeString(paste(c(bfr, ""), collapse="\n"), file=pathname)
+> n <- countLines(pathname)
+> stopifnot(n == length(bfr))
+> 
+> # File: Last line does not end with a new line
+> writeString(paste(bfr, collapse="\n"), file=pathname)
+> n <- countLines(pathname)
+> stopifnot(n == length(bfr))
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Counting either CR, LF, or CRLF
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> for (newline in c("\r", "\n", "\r\n")) {
++   cat("Newline sequence:\n")
++   str(newline)
++   writeString(paste(bfr, collapse=newline), file=pathname)
++ 
++   # Reading from file
++   n <- countLines(pathname)
++   stopifnot(n == length(bfr))
++ 
++   # Reading from connection
++   con <- file(pathname, open="rb")
++   n <- countLines(con)
++   close(con)
++   stopifnot(n == length(bfr))
++ }
+Newline sequence:
+ chr "\r"
+Newline sequence:
+ chr "\n"
+Newline sequence:
+ chr "\r\n"
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Compressed files
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> pathnameGZ <- sprintf("%s.gz", pathname)
+> for (newline in c("\r", "\n", "\r\n")) {
++   cat("Newline sequence:\n")
++   str(newline)
++ 
++   con <- gzfile(pathnameGZ, open="wb")
++   writeString(paste(bfr, collapse=newline), file=con)
++   close(con)
++ 
++   # Reading from file
++   n <- countLines(pathnameGZ)
++   stopifnot(n == length(bfr))
++   print(n)
++ 
++   # Reading from connection
++   con <- gzfile(pathname, open="rb")
++   n <- countLines(con)
++   close(con)
++   print(n)
++   stopifnot(n == length(bfr))
++ }
+Newline sequence:
+ chr "\r"
+[1] 9
+attr(,"lastLineHasNewline")
+[1] FALSE
+[1] 9
+attr(,"lastLineHasNewline")
+[1] FALSE
+Newline sequence:
+ chr "\n"
+[1] 9
+attr(,"lastLineHasNewline")
+[1] FALSE
+[1] 9
+attr(,"lastLineHasNewline")
+[1] FALSE
+Newline sequence:
+ chr "\r\n"
+[1] 9
+attr(,"lastLineHasNewline")
+[1] FALSE
+[1] 9
+attr(,"lastLineHasNewline")
+[1] FALSE
+> 
+> # Cleanup
+> file.remove(pathnameGZ)
+[1] TRUE
+> file.remove(pathname)
+[1] TRUE
+> 

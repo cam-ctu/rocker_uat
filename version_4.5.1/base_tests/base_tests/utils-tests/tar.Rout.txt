@@ -1,0 +1,115 @@
+
+R version 4.5.1 (2025-06-13) -- "Great Square Root"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> ### tests of compressiin on un(tar)
+> 
+> options(warn = 1)
+> old <- getwd()
+> 
+> for(f in  c("none", "gzip", "bzip2", "xz", "zstd"))
++ {
++     setwd(R.home('library'))
++     z <- if (f=="none") "utils.tar" else paste0("utils.tar.", f)
++     zz <- file.path(old, z)
++     message("making ", z)
++     ## zstd support is optional
++     y <- try(tar(zz, "utils", f))
++     if(inherits(y, "try-error")) next
++     print(file.size(zz))
++     setwd(old)
++     print(head(untar(zz, list = TRUE, tar = "internal")))
++     untar(zz, tar = "internal")
++ }
+making utils.tar
+[1] 2463744
+[1] "utils/DESCRIPTION"       "utils/INDEX"            
+[3] "utils/Meta/"             "utils/Meta/Rd.rds"      
+[5] "utils/Meta/features.rds" "utils/Meta/hsearch.rds" 
+making utils.tar.gzip
+[1] 2192834
+[1] "utils/DESCRIPTION"       "utils/INDEX"            
+[3] "utils/Meta/"             "utils/Meta/Rd.rds"      
+[5] "utils/Meta/features.rds" "utils/Meta/hsearch.rds" 
+making utils.tar.bzip2
+[1] 2227155
+[1] "utils/DESCRIPTION"       "utils/INDEX"            
+[3] "utils/Meta/"             "utils/Meta/Rd.rds"      
+[5] "utils/Meta/features.rds" "utils/Meta/hsearch.rds" 
+making utils.tar.xz
+[1] 2156460
+[1] "utils/DESCRIPTION"       "utils/INDEX"            
+[3] "utils/Meta/"             "utils/Meta/Rd.rds"      
+[5] "utils/Meta/features.rds" "utils/Meta/hsearch.rds" 
+making utils.tar.zstd
+[1] 2191212
+[1] "utils/DESCRIPTION"       "utils/INDEX"            
+[3] "utils/Meta/"             "utils/Meta/Rd.rds"      
+[5] "utils/Meta/features.rds" "utils/Meta/hsearch.rds" 
+> 
+> ## Now try external untar : skip on Windows due to different handling of paths
+> if(.Platform$OS.type == "windows") {
++     unlink("utils", recursive = TRUE)
++     quit("no")
++ }
+> 
+> for(f in  c("none", "gzip", "bzip2", "xz", "zstd"))
++ {
++     z <- if (f=="none") "utils.tar" else paste0("utils.tar.", f)
++     if (!file.exists(z)) next
++     message("unpacking ", z)
++     y <- untar(z)
++     if(inherits(y, "try-error")) next
++     print(head(dir("utils"), 5))
++ }
+unpacking utils.tar
+[1] "DESCRIPTION" "INDEX"       "Meta"        "NAMESPACE"   "R"          
+unpacking utils.tar.gzip
+[1] "DESCRIPTION" "INDEX"       "Meta"        "NAMESPACE"   "R"          
+unpacking utils.tar.bzip2
+[1] "DESCRIPTION" "INDEX"       "Meta"        "NAMESPACE"   "R"          
+unpacking utils.tar.xz
+[1] "DESCRIPTION" "INDEX"       "Meta"        "NAMESPACE"   "R"          
+unpacking utils.tar.zstd
+[1] "DESCRIPTION" "INDEX"       "Meta"        "NAMESPACE"   "R"          
+> 
+> ## and external tar
+> TAR <- Sys.getenv("TAR", "tar")
+> for(f in  c("none", "gzip", "bzip2", "xz", "zstd"))
++ {
++     setwd(R.home('library'))
++     z <- if (f=="none") "utils.tar" else paste0("utils.tar.", f)
++     zz <- file.path(old, z)
++     message("making ", z)
++     y <- try(tar(zz, "utils", f, tar = TAR))
++     if(inherits(y, "try-error")) next
++     print(file.size(zz))
++     setwd(old)
++ }
+making utils.tar
+[1] 2467840
+making utils.tar.gzip
+[1] 2188270
+making utils.tar.bzip2
+[1] 2222210
+making utils.tar.xz
+[1] 2155800
+making utils.tar.zstd
+[1] 2204237
+> 
+> unlink("utils", recursive = TRUE)
+> 
+> 

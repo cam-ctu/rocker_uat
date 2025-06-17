@@ -1,0 +1,213 @@
+
+R version 4.5.1 (2025-06-13) -- "Great Square Root"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library("R.utils")
+Loading required package: R.oo
+Loading required package: R.methodsS3
+R.methodsS3 v1.8.2 (2022-06-13 22:00:14 UTC) successfully loaded. See ?R.methodsS3 for help.
+R.oo v1.27.1 (2025-05-02 21:00:05 UTC) successfully loaded. See ?R.oo for help.
+
+Attaching package: ‘R.oo’
+
+The following object is masked from ‘package:R.methodsS3’:
+
+    throw
+
+The following objects are masked from ‘package:methods’:
+
+    getClasses, getMethods
+
+The following objects are masked from ‘package:base’:
+
+    attach, detach, load, save
+
+R.utils v2.13.0 (2025-02-24 21:20:02 UTC) successfully loaded. See ?R.utils for help.
+
+Attaching package: ‘R.utils’
+
+The following object is masked from ‘package:utils’:
+
+    timestamp
+
+The following objects are masked from ‘package:base’:
+
+    cat, commandArgs, getOption, isOpen, nullfile, parse, use, warnings
+
+> 
+> oopts <- options(prompt = "> ")
+> 
+> print(withCapture({
++  n <- 3
++  n
++ 
++  for (kk in 1:3) {
++    printf("Iteration #%d\n", kk)
++  }
++ 
++  print(Sys.time())
++ 
++  type <- "horse"
++  type
++ }))
+> n <- 3
+> n
+[1] 3
+> for (kk in 1:3) {
++     printf("Iteration #%d\n", kk)
++ }
+Iteration #1
+Iteration #2
+Iteration #3
+> print(Sys.time())
+[1] "2025-06-17 07:17:54 UTC"
+> type <- "horse"
+> type
+[1] "horse"
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Assert correct capture of code and output
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> bfr <- withCapture({
++  x <- 1
++  x
++ }, newline=TRUE)
+> print(bfr)
+> x <- 1
+> x
+[1] 1
+> stopifnot(bfr == "> x <- 1\n> x\n[1] 1\n")
+> 
+> bfr <- withCapture({
++  x <- 1
++  x
++ }, code=TRUE, output=FALSE, newline=TRUE)
+> print(bfr)
+> x <- 1
+> x
+> stopifnot(bfr == "> x <- 1\n> x\n")
+> 
+> bfr <- withCapture({
++  x <- 1
++  x
++ }, code=FALSE, output=TRUE, newline=TRUE)
+> print(bfr)
+[1] 1
+> stopifnot(bfr == "[1] 1\n")
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Fixed substitutions
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> bfr <- withCapture({ x <- a }, replace=list(a="abc"))
+> print(bfr)
+> x <- "abc"
+> stopifnot(bfr == '> x <- "abc"\n')
+> 
+> res <- tryCatch({
++   withCapture({ x <- a }, substitute=list(a="abc"))
++ }, error = identity)
+> stopifnot(inherits(res, "error"))
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # With automatic variable substitute
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> a <- 2
+> bfr <- withCapture({
++  x <- .a.
++  x
++ }, newline=TRUE)
+> print(bfr)
+> x <- 2
+> x
+[1] 2
+> stopifnot(bfr == "> x <- 2\n> x\n[1] 2\n")
+> 
+> 
+> # Make sure not to substitute parts of variable names
+> # or expressions
+> foo.bar.yaa <- function(x) x
+> a <- 2
+> b.c <- 3
+> bfr <- withCapture({
++   res <- foo.bar.yaa(3.14)
++   R.utils::use("R.utils")
++   x <- .a.
++   y <- .b.c.
++ })
+> print(bfr)
+> res <- foo.bar.yaa(3.14)
+> R.utils::use("R.utils")
+> x <- 2
+> y <- 3
+> ## ODD: Different results when sourcing and R CMD check:ing
+> ## this test script. /HB 2014-08-12
+> ## stopifnot(bfr ==""> res <- foo.bar.yaa(3.14)\n> R.utils::use(\"R.utils\")\n> x <- 2\n> y <- 3\n")
+> 
+> 
+> # Make sure '...' is not substituted
+> bfr <- withCapture({
++   benchmark <- function(fcn, n, len=100L, ...) {
++     x <- lineBuffer(n, len=len, ...)
++     foo(...)
++     system.time({
++       fcn(cat(x))
++     }, gcFirst=TRUE)[[3]]
++  } # benchmark()
++ })
+> print(bfr)
+> benchmark <- function(fcn, n, len = 100L, ...) {
++     x <- lineBuffer(n, len = len, ...)
++     foo(...)
++     system.time({
++         fcn(cat(x))
++     }, gcFirst = TRUE)[[3]]
++ }
+> ## ODD: Different results when sourcing and R CMD check:ing
+> ## this test script. /HB 2014-08-12
+> ## stopifnot(bfr == "> benchmark <- function(fcn, n, len = 100L, ...) {\n+     x <- lineBuffer(n, len = len, ...)\n+     foo(...)\n+     system.time({\n+         fcn(cat(x))\n+     }, gcFirst = TRUE)[[3]]\n+ }\n")
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # BUG TEST: if-else statements
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> bfr <- withCapture(if (TRUE) 1 else 2)
+> print(bfr)
+> if (TRUE) 1 else 2
+[1] 1
+> stopifnot(bfr == "> if (TRUE) 1 else 2\n[1] 1\n")
+> 
+> bfr <- withCapture({if (TRUE) 1 else 2 })
+> print(bfr)
+> if (TRUE) 
++     1 else 2
+[1] 1
+> ## ODD: Different results when sourcing and R CMD check:ing
+> ## this test script. /HB 2014-08-12
+> ## stopifnot(bfr == "> if (TRUE) \n+     1 else 2\n[1] 1\n")
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Empty
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> bfr <- withCapture({})
+> print(bfr)
+> stopifnot(length(bfr) == 0L)
+> 
+> options(oopts)
+> 

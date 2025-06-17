@@ -1,0 +1,169 @@
+
+R version 4.5.1 (2025-06-13) -- "Great Square Root"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library("R.utils")
+Loading required package: R.oo
+Loading required package: R.methodsS3
+R.methodsS3 v1.8.2 (2022-06-13 22:00:14 UTC) successfully loaded. See ?R.methodsS3 for help.
+R.oo v1.27.1 (2025-05-02 21:00:05 UTC) successfully loaded. See ?R.oo for help.
+
+Attaching package: ‘R.oo’
+
+The following object is masked from ‘package:R.methodsS3’:
+
+    throw
+
+The following objects are masked from ‘package:methods’:
+
+    getClasses, getMethods
+
+The following objects are masked from ‘package:base’:
+
+    attach, detach, load, save
+
+R.utils v2.13.0 (2025-02-24 21:20:02 UTC) successfully loaded. See ?R.utils for help.
+
+Attaching package: ‘R.utils’
+
+The following object is masked from ‘package:utils’:
+
+    timestamp
+
+The following objects are masked from ‘package:base’:
+
+    cat, commandArgs, getOption, isOpen, nullfile, parse, use, warnings
+
+> 
+> opager <- options(pager=mpager)
+> 
+> filename <- system.file("data-ex/exampleVComments.R", package="R.utils")
+> lines <- readLines(filename)
+> 
+> cat("Code before preprocessing:\n")
+Code before preprocessing:
+> displayCode(code=lines)
+===============================================================================
+R code
+===============================================================================
+
+ 1|#V1# threshold=-1
+ 2|foo <- function(label="A") {
+ 3|  #V!#
+ 4|  #V+# Entering foo(${label})
+ 5|  #V+# Analysis ${label}
+ 6|  for (kk in 1:10) {
+ 7|    #Vc# step ${kk} @ [${time}]
+ 8|    if (kk == 4) {
+ 9|      #Vc# Turning OFF verbose messages
+10|      #Vm# on
+11|    } else if (kk == 6) {
+12|      #Vm# off
+13|      #Vc# Turned ON verbose messages
+14|    }
+15|    if (kk %in% c(5,8)) {
+16|      #V+# Sub analysis ${kk}
+17|      for (jj in c("i", "ii", "iii")) {
+18|        #Vc# part ${jj}
+19|      }
+20|      #V-#
+21|    }
+22|  }
+23|  #Vc# All steps completed!
+24|  #Vc# Returning without explicitly exiting verbose levels
+25|} # foo()
+26|#### - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+27|#Vh# A verbose writer example
+28|#### - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+29|foo("A")
+30|#Vn#
+31|#Vh# All output is indented, even str(), print() etc
+32|#V+# deeper
+33|#V+# and deeper
+34|#V+# and even deeper
+35|#Vc# Demo of some other methods:
+36|#Vz# c(a=1, b=2, c=3)
+37|#Vp# c(a=1, b=2, c=3)
+38|#Vs# c(a=1, b=2, c=3)
+39|#V?# rnorm(n=3, mean=2, sd=3)
+40|#V-#
+41|#V-#
+42|#V-#
+
+
+> 
+> lines <- VComments$compile(lines)
+Warning message:
+In validate.VComments(this, lines) :
+  Number of verbose enters and exits do not match: 6 != 4
+> 
+> cat("Code after preprocessing:\n")
+Code after preprocessing:
+> displayCode(code=lines)
+===============================================================================
+R code
+===============================================================================
+
+ 1|verbose <- Verbose(threshold=-1)
+ 2|foo <- function(label="A") {
+ 3|  if (verbose) { pushState(verbose); on.exit(popState(verbose), add=TRUE) }
+ 4|  if (verbose) { enter(verbose, "Entering foo(${label})") }
+ 5|  if (verbose) { enter(verbose, "Analysis ${label}") }
+ 6|  for (kk in 1:10) {
+ 7|    if (verbose) { cat(verbose, "step ${kk} @ [${time}]") }
+ 8|    if (kk == 4) {
+ 9|      if (verbose) { cat(verbose, "Turning OFF verbose messages") }
+10|      if (verbose) { on(verbose) }
+11|    } else if (kk == 6) {
+12|      if (verbose) { off(verbose) }
+13|      if (verbose) { cat(verbose, "Turned ON verbose messages") }
+14|    }
+15|    if (kk %in% c(5,8)) {
+16|      if (verbose) { enter(verbose, "Sub analysis ${kk}") }
+17|      for (jj in c("i", "ii", "iii")) {
+18|        if (verbose) { cat(verbose, "part ${jj}") }
+19|      }
+20|      if (verbose) { exit(verbose) }
+21|    }
+22|  }
+23|  if (verbose) { cat(verbose, "All steps completed!") }
+24|  if (verbose) { cat(verbose, "Returning without explicitly exiting verbose 
+  |levels") }
+25|} # foo()
+26|#### - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+27|if (verbose) { header(verbose, "A verbose writer example") }
+28|#### - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+29|foo("A")
+30|if (verbose) { newline(verbose) }
+31|if (verbose) { header(verbose, "All output is indented, even str(), print() 
+  |etc") }
+32|if (verbose) { enter(verbose, "deeper") }
+33|if (verbose) { enter(verbose, "and deeper") }
+34|if (verbose) { enter(verbose, "and even deeper") }
+35|if (verbose) { cat(verbose, "Demo of some other methods:") }
+36|if (verbose) { str(verbose, c(a=1, b=2, c=3)) }
+37|if (verbose) { print(verbose, c(a=1, b=2, c=3)) }
+38|if (verbose) { summary(verbose, c(a=1, b=2, c=3)) }
+39|if (verbose) { if (isVisible(verbose)) { capture(verbose, rnorm(n=3, mean=2,
+  | sd=3)) } }
+40|if (verbose) { exit(verbose) }
+41|if (verbose) { exit(verbose) }
+42|if (verbose) { exit(verbose) }
+
+
+> 
+> options(opager)
+> 

@@ -1,0 +1,187 @@
+
+R version 4.5.1 (2025-06-13) -- "Great Square Root"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library("R.utils")
+Loading required package: R.oo
+Loading required package: R.methodsS3
+R.methodsS3 v1.8.2 (2022-06-13 22:00:14 UTC) successfully loaded. See ?R.methodsS3 for help.
+R.oo v1.27.1 (2025-05-02 21:00:05 UTC) successfully loaded. See ?R.oo for help.
+
+Attaching package: ‘R.oo’
+
+The following object is masked from ‘package:R.methodsS3’:
+
+    throw
+
+The following objects are masked from ‘package:methods’:
+
+    getClasses, getMethods
+
+The following objects are masked from ‘package:base’:
+
+    attach, detach, load, save
+
+R.utils v2.13.0 (2025-02-24 21:20:02 UTC) successfully loaded. See ?R.utils for help.
+
+Attaching package: ‘R.utils’
+
+The following object is masked from ‘package:utils’:
+
+    timestamp
+
+The following objects are masked from ‘package:base’:
+
+    cat, commandArgs, getOption, isOpen, nullfile, parse, use, warnings
+
+> 
+> if ("covr" %in% loadedNamespaces())
++   options("R.utils::onNonSeekable"="warning")
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Create a data file
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> data <- 1:255
+> size <- 2
+> pathname <- tempfile("exampleReadBinFragments")
+> writeBin(con=pathname, data, size=size)
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Read and write using index vectors
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> cat("Read file...\n")
+Read file...
+> # Read every 16:th byte in the file
+> idxs <- seq(from=1, to=255, by=16)
+> x <- readBinFragments(pathname, what="integer", size=size, signed=FALSE, idxs=idxs)
+> stopifnot(identical(x, data[idxs]))
+> print(x)
+ [1]   1  17  33  49  65  81  97 113 129 145 161 177 193 209 225 241
+> # Read every 16:th byte in a connection starting with the 6th.
+> idxs <- idxs + 5L
+> x <- readBinFragments(pathname, what="integer", size=size, signed=FALSE, idxs=idxs)
+> stopifnot(identical(x, data[idxs]))
+> print(x)
+ [1]   6  22  38  54  70  86 102 118 134 150 166 182 198 214 230 246
+> cat("Read file...done\n")
+Read file...done
+> 
+> cat("Write file...\n")
+Write file...
+> # Update every 16:th byte in the file
+> idxs <- seq(from=1, to=255, by=16)
+> x0 <- data[idxs]
+> writeBinFragments(pathname, idxs=idxs, rev(x0), size=size)
+> x <- readBinFragments(pathname, what="integer", size=size, signed=FALSE, idxs=idxs)
+> print(x)
+ [1] 241 225 209 193 177 161 145 129 113  97  81  65  49  33  17   1
+> stopifnot(identical(rev(x0), x))
+> 
+> # Update every 16:th byte in the file
+> idxs <- seq(from=1, to=255, by=16)
+> writeBinFragments(pathname, idxs=idxs, rev(x), size=size)
+> x <- readBinFragments(pathname, what="integer", size=size, signed=FALSE, idxs=idxs)
+> print(x)
+ [1]   1  17  33  49  65  81  97 113 129 145 161 177 193 209 225 241
+> stopifnot(identical(x0, x))
+> 
+> # Assert everything is as expected
+> # Read the complete file
+> x <- readBin(pathname, what="integer", size=size, signed=FALSE, n=length(data))
+> stopifnot(identical(x, data))
+> cat("Write file...done\n")
+Write file...done
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Ditto but via a connection
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> cat("Read connection...\n")
+Read connection...
+> # Read every 16:th byte in a connection
+> con <- file(pathname, open="rb")
+> idxs <- seq(from=1, to=255, by=16)
+> x <- readBinFragments(con, what="integer", size=size, signed=FALSE, idxs=idxs)
+> stopifnot(identical(x, data[idxs]))
+> print(x)
+ [1]   1  17  33  49  65  81  97 113 129 145 161 177 193 209 225 241
+> 
+> # Read every 16:th byte in a connection starting with the 6th.
+> idxs <- idxs + 5L
+> x <- readBinFragments(con, what="integer", size=size, signed=FALSE, idxs=idxs, origin="start")
+> stopifnot(identical(x, data[idxs]))
+> print(x)
+ [1]   6  22  38  54  70  86 102 118 134 150 166 182 198 214 230 246
+> close(con)
+> cat("Read connection...done\n")
+Read connection...done
+> 
+> 
+> # Update every 16:th byte in a connection
+> cat("Write connection...\n")
+Write connection...
+> con <- file(pathname, open="r+b")
+> idxs <- seq(from=1, to=255, by=16)
+> x0 <- data[idxs]
+> writeBinFragments(pathname, idxs=idxs, rev(x0), size=size)
+> x <- readBinFragments(pathname, what="integer", size=size, signed=FALSE, idxs=idxs)
+> print(x)
+ [1] 241 225 209 193 177 161 145 129 113  97  81  65  49  33  17   1
+> stopifnot(identical(rev(x0), x))
+> 
+> # Update every 16:th byte in the file
+> idxs <- seq(from=1, to=255, by=16)
+> writeBinFragments(pathname, idxs=idxs, rev(x), size=size)
+> x <- readBinFragments(pathname, what="integer", size=size, signed=FALSE, idxs=idxs, origin="start")
+> print(x)
+ [1]   1  17  33  49  65  81  97 113 129 145 161 177 193 209 225 241
+> stopifnot(identical(x0, x))
+> 
+> close(con)
+> 
+> # Assert everything is as expected
+> # Read the complete file
+> x <- readBin(pathname, what=integer(), size=size, signed=FALSE, n=length(data))
+> stopifnot(identical(x, data))
+> cat("Write connection...done\n")
+Write connection...done
+> 
+> # Read bytes 1-4, 11-14, 21-24, ...
+> idxs <- seq(from=1, to=255, by=10)
+> idxs <- cbind(idxs, idxs+3)
+> x <- readBinFragments(pathname, what="integer", size=size, signed=FALSE, idxs=idxs, verbose=TRUE)
+Number of elements skipped: 0
+Remaining indices (relative to current position):
+ num [1:104] 1 2 3 4 11 12 13 14 21 22 ...
+Data read:
+ int [1:255] 1 2 3 4 5 6 7 8 9 10 ...
+> idxsX <- intervalsToSeq(idxs)
+> stopifnot(identical(x, data[idxsX]))
+> print(x)
+  [1]   1   2   3   4  11  12  13  14  21  22  23  24  31  32  33  34  41  42
+ [19]  43  44  51  52  53  54  61  62  63  64  71  72  73  74  81  82  83  84
+ [37]  91  92  93  94 101 102 103 104 111 112 113 114 121 122 123 124 131 132
+ [55] 133 134 141 142 143 144 151 152 153 154 161 162 163 164 171 172 173 174
+ [73] 181 182 183 184 191 192 193 194 201 202 203 204 211 212 213 214 221 222
+ [91] 223 224 231 232 233 234 241 242 243 244 251 252 253 254
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Clean up
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> file.remove(pathname)
+[1] TRUE
+> 
