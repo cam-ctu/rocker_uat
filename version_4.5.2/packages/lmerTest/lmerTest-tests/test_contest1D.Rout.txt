@@ -1,0 +1,177 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> # test_contest1D.R
+> library(lmerTest)
+Loading required package: lme4
+Loading required package: Matrix
+
+Attaching package: ‘lmerTest’
+
+The following object is masked from ‘package:lme4’:
+
+    lmer
+
+The following object is masked from ‘package:stats’:
+
+    step
+
+> 
+> # WRE says "using if(requireNamespace("pkgname")) is preferred, if possible."
+> # even in tests:
+> assertError <- function(expr, ...)
++   if(requireNamespace("tools")) tools::assertError(expr, ...) else invisible()
+> assertWarning <- function(expr, ...)
++   if(requireNamespace("tools")) tools::assertWarning(expr, ...) else invisible()
+> 
+> TOL <- 1e-4
+> # Kenward-Roger only available with pbkrtest and only then validated in R >= 3.3.3
+> # (faulty results for R < 3.3.3 may be due to unstated dependencies in pbkrtest)
+> has_pbkrtest <- requireNamespace("pbkrtest", quietly = TRUE) && getRversion() >= "3.3.3"
+> 
+> data("sleepstudy", package="lme4")
+> 
+> ####################################
+> ## Tests of contest1D
+> ####################################
+> 
+> fm <- lmer(Reaction ~ Days + I(Days^2) + (1|Subject) + (0+Days|Subject),
++            sleepstudy)
+> # Basic tests:
+> L <- c(0, 1, 0)
+> contest1D(fm, L)
+  Estimate Std. Error       df  t value   Pr(>|t|)
+1 7.434085   2.824283 114.9943 2.632203 0.00964808
+> contest1D(fm, L, confint = TRUE)
+  Estimate Std. Error       df  t value    lower    upper   Pr(>|t|)
+1 7.434085   2.824283 114.9943 2.632203 1.839722 13.02845 0.00964808
+> contest1D(fm, L, confint = TRUE, level=0.99)
+  Estimate Std. Error       df  t value      lower    upper   Pr(>|t|)
+1 7.434085   2.824283 114.9943 2.632203 0.03655396 14.83162 0.00964808
+> if(has_pbkrtest)
++   contest1D(fm, L, ddf="Kenward-Roger")
+  Estimate Std. Error       df  t value    Pr(>|t|)
+1 7.434085   2.824283 115.5148 2.632203 0.009642692
+> 
+> # Test too long L
+> assertError(contest1D(fm, c(0, 1, 1, 1)))
+> 
+> # Test too short L
+> assertError(contest1D(fm, c(0, 1)))
+> 
+> # Test matrix L
+> contest1D(fm, matrix(L, nrow=1))
+  Estimate Std. Error       df  t value   Pr(>|t|)
+1 7.434085   2.824283 114.9943 2.632203 0.00964808
+> contest1D(fm, matrix(L, ncol=1))
+  Estimate Std. Error       df  t value   Pr(>|t|)
+1 7.434085   2.824283 114.9943 2.632203 0.00964808
+> assertError(contest1D(fm, matrix(c(0, 1), ncol=1)))
+> assertError(contest1D(fm, matrix(c(0, 1, 0, 0), nrow=1)))
+> L <- matrix(numeric(0L), ncol=3)
+> assertError(contest1D(fm, L)) # "empty" matrix
+> assertError(contest1D(fm, matrix(1, ncol=3, nrow=2)))
+> 
+> # Test list L
+> assertError(contest1D(fm, list(c(0, 1, 0))))
+> 
+> # Test equivalence to coef(summary(fm)):
+> Lmat <- diag(length(fixef(fm)))
+> (coef_mat <- lmerTest:::rbindall(lapply(1:ncol(Lmat), function(i)
++   contest1D(fm, Lmat[i, ]))))
+     Estimate Std. Error        df   t value     Pr(>|t|)
+1 255.4493728  7.5663677  26.22939 33.761163 3.810057e-23
+2   7.4340850  2.8242827 114.99433  2.632203 9.648080e-03
+3   0.3370223  0.2616475 144.63110  1.288078 1.997759e-01
+> (coef_mat_lme4 <- coef(summary(fm, ddf="lme4")))
+               Estimate Std. Error   t value
+(Intercept) 255.4493728  7.5663677 33.761163
+Days          7.4340850  2.8242827  2.632203
+I(Days^2)     0.3370223  0.2616475  1.288078
+> rownames(coef_mat) <- rownames(coef_mat_lme4)
+> stopifnot(isTRUE(
++   all.equal(as.data.frame(coef_mat_lme4),
++             coef_mat[, c("Estimate", "Std. Error", "t value")], tolerance=TOL)
++ ))
+> 
+> if(has_pbkrtest) {
++   (coef_mat_KR <- lmerTest:::rbindall(lapply(1:ncol(Lmat), function(i)
++     contest1D(fm, Lmat[i, ], ddf="Kenward-Roger"))))
++   rownames(coef_mat_KR) <- rownames(coef_mat_lme4)
++   stopifnot(isTRUE(
++     all.equal(as.data.frame(coef_mat_lme4),
++               coef_mat_KR[, c("Estimate", "Std. Error", "t value")], tolerance=TOL)
++   ))
++ }
+> # Test of 0-length beta
+> fm1 <- lmer(Reaction ~ 0 + (1|Subject) + (0+Days|Subject),
++             sleepstudy)
+> stopifnot(length(fixef(fm1)) == 0L)
+> if(has_pbkrtest) {
++   (ans <- contest1D(fm1, numeric(0L), ddf="Kenward-Roger"))
++   stopifnot(nrow(ans) == 0L)
++ }
+> 
+> ## Test rhs argument:
+> fm <- lmer(Reaction ~ Days + (Days|Subject), sleepstudy)
+> contest1D(fm, L=cbind(0, 1))
+  Estimate Std. Error       df  t value     Pr(>|t|)
+1 10.46729    1.54579 16.99998 6.771481 3.263824e-06
+> contest1D(fm, L=cbind(0, 1), rhs=10)
+  Estimate Std. Error       df  t value  Pr(>|t|)
+1 10.46729    1.54579 16.99998 0.302296 0.7660937
+> if(has_pbkrtest) {
++   contest1D(fm, L=cbind(0, 1), ddf="Kenward-Roger")
++   contest1D(fm, L=cbind(0, 1), ddf="Kenward-Roger", rhs=10)
++ }
+  Estimate Std. Error df  t value  Pr(>|t|)
+1 10.46729    1.54579 17 0.302296 0.7660937
+> 
+> contest1D(fm, L=c(0, 1), rhs = 10.467)
+  Estimate Std. Error       df      t value  Pr(>|t|)
+1 10.46729    1.54579 16.99998 0.0001849926 0.9998546
+> 
+> (ct1 <- contest1D(fm, L=cbind(c(0, 1)), rhs = 10))
+  Estimate Std. Error       df  t value  Pr(>|t|)
+1 10.46729    1.54579 16.99998 0.302296 0.7660937
+> (ct2 <- contestMD(fm, L=rbind(c(0, 1)), rhs = 10))
+    Sum Sq  Mean Sq NumDF    DenDF    F value    Pr(>F)
+1 59.85028 59.85028     1 16.99998 0.09138285 0.7660937
+> stopifnot(
++   isTRUE(all.equal(ct1[, "t value"]^2, ct2[, "F value"], tolerance=1e-6))
++ )
+> 
+> ## Test 'lmerMod' method:
+> fm <- lme4::lmer(Reaction ~ Days + I(Days^2) + (1|Subject) + (0+Days|Subject),
++                  sleepstudy)
+> # Basic tests:
+> L <- c(0, 1, 0)
+> contest1D(fm, L)
+  Estimate Std. Error       df  t value   Pr(>|t|)
+1 7.434085   2.824283 114.9943 2.632203 0.00964808
+> contest1D(fm, L, confint = TRUE)
+  Estimate Std. Error       df  t value    lower    upper   Pr(>|t|)
+1 7.434085   2.824283 114.9943 2.632203 1.839722 13.02845 0.00964808
+> contest1D(fm, L, confint = TRUE, level=0.99)
+  Estimate Std. Error       df  t value      lower    upper   Pr(>|t|)
+1 7.434085   2.824283 114.9943 2.632203 0.03655396 14.83162 0.00964808
+> if(has_pbkrtest)
++   contest1D(fm, L, ddf="Kenward-Roger")
+  Estimate Std. Error       df  t value    Pr(>|t|)
+1 7.434085   2.824283 115.5148 2.632203 0.009642692
+> 
+> 

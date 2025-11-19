@@ -1,0 +1,1127 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "marginaleffects"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('marginaleffects')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("autodiff")
+> ### * autodiff
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: autodiff
+> ### Title: EXPERIMENTAL - Enable Automatic Differentiation with JAX
+> ### Aliases: autodiff
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D # Install the Python package (only needed once)
+> ##D autodiff(install = TRUE)
+> ##D 
+> ##D # Enable automatic differentiation
+> ##D autodiff(TRUE)
+> ##D 
+> ##D # Fit a model and compute marginal effects
+> ##D mod <- glm(am ~ hp + wt, data = mtcars, family = binomial)
+> ##D avg_comparisons(mod) # Will use JAX for faster computation
+> ##D 
+> ##D # Disable automatic differentiation
+> ##D autodiff(FALSE)
+> ## End(Not run)
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("comparisons")
+> ### * comparisons
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: comparisons
+> ### Title: Comparisons Between Predictions Made With Different Regressor
+> ###   Values
+> ### Aliases: comparisons avg_comparisons
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (interactive() || isTRUE(Sys.getenv("R_DOC_BUILD") == "true")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ # Linear model
++ tmp <- mtcars
++ tmp$am <- as.logical(tmp$am)
++ mod <- lm(mpg ~ am + factor(cyl), tmp)
++ avg_comparisons(mod, variables = list(cyl = "reference"))
++ avg_comparisons(mod, variables = list(cyl = "sequential"))
++ avg_comparisons(mod, variables = list(cyl = "pairwise"))
++ 
++ # GLM with different scale types
++ mod <- glm(am ~ factor(gear), data = mtcars)
++ avg_comparisons(mod, type = "response")
++ avg_comparisons(mod, type = "link")
++ 
++ # Contrasts at the mean
++ comparisons(mod, newdata = "mean")
++ 
++ # Contrasts between marginal means
++ comparisons(mod, newdata = "balanced")
++ 
++ # Contrasts at user-specified values
++ comparisons(mod, newdata = datagrid(am = 0, gear = tmp$gear))
++ comparisons(mod, newdata = datagrid(am = unique, gear = max))
++ 
++ m <- lm(mpg ~ hp + drat + factor(cyl) + factor(am), data = mtcars)
++ comparisons(m, variables = "hp", newdata = datagrid(FUN_factor = unique, FUN_numeric = median))
++ 
++ # Numeric contrasts
++ mod <- lm(mpg ~ hp, data = mtcars)
++ avg_comparisons(mod, variables = list(hp = 1))
++ avg_comparisons(mod, variables = list(hp = 5))
++ avg_comparisons(mod, variables = list(hp = c(90, 100)))
++ avg_comparisons(mod, variables = list(hp = "iqr"))
++ avg_comparisons(mod, variables = list(hp = "sd"))
++ avg_comparisons(mod, variables = list(hp = "minmax"))
++ 
++ # using a function to specify a custom difference in one regressor
++ dat <- mtcars
++ dat$new_hp <- 49 * (dat$hp - min(dat$hp)) / (max(dat$hp) - min(dat$hp)) + 1
++ modlog <- lm(mpg ~ log(new_hp) + factor(cyl), data = dat)
++ fdiff <- function(x) data.frame(x, x + 10)
++ avg_comparisons(modlog, variables = list(new_hp = fdiff))
++ 
++ # Adjusted Risk Ratio
++ mod <- glm(vs ~ mpg, data = mtcars, family = binomial)
++ avg_comparisons(mod, comparison = "lnratioavg", transform = exp)
++ 
++ # Adjusted Risk Ratio: Manual specification of the `comparison`
++ avg_comparisons(
++   mod,
++   comparison = function(hi, lo) log(mean(hi) / mean(lo)),
++   transform = exp)
++ # cross contrasts
++ mod <- lm(mpg ~ factor(cyl) * factor(gear) + hp, data = mtcars)
++ avg_comparisons(mod, variables = c("cyl", "gear"), cross = TRUE)
++ 
++ # variable-specific contrasts
++ avg_comparisons(mod, variables = list(gear = "sequential", hp = 10))
++ 
++ # hypothesis test: is the `hp` marginal effect at the mean equal to the `drat` marginal effect
++ mod <- lm(mpg ~ wt + drat, data = mtcars)
++ 
++ comparisons(
++   mod,
++   newdata = "mean",
++   hypothesis = "wt = drat")
++ 
++ # same hypothesis test using row indices
++ comparisons(
++   mod,
++   newdata = "mean",
++   hypothesis = "b1 - b2 = 0")
++ 
++ # same hypothesis test using numeric vector of weights
++ comparisons(
++   mod,
++   newdata = "mean",
++   hypothesis = c(1, -1))
++ 
++ # two custom contrasts using a matrix of weights
++ lc <- matrix(
++   c(
++     1, -1,
++     2, 3),
++   ncol = 2)
++ comparisons(
++   mod,
++   newdata = "mean",
++   hypothesis = lc)
++ 
++ # Effect of a 1 group-wise standard deviation change
++ # First we calculate the SD in each group of `cyl`
++ # Second, we use that SD as the treatment size in the `variables` argument
++ library(dplyr)
++ mod <- lm(mpg ~ hp + factor(cyl), mtcars)
++ tmp <- mtcars %>%
++   group_by(cyl) %>%
++   mutate(hp_sd = sd(hp))
++ avg_comparisons(mod,
++   variables = list(hp = function(x) data.frame(x, x + tmp$hp_sd)),
++   by = "cyl")
++ 
++ # `by` argument
++ mod <- lm(mpg ~ hp * am * vs, data = mtcars)
++ comparisons(mod, by = TRUE)
++ 
++ mod <- lm(mpg ~ hp * am * vs, data = mtcars)
++ avg_comparisons(mod, variables = "hp", by = c("vs", "am"))
++ 
++ library(nnet)
++ mod <- multinom(factor(gear) ~ mpg + am * vs, data = mtcars, trace = FALSE)
++ by <- data.frame(
++   group = c("3", "4", "5"),
++   by = c("3,4", "3,4", "5"))
++ comparisons(mod, type = "probs", by = by)
++ ## Don't show: 
++ }) # examplesIf
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("datagrid")
+> ### * datagrid
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: datagrid
+> ### Title: Data grids
+> ### Aliases: datagrid
+> 
+> ### ** Examples
+> 
+> # The output only has 2 rows, and all the variables except `hp` are at their
+> # mean or mode.
+> datagrid(newdata = mtcars, hp = c(100, 110))
+  rowid      mpg cyl     disp     drat      wt     qsec vs am gear carb  hp
+1     1 20.09062   6 230.7219 3.596563 3.21725 17.84875  0  0    4    3 100
+2     2 20.09062   6 230.7219 3.596563 3.21725 17.84875  0  0    4    3 110
+> 
+> # We get the same result by feeding a model instead of a data.frame
+> mod <- lm(mpg ~ hp, mtcars)
+> datagrid(model = mod, hp = c(100, 110))
+  rowid      mpg  hp
+1     1 20.09062 100
+2     2 20.09062 110
+> 
+> # Use in `marginaleffects` to compute "Typical Marginal Effects". When used
+> # in `slopes()` or `predictions()` we do not need to specify the
+> # `model` or `newdata` arguments.
+> slopes(mod, newdata = datagrid(hp = c(100, 110)))
+
+  hp Estimate Std. Error     z Pr(>|z|)    S   2.5 %  97.5 %
+ 100  -0.0682     0.0101 -6.74   <0.001 35.9 -0.0881 -0.0484
+ 110  -0.0682     0.0101 -6.74   <0.001 35.9 -0.0881 -0.0484
+
+Term: hp
+Type: response
+Comparison: dY/dX
+
+> 
+> # datagrid accepts functions
+> datagrid(hp = range, cyl = unique, newdata = mtcars)
+  rowid      mpg     disp     drat      wt     qsec vs am gear carb  hp cyl
+1     1 20.09062 230.7219 3.596563 3.21725 17.84875  0  0    4    3  52   4
+2     2 20.09062 230.7219 3.596563 3.21725 17.84875  0  0    4    3  52   6
+3     3 20.09062 230.7219 3.596563 3.21725 17.84875  0  0    4    3  52   8
+4     4 20.09062 230.7219 3.596563 3.21725 17.84875  0  0    4    3 335   4
+5     5 20.09062 230.7219 3.596563 3.21725 17.84875  0  0    4    3 335   6
+6     6 20.09062 230.7219 3.596563 3.21725 17.84875  0  0    4    3 335   8
+> comparisons(mod, newdata = datagrid(hp = fivenum))
+
+  hp Estimate Std. Error     z Pr(>|z|)    S   2.5 %  97.5 %
+  52  -0.0682     0.0101 -6.74   <0.001 35.9 -0.0881 -0.0484
+  96  -0.0682     0.0101 -6.74   <0.001 35.9 -0.0881 -0.0484
+ 123  -0.0682     0.0101 -6.74   <0.001 35.9 -0.0881 -0.0484
+ 180  -0.0682     0.0101 -6.74   <0.001 35.9 -0.0881 -0.0484
+ 335  -0.0682     0.0101 -6.74   <0.001 35.9 -0.0881 -0.0484
+
+Term: hp
+Type: response
+Comparison: +1
+
+> 
+> # The full dataset is duplicated with each observation given counterfactual
+> # values of 100 and 110 for the `hp` variable. The original `mtcars` includes
+> # 32 rows, so the resulting dataset includes 64 rows.
+> dg <- datagrid(newdata = mtcars, hp = c(100, 110), grid_type = "counterfactual")
+> nrow(dg)
+[1] 64
+> 
+> # We get the same result by feeding a model instead of a data.frame
+> mod <- lm(mpg ~ hp, mtcars)
+> dg <- datagrid(model = mod, hp = c(100, 110), grid_type = "counterfactual")
+> nrow(dg)
+[1] 64
+> 
+> # Use `by` to hold variables at group-specific values
+> mod2 <- lm(mpg ~ hp + cyl, mtcars)
+> datagrid(model = mod2, hp = mean, by = "cyl")
+  rowid cyl      mpg        hp
+1     1   4 26.66364  82.63636
+2     2   6 19.74286 122.28571
+3     3   8 15.10000 209.21429
+> 
+> # Use `FUN` to apply function to all variables
+> datagrid(model = mod2, FUN = median)
+  rowid cyl  hp  mpg
+1     1   6 123 19.2
+> 
+> # Use `grid_type="dataframe"` for column-wise binding instead of cross-product
+> datagrid(model = mod2, hp = c(100, 200), cyl = c(4, 6), grid_type = "dataframe")
+  rowid      mpg  hp cyl
+1     1 20.09062 100   4
+2     2 20.09062 200   6
+> 
+> 
+> 
+> cleanEx()
+> nameEx("get_dataset")
+> ### * get_dataset
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: get_dataset
+> ### Title: Download and Read Datasets from 'marginaleffects' or Rdatasets
+> ### Aliases: get_dataset
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (FALSE) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ dat <- get_dataset("Titanic", "Stat2Data")
++ head(dat)
++ 
++ get_dataset(search = "(?i)titanic")
++ 
++ # View documentation in the browser
++ get_dataset("Titanic", "Stat2Data", docs = TRUE)
++ ## Don't show: 
++ }) # examplesIf
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("hypotheses")
+> ### * hypotheses
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: hypotheses
+> ### Title: (Non-)Linear Tests for Null Hypotheses, Joint Hypotheses,
+> ###   Equivalence, Non Superiority, and Non Inferiority
+> ### Aliases: hypotheses
+> 
+> ### ** Examples
+> 
+> mod <- lm(mpg ~ hp + wt + factor(cyl), data = mtcars)
+> 
+> hypotheses(mod)
+
+         Term Estimate Std. Error     z Pr(>|z|)     S   2.5 %    97.5 %
+ (Intercept)   35.8460      2.041 17.56   <0.001 227.0 31.8457 39.846319
+ hp            -0.0231      0.012 -1.93   0.0531   4.2 -0.0465  0.000306
+ wt            -3.1814      0.720 -4.42   <0.001  16.6 -4.5918 -1.771012
+ factor(cyl)6  -3.3590      1.402 -2.40   0.0166   5.9 -6.1062 -0.611803
+ factor(cyl)8  -3.1859      2.170 -1.47   0.1422   2.8 -7.4399  1.068169
+
+
+> 
+> # Test of equality between coefficients
+> hypotheses(mod, hypothesis = "hp = wt")
+
+ Hypothesis Estimate Std. Error    z Pr(>|z|)    S 2.5 % 97.5 %
+      hp=wt     3.16       0.72 4.39   <0.001 16.4  1.75   4.57
+
+
+> 
+> # Non-linear function
+> hypotheses(mod, hypothesis = "exp(hp + wt) = 0.1")
+
+     Hypothesis Estimate Std. Error     z Pr(>|z|)   S  2.5 %  97.5 %
+ exp(hp+wt)=0.1  -0.0594     0.0292 -2.04   0.0418 4.6 -0.117 -0.0022
+
+
+> 
+> # Robust standard errors
+> hypotheses(mod, hypothesis = "hp = wt", vcov = "HC3")
+
+ Hypothesis Estimate Std. Error    z Pr(>|z|)    S 2.5 % 97.5 %
+      hp=wt     3.16      0.805 3.92   <0.001 13.5  1.58   4.74
+
+
+> 
+> # b1, b2, ... shortcuts can be used to identify the position of the
+> # parameters of interest in the output of
+> hypotheses(mod, hypothesis = "b2 = b3")
+Warning: 
+It is essential to check the order of estimates when specifying hypothesis tests using positional indices like b1, b2, etc. The indices of estimates can change depending on the order of rows in the original dataset, user-supplied arguments, model-fitting package, and version of `marginaleffects`.
+
+It is also good practice to use assertions that ensure the order of estimates is consistent across different runs of the same code. Example:
+
+```r
+mod <- lm(mpg ~ am * carb, data = mtcars)
+
+# assertion for safety
+p <- avg_predictions(mod, by = 'carb')
+stopifnot(p$carb[1] != 1 || p$carb[2] != 2)
+
+# hypothesis test
+avg_predictions(mod, by = 'carb', hypothesis = 'b1 - b2 = 0')
+```
+
+Disable this warning with: `options(marginaleffects_safe = FALSE)`
+ This warning appears once per session.
+
+ Hypothesis Estimate Std. Error    z Pr(>|z|)    S 2.5 % 97.5 %
+      b2=b3     3.16       0.72 4.39   <0.001 16.4  1.75   4.57
+
+
+> 
+> # wildcard
+> hypotheses(mod, hypothesis = "b* / b2 = 1")
+
+ Hypothesis Estimate Std. Error     z Pr(>|z|)   S   2.5 % 97.5 %
+    b1/b2=1    -1551      764.0 -2.03   0.0423 4.6 -3048.9    -54
+    b2/b2=1        0         NA    NA       NA  NA      NA     NA
+    b3/b2=1      137       78.1  1.75   0.0804 3.6   -16.6    290
+    b4/b2=1      144      111.0  1.30   0.1938 2.4   -73.3    362
+    b5/b2=1      137      151.9  0.90   0.3679 1.4  -161.0    435
+
+
+> 
+> # term names with special characters have to be enclosed in backticks
+> hypotheses(mod, hypothesis = "`factor(cyl)6` = `factor(cyl)8`")
+
+                    Hypothesis Estimate Std. Error      z Pr(>|z|)   S 2.5 %
+ `factor(cyl)6`=`factor(cyl)8`   -0.173       1.65 -0.105    0.917 0.1 -3.41
+ 97.5 %
+   3.07
+
+
+> 
+> mod2 <- lm(mpg ~ hp * drat, data = mtcars)
+> hypotheses(mod2, hypothesis = "`hp:drat` = drat")
+
+     Hypothesis Estimate Std. Error    z Pr(>|z|)   S 2.5 % 97.5 %
+ `hp:drat`=drat    -6.08       2.89 -2.1   0.0357 4.8 -11.8 -0.405
+
+
+> 
+> # predictions(), comparisons(), and slopes()
+> mod <- glm(am ~ hp + mpg, data = mtcars, family = binomial)
+> cmp <- comparisons(mod, newdata = "mean")
+> hypotheses(cmp, hypothesis = "b1 = b2")
+
+ Hypothesis Estimate Std. Error     z Pr(>|z|)   S 2.5 %  97.5 %
+      b1=b2   -0.279      0.102 -2.72  0.00645 7.3 -0.48 -0.0783
+
+
+> 
+> mfx <- slopes(mod, newdata = "mean")
+> hypotheses(cmp, hypothesis = "b2 = 0.2")
+
+ Hypothesis Estimate Std. Error     z Pr(>|z|)   S  2.5 % 97.5 %
+     b2=0.2   0.0929      0.108 0.858    0.391 1.4 -0.119  0.305
+
+
+> 
+> pre <- predictions(mod, newdata = datagrid(hp = 110, mpg = c(30, 35)))
+> hypotheses(pre, hypothesis = "b1 = b2")
+
+ Hypothesis  Estimate Std. Error         z Pr(>|z|)   S 2.5 % 97.5 %
+      b1=b2 -3.57e-05       2.84 -1.26e-05        1 0.0 -5.56   5.56
+
+
+> 
+> # The `hypothesis` argument can be used to compute standard errors for fitted values
+> mod <- glm(am ~ hp + mpg, data = mtcars, family = binomial)
+> 
+> f <- function(x) predict(x, type = "link", newdata = mtcars)
+> p <- hypotheses(mod, hypothesis = f)
+> head(p)
+
+ Term Estimate Std. Error      z Pr(>|z|)   S 2.5 % 97.5 %
+    1   -1.098      0.716 -1.534    0.125 3.0 -2.50  0.305
+    2   -1.098      0.716 -1.534    0.125 3.0 -2.50  0.305
+    3    0.233      0.781  0.299    0.765 0.4 -1.30  1.764
+    4   -0.595      0.647 -0.919    0.358 1.5 -1.86  0.674
+    5   -0.418      0.647 -0.645    0.519 0.9 -1.69  0.851
+    6   -5.026      2.195 -2.290    0.022 5.5 -9.33 -0.725
+
+
+> 
+> f <- function(x) predict(x, type = "response", newdata = mtcars)
+> p <- hypotheses(mod, hypothesis = f)
+> head(p)
+
+ Term Estimate Std. Error     z Pr(>|z|)   S   2.5 % 97.5 %
+    1  0.25005     0.1343 1.862  0.06257 4.0 -0.0131 0.5132
+    2  0.25005     0.1343 1.862  0.06257 4.0 -0.0131 0.5132
+    3  0.55803     0.1926 2.898  0.00376 8.1  0.1806 0.9355
+    4  0.35560     0.1483 2.398  0.01648 5.9  0.0650 0.6462
+    5  0.39710     0.1550 2.562  0.01041 6.6  0.0933 0.7009
+    6  0.00652     0.0142 0.459  0.64653 0.6 -0.0213 0.0344
+
+
+> 
+> # Complex aggregation
+> # Step 1: Collapse predicted probabilities by outcome level, for each individual
+> # Step 2: Take the mean of the collapsed probabilities by group and `cyl`
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(MASS)
+
+Attaching package: ‘MASS’
+
+The following object is masked from ‘package:dplyr’:
+
+    select
+
+> library(dplyr)
+> library(magrittr)
+> 
+> dat <- transform(mtcars, gear = factor(gear))
+> mod <- polr(gear ~ factor(cyl) + hp, dat)
+> 
+> aggregation_fun <- function(x) {
++     predictions(x, vcov = FALSE) %>%
++         mutate(group = ifelse(group %in% c("3", "4"), "3 & 4", "5")) %>%
++         summarize(estimate = sum(estimate), .by = c("rowid", "cyl", "group")) %>%
++         summarize(estimate = mean(estimate), .by = c("cyl", "group")) %>%
++         rename(term = cyl)
++ }
+> 
+> hypotheses(mod, hypothesis = aggregation_fun)
+
+Re-fitting to get Hessian
+
+
+ Term Group Estimate Std. Error     z Pr(>|z|)     S  2.5 % 97.5 %
+    6 3 & 4   0.8390     0.0651 12.89   <0.001 123.9 0.7115  0.967
+    4 3 & 4   0.7197     0.1099  6.55   <0.001  34.0 0.5044  0.935
+    8 3 & 4   0.9283     0.0174 53.45   <0.001   Inf 0.8943  0.962
+    6 5       0.1610     0.0651  2.47   0.0134   6.2 0.0334  0.289
+    4 5       0.2803     0.1099  2.55   0.0108   6.5 0.0649  0.496
+    8 5       0.0717     0.0174  4.13   <0.001  14.7 0.0377  0.106
+
+
+> 
+> # Equivalence, non-inferiority, and non-superiority tests
+> mod <- lm(mpg ~ hp + factor(gear), data = mtcars)
+> p <- predictions(mod, newdata = "median")
+> hypotheses(p, equivalence = c(17, 18))
+
+ Estimate Std. Error    z Pr(>|z|)     S 2.5 % 97.5 % p (NonSup) p (Equiv)
+     19.7          1 19.6   <0.001 281.3  17.7   21.6      0.951     0.951
+
+Term: b1
+
+> 
+> mfx <- avg_slopes(mod, variables = "hp")
+> hypotheses(mfx, equivalence = c(-.1, .1))
+
+ Estimate Std. Error     z Pr(>|z|)    S   2.5 %  97.5 % p (NonSup) p (Equiv)
+  -0.0669      0.011 -6.05   <0.001 29.4 -0.0885 -0.0452     <0.001   0.00135
+
+Term: hp
+
+> 
+> cmp <- avg_comparisons(mod, variables = "gear", hypothesis = ~pairwise)
+Warning: The `gear` variable is treated as a categorical (factor) variable, but the original data is of class numeric. It is safer and faster to convert such variables to factor before fitting the model and calling a `marginaleffects` function. This warning appears once per session.
+> hypotheses(cmp, equivalence = c(0, 10))
+
+        Hypothesis Estimate Std. Error    z Pr(>|z|)   S   2.5 % 97.5 %
+ (5 - 3) - (4 - 3)     3.94       2.05 1.92   0.0543 4.2 -0.0727   7.95
+ p (NonSup) p (Equiv)
+    0.00154    0.0271
+
+Term: b1
+
+> 
+> # joint hypotheses: character vector
+> model <- lm(mpg ~ as.factor(cyl) * hp, data = mtcars)
+> hypotheses(model, joint = c("as.factor(cyl)6:hp", "as.factor(cyl)8:hp"))
+
+
+Joint hypothesis test:
+as.factor(cyl)6:hp = 0
+as.factor(cyl)8:hp = 0
+ 
+    F Pr(>|F|) Df 1 Df 2
+ 2.11    0.142    2   26
+
+
+> 
+> # joint hypotheses: regular expression
+> hypotheses(model, joint = "cyl")
+
+
+Joint hypothesis test:
+ as.factor(cyl)6 = 0
+ as.factor(cyl)8 = 0
+ as.factor(cyl)6:hp = 0
+ as.factor(cyl)8:hp = 0
+ 
+   F Pr(>|F|) Df 1 Df 2
+ 5.7  0.00197    4   26
+
+
+> 
+> # joint hypotheses: integer indices
+> hypotheses(model, joint = 2:3)
+
+
+Joint hypothesis test:
+ as.factor(cyl)6 = 0
+ as.factor(cyl)8 = 0
+ 
+    F Pr(>|F|) Df 1 Df 2
+ 6.12  0.00665    2   26
+
+
+> 
+> # joint hypotheses: different null hypotheses
+> hypotheses(model, joint = 2:3, hypothesis = 1)
+
+
+Joint hypothesis test:
+ as.factor(cyl)6 = 1
+ as.factor(cyl)8 = 1
+ 
+    F Pr(>|F|) Df 1 Df 2
+ 6.84  0.00411    2   26
+
+
+> hypotheses(model, joint = 2:3, hypothesis = 1:2)
+
+
+Joint hypothesis test:
+ as.factor(cyl)6 = 1
+ as.factor(cyl)8 = 2
+ 
+    F Pr(>|F|) Df 1 Df 2
+ 7.47  0.00273    2   26
+
+
+> 
+> # joint hypotheses: marginaleffects object
+> cmp <- avg_comparisons(model)
+> hypotheses(cmp, joint = "cyl")
+
+
+Joint hypothesis test:
+ cyl 6 - 4 = 0
+ cyl 8 - 4 = 0
+ 
+   F Pr(>|F|) Df 1 Df 2
+ 1.6    0.221    2   26
+
+Type: response
+
+> 
+> # Multiple comparison adjustment
+> # p values and family-wise confidence intervals
+> cmp <- avg_comparisons(model)
+> hypotheses(cmp, multcomp = "hochberg")
+
+ Term Estimate Std. Error       z Pr(>|z|)   S    2.5 %   97.5 %
+  cyl   0.1169     3.5037  0.0334   0.9734 0.0  -7.8863 8.120065
+  cyl  -3.4496     3.3371 -1.0337   0.6025 0.7 -11.0721 4.172918
+  hp   -0.0467     0.0206 -2.2674   0.0701 3.8  -0.0937 0.000345
+
+
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:magrittr’, ‘package:MASS’, ‘package:dplyr’
+
+> nameEx("inferences")
+> ### * inferences
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: inferences
+> ### Title: (EXPERIMENTAL) Bootstrap, Conformal, and Simulation-Based
+> ###   Inference
+> ### Aliases: inferences
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D library(magrittr)
+> ##D set.seed(1024)
+> ##D mod <- lm(Sepal.Length ~ Sepal.Width * Species, data = iris)
+> ##D 
+> ##D # bootstrap
+> ##D avg_predictions(mod, by = "Species") %>%
+> ##D     inferences(method = "boot")
+> ##D 
+> ##D avg_predictions(mod, by = "Species") %>%
+> ##D     inferences(method = "rsample")
+> ##D 
+> ##D # Fractional (bayesian) bootstrap
+> ##D avg_slopes(mod, by = "Species") %>%
+> ##D     inferences(method = "fwb") %>%
+> ##D     get_draws("rvar") %>%
+> ##D     data.frame()
+> ##D 
+> ##D # Simulation-based inference
+> ##D slopes(mod) %>%
+> ##D     inferences(method = "simulation") %>%
+> ##D     head()
+> ##D 
+> ##D # Two-step estimation procedure: Propensity score + G-Computation
+> ##D lalonde <- get_dataset("lalonde")
+> ##D estimator <- function(data) {
+> ##D     # Step 1: Estimate propensity scores
+> ##D     fit1 <- glm(treat ~ age + educ + race, family = binomial, data = data)
+> ##D     ps <- predict(fit1, type = "response")
+> ##D     # Step 2: Fit weighted outcome model
+> ##D     m <- lm(re78 ~ treat * (re75 + age + educ + race),
+> ##D         data = data, weight = ps
+> ##D     )
+> ##D     # Step 3: Compute average treatment effect by G-computation
+> ##D     avg_comparisons(m, variables = "treat", wts = ps, vcov = FALSE)
+> ##D }
+> ##D inferences(lalonde, method = "rsample", estimator = estimator)
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("plot_comparisons")
+> ### * plot_comparisons
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: plot_comparisons
+> ### Title: Plot Conditional or Marginal Comparisons
+> ### Aliases: plot_comparisons
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (interactive() || isTRUE(Sys.getenv("R_DOC_BUILD") == "true")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ mod <- lm(mpg ~ hp * drat * factor(am), data = mtcars)
++ 
++ plot_comparisons(mod, variables = "hp", condition = "drat")
++ 
++ plot_comparisons(mod, variables = "hp", condition = c("drat", "am"))
++ 
++ plot_comparisons(mod, variables = "hp", condition = list("am", "drat" = 3:5))
++ 
++ plot_comparisons(mod, variables = "am", condition = list("hp", "drat" = range))
++ 
++ plot_comparisons(mod, variables = "am", condition = list("hp", "drat" = "threenum"))
++ 
++ # marginal comparisons
++ plot_comparisons(mod, variables = "hp", by = "am")
++ 
++ # marginal comparisons on a counterfactual grid
++ plot_comparisons(mod,
++     variables = "hp",
++     by = "am",
++     newdata = datagrid(am = 0:1, grid_type = "counterfactual")
++ )
++ ## Don't show: 
++ }) # examplesIf
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("plot_predictions")
+> ### * plot_predictions
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: plot_predictions
+> ### Title: Plot Conditional or Marginal Predictions
+> ### Aliases: plot_predictions
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (interactive() || isTRUE(Sys.getenv("R_DOC_BUILD") == "true")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ mod <- lm(mpg ~ hp + wt, data = mtcars)
++ plot_predictions(mod, condition = "wt")
++ 
++ mod <- lm(mpg ~ hp * wt * am, data = mtcars)
++ plot_predictions(mod, condition = c("hp", "wt"))
++ 
++ plot_predictions(mod, condition = list("hp", wt = "threenum"))
++ 
++ plot_predictions(mod, condition = list("hp", wt = range))
++ 
++ # marginal predictions
++ mod <- lm(mpg ~ hp * am, data = mtcars)
++ plot_predictions(mod, by = "am")
++ 
++ # marginal predictions on a counterfactual grid
++ plot_predictions(mod,
++     by = "am",
++     newdata = datagrid(am = 0:1, grid_type = "counterfactual")
++ )
++ ## Don't show: 
++ }) # examplesIf
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("plot_slopes")
+> ### * plot_slopes
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: plot_slopes
+> ### Title: Plot Conditional or Marginal Slopes
+> ### Aliases: plot_slopes
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (interactive() || isTRUE(Sys.getenv("R_DOC_BUILD") == "true")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ mod <- lm(mpg ~ hp * drat * factor(am), data = mtcars)
++ 
++ plot_slopes(mod, variables = "hp", condition = "drat")
++ 
++ plot_slopes(mod, variables = "hp", condition = c("drat", "am"))
++ 
++ plot_slopes(mod, variables = "hp", condition = list("am", "drat" = 3:5))
++ 
++ plot_slopes(mod, variables = "am", condition = list("hp", "drat" = range))
++ 
++ plot_slopes(mod, variables = "am", condition = list("hp", "drat" = "threenum"))
++ 
++ # marginal slopes
++ plot_slopes(mod, variables = "hp", by = "am")
++ 
++ # marginal slopes on a counterfactual grid
++ plot_slopes(mod,
++     variables = "hp",
++     by = "am",
++     newdata = datagrid(am = 0:1, grid_type = "counterfactual")
++ )
++ ## Don't show: 
++ }) # examplesIf
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("predictions")
+> ### * predictions
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: predictions
+> ### Title: Predictions
+> ### Aliases: predictions avg_predictions
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (interactive() || isTRUE(Sys.getenv("R_DOC_BUILD") == "true")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ library("marginaleffects")
++ # Adjusted Prediction for every row of the original dataset
++ mod <- lm(mpg ~ hp + factor(cyl), data = mtcars)
++ pred <- predictions(mod)
++ head(pred)
++ 
++ # Adjusted Predictions at User-Specified Values of the Regressors
++ predictions(mod, newdata = datagrid(hp = c(100, 120), cyl = 4))
++ 
++ m <- lm(mpg ~ hp + drat + factor(cyl) + factor(am), data = mtcars)
++ predictions(m, newdata = datagrid(FUN_factor = unique, FUN_numeric = median))
++ 
++ # Average Adjusted Predictions (AAP)
++ library(dplyr)
++ mod <- lm(mpg ~ hp * am * vs, mtcars)
++ 
++ avg_predictions(mod)
++ 
++ predictions(mod, by = "am")
++ 
++ # Conditional Adjusted Predictions
++ plot_predictions(mod, condition = "hp")
++ 
++ # Counterfactual predictions with the `variables` argument
++ # the `mtcars` dataset has 32 rows
++ 
++ mod <- lm(mpg ~ hp + am, data = mtcars)
++ p <- predictions(mod)
++ head(p)
++ nrow(p)
++ 
++ # average counterfactual predictions
++ avg_predictions(mod, variables = "am")
++ 
++ # counterfactual predictions obtained by replicating the entire for different
++ # values of the predictors
++ p <- predictions(mod, variables = list(hp = c(90, 110)))
++ nrow(p)
++ 
++ 
++ # hypothesis test: is the prediction in the 1st row equal to the prediction in the 2nd row
++ mod <- lm(mpg ~ wt + drat, data = mtcars)
++ 
++ predictions(
++   mod,
++   newdata = datagrid(wt = 2:3),
++   hypothesis = "b1 = b2")
++ 
++ # same hypothesis test using row indices
++ predictions(
++   mod,
++   newdata = datagrid(wt = 2:3),
++   hypothesis = "b1 - b2 = 0")
++ 
++ # same hypothesis test using numeric vector of weights
++ predictions(
++   mod,
++   newdata = datagrid(wt = 2:3),
++   hypothesis = c(1, -1))
++ 
++ # two custom contrasts using a matrix of weights
++ lc <- matrix(
++   c(
++     1, -1,
++     2, 3),
++   ncol = 2)
++ predictions(
++   mod,
++   newdata = datagrid(wt = 2:3),
++   hypothesis = lc)
++ 
++ 
++ # `by` argument
++ mod <- lm(mpg ~ hp * am * vs, data = mtcars)
++ predictions(mod, by = c("am", "vs"))
++ 
++ library(nnet)
++ nom <- multinom(factor(gear) ~ mpg + am * vs, data = mtcars, trace = FALSE)
++ 
++ # first 5 raw predictions
++ p <- predictions(nom, type = "probs")
++ head(p)
++ 
++ # average predictions
++ avg_predictions(nom, type = "probs", by = "group")
++ 
++ by <- data.frame(
++   group = c("3", "4", "5"),
++   by = c("3,4", "3,4", "5"))
++ 
++ predictions(nom, type = "probs", by = by)
++ 
++ # sum of predicted probabilities for combined response levels
++ mod <- multinom(factor(cyl) ~ mpg + am, data = mtcars, trace = FALSE)
++ by <- data.frame(
++   by = c("4,6", "4,6", "8"),
++   group = as.character(c(4, 6, 8)))
++ predictions(mod, newdata = "mean", byfun = sum, by = by)
++ ## Don't show: 
++ }) # examplesIf
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("print.marginaleffects")
+> ### * print.marginaleffects
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: print.marginaleffects
+> ### Title: Print 'marginaleffects' objects
+> ### Aliases: print.marginaleffects
+> 
+> ### ** Examples
+> 
+> library(marginaleffects)
+> mod <- lm(mpg ~ hp + am + factor(gear), data = mtcars)
+> p <- predictions(mod, by = c("am", "gear"))
+> p
+
+ am gear Estimate Std. Error    z Pr(>|z|)     S 2.5 % 97.5 %
+  0    3     16.1      0.759 21.2   <0.001 329.6  14.6   17.6
+  0    4     21.1      1.470 14.3   <0.001 152.1  18.2   23.9
+  1    4     26.3      1.039 25.3   <0.001 466.1  24.2   28.3
+  1    5     21.4      1.315 16.3   <0.001 195.2  18.8   24.0
+
+Type: response
+
+> 
+> subset(p, am == 1)
+
+ Estimate Std. Error    z Pr(>|z|)     S 2.5 % 97.5 %
+     26.3       1.04 25.3   <0.001 466.1  24.2   28.3
+     21.4       1.31 16.3   <0.001 195.2  18.8   24.0
+
+
+> 
+> print(p, style = "data.frame")
+  am gear estimate std.error statistic       p.value  s.value conf.low
+1  0    3 16.10667 0.7589789  21.22150 6.047015e-100 329.5966 14.61910
+2  0    4 21.05000 1.4697499  14.32216  1.590900e-46 152.1388 18.16934
+3  1    4 26.27500 1.0392746  25.28206 5.032257e-141 466.0607 24.23806
+4  1    5 21.38000 1.3145900  16.26363  1.788354e-59 195.1551 18.80345
+  conf.high  df
+1  17.59424 Inf
+2  23.93066 Inf
+3  28.31194 Inf
+4  23.95655 Inf
+> 
+> data.frame(p)
+  am gear estimate std.error statistic       p.value  s.value conf.low
+1  0    3 16.10667 0.7589789  21.22150 6.047015e-100 329.5966 14.61910
+2  0    4 21.05000 1.4697499  14.32216  1.590900e-46 152.1388 18.16934
+3  1    4 26.27500 1.0392746  25.28206 5.032257e-141 466.0607 24.23806
+4  1    5 21.38000 1.3145900  16.26363  1.788354e-59 195.1551 18.80345
+  conf.high  df
+1  17.59424 Inf
+2  23.93066 Inf
+3  28.31194 Inf
+4  23.95655 Inf
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("slopes")
+> ### * slopes
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: slopes
+> ### Title: Slopes (aka Partial derivatives, Marginal Effects, or Trends)
+> ### Aliases: slopes avg_slopes
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (interactive() || isTRUE(Sys.getenv("R_DOC_BUILD") == "true")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ library("marginaleffects")
++ # Unit-level (conditional) Marginal Effects
++ mod <- glm(am ~ hp * wt, data = mtcars, family = binomial)
++ mfx <- slopes(mod)
++ head(mfx)
++ 
++ # Average Marginal Effect (AME)
++ avg_slopes(mod, by = TRUE)
++ 
++ 
++ # Marginal Effect at the Mean (MEM)
++ slopes(mod, newdata = datagrid())
++ 
++ # Marginal Effect at User-Specified Values
++ # Variables not explicitly included in `datagrid()` are held at their means
++ slopes(mod, newdata = datagrid(hp = c(100, 110)))
++ 
++ # Group-Average Marginal Effects (G-AME)
++ # Calculate marginal effects for each observation, and then take the average
++ # marginal effect within each subset of observations with different observed
++ # values for the `cyl` variable:
++ mod2 <- lm(mpg ~ hp * cyl, data = mtcars)
++ avg_slopes(mod2, variables = "hp", by = "cyl")
++ 
++ # Marginal Effects at User-Specified Values (counterfactual)
++ # Variables not explicitly included in `datagrid()` are held at their
++ # original values, and the whole dataset is duplicated once for each
++ # combination of the values in `datagrid()`
++ mfx <- slopes(mod,
++     newdata = datagrid(
++         hp = c(100, 110),
++         grid_type = "counterfactual"))
++ head(mfx)
++ 
++ # Heteroskedasticity robust standard errors
++ mfx <- slopes(mod, vcov = sandwich::vcovHC(mod))
++ head(mfx)
++ 
++ # hypothesis test: is the `hp` marginal effect at the mean equal to the `drat` marginal effect
++ mod <- lm(mpg ~ wt + drat, data = mtcars)
++ 
++ slopes(
++     mod,
++     newdata = "mean",
++     hypothesis = "wt = drat")
++ 
++ # same hypothesis test using row indices
++ slopes(
++     mod,
++     newdata = "mean",
++     hypothesis = "b1 - b2 = 0")
++ 
++ # same hypothesis test using numeric vector of weights
++ slopes(
++     mod,
++     newdata = "mean",
++     hypothesis = c(1, -1))
++ 
++ # two custom contrasts using a matrix of weights
++ lc <- matrix(
++     c(
++         1, -1,
++         2, 3),
++     ncol = 2)
++ colnames(lc) <- c("Contrast A", "Contrast B")
++ slopes(
++     mod,
++     newdata = "mean",
++     hypothesis = lc)
++ ## Don't show: 
++ }) # examplesIf
+> ## End(Don't show)
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  3.257 0.091 3.161 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

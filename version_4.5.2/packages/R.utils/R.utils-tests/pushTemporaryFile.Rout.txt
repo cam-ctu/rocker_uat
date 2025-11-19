@@ -1,0 +1,116 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library("R.utils")
+Loading required package: R.oo
+Loading required package: R.methodsS3
+R.methodsS3 v1.8.2 (2022-06-13 22:00:14 UTC) successfully loaded. See ?R.methodsS3 for help.
+R.oo v1.27.1 (2025-05-02 21:00:05 UTC) successfully loaded. See ?R.oo for help.
+
+Attaching package: ‘R.oo’
+
+The following object is masked from ‘package:R.methodsS3’:
+
+    throw
+
+The following objects are masked from ‘package:methods’:
+
+    getClasses, getMethods
+
+The following objects are masked from ‘package:base’:
+
+    attach, detach, load, save
+
+R.utils v2.13.0 (2025-02-24 21:20:02 UTC) successfully loaded. See ?R.utils for help.
+
+Attaching package: ‘R.utils’
+
+The following object is masked from ‘package:utils’:
+
+    timestamp
+
+The following objects are masked from ‘package:base’:
+
+    cat, commandArgs, getOption, isOpen, nullfile, parse, use, warnings
+
+> 
+> createAtomically <- function(pathname, ...) {
++   cat("Pathname: ", pathname, "\n", sep="")
++ 
++   # Generate a file atomically, i.e. the file will either be
++   # complete or not created at all.  If interrupted while
++   # writing, only a temporary file will exist/remain.
++   pathnameT <- pushTemporaryFile(pathname, verbose=TRUE)
++   cat("Temporary pathname: ", pathnameT, "\n", sep="")
++ 
++   cat(file=pathnameT, "This file was created atomically:\n")
++   for (kk in 1:10) {
++     cat(file=pathnameT, kk, "\n", append=TRUE)
++     # Emulate a slow process
++     if (interactive()) Sys.sleep(0.1)
++   }
++   cat(file=pathnameT, "END OF FILE\n", append=TRUE)
++ 
++   # Rename the temporary file
++   pathname <- popTemporaryFile(pathnameT, verbose=TRUE)
++ 
++   pathname
++ } # createAtomically()
+> 
+> 
+> pathname <- tempfile()
+> 
+> tryCatch({
++   # Try to interrupt the process while writing...
++   pathname <- createAtomically(pathname)
++ }, interrupt=function(intr) {
++   str(intr)
++ })
+Pathname: /tmp/RtmpBv6Uui/file5b051177ff5
+Adding temporary suffix from file...
+ Pathname: /tmp/RtmpBv6Uui/file5b051177ff5
+ Suffix: .tmp
+ Rename existing file?: FALSE
+ Temporary pathname: /tmp/RtmpBv6Uui/file5b051177ff5.tmp
+Adding temporary suffix from file...done
+Temporary pathname: /tmp/RtmpBv6Uui/file5b051177ff5.tmp
+Dropping temporary suffix from file...
+ Temporary pathname: /tmp/RtmpBv6Uui/file5b051177ff5.tmp
+ Suffix: .tmp
+ Regular expression for suffix: \.tmp$
+ Pathname: /tmp/RtmpBv6Uui/file5b051177ff5
+ Renaming existing file...
+  Result: TRUE
+ Renaming existing file...done
+Dropping temporary suffix from file...done
+> 
+> # ...and this will throw an exception
+> bfr <- readLines(pathname)
+> cat(bfr, sep="\n")
+This file was created atomically:
+1 
+2 
+3 
+4 
+5 
+6 
+7 
+8 
+9 
+10 
+END OF FILE
+> 

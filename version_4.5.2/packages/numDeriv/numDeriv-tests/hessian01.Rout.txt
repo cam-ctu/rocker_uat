@@ -1,0 +1,151 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> #  check hessian
+> if(!require("numDeriv"))stop("this test requires numDeriv.")
+Loading required package: numDeriv
+> 
+> 
+> ####################################################################
+> 
+> #   sin tests
+> 
+> ####################################################################
+> 
+> 
+> x <- 0.25 * pi
+> print(calc.h <- hessian(sin, x) )
+           [,1]
+[1,] -0.7071068
+> print(anal.h <-  sin(x+pi))
+[1] -0.7071068
+> cat("error: ", err <- max(abs(calc.h - anal.h)),"\n")
+error:  4.154455e-13 
+> if( err > 1e-4) stop("hessian test 1 FAILED") # 1e-8 with d=0.01
+> 
+> 
+> func1 <- function(x) sum(sin(x))
+> 
+> x <- (0:2)*2*pi/2
+> #x <- (0:10)*2*pi/10
+> print(anal.h <-  matrix(0, length(x), length(x)))
+     [,1] [,2] [,3]
+[1,]    0    0    0
+[2,]    0    0    0
+[3,]    0    0    0
+> print(calc.h <- hessian(func1, x) )
+              [,1]          [,2]          [,3]
+[1,]  1.558373e-11 -1.183685e-11 -1.188827e-11
+[2,] -1.183685e-11  0.000000e+00 -3.767096e-15
+[3,] -1.188827e-11 -3.767096e-15  3.783761e-15
+> cat("error: ", err <- max(abs(anal.h - calc.h)),"\n")
+error:  1.558373e-11 
+> if( err > 1e-10) stop("hessian test 2 FAILED")
+> 
+> funcD1 <- function(x) grad(sin,x)
+> print(calc.j <- jacobian(funcD1, x) )
+     [,1]         [,2]          [,3]
+[1,]    0 0.000000e+00  0.000000e+00
+[2,]    0 1.315444e-07  0.000000e+00
+[3,]    0 0.000000e+00 -6.577304e-08
+> cat("error: ", err <- max(abs(calc.h - calc.j)),"\n")
+error:  1.315444e-07 
+> if( err > 1e-5) stop("hessian test 3 FAILED") # 1e-8 with d=0.01
+> 
+> ####################################################################
+> 
+> #   exp tests
+> 
+> ####################################################################
+> 
+> fun1e <- function(x) exp(2*x)
+> funD1e <- function(x) 2*exp(2*x)
+> 
+> x <- 1
+> print(anal.h <- 4*exp(2*x) )
+[1] 29.55622
+> print(calc.h  <- hessian(fun1e, x) )
+         [,1]
+[1,] 29.55622
+> cat("\nerror: ", err <- max(abs(calc.h - anal.h)),"\n")
+
+error:  2.813749e-12 
+> if( err > 1e-3) stop("hessian test 5 FAILED") # 1e-7 with d=0.01
+> 
+> print(calc.j <- jacobian(funD1e, x) )
+         [,1]
+[1,] 29.55622
+> cat("\nerror: ", err <- max(abs(calc.j - anal.h)),"\n")
+
+error:  1.28118e-10 
+> if( err > 1e-9) stop("hessian test 6 FAILED") # 1e-10 with d=0.01
+> 
+> fun1e <- function(x) sum(exp(2*x))
+> funD1e <- function(x) 2*exp(2*x)
+> x <- c(1,3,5)
+> print(anal.h <- diag(4*exp(2*x)) )
+         [,1]     [,2]     [,3]
+[1,] 29.55622    0.000     0.00
+[2,]  0.00000 1613.715     0.00
+[3,]  0.00000    0.000 88105.86
+> 
+> cat("\n************  d=0.01 works better here.*********\n")
+
+************  d=0.01 works better here.*********
+> print(calc.h  <- hessian(fun1e, x, method.args=list(d=0.01)) )
+             [,1]         [,2]         [,3]
+[1,] 2.955622e+01 2.583236e-15 1.620102e-11
+[2,] 2.583236e-15 1.613715e+03 5.400691e-12
+[3,] 1.620102e-11 5.400691e-12 8.810586e+04
+> 
+> cat("\n relative error: \n")
+
+ relative error: 
+> print( err <-  (calc.h - anal.h) /(anal.h+1e-4))
+              [,1]          [,2]          [,3]
+[1,] -4.066254e-08  2.583236e-11  1.620102e-07
+[2,]  2.583236e-11 -2.483066e-11  5.400691e-08
+[3,]  1.620102e-07  5.400691e-08 -1.930767e-13
+> cat("\n max relative error: ", err <- max(abs(err)),"\n")
+
+ max relative error:  1.620102e-07 
+> # above is 901.4512 with d=0.0001
+> 
+> cat("\n error: \n")
+
+ error: 
+> print( err <-  calc.h - anal.h)
+              [,1]          [,2]          [,3]
+[1,] -1.201835e-06  2.583236e-15  1.620102e-11
+[2,]  2.583236e-15 -4.006961e-08  5.400691e-12
+[3,]  1.620102e-11  5.400691e-12 -1.701119e-08
+> cat("\n max error: ", err <- max(abs(err)),"\n")
+
+ max error:  1.201835e-06 
+> # above is 0.1670381 with d=0.0001
+> 
+> if( err > 1e-5) stop("hessian test 7 FAILED")
+> 
+> print(calc.j <- jacobian(funD1e, x) )
+         [,1]     [,2]     [,3]
+[1,] 29.55622    0.000     0.00
+[2,]  0.00000 1613.715     0.00
+[3,]  0.00000    0.000 88105.86
+> cat("error: ", err <- max(abs(calc.j - anal.h)),"\n")
+error:  7.514464e-07 
+> if( err > 1e-5) stop("hessian test 8 FAILED") # 1e-6 with d=0.01
+> 

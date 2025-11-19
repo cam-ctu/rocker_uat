@@ -1,0 +1,1129 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "corpcor"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('corpcor')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("cor2pcor")
+> ### * cor2pcor
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: cor2pcor
+> ### Title: Compute Partial Correlation from Correlation Matrix - and Vice
+> ###   Versa
+> ### Aliases: cor2pcor pcor2cor
+> ### Keywords: multivariate
+> 
+> ### ** Examples
+> 
+> # load corpcor library
+> library("corpcor")
+> 
+> # covariance matrix
+> m.cov = rbind(
++  c(3,1,1,0),
++  c(1,3,0,1),
++  c(1,0,2,0),
++  c(0,1,0,2)
++ )
+> m.cov
+     [,1] [,2] [,3] [,4]
+[1,]    3    1    1    0
+[2,]    1    3    0    1
+[3,]    1    0    2    0
+[4,]    0    1    0    2
+> 
+> 
+> # corresponding correlation matrix
+> m.cor.1 = cov2cor(m.cov)
+> m.cor.1
+          [,1]      [,2]      [,3]      [,4]
+[1,] 1.0000000 0.3333333 0.4082483 0.0000000
+[2,] 0.3333333 1.0000000 0.0000000 0.4082483
+[3,] 0.4082483 0.0000000 1.0000000 0.0000000
+[4,] 0.0000000 0.4082483 0.0000000 1.0000000
+> 
+> # compute partial correlations (from covariance matrix)
+> m.pcor.1 = cor2pcor(m.cov)
+> m.pcor.1
+           [,1]       [,2]        [,3]        [,4]
+[1,]  1.0000000  0.4000000  0.43852901 -0.17541160
+[2,]  0.4000000  1.0000000 -0.17541160  0.43852901
+[3,]  0.4385290 -0.1754116  1.00000000  0.07692308
+[4,] -0.1754116  0.4385290  0.07692308  1.00000000
+> 
+> # compute partial correlations (from correlation matrix)
+> m.pcor.2 = cor2pcor(m.cor.1)
+> m.pcor.2
+           [,1]       [,2]        [,3]        [,4]
+[1,]  1.0000000  0.4000000  0.43852901 -0.17541160
+[2,]  0.4000000  1.0000000 -0.17541160  0.43852901
+[3,]  0.4385290 -0.1754116  1.00000000  0.07692308
+[4,] -0.1754116  0.4385290  0.07692308  1.00000000
+> 
+> 
+> 
+> zapsmall( m.pcor.1 ) == zapsmall( m.pcor.2 )
+     [,1] [,2] [,3] [,4]
+[1,] TRUE TRUE TRUE TRUE
+[2,] TRUE TRUE TRUE TRUE
+[3,] TRUE TRUE TRUE TRUE
+[4,] TRUE TRUE TRUE TRUE
+> 
+> # backtransformation
+> m.cor.2 = pcor2cor(m.pcor.1)
+> m.cor.2
+             [,1]          [,2]          [,3]         [,4]
+[1,] 1.000000e+00  3.333333e-01  4.082483e-01 4.177092e-15
+[2,] 3.333333e-01  1.000000e+00 -4.054366e-15 4.082483e-01
+[3,] 4.082483e-01 -1.774389e-15  1.000000e+00 5.617921e-15
+[4,] 1.792448e-15  4.082483e-01 -5.629942e-15 1.000000e+00
+> zapsmall( m.cor.1 ) == zapsmall( m.cor.2 )
+     [,1] [,2] [,3] [,4]
+[1,] TRUE TRUE TRUE TRUE
+[2,] TRUE TRUE TRUE TRUE
+[3,] TRUE TRUE TRUE TRUE
+[4,] TRUE TRUE TRUE TRUE
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("cov.shrink")
+> ### * cov.shrink
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: cov.shrink
+> ### Title: Shrinkage Estimates of Covariance and Correlation
+> ### Aliases: cov.shrink cor.shrink var.shrink
+> ### Keywords: multivariate
+> 
+> ### ** Examples
+> 
+> # load corpcor library
+> library("corpcor")
+> 
+> # small n, large p
+> p = 100
+> n = 20
+> 
+> # generate random pxp covariance matrix
+> sigma = matrix(rnorm(p*p),ncol=p)
+> sigma = crossprod(sigma)+ diag(rep(0.1, p))
+> 
+> # simulate multinormal data of sample size n  
+> sigsvd = svd(sigma)
+> Y = t(sigsvd$v %*% (t(sigsvd$u) * sqrt(sigsvd$d)))
+> X = matrix(rnorm(n * ncol(sigma)), nrow = n) %*% Y
+> 
+> 
+> # estimate covariance matrix
+> s1 = cov(X)
+> s2 = cov.shrink(X)
+Estimating optimal shrinkage intensity lambda.var (variance vector): 0.8805 
+
+Estimating optimal shrinkage intensity lambda (correlation matrix): 0.8289 
+
+> 
+> 
+> # squared error
+> sum((s1-sigma)^2)
+[1] 5103048
+> sum((s2-sigma)^2)
+[1] 910622.1
+> 
+> 
+> # compare positive definiteness
+> is.positive.definite(sigma)
+[1] TRUE
+> is.positive.definite(s1)
+[1] FALSE
+> is.positive.definite(s2)
+[1] TRUE
+> 
+> 
+> # compare ranks and condition
+> rank.condition(sigma)
+$rank
+[1] 100
+
+$condition
+[1] 3468.244
+
+$tol
+[1] 8.97783e-12
+
+> rank.condition(s1)
+$rank
+[1] 19
+
+$condition
+[1] Inf
+
+$tol
+[1] 2.724117e-11
+
+> rank.condition(s2)
+$rank
+[1] 100
+
+$condition
+[1] 3.703585
+
+$tol
+[1] 6.351391e-12
+
+> 
+> # compare eigenvalues
+> e0 = eigen(sigma, symmetric=TRUE)$values
+> e1 = eigen(s1, symmetric=TRUE)$values
+> e2 = eigen(s2, symmetric=TRUE)$values
+> m = max(e0, e1, e2)
+> yl = c(0, m)
+> 
+> par(mfrow=c(1,3))
+> plot(e1,  main="empirical")
+> plot(e2,  ylim=yl, main="full shrinkage")
+> plot(e0,  ylim=yl, main="true")
+> par(mfrow=c(1,1))
+> 
+> 
+> 
+> 
+> graphics::par(get("par.postscript", pos = 'CheckExEnv'))
+> cleanEx()
+> nameEx("fast.svd")
+> ### * fast.svd
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: fast.svd
+> ### Title: Fast Singular Value Decomposition
+> ### Aliases: fast.svd
+> ### Keywords: algebra
+> 
+> ### ** Examples
+> 
+> # load corpcor library
+> library("corpcor")
+> 
+> 
+> # generate a "fat" data matrix
+> n = 50
+> p = 5000
+> X = matrix(rnorm(n*p), n, p)
+> 
+> # compute SVD
+> system.time( (s1 = svd(X)) ) 
+   user  system elapsed 
+  0.048   0.040   0.022 
+> system.time( (s2 = fast.svd(X)) )
+   user  system elapsed 
+  0.004   0.010   0.003 
+> 
+> 
+> eps = 1e-10
+> sum(abs(s1$d-s2$d) > eps)
+[1] 0
+> sum(abs(abs(s1$u)-abs(s2$u)) > eps)
+[1] 0
+> sum(abs(abs(s1$v)-abs(s2$v)) > eps)
+[1] 0
+> 
+> 
+> 
+> cleanEx()
+> nameEx("invcov.shrink")
+> ### * invcov.shrink
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: invcov.shrink
+> ### Title: Fast Computation of the Inverse of the Covariance and
+> ###   Correlation Matrix
+> ### Aliases: invcov.shrink invcor.shrink
+> ### Keywords: multivariate
+> 
+> ### ** Examples
+> 
+> # load corpcor library
+> library("corpcor")
+> 
+> # generate data matrix
+> p = 500
+> n = 10
+> X = matrix(rnorm(n*p), nrow = n, ncol = p)
+> 
+> lambda = 0.23  # some arbitrary lambda
+> 
+> # slow
+> system.time(
++   (W1 =  solve(cov.shrink(X, lambda)))
++ )
+Estimating optimal shrinkage intensity lambda.var (variance vector): 0.9543 
+
+Specified shrinkage intensity lambda (correlation matrix): 0.23 
+
+   user  system elapsed 
+  0.036   0.068   0.026 
+> 
+> # very fast
+> system.time(
++   (W2 = invcov.shrink(X, lambda))
++ )
+Estimating optimal shrinkage intensity lambda.var (variance vector): 0.9543 
+
+Specified shrinkage intensity lambda (correlation matrix): 0.23 
+
+   user  system elapsed 
+  0.009   0.018   0.006 
+> 
+> # no difference
+> sum((W1-W2)^2)
+[1] 1.572224e-24
+> 
+> 
+> 
+> cleanEx()
+> nameEx("mpower")
+> ### * mpower
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: mpower
+> ### Title: Compute the Power of a Real Symmetric Matrix
+> ### Aliases: mpower
+> ### Keywords: algebra
+> 
+> ### ** Examples
+> 
+> # load corpcor library
+> library("corpcor")
+> 
+> # generate symmetric matrix
+> p = 10
+> n = 20
+> X = matrix(rnorm(n*p), nrow = n, ncol = p)
+> m = cor(X)
+> 
+> m %*% m
+             [,1]       [,2]       [,3]       [,4]        [,5]        [,6]
+ [1,]  1.49314295 -0.5259452  0.5901291 -0.1633703 -0.73787500  0.04240426
+ [2,] -0.52594520  1.4197038 -0.8588115  0.1374264 -0.25310446 -0.23369825
+ [3,]  0.59012911 -0.8588115  1.5289097  0.6283880  0.21207909  0.39290614
+ [4,] -0.16337030  0.1374264  0.6283880  1.7474945 -0.46680566  0.58027664
+ [5,] -0.73787500 -0.2531045  0.2120791 -0.4668057  1.40810295  0.05020717
+ [6,]  0.04240426 -0.2336982  0.3929061  0.5802766  0.05020717  1.27123081
+ [7,]  0.44909888  0.2083800 -0.1559128 -0.1507912 -0.10445697  0.72568291
+ [8,]  0.52554624  0.2709646 -0.6754792 -1.2076486 -0.27903588 -0.03873062
+ [9,]  0.22133081  0.7832634 -0.5801344  0.2595560 -0.85319963 -0.06844726
+[10,] -0.52229373  0.7351782 -1.2015218 -1.3573764  0.28814585 -0.46560773
+            [,7]        [,8]        [,9]      [,10]
+ [1,]  0.4490989  0.52554624  0.22133081 -0.5222937
+ [2,]  0.2083800  0.27096457  0.78326340  0.7351782
+ [3,] -0.1559128 -0.67547923 -0.58013436 -1.2015218
+ [4,] -0.1507912 -1.20764857  0.25955595 -1.3573764
+ [5,] -0.1044570 -0.27903588 -0.85319963  0.2881459
+ [6,]  0.7256829 -0.03873062 -0.06844726 -0.4656077
+ [7,]  1.3515361  0.84722562  0.25245645  0.2873823
+ [8,]  0.8472256  1.73313035  0.17992731  1.2922454
+ [9,]  0.2524565  0.17992731  1.35767479 -0.0439630
+[10,]  0.2873823  1.29224540 -0.04396300  1.9243745
+> mpower(m, 2)
+             [,1]       [,2]       [,3]       [,4]        [,5]        [,6]
+ [1,]  1.49314295 -0.5259452  0.5901291 -0.1633703 -0.73787500  0.04240426
+ [2,] -0.52594520  1.4197038 -0.8588115  0.1374264 -0.25310446 -0.23369825
+ [3,]  0.59012911 -0.8588115  1.5289097  0.6283880  0.21207909  0.39290614
+ [4,] -0.16337030  0.1374264  0.6283880  1.7474945 -0.46680566  0.58027664
+ [5,] -0.73787500 -0.2531045  0.2120791 -0.4668057  1.40810295  0.05020717
+ [6,]  0.04240426 -0.2336982  0.3929061  0.5802766  0.05020717  1.27123081
+ [7,]  0.44909888  0.2083800 -0.1559128 -0.1507912 -0.10445697  0.72568291
+ [8,]  0.52554624  0.2709646 -0.6754792 -1.2076486 -0.27903588 -0.03873062
+ [9,]  0.22133081  0.7832634 -0.5801344  0.2595560 -0.85319963 -0.06844726
+[10,] -0.52229373  0.7351782 -1.2015218 -1.3573764  0.28814585 -0.46560773
+            [,7]        [,8]        [,9]      [,10]
+ [1,]  0.4490989  0.52554624  0.22133081 -0.5222937
+ [2,]  0.2083800  0.27096457  0.78326340  0.7351782
+ [3,] -0.1559128 -0.67547923 -0.58013436 -1.2015218
+ [4,] -0.1507912 -1.20764857  0.25955595 -1.3573764
+ [5,] -0.1044570 -0.27903588 -0.85319963  0.2881459
+ [6,]  0.7256829 -0.03873062 -0.06844726 -0.4656077
+ [7,]  1.3515361  0.84722562  0.25245645  0.2873823
+ [8,]  0.8472256  1.73313035  0.17992731  1.2922454
+ [9,]  0.2524565  0.17992731  1.35767479 -0.0439630
+[10,]  0.2873823  1.29224540 -0.04396300  1.9243745
+> 
+> solve(m)
+            [,1]         [,2]        [,3]       [,4]        [,5]        [,6]
+ [1,]  2.5679068 -0.275982214 -0.86953575  1.5266233  1.43950410  0.30499666
+ [2,] -0.2759822  1.954786625  0.21864289 -1.3620182 -0.63699972  0.34873519
+ [3,] -0.8695357  0.218642893  1.68623170 -0.6901718 -0.69477552 -0.15973678
+ [4,]  1.5266233 -1.362018186 -0.69017176  3.6380673  1.90490009 -0.44015744
+ [5,]  1.4395041 -0.636999724 -0.69477552  1.9049001  2.47186791 -0.07446107
+ [6,]  0.3049967  0.348735194 -0.15973678 -0.4401574 -0.07446107  1.42094703
+ [7,] -0.7945172  0.007780235  0.36008507 -0.6777948 -0.72104865 -0.56309237
+ [8,] -0.2954395 -0.131345521 -0.09422916  0.8119957  0.59839081 -0.22494976
+ [9,]  0.2985086 -0.872448355  0.18957093  0.8525025  0.83702254 -0.09079073
+[10,]  1.3816067 -1.234833032  0.10895466  1.9784238  0.92455739  0.04762203
+              [,7]        [,8]        [,9]       [,10]
+ [1,] -0.794517229 -0.29543949  0.29850857  1.38160666
+ [2,]  0.007780235 -0.13134552 -0.87244836 -1.23483303
+ [3,]  0.360085068 -0.09422916  0.18957093  0.10895466
+ [4,] -0.677794807  0.81199571  0.85250246  1.97842383
+ [5,] -0.721048652  0.59839081  0.83702254  0.92455739
+ [6,] -0.563092368 -0.22494976 -0.09079073  0.04762203
+ [7,]  1.686999752 -0.56511567 -0.24979298 -0.33321069
+ [8,] -0.565115674  2.11934502  0.11945524 -0.73495420
+ [9,] -0.249792975  0.11945524  1.69142553  0.93060134
+[10,] -0.333210687 -0.73495420  0.93060134  3.26754589
+> mpower(m, -1)
+            [,1]         [,2]        [,3]       [,4]        [,5]        [,6]
+ [1,]  2.5679068 -0.275982214 -0.86953575  1.5266233  1.43950410  0.30499666
+ [2,] -0.2759822  1.954786625  0.21864289 -1.3620182 -0.63699972  0.34873519
+ [3,] -0.8695357  0.218642893  1.68623170 -0.6901718 -0.69477552 -0.15973678
+ [4,]  1.5266233 -1.362018186 -0.69017176  3.6380673  1.90490009 -0.44015744
+ [5,]  1.4395041 -0.636999724 -0.69477552  1.9049001  2.47186791 -0.07446107
+ [6,]  0.3049967  0.348735194 -0.15973678 -0.4401574 -0.07446107  1.42094703
+ [7,] -0.7945172  0.007780235  0.36008507 -0.6777948 -0.72104865 -0.56309237
+ [8,] -0.2954395 -0.131345521 -0.09422916  0.8119957  0.59839081 -0.22494976
+ [9,]  0.2985086 -0.872448355  0.18957093  0.8525025  0.83702254 -0.09079073
+[10,]  1.3816067 -1.234833032  0.10895466  1.9784238  0.92455739  0.04762203
+              [,7]        [,8]        [,9]       [,10]
+ [1,] -0.794517229 -0.29543949  0.29850857  1.38160666
+ [2,]  0.007780235 -0.13134552 -0.87244836 -1.23483303
+ [3,]  0.360085068 -0.09422916  0.18957093  0.10895466
+ [4,] -0.677794807  0.81199571  0.85250246  1.97842383
+ [5,] -0.721048652  0.59839081  0.83702254  0.92455739
+ [6,] -0.563092368 -0.22494976 -0.09079073  0.04762203
+ [7,]  1.686999752 -0.56511567 -0.24979298 -0.33321069
+ [8,] -0.565115674  2.11934502  0.11945524 -0.73495420
+ [9,] -0.249792975  0.11945524  1.69142553  0.93060134
+[10,] -0.333210687 -0.73495420  0.93060134  3.26754589
+> 
+> msq = mpower(m, 0.5)
+> msq %*% msq
+             [,1]        [,2]        [,3]         [,4]        [,5]        [,6]
+ [1,]  1.00000000 -0.21752487  0.29764016 -0.152360426 -0.37085773 -0.05124463
+ [2,] -0.21752487  1.00000000 -0.28399885  0.177847965 -0.06401162 -0.11623568
+ [3,]  0.29764016 -0.28399885  1.00000000  0.218083424  0.13805728  0.13737813
+ [4,] -0.15236043  0.17784796  0.21808342  1.000000000 -0.27922504  0.25621322
+ [5,] -0.37085773 -0.06401162  0.13805728 -0.279225043  1.00000000  0.03754088
+ [6,] -0.05124463 -0.11623568  0.13737813  0.256213219  0.03754088  1.00000000
+ [7,]  0.22035695  0.09840806 -0.06111935 -0.001926208  0.03204680  0.37899710
+ [8,]  0.25892945  0.07229423 -0.18654528 -0.465498676 -0.16252110  0.03825234
+ [9,]  0.09462067  0.35740257 -0.24832636  0.066041878 -0.36534922 -0.02263859
+[10,] -0.26326096  0.31598431 -0.41709836 -0.529551197  0.08434508 -0.15346738
+              [,7]        [,8]        [,9]       [,10]
+ [1,]  0.220356950  0.25892945  0.09462067 -0.26326096
+ [2,]  0.098408059  0.07229423  0.35740257  0.31598431
+ [3,] -0.061119347 -0.18654528 -0.24832636 -0.41709836
+ [4,] -0.001926208 -0.46549868  0.06604188 -0.52955120
+ [5,]  0.032046801 -0.16252110 -0.36534922  0.08434508
+ [6,]  0.378997102  0.03825234 -0.02263859 -0.15346738
+ [7,]  1.000000000  0.35718366  0.09888555  0.08678212
+ [8,]  0.357183657  1.00000000  0.03515937  0.50267144
+ [9,]  0.098885552  0.03515937  1.00000000 -0.09975231
+[10,]  0.086782118  0.50267144 -0.09975231  1.00000000
+> m
+             [,1]        [,2]        [,3]         [,4]        [,5]        [,6]
+ [1,]  1.00000000 -0.21752487  0.29764016 -0.152360426 -0.37085773 -0.05124463
+ [2,] -0.21752487  1.00000000 -0.28399885  0.177847965 -0.06401162 -0.11623568
+ [3,]  0.29764016 -0.28399885  1.00000000  0.218083424  0.13805728  0.13737813
+ [4,] -0.15236043  0.17784796  0.21808342  1.000000000 -0.27922504  0.25621322
+ [5,] -0.37085773 -0.06401162  0.13805728 -0.279225043  1.00000000  0.03754088
+ [6,] -0.05124463 -0.11623568  0.13737813  0.256213219  0.03754088  1.00000000
+ [7,]  0.22035695  0.09840806 -0.06111935 -0.001926208  0.03204680  0.37899710
+ [8,]  0.25892945  0.07229423 -0.18654528 -0.465498676 -0.16252110  0.03825234
+ [9,]  0.09462067  0.35740257 -0.24832636  0.066041878 -0.36534922 -0.02263859
+[10,] -0.26326096  0.31598431 -0.41709836 -0.529551197  0.08434508 -0.15346738
+              [,7]        [,8]        [,9]       [,10]
+ [1,]  0.220356950  0.25892945  0.09462067 -0.26326096
+ [2,]  0.098408059  0.07229423  0.35740257  0.31598431
+ [3,] -0.061119347 -0.18654528 -0.24832636 -0.41709836
+ [4,] -0.001926208 -0.46549868  0.06604188 -0.52955120
+ [5,]  0.032046801 -0.16252110 -0.36534922  0.08434508
+ [6,]  0.378997102  0.03825234 -0.02263859 -0.15346738
+ [7,]  1.000000000  0.35718366  0.09888555  0.08678212
+ [8,]  0.357183657  1.00000000  0.03515937  0.50267144
+ [9,]  0.098885552  0.03515937  1.00000000 -0.09975231
+[10,]  0.086782118  0.50267144 -0.09975231  1.00000000
+> 
+> mpower(m, 1.234)
+             [,1]        [,2]        [,3]        [,4]        [,5]        [,6]
+ [1,]  1.07805859 -0.28060678  0.35776951 -0.16015043 -0.44597946 -0.04132596
+ [2,] -0.28060678  1.06112877 -0.38537397  0.18324385 -0.09933214 -0.13817358
+ [3,]  0.35776951 -0.38537397  1.07053031  0.28387048  0.15582192  0.18136074
+ [4,] -0.16015043  0.18324385  0.28387048  1.11247919 -0.31732729  0.31924823
+ [5,] -0.44597946 -0.09933214  0.15582192 -0.31732729  1.06441885  0.04355406
+ [6,] -0.04132596 -0.13817358  0.18136074  0.31924823  0.04355406  1.04024259
+ [7,]  0.26556559  0.12069269 -0.07444574 -0.02438241  0.01182297  0.45944677
+ [8,]  0.31757692  0.10136737 -0.26558300 -0.59759233 -0.18834090  0.03148305
+ [9,]  0.12193375  0.44159236 -0.31341756  0.10585641 -0.46079546 -0.03207305
+[10,] -0.31271004  0.38927976 -0.55370075 -0.67136699  0.12498312 -0.20693381
+             [,7]        [,8]        [,9]       [,10]
+ [1,]  0.26556559  0.31757692  0.12193375 -0.31271004
+ [2,]  0.12069269  0.10136737  0.44159236  0.38927976
+ [3,] -0.07444574 -0.26558300 -0.31341756 -0.55370075
+ [4,] -0.02438241 -0.59759233  0.10585641 -0.67136699
+ [5,]  0.01182297 -0.18834090 -0.46079546  0.12498312
+ [6,]  0.45944677  0.03148305 -0.03207305 -0.20693381
+ [7,]  1.05242272  0.45083642  0.12691370  0.11867488
+ [8,]  0.45083642  1.10252273  0.05744726  0.64166291
+ [9,]  0.12691370  0.05744726  1.05166266 -0.09640098
+[10,]  0.11867488  0.64166291 -0.09640098  1.13152154
+> 
+> 
+> 
+> cleanEx()
+> nameEx("pcor.shrink")
+> ### * pcor.shrink
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: pcor.shrink
+> ### Title: Shrinkage Estimates of Partial Correlation and Partial Variance
+> ### Aliases: pcor.shrink pvar.shrink
+> ### Keywords: multivariate
+> 
+> ### ** Examples
+> 
+> # load corpcor library
+> library("corpcor")
+> 
+> # generate data matrix
+> p = 50
+> n = 10
+> X = matrix(rnorm(n*p), nrow = n, ncol = p)
+> 
+> 
+> # partial variance
+> pv = pvar.shrink(X)
+Estimating optimal shrinkage intensity lambda.var (variance vector): 0.9918 
+
+Estimating optimal shrinkage intensity lambda (correlation matrix): 0.8638 
+
+> pv
+ [1] 0.8780849 0.9019880 0.8871843 0.8838805 0.8842665 0.8870936 0.8927983
+ [8] 0.8924716 0.8935117 0.8945441 0.8994159 0.9026035 0.8864420 0.8863834
+[15] 0.9001455 0.8924720 0.8993360 0.8918662 0.8923782 0.8924769 0.9030665
+[22] 0.8909066 0.8978564 0.8979833 0.8963200 0.8916209 0.8936153 0.9059872
+[29] 0.8878058 0.8955083 0.8954777 0.8847780 0.8822989 0.8914887 0.8838428
+[36] 0.8871860 0.8954608 0.8956444 0.8924161 0.8974222 0.9068257 0.8970795
+[43] 0.8833646 0.8955767 0.9026108 0.8957073 0.9083532 0.8945709 0.8969182
+[50] 0.9011037
+attr(,"lambda")
+[1] 0.8637821
+attr(,"lambda.estimated")
+[1] TRUE
+attr(,"lambda.var")
+[1] 0.9918008
+attr(,"lambda.var.estimated")
+[1] TRUE
+> 
+> # partial correlations (fast and recommend way)
+> pcr1 = pcor.shrink(X)
+Estimating optimal shrinkage intensity lambda (correlation matrix): 0.8638 
+
+> 
+> # other possibilities to estimate partial correlations
+> pcr2 = cor2pcor( cor.shrink(X) )
+Estimating optimal shrinkage intensity lambda (correlation matrix): 0.8638 
+
+> 
+> 
+> # all the same
+> sum((pcr1 - pcr2)^2)
+[1] 5.810178e-29
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("powcor.shrink")
+> ### * powcor.shrink
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: powcor.shrink
+> ### Title: Fast Computation of the Power of the Shrinkage Correlation
+> ###   Matrix
+> ### Aliases: powcor.shrink crossprod.powcor.shrink
+> ### Keywords: multivariate
+> 
+> ### ** Examples
+> 
+> # load corpcor library
+> library("corpcor")
+> 
+> # generate data matrix
+> p = 500
+> n = 10
+> X = matrix(rnorm(n*p), nrow = n, ncol = p)
+> 
+> lambda = 0.23  # some arbitrary lambda
+> 
+> ### computing the inverse ###
+> # slow
+> system.time(
++   (W1 = solve(cor.shrink(X, lambda=lambda)))
++ )
+Specified shrinkage intensity lambda (correlation matrix): 0.23 
+
+   user  system elapsed 
+  0.032   0.027   0.015 
+> 
+> # very fast
+> system.time(
++   (W2 = powcor.shrink(X, alpha=-1, lambda=lambda))
++ )
+Specified shrinkage intensity lambda (correlation matrix): 0.23 
+
+   user  system elapsed 
+  0.003   0.005   0.002 
+> 
+> # no difference
+> sum((W1-W2)^2)
+[1] 1.495535e-24
+> 
+> ### computing the square root ###
+> 
+> system.time(
++   (W1 = mpower(cor.shrink(X, lambda=lambda), alpha=0.5))
++ )
+Specified shrinkage intensity lambda (correlation matrix): 0.23 
+
+   user  system elapsed 
+  0.145   0.170   0.079 
+> 
+> # very fast
+> system.time(
++   (W2 = powcor.shrink(X, alpha=0.5, lambda=lambda))
++ )
+Specified shrinkage intensity lambda (correlation matrix): 0.23 
+
+   user  system elapsed 
+  0.002   0.006   0.002 
+> 
+> # no difference
+> sum((W1-W2)^2)
+[1] 3.71178e-25
+> 
+> 
+> ### computing an arbitrary power (alpha=1.23) ###
+> 
+> system.time(
++   (W1 = mpower(cor.shrink(X, lambda=lambda), alpha=1.23))
++ )
+Specified shrinkage intensity lambda (correlation matrix): 0.23 
+
+   user  system elapsed 
+  0.133   0.147   0.070 
+> 
+> # very fast
+> system.time(
++   (W2 = powcor.shrink(X, alpha=1.23, lambda=lambda))
++ )
+Specified shrinkage intensity lambda (correlation matrix): 0.23 
+
+   user  system elapsed 
+  0.003   0.005   0.002 
+> 
+> # no difference
+> sum((W1-W2)^2)
+[1] 3.551622e-24
+> 
+> 
+> ### fast computation of cross product
+> 
+> y = rnorm(p)
+> 
+> system.time(
++   (CP1 = crossprod(powcor.shrink(X, alpha=1.23, lambda=lambda), y))
++ )
+Specified shrinkage intensity lambda (correlation matrix): 0.23 
+
+   user  system elapsed 
+  0.002   0.006   0.002 
+> 
+> system.time(
++   (CP2 = crossprod.powcor.shrink(X, y, alpha=1.23, lambda=lambda))
++ )
+Specified shrinkage intensity lambda (correlation matrix): 0.23 
+
+   user  system elapsed 
+  0.001   0.005   0.002 
+> 
+> # no difference
+> sum((CP1-CP2)^2)
+[1] 2.766613e-26
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("pseudoinverse")
+> ### * pseudoinverse
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: pseudoinverse
+> ### Title: Pseudoinverse of a Matrix
+> ### Aliases: pseudoinverse
+> ### Keywords: algebra
+> 
+> ### ** Examples
+> 
+> # load corpcor library
+> library("corpcor")
+> 
+> # a singular matrix
+> m = rbind(
++ c(1,2),
++ c(1,2)
++ )
+> 
+> # not possible to invert exactly
+> try(solve(m))
+Error in solve.default(m) : 
+  Lapack routine dgesv: system is exactly singular: U[2,2] = 0
+> 
+> # pseudoinverse
+> p = pseudoinverse(m)
+> p
+     [,1] [,2]
+[1,]  0.1  0.1
+[2,]  0.2  0.2
+> 
+> # characteristics of the pseudoinverse
+> zapsmall( m %*% p %*% m )  ==  zapsmall( m )
+     [,1] [,2]
+[1,] TRUE TRUE
+[2,] TRUE TRUE
+> zapsmall( p %*% m %*% p )  ==  zapsmall( p )
+     [,1] [,2]
+[1,] TRUE TRUE
+[2,] TRUE TRUE
+> zapsmall( p %*% m )  ==  zapsmall( t(p %*% m ) )
+     [,1] [,2]
+[1,] TRUE TRUE
+[2,] TRUE TRUE
+> zapsmall( m %*% p )  ==  zapsmall( t(m %*% p ) )
+     [,1] [,2]
+[1,] TRUE TRUE
+[2,] TRUE TRUE
+> 
+> 
+> # example with an invertable matrix
+> m2 = rbind(
++ c(1,1),
++ c(1,0)
++ )
+> zapsmall( solve(m2) ) == zapsmall( pseudoinverse(m2) )
+     [,1] [,2]
+[1,] TRUE TRUE
+[2,] TRUE TRUE
+> 
+> 
+> 
+> cleanEx()
+> nameEx("rank.condition")
+> ### * rank.condition
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: rank.condition
+> ### Title: Positive Definiteness of a Matrix, Rank and Condition Number
+> ### Aliases: is.positive.definite make.positive.definite rank.condition
+> ### Keywords: algebra
+> 
+> ### ** Examples
+> 
+> # load corpcor library
+> library("corpcor")
+> 
+> # Hilbert matrix
+> hilbert = function(n) { i = 1:n; 1 / outer(i - 1, i, "+") }
+> 
+> # positive definite ?
+> m = hilbert(8)
+> is.positive.definite(m)
+[1] TRUE
+> 
+> # numerically ill-conditioned
+> m = hilbert(15)
+> rank.condition(m)
+$rank
+[1] 12
+
+$condition
+[1] Inf
+
+$tol
+[1] 6.148174e-15
+
+> 
+> # make positive definite
+> m2 = make.positive.definite(m)
+> is.positive.definite(m2)
+[1] TRUE
+> rank.condition(m2)
+$rank
+[1] 15
+
+$condition
+[1] 1.503304e+14
+
+$tol
+[1] 6.148174e-15
+
+> m2 - m
+      [,1] [,2] [,3]          [,4]          [,5]          [,6]          [,7]
+ [1,]    0    0    0  0.000000e+00  0.000000e+00  0.000000e+00  0.000000e+00
+ [2,]    0    0    0  0.000000e+00  0.000000e+00  0.000000e+00  0.000000e+00
+ [3,]    0    0    0  0.000000e+00  0.000000e+00  0.000000e+00  0.000000e+00
+ [4,]    0    0    0  0.000000e+00  0.000000e+00  1.387779e-17 -1.387779e-17
+ [5,]    0    0    0  0.000000e+00  1.387779e-17 -5.551115e-17  1.526557e-16
+ [6,]    0    0    0  1.387779e-17 -5.551115e-17  2.498002e-16 -6.661338e-16
+ [7,]    0    0    0 -1.387779e-17  1.526557e-16 -6.661338e-16  1.804112e-15
+ [8,]    0    0    0  2.775558e-17 -2.220446e-16  1.026956e-15 -2.872702e-15
+ [9,]    0    0    0 -1.387779e-17  1.526557e-16 -7.355228e-16  2.220446e-15
+[10,]    0    0    0 -1.387779e-17  5.551115e-17 -1.942890e-16  1.665335e-16
+[11,]    0    0    0  1.387779e-17 -1.387779e-16  6.106227e-16 -1.477984e-15
+[12,]    0    0    0  0.000000e+00 -6.938894e-18 -1.387779e-17  1.873501e-16
+[13,]    0    0    0 -2.081668e-17  1.387779e-16 -5.689893e-16  1.276756e-15
+[14,]    0    0    0  1.387779e-17 -1.040834e-16  4.371503e-16 -1.033895e-15
+[15,]    0    0    0 -6.938894e-18  2.775558e-17 -1.040834e-16  2.567391e-16
+               [,8]          [,9]         [,10]         [,11]         [,12]
+ [1,]  0.000000e+00  0.000000e+00  0.000000e+00  0.000000e+00  0.000000e+00
+ [2,]  0.000000e+00  0.000000e+00  0.000000e+00  0.000000e+00  0.000000e+00
+ [3,]  0.000000e+00  0.000000e+00  0.000000e+00  0.000000e+00  0.000000e+00
+ [4,]  2.775558e-17 -1.387779e-17 -1.387779e-17  1.387779e-17  0.000000e+00
+ [5,] -2.220446e-16  1.526557e-16  5.551115e-17 -1.387779e-16 -6.938894e-18
+ [6,]  1.026956e-15 -7.355228e-16 -1.942890e-16  6.106227e-16 -1.387779e-17
+ [7,] -2.872702e-15  2.220446e-15  1.665335e-16 -1.477984e-15  1.873501e-16
+ [8,]  4.829470e-15 -4.329870e-15  8.396062e-16  1.734723e-15 -6.245005e-16
+ [9,] -4.329870e-15  5.211109e-15 -3.386180e-15  4.371503e-16  8.118506e-16
+[10,]  8.396062e-16 -3.386180e-15  5.592748e-15 -4.399259e-15  5.134781e-16
+[11,]  1.734723e-15  4.371503e-16 -4.399259e-15  6.036838e-15 -3.448630e-15
+[12,] -6.245005e-16  8.118506e-16  5.134781e-16 -3.448630e-15  5.488665e-15
+[13,] -1.304512e-15 -3.469447e-16  1.873501e-15  1.873501e-16 -4.496403e-15
+[14,]  1.221245e-15 -9.020562e-17 -1.387779e-15  6.730727e-16  1.942890e-15
+[15,] -3.191891e-16  6.245005e-17  3.191891e-16 -2.220446e-16 -3.469447e-16
+              [,13]         [,14]         [,15]
+ [1,]  0.000000e+00  0.000000e+00  0.000000e+00
+ [2,]  0.000000e+00  0.000000e+00  0.000000e+00
+ [3,]  0.000000e+00  0.000000e+00  0.000000e+00
+ [4,] -2.081668e-17  1.387779e-17 -6.938894e-18
+ [5,]  1.387779e-16 -1.040834e-16  2.775558e-17
+ [6,] -5.689893e-16  4.371503e-16 -1.040834e-16
+ [7,]  1.276756e-15 -1.033895e-15  2.567391e-16
+ [8,] -1.304512e-15  1.221245e-15 -3.191891e-16
+ [9,] -3.469447e-16 -9.020562e-17  6.245005e-17
+[10,]  1.873501e-15 -1.387779e-15  3.191891e-16
+[11,]  1.873501e-16  6.730727e-16 -2.220446e-16
+[12,] -4.496403e-15  1.942890e-15 -3.469447e-16
+[13,]  5.676015e-15 -3.046174e-15  6.314393e-16
+[14,] -3.046174e-15  1.755540e-15 -3.747003e-16
+[15,]  6.314393e-16 -3.747003e-16  8.326673e-17
+> 
+> 
+> 
+> cleanEx()
+> nameEx("rebuild.cov")
+> ### * rebuild.cov
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: rebuild.cov
+> ### Title: Rebuild and Decompose the (Inverse) Covariance Matrix
+> ### Aliases: rebuild.cov rebuild.invcov decompose.cov decompose.invcov
+> ### Keywords: multivariate
+> 
+> ### ** Examples
+> 
+> # load corpcor library
+> library("corpcor")
+> 
+> # a correlation matrix and some variances
+> r = matrix(c(1, 1/2, 1/2, 1),  nrow = 2, ncol=2)
+> r
+     [,1] [,2]
+[1,]  1.0  0.5
+[2,]  0.5  1.0
+> v = c(2, 3)
+> 
+> # construct the associated covariance matrix
+> c = rebuild.cov(r, v)
+> c
+         [,1]     [,2]
+[1,] 2.000000 1.224745
+[2,] 1.224745 3.000000
+> 
+> # decompose into correlations and variances
+> decompose.cov(c)
+$r
+     [,1] [,2]
+[1,]  1.0  0.5
+[2,]  0.5  1.0
+
+$v
+[1] 2 3
+
+> 
+> 
+> # the corresponding concentration matrix
+> conc = pseudoinverse(c) 
+> conc
+           [,1]       [,2]
+[1,]  0.6666667 -0.2721655
+[2,] -0.2721655  0.4444444
+> 
+> # decompose into partial correlation matrix and partial variances
+> tmp = decompose.invcov(conc)
+> tmp
+$pr
+     [,1] [,2]
+[1,]  1.0  0.5
+[2,]  0.5  1.0
+
+$pv
+[1] 1.50 2.25
+
+> # note: because this is an example with two variables,
+> # the partial and standard correlations are identical!
+> 
+> 
+> # reconstruct the concentration matrix from partial correlations and
+> # partial variances 
+> rebuild.invcov(tmp$pr, tmp$pv)
+           [,1]       [,2]
+[1,]  0.6666667 -0.2721655
+[2,] -0.2721655  0.4444444
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("shrink.intensity")
+> ### * shrink.intensity
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: shrink.intensity
+> ### Title: Estimation of Shrinkage Intensities
+> ### Aliases: estimate.lambda estimate.lambda.var
+> ### Keywords: multivariate
+> 
+> ### ** Examples
+> 
+> # load corpcor library
+> library("corpcor")
+> 
+> # small n, large p
+> p = 100
+> n = 20
+> 
+> # generate random pxp covariance matrix
+> sigma = matrix(rnorm(p*p),ncol=p)
+> sigma = crossprod(sigma)+ diag(rep(0.1, p))
+> 
+> # simulate multinormal data of sample size n  
+> sigsvd = svd(sigma)
+> Y = t(sigsvd$v %*% (t(sigsvd$u) * sqrt(sigsvd$d)))
+> X = matrix(rnorm(n * ncol(sigma)), nrow = n) %*% Y
+> 
+> 
+> # correlation shrinkage intensity
+> estimate.lambda(X) 
+Estimating optimal shrinkage intensity lambda (correlation matrix): 0.8289 
+[1] 0.8289199
+> c = cor.shrink(X)
+Estimating optimal shrinkage intensity lambda (correlation matrix): 0.8289 
+
+> attr(c, "lambda")
+[1] 0.8289199
+> 
+> # variance shrinkage intensity
+> estimate.lambda.var(X) 
+Estimating optimal shrinkage intensity lambda.var (variance vector): 0.8805 
+[1] 0.8805291
+> v = var.shrink(X)
+Estimating optimal shrinkage intensity lambda.var (variance vector): 0.8805 
+
+> attr(v, "lambda.var")
+[1] 0.8805291
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("smtools")
+> ### * smtools
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: smtools
+> ### Title: Some Tools for Handling Symmetric Matrices
+> ### Aliases: sm2vec sm.index vec2sm
+> ### Keywords: utilities
+> 
+> ### ** Examples
+> 
+> # load corpcor library
+> library("corpcor")
+> 
+> # a symmetric matrix
+> m = rbind(
++  c(3,1,1,0),
++  c(1,3,0,1),
++  c(1,0,2,0),
++  c(0,1,0,2)
++ )
+> m
+     [,1] [,2] [,3] [,4]
+[1,]    3    1    1    0
+[2,]    1    3    0    1
+[3,]    1    0    2    0
+[4,]    0    1    0    2
+> 
+> # convert into vector (including the diagonals)
+> v = sm2vec(m, diag=TRUE)
+> v.idx = sm.index(m, diag=TRUE)
+> v
+ [1] 3 1 1 0 3 0 1 2 0 2
+> v.idx
+      index1 index2
+ [1,]      1      1
+ [2,]      1      2
+ [3,]      1      3
+ [4,]      1      4
+ [5,]      2      2
+ [6,]      2      3
+ [7,]      2      4
+ [8,]      3      3
+ [9,]      3      4
+[10,]      4      4
+> 
+> # put back to symmetric matrix
+> vec2sm(v, diag=TRUE)
+     [,1] [,2] [,3] [,4]
+[1,]    3    1    1    0
+[2,]    1    3    0    1
+[3,]    1    0    2    0
+[4,]    0    1    0    2
+> 
+> # convert from vector with specified order of the elements
+> sv = sort(v)
+> sv
+ [1] 0 0 0 1 1 1 2 2 3 3
+> ov = order(v)
+> ov
+ [1]  4  6  9  2  3  7  8 10  1  5
+> vec2sm(sv, diag=TRUE, order=ov)
+     [,1] [,2] [,3] [,4]
+[1,]    3    1    1    0
+[2,]    1    3    0    1
+[3,]    1    0    2    0
+[4,]    0    1    0    2
+> 
+> 
+> 
+> cleanEx()
+> nameEx("wt.scale")
+> ### * wt.scale
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: wt.scale
+> ### Title: Weighted Expectations and Variances
+> ### Aliases: wt.scale wt.var wt.moments
+> ### Keywords: multivariate
+> 
+> ### ** Examples
+> 
+> # load corpcor library
+> library("corpcor")
+> 
+> # generate some data
+> p = 5
+> n = 5
+> X = matrix(rnorm(n*p), nrow = n, ncol = p)
+> w = c(1,1,1,3,3)/9
+> 
+> 
+> # standardize matrix
+> scale(X)
+            [,1]       [,2]       [,3]       [,4]         [,5]
+[1,] -0.78636077 -1.4287607  0.9831766 -1.0853730  0.697485185
+[2,]  0.05657773  0.5267275  0.2346563 -1.0235351  0.583555038
+[3,] -1.00401553  0.9018514 -0.4399058  1.0418477 -0.005549562
+[4,]  1.52544305  0.6588265 -1.5030097  0.7780561 -1.723910356
+[5,]  0.20835553 -0.6586446  0.7250827  0.2890044  0.448419694
+attr(,"scaled:center")
+[1] 0.12926990 0.13513567 0.03812297 0.45956697 0.08123054
+attr(,"scaled:scale")
+[1] 0.9610394 0.6688342 1.4988744 0.4648177 1.2010962
+> wt.scale(X)
+            [,1]       [,2]       [,3]       [,4]         [,5]
+[1,] -0.78636077 -1.4287607  0.9831766 -1.0853730  0.697485185
+[2,]  0.05657773  0.5267275  0.2346563 -1.0235351  0.583555038
+[3,] -1.00401553  0.9018514 -0.4399058  1.0418477 -0.005549562
+[4,]  1.52544305  0.6588265 -1.5030097  0.7780561 -1.723910356
+[5,]  0.20835553 -0.6586446  0.7250827  0.2890044  0.448419694
+attr(,"scaled:center")
+[1] 0.12926990 0.13513567 0.03812297 0.45956697 0.08123054
+attr(,"scaled:scale")
+[1] 0.9610394 0.6688342 1.4988744 0.4648177 1.2010962
+> wt.scale(X, w) # take into account data weights
+           [,1]       [,2]       [,3]        [,4]       [,5]
+[1,] -1.1117235 -1.5403939  0.9787577 -1.54706059  0.8164690
+[2,] -0.3118984  0.5678226  0.3450303 -1.47472248  0.7216400
+[3,] -1.3182459  0.9722445 -0.2260810  0.94136693  0.2313024
+[4,]  1.0818395  0.7102388 -1.1261474  0.63278290 -1.1989647
+[5,] -0.1678835 -0.7101299  0.7602451  0.06068915  0.6091609
+attr(,"scaled:center")
+[1]  0.4995474  0.1351627 -0.2209915  0.5697867 -0.2592110
+attr(,"scaled:scale")
+[1] 1.0128429 0.6203810 1.7703796 0.3973472 1.4430289
+> 
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  0.962 1.398 0.642 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

@@ -1,0 +1,2566 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "data.tree"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('data.tree')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("Aggregate")
+> ### * Aggregate
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Aggregate
+> ### Title: Aggregate child values of a 'Node', recursively.
+> ### Aliases: Aggregate
+> 
+> ### ** Examples
+> 
+> data(acme)
+> 
+> #Aggregate on a field
+> Aggregate(acme, "cost", sum)
+[1] 4950000
+> 
+> #This is the same as:
+> HomeRolledAggregate <- function(node) {
++   sum(sapply(node$children, function(child) {
++     if (!is.null(child$cost)) child$cost
++     else HomeRolledAggregate(child)
++   }))
++ }
+> HomeRolledAggregate(acme)
+[1] 4950000
+> 
+> #Aggregate using Get
+> print(acme, "cost", minCost = acme$Get(Aggregate, "cost", min))
+                          levelName    cost minCost
+1  Acme Inc.                             NA   50000
+2   ¦--Accounting                        NA  500000
+3   ¦   ¦--New Software             1000000 1000000
+4   ¦   °--New Accounting Standards  500000  500000
+5   ¦--Research                          NA  750000
+6   ¦   ¦--New Product Line         2000000 2000000
+7   ¦   °--New Labs                  750000  750000
+8   °--IT                                NA   50000
+9       ¦--Outsource                 400000  400000
+10      ¦--Go agile                  250000  250000
+11      °--Switch to R                50000   50000
+> 
+> #use Aggregate with a function:
+> Aggregate(acme, function(x) x$cost * x$p, sum)
+[1] 2192500
+> 
+> #cache values along the way
+> acme$Do(function(x) x$cost <- Aggregate(x, "cost", sum), traversal = "post-order")
+> acme$IT$cost
+[1] 7e+05
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("AreNamesUnique")
+> ### * AreNamesUnique
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: AreNamesUnique
+> ### Title: Test whether all node names are unique.
+> ### Aliases: AreNamesUnique
+> 
+> ### ** Examples
+> 
+> data(acme)
+> AreNamesUnique(acme)
+[1] TRUE
+> acme$name <- "IT"
+> AreNamesUnique(acme)
+[1] FALSE
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Climb")
+> ### * Climb
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Climb
+> ### Title: Climb a tree from parent to children, by provided criteria.
+> ### Aliases: Climb
+> 
+> ### ** Examples
+> 
+> data(acme)
+> 
+> #the following are all equivalent
+> Climb(acme, 'IT', 'Outsource')
+  levelName
+1 Outsource
+> Climb(acme, name = 'IT', name = 'Outsource')
+  levelName
+1 Outsource
+> Climb(acme, 'IT')$Climb('Outsource')
+  levelName
+1 Outsource
+> Navigate(acme, path = "IT/Outsource")
+  levelName
+1 Outsource
+> 
+> Climb(acme, name = 'IT')
+        levelName
+1 IT             
+2  ¦--Outsource  
+3  ¦--Go agile   
+4  °--Switch to R
+> 
+> Climb(acme, position = c(2, 1))
+         levelName
+1 New Product Line
+> #or, equivalent:
+> Climb(acme, position = 2, position = 1)
+         levelName
+1 New Product Line
+> Climb(acme, name = "IT", cost = 250000)
+  levelName
+1  Go agile
+> 
+> tree <- CreateRegularTree(5, 2)
+> tree$Climb(c("1", "1"), position = c(2, 2))$path
+NULL
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Clone")
+> ### * Clone
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Clone
+> ### Title: Clone a tree (creates a deep copy)
+> ### Aliases: Clone
+> 
+> ### ** Examples
+> 
+> data(acme)
+> acmeClone <- Clone(acme)
+> acmeClone$name <- "New Acme"
+> # acmeClone does not point to the same reference object anymore:
+> acme$name
+[1] "Acme Inc."
+> 
+> #cloning a subtree
+> data(acme)
+> itClone <- Clone(acme$IT)
+> itClone$isRoot
+[1] TRUE
+> 
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Cumulate")
+> ### * Cumulate
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Cumulate
+> ### Title: Cumulate values among siblings
+> ### Aliases: Cumulate
+> 
+> ### ** Examples
+> 
+> data(acme)
+> acme$Do(function(x) x$cost <- Aggregate(x, "cost", sum), traversal = "post-order")
+> acme$Do(function(x) x$cumCost <- Cumulate(x, "cost", sum))
+> print(acme, "cost", "cumCost")
+                          levelName    cost cumCost
+1  Acme Inc.                        4950000 4950000
+2   ¦--Accounting                   1500000 1500000
+3   ¦   ¦--New Software             1000000 1000000
+4   ¦   °--New Accounting Standards  500000 1500000
+5   ¦--Research                     2750000 4250000
+6   ¦   ¦--New Product Line         2000000 2000000
+7   ¦   °--New Labs                  750000 2750000
+8   °--IT                            700000 4950000
+9       ¦--Outsource                 400000  400000
+10      ¦--Go agile                  250000  650000
+11      °--Switch to R                50000  700000
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("DefaultPlotHeight")
+> ### * DefaultPlotHeight
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: DefaultPlotHeight
+> ### Title: Calculates the height of a 'Node' given the height of the root.
+> ### Aliases: DefaultPlotHeight
+> 
+> ### ** Examples
+> 
+> data(acme)
+> dacme <- as.dendrogram(acme, heightAttribute = function(x) DefaultPlotHeight(x, 200))
+> plot(dacme, center = TRUE)
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Distance")
+> ### * Distance
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Distance
+> ### Title: Find the distance between two nodes of the same tree
+> ### Aliases: Distance
+> 
+> ### ** Examples
+> 
+> data(acme)
+> Distance(FindNode(acme, "Outsource"), FindNode(acme, "Research"))
+[1] 3
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Do")
+> ### * Do
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Do
+> ### Title: Executes a function on a set of nodes
+> ### Aliases: Do
+> 
+> ### ** Examples
+> 
+> data(acme)
+> traversal <- Traverse(acme)
+> Do(traversal, function(node) node$expectedCost <- node$p * node$cost)
+> print(acme, "expectedCost")
+                          levelName expectedCost
+1  Acme Inc.                                  NA
+2   ¦--Accounting                             NA
+3   ¦   ¦--New Software                   500000
+4   ¦   °--New Accounting Standards       375000
+5   ¦--Research                               NA
+6   ¦   ¦--New Product Line               500000
+7   ¦   °--New Labs                       675000
+8   °--IT                                     NA
+9       ¦--Outsource                       80000
+10      ¦--Go agile                        12500
+11      °--Switch to R                     50000
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("FindNode")
+> ### * FindNode
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: FindNode
+> ### Title: Find a node by name in the (sub-)tree
+> ### Aliases: FindNode
+> 
+> ### ** Examples
+> 
+> data(acme)
+> FindNode(acme, "Outsource")
+  levelName
+1 Outsource
+> 
+> #re-usable hashed index for multiple searches:
+> if(!AreNamesUnique(acme)) stop("Hashed index works for unique names only!")
+> trav <- Traverse(acme, "level")
+> names(trav) <- Get(trav, "name")
+> nameIndex <- as.environment(trav)
+> #you could also use hash from package hash instead!
+> #nameIndex <- hash(trav)
+> nameIndex$Outsource
+  levelName
+1 Outsource
+> nameIndex$IT
+        levelName
+1 IT             
+2  ¦--Outsource  
+3  ¦--Go agile   
+4  °--Switch to R
+> 
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("FormatFixedDecimal")
+> ### * FormatFixedDecimal
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: FormatFixedDecimal
+> ### Title: Format a Number as a Decimal
+> ### Aliases: FormatFixedDecimal
+> 
+> ### ** Examples
+> 
+> data(acme)
+> print(acme, prob = acme$Get("p", format = function(x) FormatFixedDecimal(x, 4)))
+                          levelName   prob
+1  Acme Inc.                              
+2   ¦--Accounting                         
+3   ¦   ¦--New Software             0.5000
+4   ¦   °--New Accounting Standards 0.7500
+5   ¦--Research                           
+6   ¦   ¦--New Product Line         0.2500
+7   ¦   °--New Labs                 0.9000
+8   °--IT                                 
+9       ¦--Outsource                0.2000
+10      ¦--Go agile                 0.0500
+11      °--Switch to R              1.0000
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("FormatPercent")
+> ### * FormatPercent
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: FormatPercent
+> ### Title: Format a Number as a Percentage
+> ### Aliases: FormatPercent
+> 
+> ### ** Examples
+> 
+> data(acme)
+> print(acme, prob = acme$Get("p", format = FormatPercent))
+                          levelName     prob
+1  Acme Inc.                                
+2   ¦--Accounting                           
+3   ¦   ¦--New Software              50.00 %
+4   ¦   °--New Accounting Standards  75.00 %
+5   ¦--Research                             
+6   ¦   ¦--New Product Line          25.00 %
+7   ¦   °--New Labs                  90.00 %
+8   °--IT                                   
+9       ¦--Outsource                 20.00 %
+10      ¦--Go agile                   5.00 %
+11      °--Switch to R              100.00 %
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Get")
+> ### * Get
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Get
+> ### Title: Traverse a Tree and Collect Values
+> ### Aliases: Get
+> 
+> ### ** Examples
+> 
+> data(acme)
+> acme$Get("level")
+               Acme Inc.               Accounting             New Software 
+                       1                        2                        3 
+New Accounting Standards                 Research         New Product Line 
+                       3                        2                        3 
+                New Labs                       IT                Outsource 
+                       3                        2                        3 
+                Go agile              Switch to R 
+                       3                        3 
+> acme$Get("totalCount")
+               Acme Inc.               Accounting             New Software 
+                      11                        3                        1 
+New Accounting Standards                 Research         New Product Line 
+                       1                        3                        1 
+                New Labs                       IT                Outsource 
+                       1                        4                        1 
+                Go agile              Switch to R 
+                       1                        1 
+>  
+> 
+> acme$Get(function(node) node$cost * node$p,
++          filterFun = isLeaf)
+            New Software New Accounting Standards         New Product Line 
+                  500000                   375000                   500000 
+                New Labs                Outsource                 Go agile 
+                  675000                    80000                    12500 
+             Switch to R 
+                   50000 
+> 
+> #This is equivalent:
+> nodes <- Traverse(acme, filterFun = isLeaf)
+> Get(nodes, function(node) node$cost * node$p)
+            New Software New Accounting Standards         New Product Line 
+                  500000                   375000                   500000 
+                New Labs                Outsource                 Go agile 
+                  675000                    80000                    12500 
+             Switch to R 
+                   50000 
+> 
+>    
+> #simplify = "regular" will preserve names
+> acme$Get(function(x) c(position = x$position, level = x$level), simplify = "regular")
+         Acme Inc. Accounting New Software New Accounting Standards Research
+position         1          1            1                        2        2
+level            1          2            3                        3        2
+         New Product Line New Labs IT Outsource Go agile Switch to R
+position                1        2  3         1        2           3
+level                   3        3  2         3        3           3
+>  
+> 
+> 
+> 
+> cleanEx()
+> nameEx("GetAttribute")
+> ### * GetAttribute
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: GetAttribute
+> ### Title: Get an attribute from a Node.
+> ### Aliases: GetAttribute
+> 
+> ### ** Examples
+> 
+> data(acme)
+> GetAttribute(acme$IT$Outsource, "cost")
+[1] 4e+05
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("GetPhyloNr")
+> ### * GetPhyloNr
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: GetPhyloNr
+> ### Title: Determine the number a 'Node' has after conversion to a phylo
+> ###   object
+> ### Aliases: GetPhyloNr
+> 
+> ### ** Examples
+> 
+> library(ape)
+> library(data.tree)
+> data(acme)
+> ap <- as.phylo(acme)
+> #plot(ap)
+> #nodelabels("IT Dep.", GetPhyloNr(Climb(acme, "IT")))
+> #edgelabels("Good!", GetPhyloNr(Climb(acme, "IT", "Switch to R"), "edge"))
+> 
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ape’
+
+> nameEx("Navigate")
+> ### * Navigate
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Navigate
+> ### Title: Navigate to another node by relative path.
+> ### Aliases: Navigate
+> 
+> ### ** Examples
+> 
+> data(acme)
+> Navigate(acme$Research, "../IT/Outsource")
+  levelName
+1 Outsource
+> Navigate(acme$Research, c("..", "IT", "Outsource"))
+  levelName
+1 Outsource
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Node")
+> ### * Node
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Node
+> ### Title: Create a 'data.tree' Structure With 'Nodes'
+> ### Aliases: Node
+> 
+> ### ** Examples
+> 
+> library(data.tree)
+> acme <- Node$new("Acme Inc.")
+> accounting <- acme$AddChild("Accounting")$
++               AddSibling("Research")$
++               AddChild("New Labs")$
++               parent$
++               AddSibling("IT")$
++               AddChild("Outsource")
+> print(acme)
+          levelName
+1 Acme Inc.        
+2  ¦--Accounting   
+3  ¦--Research     
+4  ¦   °--New Labs 
+5  °--IT           
+6      °--Outsource
+> 
+> 
+> 
+> ## ------------------------------------------------
+> ## Method `Node$new`
+> ## ------------------------------------------------
+> 
+> node <- Node$new("mynode", x = 2, y = "value of y")
+> node$y
+[1] "value of y"
+> 
+> 
+> ## ------------------------------------------------
+> ## Method `Node$AddChild`
+> ## ------------------------------------------------
+> 
+> root <- Node$new("myroot", myname = "I'm the root")
+> root$AddChild("child1", myname = "I'm the favorite child")
+> child2 <- root$AddChild("child2", myname = "I'm just another child")
+> child3 <- child2$AddChild("child3", myname = "Grandson of a root!")
+> print(root, "myname")
+       levelName                 myname
+1 myroot                   I'm the root
+2  ¦--child1     I'm the favorite child
+3  °--child2     I'm just another child
+4      °--child3    Grandson of a root!
+> 
+> 
+> ## ------------------------------------------------
+> ## Method `Node$AddChildNode`
+> ## ------------------------------------------------
+> 
+> root <- Node$new("myroot")
+> child <- Node$new("mychild")
+> root$AddChildNode(child)
+> 
+> 
+> ## ------------------------------------------------
+> ## Method `Node$AddSibling`
+> ## ------------------------------------------------
+> 
+> #' root <- Node$new("myroot")
+> child <- root$AddChild("child1")
+> sibling <- child$AddSibling("sibling1")
+> 
+> 
+> ## ------------------------------------------------
+> ## Method `Node$AddSiblingNode`
+> ## ------------------------------------------------
+> 
+> root <- Node$new("myroot")
+> child <- Node$new("mychild")
+> sibling <- Node$new("sibling")
+> root$AddChildNode(child)$AddSiblingNode(sibling)
+> 
+> 
+> ## ------------------------------------------------
+> ## Method `Node$RemoveChild`
+> ## ------------------------------------------------
+> 
+> node <- Node$new("myroot")$AddChild("mychild")$root
+> node$RemoveChild("mychild")
+  levelName
+1   mychild
+> 
+> 
+> ## ------------------------------------------------
+> ## Method `Node$RemoveAttribute`
+> ## ------------------------------------------------
+> 
+> node <- Node$new("mynode")
+> node$RemoveAttribute("age", stopIfNotAvailable = FALSE)
+[1] FALSE
+> node$age <- 27
+> node$RemoveAttribute("age")
+[1] TRUE
+> node
+  levelName
+1    mynode
+> 
+> 
+> ## ------------------------------------------------
+> ## Method `Node$Sort`
+> ## ------------------------------------------------
+> 
+> data(acme)
+> acme$Do(function(x) x$totalCost <- Aggregate(x, "cost", sum), traversal = "post-order")
+> Sort(acme, "totalCost", decreasing = FALSE)
+> print(acme, "totalCost")
+                          levelName totalCost
+1  Acme Inc.                          4950000
+2   ¦--IT                              700000
+3   ¦   ¦--Switch to R                  50000
+4   ¦   ¦--Go agile                    250000
+5   ¦   °--Outsource                   400000
+6   ¦--Accounting                     1500000
+7   ¦   ¦--New Accounting Standards    500000
+8   ¦   °--New Software               1000000
+9   °--Research                       2750000
+10      ¦--New Labs                    750000
+11      °--New Product Line           2000000
+> 
+> 
+> ## ------------------------------------------------
+> ## Method `Node$Prune`
+> ## ------------------------------------------------
+> 
+> data(acme)
+> acme$Do(function(x) x$cost <- Aggregate(x, "cost", sum))
+> Prune(acme, function(x) x$cost > 700000)
+[1] 5
+> print(acme, "cost")
+                 levelName    cost
+1 Acme Inc.                4950000
+2  ¦--Accounting           1500000
+3  ¦   °--New Software     1000000
+4  °--Research             2750000
+5      ¦--New Product Line 2000000
+6      °--New Labs          750000
+> 
+> 
+> ## ------------------------------------------------
+> ## Method `Node$Climb`
+> ## ------------------------------------------------
+> 
+> data(acme)
+> 
+> #the following are all equivalent
+> Climb(acme, 'IT', 'Outsource')
+  levelName
+1 Outsource
+> Climb(acme, name = 'IT', name = 'Outsource')
+  levelName
+1 Outsource
+> Climb(acme, 'IT')$Climb('Outsource')
+  levelName
+1 Outsource
+> Navigate(acme, path = "IT/Outsource")
+  levelName
+1 Outsource
+> 
+> Climb(acme, name = 'IT')
+        levelName
+1 IT             
+2  ¦--Outsource  
+3  ¦--Go agile   
+4  °--Switch to R
+> 
+> Climb(acme, position = c(2, 1))
+         levelName
+1 New Product Line
+> #or, equivalent:
+> Climb(acme, position = 2, position = 1)
+         levelName
+1 New Product Line
+> Climb(acme, name = "IT", cost = 250000)
+  levelName
+1  Go agile
+> 
+> tree <- CreateRegularTree(5, 2)
+> tree$Climb(c("1", "1"), position = c(2, 2))$path
+NULL
+> 
+> 
+> 
+> ## ------------------------------------------------
+> ## Method `Node$Navigate`
+> ## ------------------------------------------------
+> 
+> data(acme)
+> Navigate(acme$Research, "../IT/Outsource")
+  levelName
+1 Outsource
+> Navigate(acme$Research, c("..", "IT", "Outsource"))
+  levelName
+1 Outsource
+> 
+> 
+> ## ------------------------------------------------
+> ## Method `Node$Get`
+> ## ------------------------------------------------
+> 
+> data(acme)
+> acme$Get("level")
+               Acme Inc.               Accounting             New Software 
+                       1                        2                        3 
+New Accounting Standards                 Research         New Product Line 
+                       3                        2                        3 
+                New Labs                       IT                Outsource 
+                       3                        2                        3 
+                Go agile              Switch to R 
+                       3                        3 
+> acme$Get("totalCount")
+               Acme Inc.               Accounting             New Software 
+                      11                        3                        1 
+New Accounting Standards                 Research         New Product Line 
+                       1                        3                        1 
+                New Labs                       IT                Outsource 
+                       1                        4                        1 
+                Go agile              Switch to R 
+                       1                        1 
+>  
+> 
+> acme$Get(function(node) node$cost * node$p,
++          filterFun = isLeaf)
+            New Software New Accounting Standards         New Product Line 
+                  500000                   375000                   500000 
+                New Labs                Outsource                 Go agile 
+                  675000                    80000                    12500 
+             Switch to R 
+                   50000 
+> 
+> #This is equivalent:
+> nodes <- Traverse(acme, filterFun = isLeaf)
+> Get(nodes, function(node) node$cost * node$p)
+            New Software New Accounting Standards         New Product Line 
+                  500000                   375000                   500000 
+                New Labs                Outsource                 Go agile 
+                  675000                    80000                    12500 
+             Switch to R 
+                   50000 
+> 
+>    
+> #simplify = "regular" will preserve names
+> acme$Get(function(x) c(position = x$position, level = x$level), simplify = "regular")
+         Acme Inc. Accounting New Software New Accounting Standards Research
+position         1          1            1                        2        2
+level            1          2            3                        3        2
+         New Product Line New Labs IT Outsource Go agile Switch to R
+position                1        2  3         1        2           3
+level                   3        3  2         3        3           3
+>  
+> 
+> ## ------------------------------------------------
+> ## Method `Node$Do`
+> ## ------------------------------------------------
+> 
+> data(acme)
+> acme$Do(function(node) node$expectedCost <- node$p * node$cost)
+> print(acme, "expectedCost")
+                          levelName expectedCost
+1  Acme Inc.                                  NA
+2   ¦--Accounting                             NA
+3   ¦   ¦--New Software                   500000
+4   ¦   °--New Accounting Standards       375000
+5   ¦--Research                               NA
+6   ¦   ¦--New Product Line               500000
+7   ¦   °--New Labs                       675000
+8   °--IT                                     NA
+9       ¦--Outsource                       80000
+10      ¦--Go agile                        12500
+11      °--Switch to R                     50000
+> 
+> 
+> ## ------------------------------------------------
+> ## Method `Node$Set`
+> ## ------------------------------------------------
+> 
+> data(acme)
+> acme$Set(departmentId = 1:acme$totalCount, openingHours = NULL, traversal = "post-order")
+> acme$Set(head = c("Jack Brown", 
++                   "Mona Moneyhead", 
++                   "Dr. Frank N. Stein", 
++                   "Eric Nerdahl"
++                   ),
++          filterFun = function(x) !x$isLeaf
++         )
+> print(acme, "departmentId", "head")
+                          levelName departmentId               head
+1  Acme Inc.                                  11         Jack Brown
+2   ¦--Accounting                              3     Mona Moneyhead
+3   ¦   ¦--New Software                        1                   
+4   ¦   °--New Accounting Standards            2                   
+5   ¦--Research                                6 Dr. Frank N. Stein
+6   ¦   ¦--New Product Line                    4                   
+7   ¦   °--New Labs                            5                   
+8   °--IT                                     10       Eric Nerdahl
+9       ¦--Outsource                           7                   
+10      ¦--Go agile                            8                   
+11      °--Switch to R                         9                   
+>  
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Prune")
+> ### * Prune
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Prune
+> ### Title: Prunes a tree.
+> ### Aliases: Prune
+> 
+> ### ** Examples
+> 
+> data(acme)
+> acme$Do(function(x) x$cost <- Aggregate(x, "cost", sum))
+> Prune(acme, function(x) x$cost > 700000)
+[1] 5
+> print(acme, "cost")
+                 levelName    cost
+1 Acme Inc.                4950000
+2  ¦--Accounting           1500000
+3  ¦   °--New Software     1000000
+4  °--Research             2750000
+5      ¦--New Product Line 2000000
+6      °--New Labs          750000
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Set")
+> ### * Set
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Set
+> ### Title: Traverse a Tree and Assign Values
+> ### Aliases: Set
+> 
+> ### ** Examples
+> 
+> data(acme)
+> acme$Set(departmentId = 1:acme$totalCount, openingHours = NULL, traversal = "post-order")
+> acme$Set(head = c("Jack Brown", 
++                   "Mona Moneyhead", 
++                   "Dr. Frank N. Stein", 
++                   "Eric Nerdahl"
++                   ),
++          filterFun = function(x) !x$isLeaf
++         )
+> print(acme, "departmentId", "head")
+                          levelName departmentId               head
+1  Acme Inc.                                  11         Jack Brown
+2   ¦--Accounting                              3     Mona Moneyhead
+3   ¦   ¦--New Software                        1                   
+4   ¦   °--New Accounting Standards            2                   
+5   ¦--Research                                6 Dr. Frank N. Stein
+6   ¦   ¦--New Product Line                    4                   
+7   ¦   °--New Labs                            5                   
+8   °--IT                                     10       Eric Nerdahl
+9       ¦--Outsource                           7                   
+10      ¦--Go agile                            8                   
+11      °--Switch to R                         9                   
+>  
+> 
+> 
+> 
+> cleanEx()
+> nameEx("SetFormat")
+> ### * SetFormat
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: SetFormat
+> ### Title: Set a formatter function on a specific node
+> ### Aliases: SetFormat
+> 
+> ### ** Examples
+> 
+> data(acme)
+> acme$Set(id = 1:(acme$totalCount))
+> SetFormat(acme, "id", function(x) FormatPercent(x, digits = 0))
+> SetFormat(Climb(acme, "IT"), "id", FormatFixedDecimal)
+> print(acme, "id")
+                          levelName     id
+1  Acme Inc.                         100 %
+2   ¦--Accounting                    200 %
+3   ¦   ¦--New Software              300 %
+4   ¦   °--New Accounting Standards  400 %
+5   ¦--Research                      500 %
+6   ¦   ¦--New Product Line          600 %
+7   ¦   °--New Labs                  700 %
+8   °--IT                            8.000
+9       ¦--Outsource                 9.000
+10      ¦--Go agile                 10.000
+11      °--Switch to R              11.000
+> # Calling Get with an explicit formatter will overwrite the default set on the Node:
+> print(acme, id = acme$Get("id", format = function(x) paste0("id:", x)))
+                          levelName    id
+1  Acme Inc.                         id:1
+2   ¦--Accounting                    id:2
+3   ¦   ¦--New Software              id:3
+4   ¦   °--New Accounting Standards  id:4
+5   ¦--Research                      id:5
+6   ¦   ¦--New Product Line          id:6
+7   ¦   °--New Labs                  id:7
+8   °--IT                            id:8
+9       ¦--Outsource                 id:9
+10      ¦--Go agile                 id:10
+11      °--Switch to R              id:11
+> 
+> # Or, to avoid formatters, even though you set them on a Node:
+> print(acme, id = acme$Get("id", format = identity))
+                          levelName id
+1  Acme Inc.                         1
+2   ¦--Accounting                    2
+3   ¦   ¦--New Software              3
+4   ¦   °--New Accounting Standards  4
+5   ¦--Research                      5
+6   ¦   ¦--New Product Line          6
+7   ¦   °--New Labs                  7
+8   °--IT                            8
+9       ¦--Outsource                 9
+10      ¦--Go agile                 10
+11      °--Switch to R              11
+> 
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Sort")
+> ### * Sort
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Sort
+> ### Title: Sort children of a 'Node' or an entire 'data.tree' structure
+> ### Aliases: Sort
+> 
+> ### ** Examples
+> 
+> data(acme)
+> acme$Do(function(x) x$totalCost <- Aggregate(x, "cost", sum), traversal = "post-order")
+> Sort(acme, "totalCost", decreasing = FALSE)
+> print(acme, "totalCost")
+                          levelName totalCost
+1  Acme Inc.                          4950000
+2   ¦--IT                              700000
+3   ¦   ¦--Switch to R                  50000
+4   ¦   ¦--Go agile                    250000
+5   ¦   °--Outsource                   400000
+6   ¦--Accounting                     1500000
+7   ¦   ¦--New Accounting Standards    500000
+8   ¦   °--New Software               1000000
+9   °--Research                       2750000
+10      ¦--New Labs                    750000
+11      °--New Product Line           2000000
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("ToDiagrammeRGraph")
+> ### * ToDiagrammeRGraph
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: plot.Node
+> ### Title: Plot a graph, or get a graphviz dot representation of the tree
+> ### Aliases: plot.Node ToDiagrammeRGraph SetNodeStyle SetEdgeStyle
+> ###   SetGraphStyle GetDefaultTooltip
+> 
+> ### ** Examples
+> 
+> data(acme)
+> SetGraphStyle(acme, rankdir = "TB")
+> SetEdgeStyle(acme, arrowhead = "vee", color = "blue", penwidth = 2)
+> #per default, Node style attributes will be inherited:
+> SetNodeStyle(acme, style = "filled,rounded", shape = "box", fillcolor = "GreenYellow", 
++              fontname = "helvetica", tooltip = GetDefaultTooltip)
+> SetNodeStyle(acme$IT, fillcolor = "LightBlue", penwidth = "5px")
+> #inheritance can be avoided:
+> SetNodeStyle(acme$Accounting, inherit = FALSE, fillcolor = "Thistle", 
++              fontcolor = "Firebrick", tooltip = "This is the accounting department")
+> SetEdgeStyle(acme$Research$`New Labs`, 
++              color = "red", 
++              label = "Focus!", 
++              penwidth = 3, 
++              fontcolor = "red")
+> #use Do to set style on specific nodes:
+> Do(acme$leaves, function(node) SetNodeStyle(node, shape = "egg"))
+> plot(acme)
+> 
+> #print p as label, where available:
+> SetNodeStyle(acme, label = function(node) node$p)
+> plot(acme)
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("ToNewick")
+> ### * ToNewick
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: ToNewick
+> ### Title: Write a 'data.tree' structure to Newick notation
+> ### Aliases: ToNewick
+> ### Keywords: Newick
+> 
+> ### ** Examples
+> 
+> data(acme)
+> ToNewick(acme)
+[1] "((New_Software:50,New_Accounting_Standards:50)Accounting:50,(New_Product_Line:50,New_Labs:50)Research:50,(Outsource:50,Go_agile:50,Switch_to_R:50)IT:50)Acme_Inc.;"
+> ToNewick(acme, heightAttribute = NULL)
+[1] "((New_Software,New_Accounting_Standards)Accounting,(New_Product_Line,New_Labs)Research,(Outsource,Go_agile,Switch_to_R)IT)Acme_Inc.;"
+> ToNewick(acme, heightAttribute = function(x) DefaultPlotHeight(x, 200))
+[1] "((New_Software:100,New_Accounting_Standards:100)Accounting:100,(New_Product_Line:100,New_Labs:100)Research:100,(Outsource:100,Go_agile:100,Switch_to_R:100)IT:100)Acme_Inc.;"
+> ToNewick(acme, rootHeight = 200)
+[1] "((New_Software:100,New_Accounting_Standards:100)Accounting:100,(New_Product_Line:100,New_Labs:100)Research:100,(Outsource:100,Go_agile:100,Switch_to_R:100)IT:100)Acme_Inc.;"
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("as.Node.BinaryTree")
+> ### * as.Node.BinaryTree
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: as.Node.BinaryTree
+> ### Title: Convert a a 'SplitNode' from the party package to a 'data.tree'
+> ###   structure.
+> ### Aliases: as.Node.BinaryTree
+> 
+> ### ** Examples
+> 
+> library(party)
+Loading required package: grid
+Loading required package: mvtnorm
+Loading required package: modeltools
+Loading required package: stats4
+Loading required package: strucchange
+Loading required package: zoo
+
+Attaching package: ‘zoo’
+
+The following objects are masked from ‘package:base’:
+
+    as.Date, as.Date.numeric
+
+Loading required package: sandwich
+> airq <- subset(airquality, !is.na(Ozone))
+> airct <- ctree(Ozone ~ ., data = airq, 
++                controls = ctree_control(maxsurrogate = 3))
+>                
+> tree <- as.Node(airct)
+> tree
+      levelName
+1 1            
+2  ¦--2        
+3  ¦   ¦--3    
+4  ¦   °--4    
+5  ¦       ¦--5
+6  ¦       °--6
+7  °--7        
+8      ¦--8    
+9      °--9    
+> 
+> print(tree, 
++       "label", 
++       criterion = function(x) round(x$criterion$maxcriterion, 3),
++       statistic = function(x) round(max(x$criterion$statistic), 3)
++       )
+      levelName        label criterion statistic
+1 1               Temp <= 82     1.000    56.086
+2  ¦--2          Wind <= 6.9     0.998    12.969
+3  ¦   ¦--3     weights = 10     0.000     0.000
+4  ¦   °--4        Temp > 77     0.997    11.599
+5  ¦       ¦--5 weights = 48     0.936     6.141
+6  ¦       °--6 weights = 21     0.891     5.182
+7  °--7          Wind > 10.3     0.997    11.712
+8      ¦--8     weights = 30     0.675     3.159
+9      °--9      weights = 7     0.000     0.000
+> 
+> FindNode(tree, 6)$path
+[1] "1" "2" "4" "6"
+> 
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:party’, ‘package:strucchange’, ‘package:sandwich’,
+  ‘package:zoo’, ‘package:modeltools’, ‘package:stats4’,
+  ‘package:mvtnorm’, ‘package:grid’
+
+> nameEx("as.Node.data.frame")
+> ### * as.Node.data.frame
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: as.Node.data.frame
+> ### Title: Convert a 'data.frame' to a 'data.tree' structure
+> ### Aliases: as.Node.data.frame FromDataFrameTable FromDataFrameNetwork
+> 
+> ### ** Examples
+> 
+> data(acme)
+> 
+> #Tree
+> x <- ToDataFrameTree(acme, "pathString", "p", "cost")
+> x
+                          levelName
+1  Acme Inc.                       
+2   ¦--Accounting                  
+3   ¦   ¦--New Software            
+4   ¦   °--New Accounting Standards
+5   ¦--Research                    
+6   ¦   ¦--New Product Line        
+7   ¦   °--New Labs                
+8   °--IT                          
+9       ¦--Outsource               
+10      ¦--Go agile                
+11      °--Switch to R             
+                                      pathString    p    cost
+1                                      Acme Inc.   NA      NA
+2                           Acme Inc./Accounting   NA      NA
+3              Acme Inc./Accounting/New Software 0.50 1000000
+4  Acme Inc./Accounting/New Accounting Standards 0.75  500000
+5                             Acme Inc./Research   NA      NA
+6            Acme Inc./Research/New Product Line 0.25 2000000
+7                    Acme Inc./Research/New Labs 0.90  750000
+8                                   Acme Inc./IT   NA      NA
+9                         Acme Inc./IT/Outsource 0.20  400000
+10                         Acme Inc./IT/Go agile 0.05  250000
+11                      Acme Inc./IT/Switch to R 1.00   50000
+> xN <- as.Node(x)
+> print(xN, "p", "cost")
+                          levelName    p    cost
+1  Acme Inc.                          NA      NA
+2   ¦--Accounting                     NA      NA
+3   ¦   ¦--New Software             0.50 1000000
+4   ¦   °--New Accounting Standards 0.75  500000
+5   ¦--Research                       NA      NA
+6   ¦   ¦--New Product Line         0.25 2000000
+7   ¦   °--New Labs                 0.90  750000
+8   °--IT                             NA      NA
+9       ¦--Outsource                0.20  400000
+10      ¦--Go agile                 0.05  250000
+11      °--Switch to R              1.00   50000
+> 
+> #Table
+> x <- ToDataFrameTable(acme, "pathString", "p", "cost")
+> x
+                                     pathString    p    cost
+1             Acme Inc./Accounting/New Software 0.50 1000000
+2 Acme Inc./Accounting/New Accounting Standards 0.75  500000
+3           Acme Inc./Research/New Product Line 0.25 2000000
+4                   Acme Inc./Research/New Labs 0.90  750000
+5                        Acme Inc./IT/Outsource 0.20  400000
+6                         Acme Inc./IT/Go agile 0.05  250000
+7                      Acme Inc./IT/Switch to R 1.00   50000
+> xN <- FromDataFrameTable(x)
+> print(xN, "p", "cost")
+                          levelName    p    cost
+1  Acme Inc.                          NA      NA
+2   ¦--Accounting                     NA      NA
+3   ¦   ¦--New Software             0.50 1000000
+4   ¦   °--New Accounting Standards 0.75  500000
+5   ¦--Research                       NA      NA
+6   ¦   ¦--New Product Line         0.25 2000000
+7   ¦   °--New Labs                 0.90  750000
+8   °--IT                             NA      NA
+9       ¦--Outsource                0.20  400000
+10      ¦--Go agile                 0.05  250000
+11      °--Switch to R              1.00   50000
+> 
+> #More complex Table structure, using colLevels
+> acme$Set(floor = c(1, 2, 3),  filterFun = function(x) x$level == 2)
+> x <- ToDataFrameTable(acme, "pathString", "floor", "p", "cost")
+> x
+                                     pathString floor    p    cost
+1             Acme Inc./Accounting/New Software     1 0.50 1000000
+2 Acme Inc./Accounting/New Accounting Standards     1 0.75  500000
+3           Acme Inc./Research/New Product Line     2 0.25 2000000
+4                   Acme Inc./Research/New Labs     2 0.90  750000
+5                        Acme Inc./IT/Outsource     3 0.20  400000
+6                         Acme Inc./IT/Go agile     3 0.05  250000
+7                      Acme Inc./IT/Switch to R     3 1.00   50000
+> xN <- FromDataFrameTable(x, colLevels = list(NULL, "floor", c("p", "cost")), na.rm = TRUE)
+> print(xN, "floor", "p", "cost")
+                          levelName floor    p    cost
+1  Acme Inc.                           NA   NA      NA
+2   ¦--Accounting                       1   NA      NA
+3   ¦   ¦--New Software                NA 0.50 1000000
+4   ¦   °--New Accounting Standards    NA 0.75  500000
+5   ¦--Research                         2   NA      NA
+6   ¦   ¦--New Product Line            NA 0.25 2000000
+7   ¦   °--New Labs                    NA 0.90  750000
+8   °--IT                               3   NA      NA
+9       ¦--Outsource                   NA 0.20  400000
+10      ¦--Go agile                    NA 0.05  250000
+11      °--Switch to R                 NA 1.00   50000
+> 
+> #Network
+> x <- ToDataFrameNetwork(acme, "p", "cost", direction = "climb")
+> x
+         from                       to    p    cost
+1   Acme Inc.               Accounting   NA      NA
+2   Acme Inc.                 Research   NA      NA
+3   Acme Inc.                       IT   NA      NA
+4  Accounting             New Software 0.50 1000000
+5  Accounting New Accounting Standards 0.75  500000
+6    Research         New Product Line 0.25 2000000
+7    Research                 New Labs 0.90  750000
+8          IT                Outsource 0.20  400000
+9          IT                 Go agile 0.05  250000
+10         IT              Switch to R 1.00   50000
+> xN <- FromDataFrameNetwork(x)
+> print(xN, "p", "cost")
+                          levelName    p    cost
+1  Acme Inc.                          NA      NA
+2   ¦--Accounting                     NA      NA
+3   ¦   ¦--New Software             0.50 1000000
+4   ¦   °--New Accounting Standards 0.75  500000
+5   ¦--Research                       NA      NA
+6   ¦   ¦--New Product Line         0.25 2000000
+7   ¦   °--New Labs                 0.90  750000
+8   °--IT                             NA      NA
+9       ¦--Outsource                0.20  400000
+10      ¦--Go agile                 0.05  250000
+11      °--Switch to R              1.00   50000
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("as.Node.dendrogram")
+> ### * as.Node.dendrogram
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: as.Node.dendrogram
+> ### Title: Convert a 'dendrogram' to a data.tree 'Node'
+> ### Aliases: as.Node.dendrogram
+> 
+> ### ** Examples
+> 
+> hc <- hclust(dist(USArrests), "ave")
+> dend1 <- as.dendrogram(hc)
+> tree1 <- as.Node(dend1)
+> tree1$attributesAll
+[1] "members"    "midpoint"   "plotHeight" "leaf"       "value"     
+> tree1$totalCount
+[1] 99
+> tree1$leafCount
+[1] 50
+> tree1$height
+[1] 10
+>   
+> 
+> 
+> 
+> cleanEx()
+> nameEx("as.Node.list")
+> ### * as.Node.list
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: as.Node.list
+> ### Title: Convert a nested 'list' structure to a 'data.tree' structure
+> ### Aliases: as.Node.list FromListExplicit FromListSimple
+> 
+> ### ** Examples
+> 
+> kingJosephs <- list(name = "Joseph I",
++                     spouse = "Mary",
++                     born = "1818-02-23",
++                     died = "1839-08-29",
++                     children = list(
++                                     list(name = "Joseph II",
++                                          spouse = "Kathryn",
++                                          born = "1839-03-28",
++                                          died = "1865-12-19"),
++                                     list(name = "Helen",
++                                          born = "1840-17-08",
++                                          died = "1845-01-01")
++                                     )
++                    )
+> FromListExplicit(kingJosephs)
+      levelName
+1 Joseph I     
+2  ¦--Joseph II
+3  °--Helen    
+> 
+> kingJosephs <- list(head = "Joseph I",
++                     spouse = "Mary",
++                     born = "1818-02-23",
++                     died = "1839-08-29",
++                     list(head = "Joseph II",
++                          spouse = "Kathryn",
++                          born = "1839-03-28",
++                          died = "1865-12-19"),
++                     list(head = "Helen",
++                          born = "1840-17-08",
++                          died = "1845-01-01")       
++                    )
+> FromListSimple(kingJosephs, nameName = "head")
+      levelName
+1 Joseph I     
+2  ¦--Joseph II
+3  °--Helen    
+> 
+> kingJosephs <- list(spouse = "Mary",
++                     born = "1818-02-23",
++                     died = "1839-08-29",
++                     `Joseph II` = list(spouse = "Kathryn",
++                                        born = "1839-03-28",
++                                        died = "1865-12-19"),
++                     Helen = list(born = "1840-17-08",
++                                  died = "1845-01-01")
++                                  
++                    )
+> FromListSimple(kingJosephs, nodeName = "Joseph I")
+      levelName
+1 Joseph I     
+2  ¦--Joseph II
+3  °--Helen    
+>   
+> 
+> 
+> 
+> cleanEx()
+> nameEx("as.Node.party")
+> ### * as.Node.party
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: as.Node.party
+> ### Title: Convert a a 'party' from the partykit package to a 'data.tree'
+> ###   structure.
+> ### Aliases: as.Node.party
+> 
+> ### ** Examples
+> 
+> library(partykit)
+Loading required package: grid
+Loading required package: libcoin
+Loading required package: mvtnorm
+> data("WeatherPlay", package = "partykit")
+> ### splits ###
+> # split in overcast, humidity, and windy
+> sp_o <- partysplit(1L, index = 1:3)
+> sp_h <- partysplit(3L, breaks = 75)
+> sp_w <- partysplit(4L, index = 1:2)
+> 
+> ## query labels
+> character_split(sp_o)
+$name
+[1] "V1"
+
+$levels
+[1] "(-Inf,1]" "(1,2]"    "(2, Inf]"
+
+> 
+> ### nodes ###
+> ## set up partynode structure
+> pn <- partynode(1L, split = sp_o, kids = list(
++   partynode(2L, split = sp_h, kids = list(
++       partynode(3L, info = "yes"),
++       partynode(4L, info = "no"))),
++   partynode(5L, info = "yes"),
++   partynode(6L, split = sp_w, kids = list(
++       partynode(7L, info = "yes"),
++       partynode(8L, info = "no")))))
+> pn
+[1] root
+|   [2] V1 in (-Inf,1]
+|   |   [3] V3 <= 75 *
+|   |   [4] V3 > 75 *
+|   [5] V1 in (1,2] *
+|   [6] V1 in (2, Inf]
+|   |   [7] V4 <= 1 *
+|   |   [8] V4 > 1 *
+> ### tree ###
+> ## party: associate recursive partynode structure with data
+> py <- party(pn, WeatherPlay)
+> tree <- as.Node(py)
+> 
+> print(tree, 
++       "splitname",
++       count = function(node) nrow(node$data), 
++       "splitLevel")
+  levelName splitname count splitLevel
+1 1           outlook    14           
+2  ¦--2      humidity     5      sunny
+3  ¦   ¦--3       yes     2      <= 75
+4  ¦   °--4        no     3       > 75
+5  ¦--5           yes     4   overcast
+6  °--6         windy     5      rainy
+7      ¦--7       yes     3      false
+8      °--8        no     2       true
+> 
+> SetNodeStyle(tree, 
++              label = function(node) paste0(node$name, ": ", node$splitname), 
++              tooltip = function(node) paste0(nrow(node$data), " observations"),
++              fontname = "helvetica")
+> SetEdgeStyle(tree, 
++              arrowhead = "none", 
++              label = function(node) node$splitLevel,
++              fontname = "helvetica",
++              penwidth = function(node) 12 * nrow(node$data)/nrow(node$root$data),
++              color = function(node) {
++                paste0("grey", 
++                       100 - as.integer( 100 * nrow(node$data)/nrow(node$root$data))
++                       )
++              }
++              )
+> Do(tree$leaves, 
++    function(node) {
++      SetNodeStyle(node, 
++                   shape = "box", 
++                   color = ifelse(node$splitname == "yes", "darkolivegreen4", "lightsalmon4"),
++                   fillcolor = ifelse(node$splitname == "yes", "darkolivegreen1", "lightsalmon"),
++                   style = "filled,rounded",
++                   penwidth = 2
++                   )
++    }
++    )
+> 
+> plot(tree)
+> 
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:partykit’, ‘package:mvtnorm’, ‘package:libcoin’,
+  ‘package:grid’
+
+> nameEx("as.Node.phylo")
+> ### * as.Node.phylo
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: as.Node.phylo
+> ### Title: Convert a 'phylo' object from the ape package to a 'Node'
+> ### Aliases: as.Node.phylo
+> 
+> ### ** Examples
+> 
+> #which bird familes have the max height?
+> library(ape)
+> data(bird.families)
+> bf <- as.Node(bird.families)
+> height <- bf$height
+> t <- Traverse(bf, filterFun = function(x) x$level == 25)
+> Get(t, "name")
+        Gaviidae   Procellariidae 
+      "Gaviidae" "Procellariidae" 
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ape’
+
+> nameEx("as.Node.rpart")
+> ### * as.Node.rpart
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: as.Node.rpart
+> ### Title: Convert an 'rpart' object to a 'data.tree' structure
+> ### Aliases: as.Node.rpart
+> 
+> ### ** Examples
+> 
+> if (require(rpart)) {
++    fit <- rpart(Kyphosis ~ Age + Number + Start, data = kyphosis)
++    as.Node(fit)
++ }
+Loading required package: rpart
+                levelName
+1 Start>=8.5             
+2  ¦--Start>=14.5        
+3  ¦   ¦--absent         
+4  ¦   °--Age< 55        
+5  ¦       ¦--absent     
+6  ¦       °--Age>=111   
+7  ¦           ¦--absent 
+8  ¦           °--present
+9  °--present            
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:rpart’
+
+> nameEx("as.data.frame.Node")
+> ### * as.data.frame.Node
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: as.data.frame.Node
+> ### Title: Convert a 'data.tree' structure to a 'data.frame'
+> ### Aliases: as.data.frame.Node ToDataFrameTree ToDataFrameTable
+> ###   ToDataFrameNetwork ToDataFrameTypeCol
+> 
+> ### ** Examples
+> 
+> data(acme)
+> acme$attributesAll
+[1] "cost" "p"   
+> as.data.frame(acme, row.names = NULL, optional = FALSE, "cost", "p")
+                          levelName    cost    p
+1  Acme Inc.                             NA   NA
+2   ¦--Accounting                        NA   NA
+3   ¦   ¦--New Software             1000000 0.50
+4   ¦   °--New Accounting Standards  500000 0.75
+5   ¦--Research                          NA   NA
+6   ¦   ¦--New Product Line         2000000 0.25
+7   ¦   °--New Labs                  750000 0.90
+8   °--IT                                NA   NA
+9       ¦--Outsource                 400000 0.20
+10      ¦--Go agile                  250000 0.05
+11      °--Switch to R                50000 1.00
+> 
+> ToDataFrameTree(acme, "cost", "p")
+                          levelName    cost    p
+1  Acme Inc.                             NA   NA
+2   ¦--Accounting                        NA   NA
+3   ¦   ¦--New Software             1000000 0.50
+4   ¦   °--New Accounting Standards  500000 0.75
+5   ¦--Research                          NA   NA
+6   ¦   ¦--New Product Line         2000000 0.25
+7   ¦   °--New Labs                  750000 0.90
+8   °--IT                                NA   NA
+9       ¦--Outsource                 400000 0.20
+10      ¦--Go agile                  250000 0.05
+11      °--Switch to R                50000 1.00
+> ToDataFrameNetwork(acme, "cost", "p", direction = "climb")
+         from                       to    cost    p
+1   Acme Inc.               Accounting      NA   NA
+2   Acme Inc.                 Research      NA   NA
+3   Acme Inc.                       IT      NA   NA
+4  Accounting             New Software 1000000 0.50
+5  Accounting New Accounting Standards  500000 0.75
+6    Research         New Product Line 2000000 0.25
+7    Research                 New Labs  750000 0.90
+8          IT                Outsource  400000 0.20
+9          IT                 Go agile  250000 0.05
+10         IT              Switch to R   50000 1.00
+> ToDataFrameTable(acme, "cost", "p")
+     cost    p
+1 1000000 0.50
+2  500000 0.75
+3 2000000 0.25
+4  750000 0.90
+5  400000 0.20
+6  250000 0.05
+7   50000 1.00
+> ToDataFrameTypeCol(acme)
+    level_1    level_2                  level_3
+1 Acme Inc. Accounting             New Software
+2 Acme Inc. Accounting New Accounting Standards
+3 Acme Inc.   Research         New Product Line
+4 Acme Inc.   Research                 New Labs
+5 Acme Inc.         IT                Outsource
+6 Acme Inc.         IT                 Go agile
+7 Acme Inc.         IT              Switch to R
+> 
+> #use the pruneFun:
+> acme$Do(function(x) x$totalCost <- Aggregate(x, "cost", sum), traversal = "post-order")
+> ToDataFrameTree(acme, "totalCost", pruneFun = function(x) x$totalCost > 300000)
+                         levelName totalCost
+1 Acme Inc.                          4950000
+2  ¦--Accounting                     1500000
+3  ¦   ¦--New Software               1000000
+4  ¦   °--New Accounting Standards    500000
+5  ¦--Research                       2750000
+6  ¦   ¦--New Product Line           2000000
+7  ¦   °--New Labs                    750000
+8  °--IT                              700000
+9      °--Outsource                   400000
+> 
+> #inherit
+> acme$Set(floor = c(1, 2, 3), filterFun = function(x) x$level == 2)
+> as.data.frame(acme, row.names = NULL, optional = FALSE, "floor", inheritFromAncestors = FALSE)
+                          levelName floor
+1  Acme Inc.                           NA
+2   ¦--Accounting                       1
+3   ¦   ¦--New Software                NA
+4   ¦   °--New Accounting Standards    NA
+5   ¦--Research                         2
+6   ¦   ¦--New Product Line            NA
+7   ¦   °--New Labs                    NA
+8   °--IT                               3
+9       ¦--Outsource                   NA
+10      ¦--Go agile                    NA
+11      °--Switch to R                 NA
+> as.data.frame(acme, row.names = NULL, optional = FALSE, "floor", inheritFromAncestors = TRUE)
+                          levelName floor
+1  Acme Inc.                           NA
+2   ¦--Accounting                       1
+3   ¦   ¦--New Software                 1
+4   ¦   °--New Accounting Standards     1
+5   ¦--Research                         2
+6   ¦   ¦--New Product Line             2
+7   ¦   °--New Labs                     2
+8   °--IT                               3
+9       ¦--Outsource                    3
+10      ¦--Go agile                     3
+11      °--Switch to R                  3
+> 
+> #using a function as an attribute:
+> acme$Accounting$Head <- "Mrs. Numright"
+> acme$Research$Head <- "Mr. Stein"
+> acme$IT$Head <- "Mr. Squarehead"
+> ToDataFrameTable(acme, department = function(x) x$parent$name, "name", "Head", "cost")
+  department                     name           Head    cost
+1 Accounting             New Software  Mrs. Numright 1000000
+2 Accounting New Accounting Standards  Mrs. Numright  500000
+3   Research         New Product Line      Mr. Stein 2000000
+4   Research                 New Labs      Mr. Stein  750000
+5         IT                Outsource Mr. Squarehead  400000
+6         IT                 Go agile Mr. Squarehead  250000
+7         IT              Switch to R Mr. Squarehead   50000
+> 
+> #complex TypeCol
+> acme$IT$Outsource$AddChild("India")
+> acme$IT$Outsource$AddChild("Poland")
+> acme$Set(type = c('company', 'department', 'project', 'project', 'department',
++                   'project', 'project', 'department', 'program', 'project',
++                   'project', 'project', 'project'
++                   )
++         )
+> print(acme, 'type')
+                          levelName       type
+1  Acme Inc.                           company
+2   ¦--Accounting                   department
+3   ¦   ¦--New Software                project
+4   ¦   °--New Accounting Standards    project
+5   ¦--Research                     department
+6   ¦   ¦--New Product Line            project
+7   ¦   °--New Labs                    project
+8   °--IT                           department
+9       ¦--Outsource                   program
+10      ¦   ¦--India                   project
+11      ¦   °--Poland                  project
+12      ¦--Go agile                    project
+13      °--Switch to R                 project
+> ToDataFrameTypeCol(acme, type = 'type')
+  type_company type_department type_program             type_project
+1    Acme Inc.      Accounting         <NA>             New Software
+2    Acme Inc.      Accounting         <NA> New Accounting Standards
+3    Acme Inc.        Research         <NA>         New Product Line
+4    Acme Inc.        Research         <NA>                 New Labs
+5    Acme Inc.              IT    Outsource                    India
+6    Acme Inc.              IT    Outsource                   Poland
+7    Acme Inc.              IT         <NA>                 Go agile
+8    Acme Inc.              IT         <NA>              Switch to R
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("as.dendrogram.Node")
+> ### * as.dendrogram.Node
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: as.dendrogram.Node
+> ### Title: Convert a 'Node' to a 'dendrogram'
+> ### Aliases: as.dendrogram.Node
+> 
+> ### ** Examples
+> 
+> data(acme)
+> acmed <- as.dendrogram(acme)
+> plot(acmed, center = TRUE)
+> 
+> #you can take an attribute for the height:
+> acme$Do( function(x) x$myPlotHeight <- (10 - x$level))
+> acmed <- as.dendrogram(acme, heightAttribute = "myPlotHeight")
+> plot(acmed, center = TRUE)
+> 
+> #or directly a function
+> acmed <- as.dendrogram(acme, heightAttribute = function(x) 10 - x$level)
+> plot(acmed)
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("as.igraph.Node")
+> ### * as.igraph.Node
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: as.igraph.Node
+> ### Title: Convert a 'data.tree' structure to an igraph network
+> ### Aliases: as.igraph.Node
+> 
+> ### ** Examples
+> 
+> data(acme)
+> library(igraph)
+
+Attaching package: ‘igraph’
+
+The following objects are masked from ‘package:stats’:
+
+    decompose, spectrum
+
+The following object is masked from ‘package:base’:
+
+    union
+
+> ig <- as.igraph(acme, "p", c("level", "isLeaf"))
+> plot(ig)
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:igraph’
+
+> nameEx("as.list.Node")
+> ### * as.list.Node
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: as.list.Node
+> ### Title: Convert a 'data.tree' structure to a list-of-list structure
+> ### Aliases: as.list.Node ToListSimple ToListExplicit
+> 
+> ### ** Examples
+> 
+> data(acme)
+> 
+> str(ToListSimple(acme))
+List of 4
+ $ name      : chr "Acme Inc."
+ $ Accounting:List of 3
+  ..$ name                    : chr "Accounting"
+  ..$ New Software            :List of 3
+  .. ..$ name: chr "New Software"
+  .. ..$ cost: num 1e+06
+  .. ..$ p   : num 0.5
+  ..$ New Accounting Standards:List of 3
+  .. ..$ name: chr "New Accounting Standards"
+  .. ..$ cost: num 5e+05
+  .. ..$ p   : num 0.75
+ $ Research  :List of 3
+  ..$ name            : chr "Research"
+  ..$ New Product Line:List of 3
+  .. ..$ name: chr "New Product Line"
+  .. ..$ cost: num 2e+06
+  .. ..$ p   : num 0.25
+  ..$ New Labs        :List of 3
+  .. ..$ name: chr "New Labs"
+  .. ..$ cost: num 750000
+  .. ..$ p   : num 0.9
+ $ IT        :List of 4
+  ..$ name       : chr "IT"
+  ..$ Outsource  :List of 3
+  .. ..$ name: chr "Outsource"
+  .. ..$ cost: num 4e+05
+  .. ..$ p   : num 0.2
+  ..$ Go agile   :List of 3
+  .. ..$ name: chr "Go agile"
+  .. ..$ cost: num 250000
+  .. ..$ p   : num 0.05
+  ..$ Switch to R:List of 3
+  .. ..$ name: chr "Switch to R"
+  .. ..$ cost: num 50000
+  .. ..$ p   : num 1
+> str(ToListSimple(acme, keepOnly = "cost"))
+List of 4
+ $ name      : chr "Acme Inc."
+ $ Accounting:List of 3
+  ..$ name                    : chr "Accounting"
+  ..$ New Software            :List of 2
+  .. ..$ name: chr "New Software"
+  .. ..$ cost: num 1e+06
+  ..$ New Accounting Standards:List of 2
+  .. ..$ name: chr "New Accounting Standards"
+  .. ..$ cost: num 5e+05
+ $ Research  :List of 3
+  ..$ name            : chr "Research"
+  ..$ New Product Line:List of 2
+  .. ..$ name: chr "New Product Line"
+  .. ..$ cost: num 2e+06
+  ..$ New Labs        :List of 2
+  .. ..$ name: chr "New Labs"
+  .. ..$ cost: num 750000
+ $ IT        :List of 4
+  ..$ name       : chr "IT"
+  ..$ Outsource  :List of 2
+  .. ..$ name: chr "Outsource"
+  .. ..$ cost: num 4e+05
+  ..$ Go agile   :List of 2
+  .. ..$ name: chr "Go agile"
+  .. ..$ cost: num 250000
+  ..$ Switch to R:List of 2
+  .. ..$ name: chr "Switch to R"
+  .. ..$ cost: num 50000
+> 
+> str(ToListExplicit(acme))
+List of 2
+ $ name    : chr "Acme Inc."
+ $ children:List of 3
+  ..$ Accounting:List of 1
+  .. ..$ children:List of 2
+  .. .. ..$ New Software            :List of 2
+  .. .. .. ..$ cost: num 1e+06
+  .. .. .. ..$ p   : num 0.5
+  .. .. ..$ New Accounting Standards:List of 2
+  .. .. .. ..$ cost: num 5e+05
+  .. .. .. ..$ p   : num 0.75
+  ..$ Research  :List of 1
+  .. ..$ children:List of 2
+  .. .. ..$ New Product Line:List of 2
+  .. .. .. ..$ cost: num 2e+06
+  .. .. .. ..$ p   : num 0.25
+  .. .. ..$ New Labs        :List of 2
+  .. .. .. ..$ cost: num 750000
+  .. .. .. ..$ p   : num 0.9
+  ..$ IT        :List of 1
+  .. ..$ children:List of 3
+  .. .. ..$ Outsource  :List of 2
+  .. .. .. ..$ cost: num 4e+05
+  .. .. .. ..$ p   : num 0.2
+  .. .. ..$ Go agile   :List of 2
+  .. .. .. ..$ cost: num 250000
+  .. .. .. ..$ p   : num 0.05
+  .. .. ..$ Switch to R:List of 2
+  .. .. .. ..$ cost: num 50000
+  .. .. .. ..$ p   : num 1
+> str(ToListExplicit(acme, unname = TRUE))
+List of 2
+ $ name    : chr "Acme Inc."
+ $ children:List of 3
+  ..$ :List of 2
+  .. ..$ name    : chr "Accounting"
+  .. ..$ children:List of 2
+  .. .. ..$ :List of 3
+  .. .. .. ..$ name: chr "New Software"
+  .. .. .. ..$ cost: num 1e+06
+  .. .. .. ..$ p   : num 0.5
+  .. .. ..$ :List of 3
+  .. .. .. ..$ name: chr "New Accounting Standards"
+  .. .. .. ..$ cost: num 5e+05
+  .. .. .. ..$ p   : num 0.75
+  ..$ :List of 2
+  .. ..$ name    : chr "Research"
+  .. ..$ children:List of 2
+  .. .. ..$ :List of 3
+  .. .. .. ..$ name: chr "New Product Line"
+  .. .. .. ..$ cost: num 2e+06
+  .. .. .. ..$ p   : num 0.25
+  .. .. ..$ :List of 3
+  .. .. .. ..$ name: chr "New Labs"
+  .. .. .. ..$ cost: num 750000
+  .. .. .. ..$ p   : num 0.9
+  ..$ :List of 2
+  .. ..$ name    : chr "IT"
+  .. ..$ children:List of 3
+  .. .. ..$ :List of 3
+  .. .. .. ..$ name: chr "Outsource"
+  .. .. .. ..$ cost: num 4e+05
+  .. .. .. ..$ p   : num 0.2
+  .. .. ..$ :List of 3
+  .. .. .. ..$ name: chr "Go agile"
+  .. .. .. ..$ cost: num 250000
+  .. .. .. ..$ p   : num 0.05
+  .. .. ..$ :List of 3
+  .. .. .. ..$ name: chr "Switch to R"
+  .. .. .. ..$ cost: num 50000
+  .. .. .. ..$ p   : num 1
+> str(ToListExplicit(acme, unname = TRUE, nameName = "id", childrenName = "descendants"))
+List of 2
+ $ id         : chr "Acme Inc."
+ $ descendants:List of 3
+  ..$ :List of 2
+  .. ..$ id         : chr "Accounting"
+  .. ..$ descendants:List of 2
+  .. .. ..$ :List of 3
+  .. .. .. ..$ id  : chr "New Software"
+  .. .. .. ..$ cost: num 1e+06
+  .. .. .. ..$ p   : num 0.5
+  .. .. ..$ :List of 3
+  .. .. .. ..$ id  : chr "New Accounting Standards"
+  .. .. .. ..$ cost: num 5e+05
+  .. .. .. ..$ p   : num 0.75
+  ..$ :List of 2
+  .. ..$ id         : chr "Research"
+  .. ..$ descendants:List of 2
+  .. .. ..$ :List of 3
+  .. .. .. ..$ id  : chr "New Product Line"
+  .. .. .. ..$ cost: num 2e+06
+  .. .. .. ..$ p   : num 0.25
+  .. .. ..$ :List of 3
+  .. .. .. ..$ id  : chr "New Labs"
+  .. .. .. ..$ cost: num 750000
+  .. .. .. ..$ p   : num 0.9
+  ..$ :List of 2
+  .. ..$ id         : chr "IT"
+  .. ..$ descendants:List of 3
+  .. .. ..$ :List of 3
+  .. .. .. ..$ id  : chr "Outsource"
+  .. .. .. ..$ cost: num 4e+05
+  .. .. .. ..$ p   : num 0.2
+  .. .. ..$ :List of 3
+  .. .. .. ..$ id  : chr "Go agile"
+  .. .. .. ..$ cost: num 250000
+  .. .. .. ..$ p   : num 0.05
+  .. .. ..$ :List of 3
+  .. .. .. ..$ id  : chr "Switch to R"
+  .. .. .. ..$ cost: num 50000
+  .. .. .. ..$ p   : num 1
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("as.phylo.Node")
+> ### * as.phylo.Node
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: as.phylo.Node
+> ### Title: Convert a 'Node' to a phylo object from the ape package.
+> ### Aliases: as.phylo.Node
+> 
+> ### ** Examples
+> 
+> library(ape)
+> data(acme)
+> acmephylo <- as.phylo(acme)
+> #plot(acmephylo)
+> 
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ape’
+
+> nameEx("data.tree")
+> ### * data.tree
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data.tree
+> ### Title: data.tree: Hierarchical Data Structures
+> ### Aliases: data.tree data.tree-package
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> data(acme)
+> print(acme)
+                          levelName
+1  Acme Inc.                       
+2   ¦--Accounting                  
+3   ¦   ¦--New Software            
+4   ¦   °--New Accounting Standards
+5   ¦--Research                    
+6   ¦   ¦--New Product Line        
+7   ¦   °--New Labs                
+8   °--IT                          
+9       ¦--Outsource               
+10      ¦--Go agile                
+11      °--Switch to R             
+> acme$attributesAll
+[1] "cost" "p"   
+> acme$count
+[1] 3
+> acme$totalCount
+[1] 11
+> acme$isRoot
+[1] TRUE
+> acme$height
+[1] 3
+> print(acme, "p", "cost")
+                          levelName    p    cost
+1  Acme Inc.                          NA      NA
+2   ¦--Accounting                     NA      NA
+3   ¦   ¦--New Software             0.50 1000000
+4   ¦   °--New Accounting Standards 0.75  500000
+5   ¦--Research                       NA      NA
+6   ¦   ¦--New Product Line         0.25 2000000
+7   ¦   °--New Labs                 0.90  750000
+8   °--IT                             NA      NA
+9       ¦--Outsource                0.20  400000
+10      ¦--Go agile                 0.05  250000
+11      °--Switch to R              1.00   50000
+> 
+> outsource <- acme$IT$Outsource
+> class(outsource)
+[1] "Node" "R6"  
+> print(outsource)
+  levelName
+1 Outsource
+> outsource$attributes
+[1] "cost" "p"   
+> outsource$isLeaf
+[1] TRUE
+> outsource$level
+[1] 3
+> outsource$path
+[1] "Acme Inc." "IT"        "Outsource"
+> outsource$p
+[1] 0.2
+> outsource$parent$name
+[1] "IT"
+> outsource$root$name
+[1] "Acme Inc."
+> outsource$expCost <- outsource$p * outsource$cost
+> print(acme, "expCost")
+                          levelName expCost
+1  Acme Inc.                             NA
+2   ¦--Accounting                        NA
+3   ¦   ¦--New Software                  NA
+4   ¦   °--New Accounting Standards      NA
+5   ¦--Research                          NA
+6   ¦   ¦--New Product Line              NA
+7   ¦   °--New Labs                      NA
+8   °--IT                                NA
+9       ¦--Outsource                  80000
+10      ¦--Go agile                      NA
+11      °--Switch to R                   NA
+> 
+> acme$Get("p")
+               Acme Inc.               Accounting             New Software 
+                      NA                       NA                     0.50 
+New Accounting Standards                 Research         New Product Line 
+                    0.75                       NA                     0.25 
+                New Labs                       IT                Outsource 
+                    0.90                       NA                     0.20 
+                Go agile              Switch to R 
+                    0.05                     1.00 
+> acme$Do(function(x) x$expCost <- x$p * x$cost)
+> acme$Get("expCost", filterFun = isLeaf)
+            New Software New Accounting Standards         New Product Line 
+                  500000                   375000                   500000 
+                New Labs                Outsource                 Go agile 
+                  675000                    80000                    12500 
+             Switch to R 
+                   50000 
+> 
+> ToDataFrameTable(acme, "name", "p", "cost", "level", "pathString")
+                      name    p    cost level
+1             New Software 0.50 1000000     3
+2 New Accounting Standards 0.75  500000     3
+3         New Product Line 0.25 2000000     3
+4                 New Labs 0.90  750000     3
+5                Outsource 0.20  400000     3
+6                 Go agile 0.05  250000     3
+7              Switch to R 1.00   50000     3
+                                     pathString
+1             Acme Inc./Accounting/New Software
+2 Acme Inc./Accounting/New Accounting Standards
+3           Acme Inc./Research/New Product Line
+4                   Acme Inc./Research/New Labs
+5                        Acme Inc./IT/Outsource
+6                         Acme Inc./IT/Go agile
+7                      Acme Inc./IT/Switch to R
+> ToDataFrameTree(acme, "name", "p", "cost", "level")
+                          levelName                     name    p    cost level
+1  Acme Inc.                                       Acme Inc.   NA      NA     1
+2   ¦--Accounting                                 Accounting   NA      NA     2
+3   ¦   ¦--New Software                         New Software 0.50 1000000     3
+4   ¦   °--New Accounting Standards New Accounting Standards 0.75  500000     3
+5   ¦--Research                                     Research   NA      NA     2
+6   ¦   ¦--New Product Line                 New Product Line 0.25 2000000     3
+7   ¦   °--New Labs                                 New Labs 0.90  750000     3
+8   °--IT                                                 IT   NA      NA     2
+9       ¦--Outsource                               Outsource 0.20  400000     3
+10      ¦--Go agile                                 Go agile 0.05  250000     3
+11      °--Switch to R                           Switch to R 1.00   50000     3
+> ToDataFrameNetwork(acme, "p", "cost")
+         from                       to    p    cost
+1   Acme Inc.               Accounting   NA      NA
+2   Acme Inc.                 Research   NA      NA
+3   Acme Inc.                       IT   NA      NA
+4  Accounting             New Software 0.50 1000000
+5  Accounting New Accounting Standards 0.75  500000
+6    Research         New Product Line 0.25 2000000
+7    Research                 New Labs 0.90  750000
+8          IT                Outsource 0.20  400000
+9          IT                 Go agile 0.05  250000
+10         IT              Switch to R 1.00   50000
+> 
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("print.Node")
+> ### * print.Node
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: print.Node
+> ### Title: Print a 'Node' in a human-readable fashion.
+> ### Aliases: print.Node
+> 
+> ### ** Examples
+> 
+> data(acme)
+> print(acme, "cost", "p")
+                          levelName    cost    p
+1  Acme Inc.                             NA   NA
+2   ¦--Accounting                        NA   NA
+3   ¦   ¦--New Software             1000000 0.50
+4   ¦   °--New Accounting Standards  500000 0.75
+5   ¦--Research                          NA   NA
+6   ¦   ¦--New Product Line         2000000 0.25
+7   ¦   °--New Labs                  750000 0.90
+8   °--IT                                NA   NA
+9       ¦--Outsource                 400000 0.20
+10      ¦--Go agile                  250000 0.05
+11      °--Switch to R                50000 1.00
+> print(acme, "cost", probability = "p")
+                          levelName    cost probability
+1  Acme Inc.                             NA          NA
+2   ¦--Accounting                        NA          NA
+3   ¦   ¦--New Software             1000000        0.50
+4   ¦   °--New Accounting Standards  500000        0.75
+5   ¦--Research                          NA          NA
+6   ¦   ¦--New Product Line         2000000        0.25
+7   ¦   °--New Labs                  750000        0.90
+8   °--IT                                NA          NA
+9       ¦--Outsource                 400000        0.20
+10      ¦--Go agile                  250000        0.05
+11      °--Switch to R                50000        1.00
+> print(acme, expectedCost = function(x) x$cost * x$p)
+                          levelName expectedCost
+1  Acme Inc.                                  NA
+2   ¦--Accounting                             NA
+3   ¦   ¦--New Software                   500000
+4   ¦   °--New Accounting Standards       375000
+5   ¦--Research                               NA
+6   ¦   ¦--New Product Line               500000
+7   ¦   °--New Labs                       675000
+8   °--IT                                     NA
+9       ¦--Outsource                       80000
+10      ¦--Go agile                        12500
+11      °--Switch to R                     50000
+> do.call(print, c(acme, acme$attributesAll))
+                          levelName    cost    p
+1  Acme Inc.                             NA   NA
+2   ¦--Accounting                        NA   NA
+3   ¦   ¦--New Software             1000000 0.50
+4   ¦   °--New Accounting Standards  500000 0.75
+5   ¦--Research                          NA   NA
+6   ¦   ¦--New Product Line         2000000 0.25
+7   ¦   °--New Labs                  750000 0.90
+8   °--IT                                NA   NA
+9       ¦--Outsource                 400000 0.20
+10      ¦--Go agile                  250000 0.05
+11      °--Switch to R                50000 1.00
+> 
+> tree <- CreateRegularTree(4, 5)
+> # print entire tree:
+> print(tree, pruneMethod = NULL)
+              levelName
+1   1                  
+2    ¦--1.1            
+3    ¦   ¦--1.1.1      
+4    ¦   ¦   ¦--1.1.1.1
+5    ¦   ¦   ¦--1.1.1.2
+6    ¦   ¦   ¦--1.1.1.3
+7    ¦   ¦   ¦--1.1.1.4
+8    ¦   ¦   °--1.1.1.5
+9    ¦   ¦--1.1.2      
+10   ¦   ¦   ¦--1.1.2.1
+11   ¦   ¦   ¦--1.1.2.2
+12   ¦   ¦   ¦--1.1.2.3
+13   ¦   ¦   ¦--1.1.2.4
+14   ¦   ¦   °--1.1.2.5
+15   ¦   ¦--1.1.3      
+16   ¦   ¦   ¦--1.1.3.1
+17   ¦   ¦   ¦--1.1.3.2
+18   ¦   ¦   ¦--1.1.3.3
+19   ¦   ¦   ¦--1.1.3.4
+20   ¦   ¦   °--1.1.3.5
+21   ¦   ¦--1.1.4      
+22   ¦   ¦   ¦--1.1.4.1
+23   ¦   ¦   ¦--1.1.4.2
+24   ¦   ¦   ¦--1.1.4.3
+25   ¦   ¦   ¦--1.1.4.4
+26   ¦   ¦   °--1.1.4.5
+27   ¦   °--1.1.5      
+28   ¦       ¦--1.1.5.1
+29   ¦       ¦--1.1.5.2
+30   ¦       ¦--1.1.5.3
+31   ¦       ¦--1.1.5.4
+32   ¦       °--1.1.5.5
+33   ¦--1.2            
+34   ¦   ¦--1.2.1      
+35   ¦   ¦   ¦--1.2.1.1
+36   ¦   ¦   ¦--1.2.1.2
+37   ¦   ¦   ¦--1.2.1.3
+38   ¦   ¦   ¦--1.2.1.4
+39   ¦   ¦   °--1.2.1.5
+40   ¦   ¦--1.2.2      
+41   ¦   ¦   ¦--1.2.2.1
+42   ¦   ¦   ¦--1.2.2.2
+43   ¦   ¦   ¦--1.2.2.3
+44   ¦   ¦   ¦--1.2.2.4
+45   ¦   ¦   °--1.2.2.5
+46   ¦   ¦--1.2.3      
+47   ¦   ¦   ¦--1.2.3.1
+48   ¦   ¦   ¦--1.2.3.2
+49   ¦   ¦   ¦--1.2.3.3
+50   ¦   ¦   ¦--1.2.3.4
+51   ¦   ¦   °--1.2.3.5
+52   ¦   ¦--1.2.4      
+53   ¦   ¦   ¦--1.2.4.1
+54   ¦   ¦   ¦--1.2.4.2
+55   ¦   ¦   ¦--1.2.4.3
+56   ¦   ¦   ¦--1.2.4.4
+57   ¦   ¦   °--1.2.4.5
+58   ¦   °--1.2.5      
+59   ¦       ¦--1.2.5.1
+60   ¦       ¦--1.2.5.2
+61   ¦       ¦--1.2.5.3
+62   ¦       ¦--1.2.5.4
+63   ¦       °--1.2.5.5
+64   ¦--1.3            
+65   ¦   ¦--1.3.1      
+66   ¦   ¦   ¦--1.3.1.1
+67   ¦   ¦   ¦--1.3.1.2
+68   ¦   ¦   ¦--1.3.1.3
+69   ¦   ¦   ¦--1.3.1.4
+70   ¦   ¦   °--1.3.1.5
+71   ¦   ¦--1.3.2      
+72   ¦   ¦   ¦--1.3.2.1
+73   ¦   ¦   ¦--1.3.2.2
+74   ¦   ¦   ¦--1.3.2.3
+75   ¦   ¦   ¦--1.3.2.4
+76   ¦   ¦   °--1.3.2.5
+77   ¦   ¦--1.3.3      
+78   ¦   ¦   ¦--1.3.3.1
+79   ¦   ¦   ¦--1.3.3.2
+80   ¦   ¦   ¦--1.3.3.3
+81   ¦   ¦   ¦--1.3.3.4
+82   ¦   ¦   °--1.3.3.5
+83   ¦   ¦--1.3.4      
+84   ¦   ¦   ¦--1.3.4.1
+85   ¦   ¦   ¦--1.3.4.2
+86   ¦   ¦   ¦--1.3.4.3
+87   ¦   ¦   ¦--1.3.4.4
+88   ¦   ¦   °--1.3.4.5
+89   ¦   °--1.3.5      
+90   ¦       ¦--1.3.5.1
+91   ¦       ¦--1.3.5.2
+92   ¦       ¦--1.3.5.3
+93   ¦       ¦--1.3.5.4
+94   ¦       °--1.3.5.5
+95   ¦--1.4            
+96   ¦   ¦--1.4.1      
+97   ¦   ¦   ¦--1.4.1.1
+98   ¦   ¦   ¦--1.4.1.2
+99   ¦   ¦   ¦--1.4.1.3
+100  ¦   ¦   ¦--1.4.1.4
+101  ¦   ¦   °--1.4.1.5
+102  ¦   ¦--1.4.2      
+103  ¦   ¦   ¦--1.4.2.1
+104  ¦   ¦   ¦--1.4.2.2
+105  ¦   ¦   ¦--1.4.2.3
+106  ¦   ¦   ¦--1.4.2.4
+107  ¦   ¦   °--1.4.2.5
+108  ¦   ¦--1.4.3      
+109  ¦   ¦   ¦--1.4.3.1
+110  ¦   ¦   ¦--1.4.3.2
+111  ¦   ¦   ¦--1.4.3.3
+112  ¦   ¦   ¦--1.4.3.4
+113  ¦   ¦   °--1.4.3.5
+114  ¦   ¦--1.4.4      
+115  ¦   ¦   ¦--1.4.4.1
+116  ¦   ¦   ¦--1.4.4.2
+117  ¦   ¦   ¦--1.4.4.3
+118  ¦   ¦   ¦--1.4.4.4
+119  ¦   ¦   °--1.4.4.5
+120  ¦   °--1.4.5      
+121  ¦       ¦--1.4.5.1
+122  ¦       ¦--1.4.5.2
+123  ¦       ¦--1.4.5.3
+124  ¦       ¦--1.4.5.4
+125  ¦       °--1.4.5.5
+126  °--1.5            
+127      ¦--1.5.1      
+128      ¦   ¦--1.5.1.1
+129      ¦   ¦--1.5.1.2
+130      ¦   ¦--1.5.1.3
+131      ¦   ¦--1.5.1.4
+132      ¦   °--1.5.1.5
+133      ¦--1.5.2      
+134      ¦   ¦--1.5.2.1
+135      ¦   ¦--1.5.2.2
+136      ¦   ¦--1.5.2.3
+137      ¦   ¦--1.5.2.4
+138      ¦   °--1.5.2.5
+139      ¦--1.5.3      
+140      ¦   ¦--1.5.3.1
+141      ¦   ¦--1.5.3.2
+142      ¦   ¦--1.5.3.3
+143      ¦   ¦--1.5.3.4
+144      ¦   °--1.5.3.5
+145      ¦--1.5.4      
+146      ¦   ¦--1.5.4.1
+147      ¦   ¦--1.5.4.2
+148      ¦   ¦--1.5.4.3
+149      ¦   ¦--1.5.4.4
+150      ¦   °--1.5.4.5
+151      °--1.5.5      
+152          ¦--1.5.5.1
+153          ¦--1.5.5.2
+154          ¦--1.5.5.3
+155          ¦--1.5.5.4
+156          °--1.5.5.5
+> # print first 20 nodes:
+> print(tree, pruneMethod = "simple", limit = 20)
+                          levelName
+1  1                               
+2   ¦--1.1                         
+3   ¦   ¦--1.1.1                   
+4   ¦   ¦   ¦--1.1.1.1             
+5   ¦   ¦   ¦--1.1.1.2             
+6   ¦   ¦   ¦--1.1.1.3             
+7   ¦   ¦   ¦--1.1.1.4             
+8   ¦   ¦   °--1.1.1.5             
+9   ¦   ¦--1.1.2                   
+10  ¦   ¦   ¦--1.1.2.1             
+11  ¦   ¦   ¦--1.1.2.2             
+12  ¦   ¦   ¦--1.1.2.3             
+13  ¦   ¦   ¦--1.1.2.4             
+14  ¦   ¦   °--1.1.2.5             
+15  ¦   ¦--1.1.3                   
+16  ¦   ¦   ¦--1.1.3.1             
+17  ¦   ¦   ¦--1.1.3.2             
+18  ¦   ¦   ¦--1.1.3.3             
+19  ¦   ¦   ¦--1.1.3.4             
+20  ¦   ¦   °--... 1 nodes w/ 0 sub
+21  ¦   °--... 2 nodes w/ 11 sub   
+22  °--... 4 nodes w/ 133 sub      
+> # print 20 nodes, removing leafs first:
+> print(tree, pruneMethod = "dist", limit = 20)
+                          levelName
+1  1                               
+2   ¦--1.1                         
+3   ¦   ¦--1.1.1                   
+4   ¦   ¦   °--... 5 nodes w/ 0 sub
+5   ¦   ¦--1.1.2                   
+6   ¦   ¦   °--... 5 nodes w/ 0 sub
+7   ¦   ¦--1.1.3                   
+8   ¦   ¦   °--... 5 nodes w/ 0 sub
+9   ¦   ¦--1.1.4                   
+10  ¦   ¦   °--... 5 nodes w/ 0 sub
+11  ¦   °--1.1.5                   
+12  ¦       °--... 5 nodes w/ 0 sub
+13  ¦--1.2                         
+14  ¦   ¦--1.2.1                   
+15  ¦   ¦   °--... 5 nodes w/ 0 sub
+16  ¦   ¦--1.2.2                   
+17  ¦   ¦   °--... 5 nodes w/ 0 sub
+18  ¦   ¦--1.2.3                   
+19  ¦   ¦   °--... 5 nodes w/ 0 sub
+20  ¦   °--... 2 nodes w/ 25 sub   
+21  ¦--1.3                         
+22  ¦   ¦--1.3.1                   
+23  ¦   ¦   °--... 5 nodes w/ 0 sub
+24  ¦   ¦--1.3.2                   
+25  ¦   ¦   °--... 5 nodes w/ 0 sub
+26  ¦   °--... 3 nodes w/ 25 sub   
+27  ¦--1.4                         
+28  ¦   ¦--1.4.1                   
+29  ¦   ¦   °--... 5 nodes w/ 0 sub
+30  ¦   ¦--1.4.2                   
+31  ¦   ¦   °--... 5 nodes w/ 0 sub
+32  ¦   °--... 3 nodes w/ 25 sub   
+33  °--1.5                         
+34      ¦--1.5.1                   
+35      ¦   °--... 5 nodes w/ 0 sub
+36      ¦--1.5.2                   
+37      ¦   °--... 5 nodes w/ 0 sub
+38      °--... 3 nodes w/ 25 sub   
+> # provide your own pruning function:
+> print(tree, pruneFun = function(node) node$position != 2)
+             levelName
+1  1                  
+2   ¦--1.1            
+3   ¦   ¦--1.1.1      
+4   ¦   ¦   ¦--1.1.1.1
+5   ¦   ¦   ¦--1.1.1.3
+6   ¦   ¦   ¦--1.1.1.4
+7   ¦   ¦   °--1.1.1.5
+8   ¦   ¦--1.1.3      
+9   ¦   ¦   ¦--1.1.3.1
+10  ¦   ¦   ¦--1.1.3.3
+11  ¦   ¦   ¦--1.1.3.4
+12  ¦   ¦   °--1.1.3.5
+13  ¦   ¦--1.1.4      
+14  ¦   ¦   ¦--1.1.4.1
+15  ¦   ¦   ¦--1.1.4.3
+16  ¦   ¦   ¦--1.1.4.4
+17  ¦   ¦   °--1.1.4.5
+18  ¦   °--1.1.5      
+19  ¦       ¦--1.1.5.1
+20  ¦       ¦--1.1.5.3
+21  ¦       ¦--1.1.5.4
+22  ¦       °--1.1.5.5
+23  ¦--1.3            
+24  ¦   ¦--1.3.1      
+25  ¦   ¦   ¦--1.3.1.1
+26  ¦   ¦   ¦--1.3.1.3
+27  ¦   ¦   ¦--1.3.1.4
+28  ¦   ¦   °--1.3.1.5
+29  ¦   ¦--1.3.3      
+30  ¦   ¦   ¦--1.3.3.1
+31  ¦   ¦   ¦--1.3.3.3
+32  ¦   ¦   ¦--1.3.3.4
+33  ¦   ¦   °--1.3.3.5
+34  ¦   ¦--1.3.4      
+35  ¦   ¦   ¦--1.3.4.1
+36  ¦   ¦   ¦--1.3.4.3
+37  ¦   ¦   ¦--1.3.4.4
+38  ¦   ¦   °--1.3.4.5
+39  ¦   °--1.3.5      
+40  ¦       ¦--1.3.5.1
+41  ¦       ¦--1.3.5.3
+42  ¦       ¦--1.3.5.4
+43  ¦       °--1.3.5.5
+44  ¦--1.4            
+45  ¦   ¦--1.4.1      
+46  ¦   ¦   ¦--1.4.1.1
+47  ¦   ¦   ¦--1.4.1.3
+48  ¦   ¦   ¦--1.4.1.4
+49  ¦   ¦   °--1.4.1.5
+50  ¦   ¦--1.4.3      
+51  ¦   ¦   ¦--1.4.3.1
+52  ¦   ¦   ¦--1.4.3.3
+53  ¦   ¦   ¦--1.4.3.4
+54  ¦   ¦   °--1.4.3.5
+55  ¦   ¦--1.4.4      
+56  ¦   ¦   ¦--1.4.4.1
+57  ¦   ¦   ¦--1.4.4.3
+58  ¦   ¦   ¦--1.4.4.4
+59  ¦   ¦   °--1.4.4.5
+60  ¦   °--1.4.5      
+61  ¦       ¦--1.4.5.1
+62  ¦       ¦--1.4.5.3
+63  ¦       ¦--1.4.5.4
+64  ¦       °--1.4.5.5
+65  °--1.5            
+66      ¦--1.5.1      
+67      ¦   ¦--1.5.1.1
+68      ¦   ¦--1.5.1.3
+69      ¦   ¦--1.5.1.4
+70      ¦   °--1.5.1.5
+71      ¦--1.5.3      
+72      ¦   ¦--1.5.3.1
+73      ¦   ¦--1.5.3.3
+74      ¦   ¦--1.5.3.4
+75      ¦   °--1.5.3.5
+76      ¦--1.5.4      
+77      ¦   ¦--1.5.4.1
+78      ¦   ¦--1.5.4.3
+79      ¦   ¦--1.5.4.4
+80      ¦   °--1.5.4.5
+81      °--1.5.5      
+82          ¦--1.5.5.1
+83          ¦--1.5.5.3
+84          ¦--1.5.5.4
+85          °--1.5.5.5
+> 
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("s3_register")
+> ### * s3_register
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: s3_register
+> ### Title: Register a method for a suggested dependency
+> ### Aliases: s3_register
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> # A typical use case is to dynamically register tibble/pillar methods
+> # for your class. That way you avoid creating a hard depedency on packages
+> # that are not essential, while still providing finer control over
+> # printing when they are used.
+> 
+> .onLoad <- function(...) {
++   s3_register("pillar::pillar_shaft", "vctrs_vctr")
++   s3_register("tibble::type_sum", "vctrs_vctr")
++ }
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  4.199 0.208 4.416 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

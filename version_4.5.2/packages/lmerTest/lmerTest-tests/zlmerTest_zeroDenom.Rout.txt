@@ -1,0 +1,124 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(lmerTest)
+Loading required package: lme4
+Loading required package: Matrix
+
+Attaching package: ‘lmerTest’
+
+The following object is masked from ‘package:lme4’:
+
+    lmer
+
+The following object is masked from ‘package:stats’:
+
+    step
+
+> 
+> # Read in data set
+> load(system.file("testdata","potdata.RData", package="lmerTest"))
+> 
+> # Mixed model
+> lmerout <- lmer(biomass ~ CO2*nutrients + (1|chamber),data=potdata)
+> summary(lmerout)
+Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: biomass ~ CO2 * nutrients + (1 | chamber)
+   Data: potdata
+
+REML criterion at convergence: 49.2
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-1.4159 -0.5588  0.0000  0.5588  1.4159 
+
+Random effects:
+ Groups   Name        Variance Std.Dev.
+ chamber  (Intercept) 0.2437   0.4936  
+ Residual             1.5797   1.2568  
+Number of obs: 24, groups:  chamber, 4
+
+Fixed effects:
+                  Estimate Std. Error      df t value Pr(>|t|)    
+(Intercept)        12.8500     0.9548 11.0163  13.458 3.49e-08 ***
+CO2675              2.0000     1.3503 11.0163   1.481 0.166595    
+nutrients2          7.3500     1.2568 10.0000   5.848 0.000162 ***
+nutrients3         10.4500     1.2568 10.0000   8.314 8.39e-06 ***
+nutrients4         18.6500     1.2568 10.0000  14.839 3.88e-08 ***
+nutrients5         25.0500     1.2568 10.0000  19.931 2.22e-09 ***
+nutrients6         29.0000     1.2568 10.0000  23.074 5.28e-10 ***
+CO2675:nutrients2  -0.5000     1.7775 10.0000  -0.281 0.784214    
+CO2675:nutrients3   1.9000     1.7775 10.0000   1.069 0.310218    
+CO2675:nutrients4   3.4500     1.7775 10.0000   1.941 0.080949 .  
+CO2675:nutrients5   5.9000     1.7775 10.0000   3.319 0.007756 ** 
+CO2675:nutrients6   5.2500     1.7775 10.0000   2.954 0.014444 *  
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Correlation of Fixed Effects:
+            (Intr) CO2675 ntrnt2 ntrnt3 ntrnt4 ntrnt5 ntrnt6 CO2675:2 CO2675:3
+CO2675      -0.707                                                            
+nutrients2  -0.658  0.465                                                     
+nutrients3  -0.658  0.465  0.500                                              
+nutrients4  -0.658  0.465  0.500  0.500                                       
+nutrients5  -0.658  0.465  0.500  0.500  0.500                                
+nutrients6  -0.658  0.465  0.500  0.500  0.500  0.500                         
+CO2675:ntr2  0.465 -0.658 -0.707 -0.354 -0.354 -0.354 -0.354                  
+CO2675:ntr3  0.465 -0.658 -0.354 -0.707 -0.354 -0.354 -0.354  0.500           
+CO2675:ntr4  0.465 -0.658 -0.354 -0.354 -0.707 -0.354 -0.354  0.500    0.500  
+CO2675:ntr5  0.465 -0.658 -0.354 -0.354 -0.354 -0.707 -0.354  0.500    0.500  
+CO2675:ntr6  0.465 -0.658 -0.354 -0.354 -0.354 -0.354 -0.707  0.500    0.500  
+            CO2675:4 CO2675:5
+CO2675                       
+nutrients2                   
+nutrients3                   
+nutrients4                   
+nutrients5                   
+nutrients6                   
+CO2675:ntr2                  
+CO2675:ntr3                  
+CO2675:ntr4                  
+CO2675:ntr5  0.500           
+CO2675:ntr6  0.500    0.500  
+> 
+> an.sat <- anova(lmerout)
+> anova(lmerout, ddf="lme4")
+Analysis of Variance Table
+              npar  Sum Sq Mean Sq  F value
+CO2              1   67.86   67.86  42.9589
+nutrients        5 3050.44  610.09 386.2129
+CO2:nutrients    5   35.47    7.09   4.4906
+> TOL <- 1e-5
+> stopifnot(isTRUE(all.equal(
++   an.sat[,"DenDF"], c(2, 10, 10), tolerance=TOL
++ )))
+> 
+> stopifnot(isTRUE(
++   all.equal(an.sat[,"Pr(>F)"], c(0.0224955602, 1e-11, 0.020905569), tolerance=TOL)
++ ))
+> 
+> # if(require(pbkrtest))
+> #   an.kr <- anova(lmerout, ddf="Kenward-Roger")
+> #
+> # TOL <- 1e-7
+> # stopifnot(all.equal(an.kr[,"Pr(>F)"], c(0.0224955602, 1e-11, 0.020905569) ,
+> #                     tol=TOL),
+> #           all.equal(an.kr[,"DenDF"],
+> #                     c(2, 10, 10) , tol=TOL),
+> #           TRUE)
+> 

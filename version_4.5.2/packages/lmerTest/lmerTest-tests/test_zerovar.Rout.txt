@@ -1,0 +1,112 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> # test_zerovar.R
+> 
+> library(lmerTest)
+Loading required package: lme4
+Loading required package: Matrix
+
+Attaching package: ‘lmerTest’
+
+The following object is masked from ‘package:lme4’:
+
+    lmer
+
+The following object is masked from ‘package:stats’:
+
+    step
+
+> data("sleepstudy", package="lme4")
+> 
+> # Baseline fit:
+> m0 <- lmer(Reaction ~ Days +  (Days | Subject), sleepstudy,
++            control=lmerControl(optimizer="bobyqa"))
+> ## default optimizer does not converge proporly
+> m0
+Linear mixed model fit by REML ['lmerModLmerTest']
+Formula: Reaction ~ Days + (Days | Subject)
+   Data: sleepstudy
+REML criterion at convergence: 1743.628
+Random effects:
+ Groups   Name        Std.Dev. Corr
+ Subject  (Intercept) 24.740       
+          Days         5.922   0.07
+ Residual             25.592       
+Number of obs: 180, groups:  Subject, 18
+Fixed Effects:
+(Intercept)         Days  
+     251.41        10.47  
+> (an0 <- anova(m0))
+Type III Analysis of Variance Table with Satterthwaite's method
+     Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+Days  30031   30031     1    17  45.853 3.264e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> 
+> # Make a fit with a zero variance estimate:
+> n <- nrow(sleepstudy)
+> g <- factor(rep(1:2, c(n - 10, 10)))
+> m <- lmer(Reaction ~ Days +  (Days | Subject) + (1|g), sleepstudy,
++           control=lmerControl(optimizer="bobyqa"))
+boundary (singular) fit: see help('isSingular')
+> m
+Linear mixed model fit by REML ['lmerModLmerTest']
+Formula: Reaction ~ Days + (Days | Subject) + (1 | g)
+   Data: sleepstudy
+REML criterion at convergence: 1743.628
+Random effects:
+ Groups   Name        Std.Dev. Corr
+ Subject  (Intercept) 24.740       
+          Days         5.922   0.07
+ g        (Intercept)  0.000       
+ Residual             25.592       
+Number of obs: 180, groups:  Subject, 18; g, 2
+Fixed Effects:
+(Intercept)         Days  
+     251.41        10.47  
+optimizer (bobyqa) convergence code: 0 (OK) ; 0 optimizer warnings; 1 lme4 warnings 
+> (an <- anova(m))
+Type III Analysis of Variance Table with Satterthwaite's method
+     Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+Days  30031   30031     1    17  45.853 3.264e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> 
+> # check that fit has a zero variance
+> vc <- as.data.frame(VarCorr(m))
+> stopifnot(isTRUE(
++   all.equal(0, vc[vc$grp == "g", "sdcor"], tolerance=1e-4)
++ ))
+> # The hessian/vcov is actually positive definite:
+> stopifnot(isTRUE(
++   all(eigen(m@vcov_varpar, only.values = TRUE)$values > 0)
++ ))
+> 
+> # Check that ANOVA tables are the same:
+> stopifnot(isTRUE(
++   all.equal(an0[, 1:5], an[, 1:5], tolerance=1e-4)
++ ))
+> 
+> stopifnot(isTRUE( # Equality of summary tables
++   all.equal(coef(summary(m0)), coef(summary(m)), tolerance=1e-4)
++ ))
+> stopifnot(isTRUE( # Equality of lme4-anova tables
++   all.equal(anova(m0, ddf="lme4"), anova(m, ddf="lme4"), tolerance=1e-4)
++ ))
+> 
+> 

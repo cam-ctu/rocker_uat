@@ -1,0 +1,65 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library("R.cache")
+R.cache v0.17.0 (2025-05-02 22:20:02 UTC) successfully loaded. See ?R.cache for help.
+> 
+> # Use an empty temporary file cache
+> setCacheRootPath(path=file.path(tempdir()))
+> clearCache(recursive=TRUE, prompt=FALSE)
+> dirs <- c("tests", "memoizedCall")
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Define function to be memoized
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> sleep <- function(time) {
++   cat(sprintf("Sleeping for %g seconds...\n", time))
++   Sys.sleep(time)
++   cat(sprintf("Sleeping for %g seconds...done\n", time))
++   time
++ }
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Test memoization
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # There will be no cache hit for the first call
+> t0 <- system.time({
++   res0 <- memoizedCall(sleep, time=1.5, dirs=dirs)
++ })[3]
+Sleeping for 1.5 seconds...
+Sleeping for 1.5 seconds...done
+> print(t0)
+elapsed 
+  1.519 
+> 
+> # The second will have a cache hit and therefore
+> # return the memoized results momentarily.
+> t1 <- system.time({
++   res1 <- memoizedCall(sleep, time=1.5, dirs=dirs)
++ })[3]
+> print(t1)
+elapsed 
+  0.006 
+> if (t1 >= t0) {
++   warning("Second call to memoizedCall() took longer than the first: ",
++           t1, " >= ", t0)
++ }
+> 
+> # Sanity check
+> stopifnot(identical(res1, res0))
+> clearCache(recursive=TRUE)
+> 

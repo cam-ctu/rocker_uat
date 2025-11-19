@@ -1,0 +1,266 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library("R.utils")
+Loading required package: R.oo
+Loading required package: R.methodsS3
+R.methodsS3 v1.8.2 (2022-06-13 22:00:14 UTC) successfully loaded. See ?R.methodsS3 for help.
+R.oo v1.27.1 (2025-05-02 21:00:05 UTC) successfully loaded. See ?R.oo for help.
+
+Attaching package: ‘R.oo’
+
+The following object is masked from ‘package:R.methodsS3’:
+
+    throw
+
+The following objects are masked from ‘package:methods’:
+
+    getClasses, getMethods
+
+The following objects are masked from ‘package:base’:
+
+    attach, detach, load, save
+
+R.utils v2.13.0 (2025-02-24 21:20:02 UTC) successfully loaded. See ?R.utils for help.
+
+Attaching package: ‘R.utils’
+
+The following object is masked from ‘package:utils’:
+
+    timestamp
+
+The following objects are masked from ‘package:base’:
+
+    cat, commandArgs, getOption, isOpen, nullfile, parse, use, warnings
+
+> 
+> ######################################################################
+> # How R was invoked
+> ######################################################################
+> cmd <- paste(commandArgs(), collapse=" ")
+> cat("How R was invoked:\n")
+How R was invoked:
+> cat(cmd, "\n")
+/usr/local/lib/R/bin/exec/R --no-save --no-restore -f commandArgs.R --restore --save --no-readline --vanilla 
+> 
+> # Get all arguments
+> args <- commandArgs()
+> print(args)
+[1] "/usr/local/lib/R/bin/exec/R" "--no-save"                  
+[3] "--no-restore"                "-f"                         
+[5] "commandArgs.R"               "--restore"                  
+[7] "--save"                      "--no-readline"              
+[9] "--vanilla"                  
+> 
+> # Get only "private" arguments and not the name of the R executable.
+> args <- commandArgs(excludeReserved=TRUE)[-1]
+> print(args)
+character(0)
+> 
+> # Assert backward compatibility
+> args0 <- base::commandArgs()
+> args <- commandArgs()
+> stopifnot(all.equal(args, args0))
+> 
+> 
+> 
+> ######################################################################
+> # Parsed command-line arguments
+> ######################################################################
+> # Call #1:
+> argsC <- c("R", "--encoding=ASCII", "--encoding", "ASCII", "DATAPATH=../data", "--args", "--root=do da", "--foo", "bar", "--details", "--a=2", "--src_file=foo.R")
+> print(argsC)
+ [1] "R"                "--encoding=ASCII" "--encoding"       "ASCII"           
+ [5] "DATAPATH=../data" "--args"           "--root=do da"     "--foo"           
+ [9] "bar"              "--details"        "--a=2"            "--src_file=foo.R"
+> 
+> # Truth:
+> args0 <- list("R", encoding="ASCII", encoding="ASCII", DATAPATH="../data", args=TRUE, root="do da", foo="bar", details=TRUE, a="2", "src_file"="foo.R")
+> 
+> args <- commandArgs(asValues=TRUE, .args=argsC)
+> str(args)
+List of 10
+ $         : chr "R"
+ $ encoding: chr "ASCII"
+ $ encoding: chr "ASCII"
+ $ DATAPATH: chr "../data"
+ $ args    : logi TRUE
+ $ root    : chr "do da"
+ $ foo     : chr "bar"
+ $ details : logi TRUE
+ $ a       : chr "2"
+ $ src_file: chr "foo.R"
+> stopifnot(all.equal(args, args0))
+> 
+> # Exclude reserved
+> args <- commandArgs(asValues=TRUE, excludeReserved=TRUE, excludeEnvVars=TRUE, .args=argsC)[-1L]
+> stopifnot(all.equal(args, args0[-(1:5)]))
+> 
+> 
+> # Call #2:
+> argsC <- c("R", "noname1", "DATAPATH=../data", "--args", "--root=do da", "noname2", "--foo", "bar", "--details", "--a=2", "noname3", "noname4", "noname5", "--b=pi", "--c:=pi")
+> print(argsC)
+ [1] "R"                "noname1"          "DATAPATH=../data" "--args"          
+ [5] "--root=do da"     "noname2"          "--foo"            "bar"             
+ [9] "--details"        "--a=2"            "noname3"          "noname4"         
+[13] "noname5"          "--b=pi"           "--c:=pi"         
+> 
+> # Truth:
+> args0 <- list("R", "noname1", DATAPATH="../data", args=TRUE, root="do da", "noname2", foo="bar", details=TRUE, a="2", "noname3", "noname4", "noname5", b="pi", c=structure("pi", class="CmdArgExpression"))
+> 
+> args <- commandArgs(asValues=TRUE, .args=argsC)
+> str(args)
+List of 14
+ $         : chr "R"
+ $         : chr "noname1"
+ $ DATAPATH: chr "../data"
+ $ args    : logi TRUE
+ $ root    : chr "do da"
+ $         : chr "noname2"
+ $ foo     : chr "bar"
+ $ details : logi TRUE
+ $ a       : chr "2"
+ $         : chr "noname3"
+ $         : chr "noname4"
+ $         : chr "noname5"
+ $ b       : chr "pi"
+ $ c       : 'CmdArgExpression' chr "pi"
+> stopifnot(all.equal(args, args0))
+> 
+> # Truth (when evaluating expression):
+> args0 <- list("R", "noname1", DATAPATH="../data", args=TRUE, root="do da", "noname2", foo="bar", details=TRUE, a=2, "noname3", "noname4", "noname5", b="pi", c=pi)
+> 
+> args <- commandArgs(asValues=TRUE, adhoc=TRUE, .args=argsC)
+> str(args)
+List of 14
+ $         : chr "R"
+ $         : chr "noname1"
+ $ DATAPATH: chr "../data"
+ $ args    : logi TRUE
+ $ root    : chr "do da"
+ $         : chr "noname2"
+ $ foo     : chr "bar"
+ $ details : logi TRUE
+ $ a       : int 2
+ $         : chr "noname3"
+ $         : chr "noname4"
+ $         : chr "noname5"
+ $ b       : chr "pi"
+ $ c       : num 3.14
+> stopifnot(all.equal(args, args0))
+> 
+> 
+> for (asValues in c(TRUE, FALSE)) {
++   # Argument 'defaults'
++   args <- commandArgs(asValues=asValues, .args=argsC, defaults=c(a=1L, d=4L))
++   str(args)
++ 
++   # Argument 'always'
++   args <- commandArgs(asValues=asValues, .args=argsC, always=c(c=4L))
++   str(args)
++ 
++   # Argument 'unique'
++   args <- commandArgs(asValues=asValues, .args=argsC, unique=TRUE)
++   str(args)
++ 
++   # Argument 'os'
++   args <- commandArgs(asValues=asValues, os="current")
++   str(args)
++ 
++   # Unusual option: -name=value
++   args <- commandArgs(asValues=asValues, .args="-foo=4")
++   str(args)
++ 
++   # Default
++   args <- commandArgs(asValues=asValues)
++   str(args)
++ } # for (asValues ...)
+List of 15
+ $         : chr "R"
+ $ d       : int 4
+ $         : chr "noname1"
+ $ DATAPATH: chr "../data"
+ $ args    : logi TRUE
+ $ root    : chr "do da"
+ $         : chr "noname2"
+ $ foo     : chr "bar"
+ $ details : logi TRUE
+ $ a       : int 2
+ $         : chr "noname3"
+ $         : chr "noname4"
+ $         : chr "noname5"
+ $ b       : chr "pi"
+ $ c       : 'CmdArgExpression' chr "pi"
+List of 15
+ $         : chr "R"
+ $         : chr "noname1"
+ $ DATAPATH: chr "../data"
+ $ args    : logi TRUE
+ $ root    : chr "do da"
+ $         : chr "noname2"
+ $ foo     : chr "bar"
+ $ details : logi TRUE
+ $ a       : chr "2"
+ $         : chr "noname3"
+ $         : chr "noname4"
+ $         : chr "noname5"
+ $ b       : chr "pi"
+ $ c       : 'CmdArgExpression' chr "pi"
+ $ c       : int 4
+List of 14
+ $         : chr "R"
+ $         : chr "noname1"
+ $ DATAPATH: chr "../data"
+ $ args    : logi TRUE
+ $ root    : chr "do da"
+ $         : chr "noname2"
+ $ foo     : chr "bar"
+ $ details : logi TRUE
+ $ a       : chr "2"
+ $         : chr "noname3"
+ $         : chr "noname4"
+ $         : chr "noname5"
+ $ b       : chr "pi"
+ $ c       : 'CmdArgExpression' chr "pi"
+List of 8
+ $            : chr "/usr/local/lib/R/bin/exec/R"
+ $ no-save    : logi TRUE
+ $ no-restore : logi TRUE
+ $ f          : chr "commandArgs.R"
+ $ restore    : logi TRUE
+ $ save       : logi TRUE
+ $ no-readline: logi TRUE
+ $ vanilla    : logi TRUE
+List of 1
+ $ foo: chr "4"
+List of 8
+ $            : chr "/usr/local/lib/R/bin/exec/R"
+ $ no-save    : logi TRUE
+ $ no-restore : logi TRUE
+ $ f          : chr "commandArgs.R"
+ $ restore    : logi TRUE
+ $ save       : logi TRUE
+ $ no-readline: logi TRUE
+ $ vanilla    : logi TRUE
+ Named chr [1:17] "R" "1" "4" "noname1" "DATAPATH=../data" "--args" ...
+ - attr(*, "names")= chr [1:17] "" "a" "d" "" ...
+ chr [1:16] "R" "noname1" "DATAPATH=../data" "--args" "--root=do da" ...
+ chr [1:15] "R" "noname1" "DATAPATH=../data" "--args" "--root=do da" ...
+ chr [1:9] "/usr/local/lib/R/bin/exec/R" "--no-save" "--no-restore" "-f" ...
+ chr "-foo=4"
+ chr [1:9] "/usr/local/lib/R/bin/exec/R" "--no-save" "--no-restore" "-f" ...
+> 

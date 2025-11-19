@@ -1,0 +1,4503 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "R.utils"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('R.utils')
+Loading required package: R.oo
+Loading required package: R.methodsS3
+R.methodsS3 v1.8.2 (2022-06-13 22:00:14 UTC) successfully loaded. See ?R.methodsS3 for help.
+R.oo v1.27.1 (2025-05-02 21:00:05 UTC) successfully loaded. See ?R.oo for help.
+
+Attaching package: ‘R.oo’
+
+The following object is masked from ‘package:R.methodsS3’:
+
+    throw
+
+The following objects are masked from ‘package:methods’:
+
+    getClasses, getMethods
+
+The following objects are masked from ‘package:base’:
+
+    attach, detach, load, save
+
+R.utils v2.13.0 (2025-02-24 21:20:02 UTC) successfully loaded. See ?R.utils for help.
+
+Attaching package: ‘R.utils’
+
+The following object is masked from ‘package:utils’:
+
+    timestamp
+
+The following objects are masked from ‘package:base’:
+
+    cat, commandArgs, getOption, isOpen, nullfile, parse, use, warnings
+
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("FileProgressBar")
+> ### * FileProgressBar
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: FileProgressBar
+> ### Title: A progress bar that sets the size of a file accordingly
+> ### Aliases: FileProgressBar
+> ### Keywords: classes
+> 
+> ### ** Examples
+> 
+>   ## Not run: 
+> ##D   
+> ##D # Creates a progress bar (of length 100) that displays it self as a file.
+> ##D 
+> ##D pb <- FileProgressBar(file.path(tempdir(), "progress.simulation"), max = 10L)
+> ##D reset(pb)
+> ##D while (!isDone(pb)) {
+> ##D   x <- rnorm(3e4)
+> ##D   increase(pb)
+> ##D   # Emulate a slow process
+> ##D   if (interactive()) Sys.sleep(0.1)
+> ##D   cat(sprintf("File size: %d bytes\n", file.info(pb$pathname)$size))
+> ##D   Sys.sleep(0.01)
+> ##D }
+> ##D 
+> ##D   
+> ## End(Not run)
+>  
+> 
+> 
+> cleanEx()
+> nameEx("GString-class")
+> ### * GString-class
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: GString
+> ### Title: Character string with advanced substitutions
+> ### Aliases: GString
+> ### Keywords: classes
+> 
+> ### ** Examples
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # First example
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> who <- "world"
+> 
+> # Compare this...
+> cat(as.character(GString("Hello ${who}\n")))
+Hello world
+> 
+> # ...to this.
+> cat(GString("Hello ${who}\n"))
+Hello ${who}
+> 
+> # Escaping
+> cat(as.character(GString("Hello \\${who}\n")))
+Hello ${who}
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Looping over vectors
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> x <- 1:5
+> y <- c("hello", "world")
+> cat(as.character(GString("(x,y)=(${x},${y})")), sep=", ")
+(x,y)=(1,hello), (x,y)=(2,world), (x,y)=(3,hello), (x,y)=(4,world), (x,y)=(5,hello)> cat("\n")
+
+> 
+> cat(as.character(GString("(x,y)=(${x},$[capitalize]{y})")), sep=", ")
+(x,y)=(1,Hello), (x,y)=(2,World), (x,y)=(3,Hello), (x,y)=(4,World), (x,y)=(5,Hello)> cat("\n")
+
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Predefined ("builtin") variables
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> cat(as.character(GString("Hello ${username} on host ${hostname} running ",
++ "R v${rversion} in process #${pid} on ${os}. R is installed in ${rhome}.")))
+Hello root on host 97ffb2959763 running R v4.5.2 in process #21979 on unix. R is installed in /usr/local/lib/R.> 
+> 
+> # Other built-in variables/functions...
+> cat(as.character(GString("Current date: ${date}\n")))
+Current date: 2025-11-19
+> cat(as.character(GString("Current date: $[format='%d/%m/%y']{date}\n")))
+Current date: $[format='%d/%m/%y']{date}
+> cat(as.character(GString("Current time: ${time}\n")))
+Current time: 09:20:10
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Evaluating inline R code
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> cat(as.character(GString("Simple calculation: 1+1=${`1+1`}\n")))
+Simple calculation: 1+1=2
+> cat(as.character(GString("Alternative current date: ${`date()`}\n")))
+Alternative current date: Wed Nov 19 09:20:10 2025
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Function values
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Call function rnorm with arguments n=1, i.e. rnorm(n=1)
+> cat(as.character(GString("Random normal number: $[n=1]{rnorm}\n")))
+Random normal number: $[n=1]{rnorm}
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Global search-replace feature
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Replace all '-' with '.'
+> cat(as.character(GString("Current date: ${date/-/.}\n")))
+Current date: 2025.11.19
+> # Another example
+> cat(as.character(GString("Escaped string: 12*12=${`12*12`/1/}\n")))
+Escaped string: 12*12=44
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Defining new "builtin" function values
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Define your own builtin variables (functions)
+> setMethodS3("getBuiltinAletter", "GString", function(object, ...) {
++   base::letters[runif(1, min=1, max=length(base::letters))]
++ })
+> 
+> cat(as.character(GString("A letter: ${aletter}\n")))
+A letter: g
+> cat(as.character(GString("Another letter: ${aletter}\n")))
+Another letter: j
+> 
+> 
+> # Another example
+> setMethodS3("getBuiltinGstring", "GString", function(object, ...) {
++   # Return another GString.
++   GString("${date} ${time}")
++ })
+> 
+> cat(as.character(GString("Advanced example: ${gstring}\n")))
+Advanced example: 2025-11-19 09:20:10
+> 
+> 
+> # Advanced example
+> setMethodS3("getBuiltinRunif", "GString", function(object, n=1, min=0, max=1, ...) {
++   formatC(runif(n=n, min=min, max=max), ...)
++ })
+> 
+> cat(as.character(GString("A random number: ${runif}\n")))
+A random number: 0.5729
+> n <- 5
+> cat(as.character(GString("${n} random numbers: ")))
+5 random numbers: > cat(as.character(GString("$[n=n, format='f']{runif}")))
+$[n=n, format='f']{runif}> cat("\n")
+
+> 
+> 
+> # Advanced options.
+> # Options are parsed as if they are elements in a list, e.g.
+> #   list(n=runif(n=1,min=1,max=5), format='f')
+> cat(as.character(GString("$Random number of numbers: ")))
+$Random number of numbers: > cat(as.character(GString("$[n=runif(n=1,min=1,max=5), format='f']{runif}")))
+$[n=runif(n=1,min=1,max=5), format='f']{runif}> cat("\n")
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Java")
+> ### * Java
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Java
+> ### Title: Static class for Java related methods
+> ### Aliases: Java
+> ### Keywords: classes
+> 
+> ### ** Examples
+> 
+> pathname <- tempfile()
+> 
+> # Open the temporary file for writing
+> out <- file(pathname, open="wb")
+> b <- -128:127
+> Java$writeByte(out, b)
+> s <- -32768:32767
+> Java$writeShort(out, s)
+> i <- c(-2147483648, -2147483647, -1, 0, +1, 2147483646, 2147483647);
+> Java$writeInt(out, i)
+> str <- c("This R string was written (using the UTF-8 format) using",
++          "the static methods of the Java class in the R.io package.")
+> str <- paste(str, collapse="\n")
+> Java$writeUTF(out, str)
+> close(out)
+> 
+> # Open the temporary file for reading
+> inn <- file(pathname, open="rb")
+> 
+> bfr <- Java$readByte(inn, n=length(b))
+> cat("Read ", length(bfr), " bytes.\n", sep="")
+Read 256 bytes.
+> if (!identical(bfr, b))
++   throw("Failed to read the same data that was written.")
+> 
+> bfr <- Java$readShort(inn, n=length(s))
+> cat("Read ", length(bfr), " shorts.\n", sep="")
+Read 65536 shorts.
+> if (!identical(bfr, s))
++   throw("Failed to read the same data that was written.")
+> 
+> bfr <- Java$readInt(inn, n=length(i))
+> cat("Read ", length(bfr), " ints.\n", sep="")
+Read 7 ints.
+> if (!identical(bfr, i))
++   throw("Failed to read the same data that was written.")
+> 
+> bfr <- Java$readUTF(inn)
+> cat("Read ", nchar(bfr), " UTF characters:\n", "'", bfr, "'\n", sep="")
+Read 114 UTF characters:
+'This R string was written (using the UTF-8 format) using
+the static methods of the Java class in the R.io package.'
+> 
+> close(inn)
+> 
+> file.remove(pathname)
+[1] TRUE
+> 
+> 
+> 
+> cleanEx()
+> nameEx("MultiVerbose")
+> ### * MultiVerbose
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: MultiVerbose
+> ### Title: A Verbose class ignoring everything
+> ### Aliases: MultiVerbose
+> ### Keywords: classes programming IO internal
+> 
+> ### ** Examples
+> 
+> # Output to both standard output and to log file
+> stdoutLog <- Verbose(threshold=-1)
+> fileLog <- Verbose(file.path(tempdir(), "foo.log"), threshold=-1)
+> verbose <- MultiVerbose(list(stdoutLog, fileLog), threshold=-1)
+> 
+> 
+> header(verbose, "A verbose writer example", padding=0)
+---------------------------------------------------------------------------
+- A verbose writer example
+---------------------------------------------------------------------------
+> 
+> enter(verbose, "Analysis A")
+Analysis A...
+> for (kk in 1:10) {
++   printf(verbose, "step %d\n", kk)
++   if (kk == 2) {
++     cat(verbose, "Turning ON automatic timestamps")
++     timestampOn(verbose)
++   } else if (kk == 4) {
++     timestampOff(verbose)
++     cat(verbose, "Turned OFF automatic timestamps")
++     cat(verbose, "Turning OFF verbose messages for steps ", kk, "-6")
++     off(verbose)
++   } else if (kk == 6) {
++     on(verbose)
++     cat(verbose, "Turned ON verbose messages just before step ", kk+1)
++   }
++ 
++   if (kk %in% c(5,8)) {
++     enter(verbose, "Sub analysis ", kk)
++     for (jj in c("i", "ii", "iii")) {
++       cat(verbose, "part ", jj)
++     }
++     exit(verbose)
++   }
++ }
+ step 1
+ step 2
+ Turning ON automatic timestamps
+20251119 09:20:10| step 3
+20251119 09:20:10| step 4
+ Turned OFF automatic timestamps
+ Turning OFF verbose messages for steps 4-6
+ Turned ON verbose messages just before step 7
+ step 7
+ step 8
+ Sub analysis 8...
+  part i
+  part ii
+  part iii
+ Sub analysis 8...done
+ step 9
+ step 10
+> cat(verbose, "All steps completed!")
+ All steps completed!
+> exit(verbose)
+Analysis A...done
+> 
+> ruler(verbose)
+---------------------------------------------------------------------------
+> cat(verbose, "Demo of some other methods:")
+Demo of some other methods:
+> str(verbose, c(a=1, b=2, c=3))
+ Named num [1:3] 1 2 3
+ - attr(*, "names")= chr [1:3] "a" "b" "c"
+> print(verbose, c(a=1, b=2, c=3))
+a b c 
+1 2 3 
+> summary(verbose, c(a=1, b=2, c=3))
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+    1.0     1.5     2.0     2.0     2.5     3.0 
+> evaluate(verbose, rnorm, n=3, mean=2, sd=3)
+[1]  0.1206386  2.5509300 -0.5068858
+> 
+> ruler(verbose)
+---------------------------------------------------------------------------
+> newline(verbose)
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("NullVerbose")
+> ### * NullVerbose
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: NullVerbose
+> ### Title: A Verbose class ignoring everything
+> ### Aliases: NullVerbose
+> ### Keywords: classes programming IO
+> 
+> ### ** Examples
+> 
+> verbose <- Verbose()
+> cat(verbose, "A verbose messages")
+> 
+> verbose <- NullVerbose()
+> cat(verbose, "A verbose messages")   # Ignored
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Options")
+> ### * Options
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Options
+> ### Title: The Options class
+> ### Aliases: Options
+> ### Keywords: classes programming
+> 
+> ### ** Examples
+> 
+> local <- Options()
+> 
+> # Query a missing option
+> cex <- getOption(local, "graphics/cex")
+> cat("graphics/cex =", cex, "\n")  # Returns NULL
+graphics/cex = 
+> 
+> # Query a missing option with default value
+> cex <- getOption(local, "graphics/cex", defaultValue=1)
+> cat("graphics/cex =", cex, "\n")  # Returns NULL
+graphics/cex = 1 
+> 
+> # Set option and get previous value
+> oldCex <- setOption(local, "graphics/cex", 2)
+> cat("previous graphics/cex =", oldCex, "\n")  # Returns NULL
+previous graphics/cex = 
+> 
+> # Set option again and get previous value
+> oldCex <- setOption(local, "graphics/cex", 3)
+> cat("previous graphics/cex =", oldCex, "\n")  # Returns 2
+previous graphics/cex = 2 
+> 
+> # Query a missing option with default value, which is ignored
+> cex <- getOption(local, "graphics/cex", defaultValue=1)
+> cat("graphics/cex =", cex, "\n")  # Returns 3
+graphics/cex = 3 
+> 
+> # Query multiple options with multiple default values
+> multi <- getOption(local, c("graphics/cex", "graphics/pch"), c(1,2))
+> print(multi)
+$`graphics/cex`
+[1] 3
+
+$`graphics/pch`
+[1] 2
+
+> 
+> # Check existance of multiple options
+> has <- hasOption(local, c("graphics/cex", "graphics/pch"))
+> print(has)
+graphics/cex graphics/pch 
+        TRUE        FALSE 
+> 
+> # Get a subtree of options
+> graphics <- getOption(local, "graphics")
+> print(graphics)
+$cex
+[1] 3
+
+> 
+> # Get the complete tree of options
+> all <- getOption(local)
+> print(all)
+$graphics
+$graphics$cex
+[1] 3
+
+
+> 
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("ProgressBar")
+> ### * ProgressBar
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: ProgressBar
+> ### Title: Provides text based counting progress bar
+> ### Aliases: ProgressBar
+> ### Keywords: classes
+> 
+> ### ** Examples
+> 
+> # A progress bar with default step length one.
+> pb <- ProgressBar(max=42)
+> reset(pb)
+[> while (!isDone(pb)) {
++   x <- rnorm(3e4)
++   increase(pb)
++   # Emulate a slow process
++   if (interactive()) Sys.sleep(0.02)
++ }
+.........|.........|.........|.........|.]
+> cat("\n")
+
+> 
+> # A "faster" progress bar with default step length 1.4.
+> pb <- ProgressBar(max=42, stepLength=1.4)
+> reset(pb)
+[> while (!isDone(pb)) {
++   x <- rnorm(3e4)
++   increase(pb)
++   # Emulate a slow process
++   if (interactive()) Sys.sleep(0.02)
++ }
+.........|.........|.........|.........|.]
+> 
+> cat("\n")
+
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Settings")
+> ### * Settings
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Settings
+> ### Title: Class for applicational settings
+> ### Aliases: Settings
+> ### Keywords: classes programming IO
+> 
+> ### ** Examples
+> 
+> # Load settings from file, or create default settings
+> basename <- "some.settings"
+> settings <- Settings$loadAnywhere(basename)
+> if (is.null(settings))
++   settings <- Settings(basename)
+> 
+> # Set default options, if missing.
+> setOption(settings, "graphics/verbose", TRUE, overwrite=FALSE)
+> setOption(settings, "io/verbose", Verbose(threshold=-1), overwrite=FALSE)
+> 
+> # Save and reload settings
+> path <- tempdir()
+> saveAnywhere(settings, path=path)
+> settings2 <- Settings$loadAnywhere(basename, paths=path)
+> 
+> # Clean up
+> file.remove(getLoadedPathname(settings2))
+[1] TRUE
+> 
+> # Assert correctness
+> stopifnot(equals(settings, settings2))
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("TextStatusBar")
+> ### * TextStatusBar
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: TextStatusBar
+> ### Title: A status bar at the R prompt that can be updated
+> ### Aliases: TextStatusBar
+> ### Keywords: classes programming IO
+> 
+> ### ** Examples
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Read all HTML files in the base package
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> path <- system.file(package="base")
+> files <- list.files(path, recursive=TRUE, full.names=TRUE)
+> files <- files[sapply(files, FUN=isFile)]
+> nfiles <- length(files)
+> 
+> cat(sprintf("Reading %d files in %s:\n", nfiles, path))
+Reading 24 files in /usr/local/lib/R/library/base:
+> 
+> # Create a status bar with four labels
+> sb <- TextStatusBar("File: %-*s [%3.0f%% %7.0f bytes %-8s]",
++                 hfill=1, file="", progress=0, nbytes=0L, time="")
+> 
+> nbytes <- 0L
+> for (kk in seq_len(nfiles)) {
++   file <- files[kk]
++ 
++   # Update the status bar
++   if (sb) {
++     setLabel(sb, "progress", 100*kk/nfiles)
++     if (kk %% 10 == 1 || kk == nfiles)
++       setLabel(sb, "file", substr(basename(file), 1, 44))
++ 
++     size <- file.info(file)$size
++     # popMessage() calls update() too
++     popMessage(sb, sprintf("Processing %s (%.2fkB)",
++                                        basename(file), size/1024))
++     flush(sb)
++   }
++ 
++   # Read the file
++   bfr <- readBin(file, what="raw", n=size)
++   nbytes <- nbytes + size
++ 
++   # Emulate a slow process
++   if (interactive()) Sys.sleep(rexp(1, rate=60))
++ 
++   # Update the status bar
++   if (sb) {
++     setLabel(sb, "nbytes", nbytes)
++     setLabel(sb, "time", format(Sys.time(), "%H:%M:%S"))
++     update(sb)
++   }
++ }
+Processing CITATION (0.63kB)
+File: CITATION                                    [  4%       0 bytes         ]File: CITATION                                    [  4%     643 bytes 09:20:10]                                                                               Processing error.catching.R (3.29kB)
+File: CITATION                                    [  8%     643 bytes 09:20:10]File: CITATION                                    [  8%    4010 bytes 09:20:10]                                                                               Processing is.things.R (4.69kB)
+File: CITATION                                    [ 12%    4010 bytes 09:20:10]File: CITATION                                    [ 12%    8808 bytes 09:20:10]                                                                               Processing recursion.R (2.07kB)
+File: CITATION                                    [ 17%    8808 bytes 09:20:10]File: CITATION                                    [ 17%   10923 bytes 09:20:10]                                                                               Processing scoping.R (1.52kB)
+File: CITATION                                    [ 21%   10923 bytes 09:20:10]File: CITATION                                    [ 21%   12483 bytes 09:20:10]                                                                               Processing DESCRIPTION (0.37kB)
+File: CITATION                                    [ 25%   12483 bytes 09:20:10]File: CITATION                                    [ 25%   12866 bytes 09:20:10]                                                                               Processing aliases.rds (12.43kB)
+File: CITATION                                    [ 29%   12866 bytes 09:20:10]File: CITATION                                    [ 29%   25595 bytes 09:20:10]                                                                               Processing AnIndex (34.95kB)
+File: CITATION                                    [ 33%   25595 bytes 09:20:10]File: CITATION                                    [ 33%   61387 bytes 09:20:10]                                                                               Processing base.rdb (2464.05kB)
+File: CITATION                                    [ 38%   61387 bytes 09:20:10]File: CITATION                                    [ 38% 2584573 bytes 09:20:10]                                                                               Processing base.rdx (9.14kB)
+File: CITATION                                    [ 42% 2584573 bytes 09:20:10]File: CITATION                                    [ 42% 2593930 bytes 09:20:10]                                                                               Processing paths.rds (3.08kB)
+File: paths.rds                                   [ 46% 2593930 bytes 09:20:10]File: paths.rds                                   [ 46% 2597085 bytes 09:20:10]                                                                               Processing 00Index.html (148.38kB)
+File: paths.rds                                   [ 50% 2597085 bytes 09:20:10]File: paths.rds                                   [ 50% 2749021 bytes 09:20:10]                                                                               Processing R.css (1.80kB)
+File: paths.rds                                   [ 54% 2749021 bytes 09:20:10]File: paths.rds                                   [ 54% 2750865 bytes 09:20:10]                                                                               Processing INDEX (24.21kB)
+File: paths.rds                                   [ 58% 2750865 bytes 09:20:10]File: paths.rds                                   [ 58% 2775655 bytes 09:20:10]                                                                               Processing demo.rds (0.26kB)
+File: paths.rds                                   [ 62% 2775655 bytes 09:20:10]File: paths.rds                                   [ 62% 2775920 bytes 09:20:10]                                                                               Processing features.rds (0.13kB)
+File: paths.rds                                   [ 67% 2775920 bytes 09:20:10]File: paths.rds                                   [ 67% 2776052 bytes 09:20:10]                                                                               Processing hsearch.rds (22.95kB)
+File: paths.rds                                   [ 71% 2776052 bytes 09:20:10]File: paths.rds                                   [ 71% 2799548 bytes 09:20:10]                                                                               Processing links.rds (13.29kB)
+File: paths.rds                                   [ 75% 2799548 bytes 09:20:10]File: paths.rds                                   [ 75% 2813157 bytes 09:20:10]                                                                               Processing package.rds (0.57kB)
+File: paths.rds                                   [ 79% 2813157 bytes 09:20:10]File: paths.rds                                   [ 79% 2813738 bytes 09:20:10]                                                                               Processing Rd.rds (22.12kB)
+File: paths.rds                                   [ 83% 2813738 bytes 09:20:10]File: paths.rds                                   [ 83% 2836393 bytes 09:20:10]                                                                               Processing base (5.32kB)
+File: base                                        [ 88% 2836393 bytes 09:20:10]File: base                                        [ 88% 2841842 bytes 09:20:10]                                                                               Processing base.rdb (1079.89kB)
+File: base                                        [ 92% 2841842 bytes 09:20:10]File: base                                        [ 92% 3947646 bytes 09:20:10]                                                                               Processing base.rdx (13.86kB)
+File: base                                        [ 96% 3947646 bytes 09:20:10]File: base                                        [ 96% 3961841 bytes 09:20:10]                                                                               Processing Rprofile (6.91kB)
+File: Rprofile                                    [100% 3961841 bytes 09:20:10]File: Rprofile                                    [100% 3968918 bytes 09:20:10]> setLabel(sb, "file", "<done>")
+> update(sb)
+File: <done>                                      [100% 3968918 bytes 09:20:10]> cat("\n")
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("VComments")
+> ### * VComments
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: VComments
+> ### Title: The VComments class
+> ### Aliases: VComments
+> ### Keywords: classes programming IO
+> 
+> ### ** Examples
+> 
+> filename <- system.file("data-ex/exampleVComments.R", package="R.utils")
+> lines <- readLines(filename)
+> 
+> cat("Code before preprocessing:\n")
+Code before preprocessing:
+> displayCode(code=lines, pager="console")
+sh: 1: console: not found
+Warning: error in running command
+> 
+> lines <- VComments$compile(lines)
+Warning in validate.VComments(this, lines) :
+  Number of verbose enters and exits do not match: 6 != 4
+> 
+> cat("Code after preprocessing:\n")
+Code after preprocessing:
+> displayCode(code=lines, pager="console")
+sh: 1: console: not found
+Warning: error in running command
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Verbose")
+> ### * Verbose
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Verbose
+> ### Title: Class to writing verbose messages to a connection or file
+> ### Aliases: Verbose
+> ### Keywords: classes programming IO
+> 
+> ### ** Examples
+> 
+> verbose <- Verbose(threshold=-1)
+> 
+> header(verbose, "A verbose writer example", padding=0)
+---------------------------------------------------------------------------
+- A verbose writer example
+---------------------------------------------------------------------------
+> 
+> enter(verbose, "Analysis A")
+Analysis A...
+> for (kk in 1:10) {
++   printf(verbose, "step %d\n", kk)
++   if (kk == 2) {
++     cat(verbose, "Turning ON automatic timestamps")
++     timestampOn(verbose)
++   } else if (kk == 4) {
++     timestampOff(verbose)
++     cat(verbose, "Turned OFF automatic timestamps")
++     cat(verbose, "Turning OFF verbose messages for steps ", kk, "-6")
++     off(verbose)
++   } else if (kk == 6) {
++     on(verbose)
++     cat(verbose, "Turned ON verbose messages just before step ", kk+1)
++   }
++ 
++   if (kk %in% c(5,8)) {
++     enterf(verbose, "Sub analysis #%d", kk)
++     for (jj in c("i", "ii", "iii")) {
++       cat(verbose, "part ", jj)
++     }
++     exit(verbose)
++   }
++ }
+ step 1
+ step 2
+ Turning ON automatic timestamps
+20251119 09:20:10| step 3
+20251119 09:20:10| step 4
+ Turned OFF automatic timestamps
+ Turning OFF verbose messages for steps 4-6
+ Turned ON verbose messages just before step 7
+ step 7
+ step 8
+ Sub analysis #8...
+  part i
+  part ii
+  part iii
+ Sub analysis #8...done
+ step 9
+ step 10
+> cat(verbose, "All steps completed!")
+ All steps completed!
+> exit(verbose)
+Analysis A...done
+> 
+> ruler(verbose)
+---------------------------------------------------------------------------
+> cat(verbose, "Demo of some other methods:")
+Demo of some other methods:
+> str(verbose, c(a=1, b=2, c=3))
+ Named num [1:3] 1 2 3
+ - attr(*, "names")= chr [1:3] "a" "b" "c"
+> print(verbose, c(a=1, b=2, c=3))
+a b c 
+1 2 3 
+> summary(verbose, c(a=1, b=2, c=3))
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+    1.0     1.5     2.0     2.0     2.5     3.0 
+> evaluate(verbose, rnorm, n=3, mean=2, sd=3)
+[1]  0.1206386  2.5509300 -0.5068858
+> 
+> ruler(verbose)
+---------------------------------------------------------------------------
+> newline(verbose)
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("attachLocally.list")
+> ### * attachLocally.list
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: attachLocally.list
+> ### Title: Assigns an objects elements locally
+> ### Aliases: attachLocally.list attachLocally.data.frame
+> ###   attachLocally.environment attachLocally
+> ### Keywords: methods utilities programming
+> 
+> ### ** Examples
+> 
+> foo <- function(object) {
++   cat("Local objects in foo():\n")
++   print(ls())
++ 
++   attachLocally(object)
++ 
++   cat("\nLocal objects in foo():\n")
++   print(ls())
++ 
++   for (name in ls()) {
++     cat("\nObject '", name, "':\n", sep="")
++     print(get(name, inherits=FALSE))
++   }
++ }
+> 
+> a <- "A string"
+> l <- list(a=1:10, msg="Hello world", df=data.frame(a=NA, b=2))
+> foo(l)
+Local objects in foo():
+[1] "object"
+
+Local objects in foo():
+[1] "a"      "df"     "msg"    "object"
+
+Object 'a':
+ [1]  1  2  3  4  5  6  7  8  9 10
+
+Object 'df':
+   a b
+1 NA 2
+
+Object 'msg':
+[1] "Hello world"
+
+Object 'object':
+$a
+ [1]  1  2  3  4  5  6  7  8  9 10
+
+$msg
+[1] "Hello world"
+
+$df
+   a b
+1 NA 2
+
+> print(a)
+[1] "A string"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("callHooks")
+> ### * callHooks
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: callHooks
+> ### Title: Call hook functions by hook name
+> ### Aliases: callHooks.default callHooks
+> ### Keywords: programming
+> 
+> ### ** Examples
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Example 1
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # First, clean up if called more than once
+> setHook("myFunction.onEnter", NULL, action="replace")
+> setHook("myFunction.onExit", NULL, action="replace")
+> 
+> runConference <- function(...) {
++   callHooks("myFunction.onEnter")
++   cat("Speaker A: Hello there...\n")
++   callHooks("myFunction.onExit")
++ }
+> 
+> setHook("myFunction.onEnter", function(...) {
++   cat("Chair: Welcome to our conference.\n")
++ })
+> 
+> setHook("myFunction.onEnter", function(...) {
++   cat("Chair: Please welcome Speaker A!\n")
++ })
+> 
+> setHook("myFunction.onExit", function(...) {
++   cat("Chair: Please thanks Speaker A!\n")
++ })
+> 
+> runConference()
+Chair: Welcome to our conference.
+Chair: Please welcome Speaker A!
+Speaker A: Hello there...
+Chair: Please thanks Speaker A!
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Example 2
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> setHook("randomNumber", NULL, action="replace")
+> setHook("randomNumber", rnorm)      # By function
+> setHook("randomNumber", "rexp")     # By name
+> setHook("randomNumber", "runiff")   # Non-existing name
+> setHook("randomNumber", .GlobalEnv) # Not a function
+> 
+> res <- callHooks("randomNumber", n=1)
+> str(res)
+List of 4
+ $       :List of 3
+  ..$ fcn      :function (n, mean = 0, sd = 1)  
+  ..$ result   : num -0.626
+  ..$ exception: NULL
+ $ rexp  :List of 3
+  ..$ fcn      : chr "rexp"
+  ..$ result   : num 0.146
+  ..$ exception: NULL
+ $ runiff:List of 3
+  ..$ fcn      : logi NA
+  ..$ result   : NULL
+  ..$ exception:List of 2
+  .. ..$ message: chr "could not find function \"fcn\""
+  .. ..$ call   : language fcn(...)
+  .. ..- attr(*, "class")= chr [1:3] "simpleError" "error" "condition"
+ $       :List of 3
+  ..$ fcn      :<environment: R_GlobalEnv> 
+  ..$ result   : NULL
+  ..$ exception:List of 2
+  .. ..$ message: chr "could not find function \"fcn\""
+  .. ..$ call   : language fcn(...)
+  .. ..- attr(*, "class")= chr [1:3] "simpleError" "error" "condition"
+ - attr(*, "failedHooks")= logi [1:4] FALSE FALSE TRUE TRUE
+> cat("Number of hooks: ", length(res), "\n")
+Number of hooks:  4 
+> isErroneous <- unlist(lapply(res, FUN=function(x) !is.null(x$exception)))
+> cat("Erroneous hooks: ", sum(isErroneous), "\n")
+Erroneous hooks:  2 
+> 
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("capitalize")
+> ### * capitalize
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: capitalize
+> ### Title: Capitalizes/decapitalizes each character string in a vector
+> ### Aliases: capitalize.default capitalize decapitalize
+> ###   decapitalize.default
+> ### Keywords: programming
+> 
+> ### ** Examples
+> 
+> 
+> words <- strsplit("Hello wOrld", " ")[[1]]
+> cat(paste(toupper(words), collapse=" "), "\n")      # "HELLO WORLD"
+HELLO WORLD 
+> cat(paste(tolower(words), collapse=" "), "\n")      # "hello world"
+hello world 
+> cat(paste(capitalize(words), collapse=" "), "\n")   # "Hello WOrld"
+Hello WOrld 
+> cat(paste(decapitalize(words), collapse=" "), "\n") # "hello wOrld"
+hello wOrld 
+> 
+> # Sanity checks
+> stopifnot(paste(toupper(words), collapse=" ") == "HELLO WORLD")
+> stopifnot(paste(tolower(words), collapse=" ") == "hello world")
+> stopifnot(paste(capitalize(words), collapse=" ") == "Hello WOrld")
+> stopifnot(paste(decapitalize(words), collapse=" ") == "hello wOrld")
+> 
+> 
+> 
+> cleanEx()
+> nameEx("captureOutput")
+> ### * captureOutput
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: captureOutput
+> ### Title: Evaluate an R expression and captures the output
+> ### Aliases: captureOutput
+> ### Keywords: IO programming
+> 
+> ### ** Examples
+> 
+> # captureOutput() is much faster than capture.output()
+> # for large outputs when capturing to a string.
+> for (n in c(10e3, 20e3, 30e3, 40e3)) {
++   printf("n=%d\n", n)
++ 
++   x <- rnorm(n)
++ 
++   t0 <- system.time({
++     bfr0 <- capture.output(print(x))
++   })
++   print(t0)
++ 
++   t1 <- system.time({
++     bfr <- captureOutput(print(x))
++   })
++   print(t1)
++   print(t1/t0)
++ 
++   bfr2n <- captureOutput(print(x), collapse="\n")
++   bfr2r <- captureOutput(print(x), collapse="\r")
++ 
++   stopifnot(identical(bfr, bfr0))
++ } # for (n ...)
+n=10000
+   user  system elapsed 
+  0.019   0.003   0.022 
+   user  system elapsed 
+  0.006   0.000   0.007 
+     user    system   elapsed 
+0.3157895 0.0000000 0.3181818 
+n=20000
+   user  system elapsed 
+  0.057   0.014   0.071 
+   user  system elapsed 
+  0.012   0.000   0.012 
+     user    system   elapsed 
+0.2105263 0.0000000 0.1690141 
+n=30000
+   user  system elapsed 
+  0.115   0.001   0.115 
+   user  system elapsed 
+  0.018   0.000   0.017 
+     user    system   elapsed 
+0.1565217 0.0000000 0.1478261 
+n=40000
+   user  system elapsed 
+  0.199   0.001   0.200 
+   user  system elapsed 
+  0.023   0.000   0.023 
+     user    system   elapsed 
+0.1155779 0.0000000 0.1150000 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("cmdArgs")
+> ### * cmdArgs
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: cmdArgs
+> ### Title: Simple access to parsed command-line arguments
+> ### Aliases: cmdArgs cmdArg
+> ### Keywords: programming
+> 
+> ### ** Examples
+> 
+> args <- cmdArgs()
+> cat("User command-line arguments used when invoking R:\n")
+User command-line arguments used when invoking R:
+> str(args)
+ Named list()
+> 
+> # Retrieve command line argument 'n', e.g. '-n 13' or '--n=13'
+> n <- cmdArg("n", 42L)
+> printf("Argument n=%d\n", n)
+Argument n=42
+> 
+> # Short version doing the same
+> n <- cmdArg(n=42L)
+> printf("Argument n=%d\n", n)
+Argument n=42
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("cmdArgsCall")
+> ### * cmdArgsCall
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: cmdArgsCall
+> ### Title: Calls an R function passing command-line arguments
+> ### Aliases: cmdArgsCall
+> ### Keywords: programming internal
+> 
+> ### ** Examples
+> ## Not run: 
+> ##D   Rscript -e R.utils::cmdArgsCall(rnorm) n=4
+> ## End(Not run)
+> 
+> 
+> cleanEx()
+> nameEx("colClasses")
+> ### * colClasses
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: colClasses
+> ### Title: Creates a vector of column classes used for tabular reading
+> ### Aliases: colClasses.default colClasses
+> ### Keywords: programming
+> 
+> ### ** Examples
+> 
+> # All predefined types
+> print(colClasses("-?cdfilnrzDP"))
+ [1] "NULL"      "NA"        "character" "double"    "factor"    "integer"  
+ [7] "logical"   "numeric"   "raw"       "complex"   "Date"      "POSIXct"  
+> ## [1] "NULL"      "NA"        "character" "double"
+> ## [5] "factor"    "integer"   "logical"   "numeric"
+> ## [9] "raw"       "complex"   "Date"      "POSIXct"
+> 
+> # A string in column 1, integers in column 4 and 5, rest skipped
+> print(colClasses("c--ii----"))
+[1] "character" "NULL"      "NULL"      "integer"   "integer"   "NULL"     
+[7] "NULL"      "NULL"      "NULL"     
+> ## [1] "character" "NULL"      "NULL"      "integer"
+> ## [5] "integer"   "NULL"      "NULL"      "NULL"
+> ## [9] "NULL"
+> 
+> # Repeats and custom column classes
+> c1 <- colClasses("3c{MyClass}3{foo}")
+> print(c1)
+[1] "character" "character" "character" "MyClass"   "foo"       "foo"      
+[7] "foo"      
+> ## [1] "character" "character" "character" "MyClass"
+> ## [5] "foo"       "foo"       "foo"
+> 
+> # Passing repeats and class names using sprintf() syntax
+> c2 <- colClasses("%dc{%s}%d{foo}", 3, "MyClass", 3)
+> stopifnot(identical(c1, c2))
+> 
+> # Repeats of a vector of column classes
+> c3 <- colClasses("3{MyClass,c}")
+> print(c3)
+[1] "MyClass"   "character" "MyClass"   "character" "MyClass"   "character"
+> ## [1] "MyClass"   "character" "MyClass"   "character"
+> ## [4] "MyClass"   "character"
+> 
+> # Large number repeats
+> c4 <- colClasses("321{MyClass,c,i,d}")
+> c5 <- rep(c("MyClass", "character", "integer", "double"), times=321)
+> stopifnot(identical(c4, c5))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("commandArgs")
+> ### * commandArgs
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: commandArgs
+> ### Title: Extract command-line arguments
+> ### Aliases: commandArgs
+> ### Keywords: programming internal
+> 
+> ### ** Examples
+> 
+> 
+> ######################################################################
+> # Non-parsed command-line arguments
+> ######################################################################
+> # Display how this instance of R was invoked.
+> cmd <- paste(commandArgs(), collapse=" ")
+> cat("How R was invoked:\n");
+How R was invoked:
+> cat(cmd, "\n")
+/usr/local/lib/R/bin/exec/R --no-save --no-restore -f R.utils-Ex.R --restore --save --no-readline --vanilla 
+> 
+> # Get all arguments
+> args <- commandArgs()
+> print(args)
+[1] "/usr/local/lib/R/bin/exec/R" "--no-save"                  
+[3] "--no-restore"                "-f"                         
+[5] "R.utils-Ex.R"                "--restore"                  
+[7] "--save"                      "--no-readline"              
+[9] "--vanilla"                  
+> 
+> # Get only "private" arguments and not the name of the R executable.
+> args <- commandArgs(excludeReserved=TRUE)[-1]
+> print(args)
+character(0)
+> 
+> # Assert backward compatibility
+> args0 <- base::commandArgs()
+> args <- commandArgs()
+> stopifnot(all.equal(args, args0, check.attributes=FALSE))
+> 
+> 
+> ######################################################################
+> # Parsed command-line arguments
+> ######################################################################
+> # Get all arguments as a named list, e.g. if R is started as:
+> #
+> #   R DATAPATH=../data --args --root="do da" --foo bar --details --a=2
+> #
+> # then 'args' below will equal
+> #
+> #   list(R=NA, DATAPATH="../data" args=TRUE, root="do da",
+> #        foo="bar", details=TRUE, a="2")
+> args <- commandArgs(asValues=TRUE)
+> str(args)
+List of 8
+ $            : chr "/usr/local/lib/R/bin/exec/R"
+ $ no-save    : logi TRUE
+ $ no-restore : logi TRUE
+ $ f          : chr "R.utils-Ex.R"
+ $ restore    : logi TRUE
+ $ save       : logi TRUE
+ $ no-readline: logi TRUE
+ $ vanilla    : logi TRUE
+> 
+> # Turn arguments into R variables
+> args <- commandArgs(asValues=TRUE, excludeReserved=TRUE)[-1]
+> keys <- attachLocally(args)
+> cat("Command-line arguments attached to global environment:\n");
+Command-line arguments attached to global environment:
+> print(keys);
+character(0)
+> str(mget(keys, envir=globalenv()))
+ Named list()
+> 
+> 
+> 
+> cleanEx()
+> nameEx("compressFile")
+> ### * compressFile
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: compressFile
+> ### Title: Compressing and decompressing files
+> ### Aliases: compressFile.default compressFile decompressFile
+> ###   decompressFile.default isCompressedFile isCompressedFile.default
+> ###   bzip2 bzip2.default bunzip2 bunzip2.default isBzipped
+> ###   isBzipped.default gzip gzip.default gunzip gunzip.default isGzipped
+> ###   isGzipped.default
+> ### Keywords: file programming
+> 
+> ### ** Examples
+> 
+>   ## bzip2
+>   cat(file="foo.txt", "Hello world!")
+>   print(isBzipped("foo.txt"))
+[1] FALSE
+>   print(isBzipped("foo.txt.bz2"))
+[1] TRUE
+> 
+>   bzip2("foo.txt")
+>   print(file.info("foo.txt.bz2"))
+            size isdir mode               mtime               ctime
+foo.txt.bz2   51 FALSE  644 2025-11-19 09:20:11 2025-11-19 09:20:11
+                          atime uid gid uname grname
+foo.txt.bz2 2025-11-19 09:20:11   0   0  root   root
+>   print(isBzipped("foo.txt"))
+[1] FALSE
+>   print(isBzipped("foo.txt.bz2"))
+[1] TRUE
+> 
+>   bunzip2("foo.txt.bz2")
+>   print(file.info("foo.txt"))
+        size isdir mode               mtime               ctime
+foo.txt   12 FALSE  644 2025-11-19 09:20:11 2025-11-19 09:20:11
+                      atime uid gid uname grname
+foo.txt 2025-11-19 09:20:11   0   0  root   root
+> 
+>   ## gzip
+>   cat(file="foo.txt", "Hello world!")
+>   print(isGzipped("foo.txt"))
+[1] FALSE
+>   print(isGzipped("foo.txt.gz"))
+[1] TRUE
+> 
+>   gzip("foo.txt")
+>   print(file.info("foo.txt.gz"))
+           size isdir mode               mtime               ctime
+foo.txt.gz   32 FALSE  644 2025-11-19 09:20:11 2025-11-19 09:20:11
+                         atime uid gid uname grname
+foo.txt.gz 2025-11-19 09:20:11   0   0  root   root
+>   print(isGzipped("foo.txt"))
+[1] FALSE
+>   print(isGzipped("foo.txt.gz"))
+[1] TRUE
+> 
+>   gunzip("foo.txt.gz")
+>   print(file.info("foo.txt"))
+        size isdir mode               mtime               ctime
+foo.txt   12 FALSE  644 2025-11-19 09:20:11 2025-11-19 09:20:11
+                      atime uid gid uname grname
+foo.txt 2025-11-19 09:20:11   0   0  root   root
+> 
+>   ## Cleanup
+>   file.remove("foo.txt")
+[1] TRUE
+> 
+> 
+> 
+> cleanEx()
+> nameEx("compressPDF")
+> ### * compressPDF
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: compressPDF
+> ### Title: Compresses a PDF (into a new PDF)
+> ### Aliases: compressPDF.default compressPDF
+> ### Keywords: file IO
+> 
+> ### ** Examples
+> ## Not run: 
+> ##D   pathnameZ <- compressPDF("report.pdf")
+> ## End(Not run)
+> 
+> 
+> cleanEx()
+> nameEx("countLines")
+> ### * countLines
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: countLines
+> ### Title: Counts the number of lines in a text file
+> ### Aliases: countLines.default countLines
+> ### Keywords: programming
+> 
+> ### ** Examples
+> 
+> pathname <- system.file("NEWS.md", package="R.utils");
+> n <- countLines(pathname);
+> n2 <- length(readLines(pathname));
+> stopifnot(n == n2);
+> 
+> 
+> 
+> cleanEx()
+> nameEx("createFileAtomically")
+> ### * createFileAtomically
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: createFileAtomically
+> ### Title: Creates a file atomically
+> ### Aliases: createFileAtomically.default createFileAtomically
+> ### Keywords: utilities programming IO
+> 
+> ### ** Examples
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Create a file atomically
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> n <- 10
+> pathname <- createFileAtomically("foobar.txt", path=tempdir(), FUN=function(pathname) {
++   cat(file=pathname, "This file was created atomically.\n")
++   cat(file=pathname, "Timestamp: ", as.character(Sys.time()), "\n", sep="")
++   for (kk in 1:n) {
++     cat(file=pathname, kk, "\n", append=TRUE)
++     # Emulate a slow process
++     if (interactive()) Sys.sleep(0.1)
++   }
++   cat(file=pathname, "END OF FILE\n", append=TRUE)
++ }, overwrite=TRUE)
+> 
+> bfr <- readLines(pathname)
+> cat(bfr, sep="\n")
+Timestamp: 2025-11-19 09:20:11.578223
+1 
+2 
+3 
+4 
+5 
+6 
+7 
+8 
+9 
+10 
+END OF FILE
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Overwrite the file atomically (emulate write failure)
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> tryCatch({
++   pathname <- createFileAtomically("foobar.txt", path=tempdir(), FUN=function(pathname) {
++     cat(file=pathname, "Trying to create a new file.\n")
++     cat(file=pathname, "Writing a bit, but then an error...\n", append=TRUE)
++     # Emulate write error
++     stop("An error occured while writing to the new file.")
++     cat(file=pathname, "END OF FILE\n", append=TRUE)
++   }, overwrite=TRUE)
++ }, error = function(ex) {
++   print(ex$message)
++ })
+> 
+> # The original file was never overwritten
+> bfr2 <- readLines(pathname)
+> cat(bfr2, sep="\n")
+Timestamp: 2025-11-19 09:20:11.578223
+1 
+2 
+3 
+4 
+5 
+6 
+7 
+8 
+9 
+10 
+END OF FILE
+> stopifnot(identical(bfr2, bfr))
+> 
+> # The partially temporary file remains
+> pathnameT <- sprintf("%s.tmp", pathname)
+> stopifnot(isFile(pathnameT))
+> bfr3 <- readLines(pathnameT)
+> cat(bfr3, sep="\n")
+Trying to create a new file.
+Writing a bit, but then an error...
+> 
+> file.remove(pathnameT)
+[1] TRUE
+> file.remove(pathname)
+[1] TRUE
+> 
+> 
+> 
+> cleanEx()
+> nameEx("createWindowsShortcut")
+> ### * createWindowsShortcut
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: createWindowsShortcut
+> ### Title: Creates a Microsoft Windows Shortcut (.lnk file)
+> ### Aliases: createWindowsShortcut.default createWindowsShortcut
+> ### Keywords: file IO
+> 
+> ### ** Examples
+> 
+> # Create Windows Shortcut links to a directory and a file
+> targets <- list(
++   system.file(package="R.utils"),
++   system.file("DESCRIPTION", package="R.utils")
++ )
+> 
+> for (kk in seq_along(targets)) {
++   cat("Link #", kk, "\n", sep="")
++ 
++   target <- targets[[kk]]
++   cat("Target: ", target, "\n", sep="")
++ 
++   # Name of *.lnk file
++   pathname <- sprintf("%s.LNK", tempfile())
++ 
++   tryCatch({
++     # Will only work on Windows systems with support for VB scripting
++     createWindowsShortcut(pathname, target=target)
++   }, error = function(ex) {
++     print(ex)
++   })
++ 
++   # Was it created?
++   if (isFile(pathname)) {
++     cat("Created link file: ", pathname, "\n", sep="")
++ 
++     # Validate that it points to the correct target
++     dest <- filePath(pathname, expandLinks="any")
++     cat("Available target: ", dest, "\n", sep="")
++ 
++     res <- all.equal(tolower(dest), tolower(target))
++     if (!isTRUE(res)) {
++       msg <- sprintf("Link target does not match expected target: %s != %s", dest, target)
++       cat(msg, "\n")
++       warning(msg)
++     }
++ 
++     # Cleanup
++     file.remove(pathname)
++   }
++ }
+Link #1
+Target: /usr/local/lib/R/site-library/R.utils
+[2025-11-19 09:20:11.680306] Exception: An error occurred when calling VBScript (‘cscript "/tmp/RtmpMpMQHb/file55db450c5c5b.vbs"’) to create Windows Shortcut link ‘/tmp/RtmpMpMQHb/file55db57a34f8d.LNK’. The reason was: could not find function "shell"
+
+  at #07. createWindowsShortcutViaVBScript(pathname, target = target, mustWork = mustWork)
+          - createWindowsShortcutViaVBScript() is local of the calling function
+
+  at #06. createWindowsShortcut.default(pathname, target = target)
+          - createWindowsShortcut.default() is in environment 'R.utils'
+
+  at #05. createWindowsShortcut(pathname, target = target)
+          - createWindowsShortcut() is in environment 'R.utils'
+
+Link #2
+Target: /usr/local/lib/R/site-library/R.utils/DESCRIPTION
+[2025-11-19 09:20:11.693964] Exception: An error occurred when calling VBScript (‘cscript "/tmp/RtmpMpMQHb/file55db6a5154.vbs"’) to create Windows Shortcut link ‘/tmp/RtmpMpMQHb/file55db1e76348.LNK’. The reason was: could not find function "shell"
+
+  at #07. createWindowsShortcutViaVBScript(pathname, target = target, mustWork = mustWork)
+          - createWindowsShortcutViaVBScript() is local of the calling function
+
+  at #06. createWindowsShortcut.default(pathname, target = target)
+          - createWindowsShortcut.default() is in environment 'R.utils'
+
+  at #05. createWindowsShortcut(pathname, target = target)
+          - createWindowsShortcut() is in environment 'R.utils'
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("dataFrame")
+> ### * dataFrame
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: dataFrame
+> ### Title: Allocates a data frame with given column classes
+> ### Aliases: dataFrame.default dataFrame
+> ### Keywords: manip utilities
+> 
+> ### ** Examples
+> 
+>   df <- dataFrame(colClasses=c(a="integer", b="double"), nrow=10)
+>   df[,1] <- sample(1:nrow(df))
+>   df[,2] <- rnorm(nrow(df))
+>   print(df)
+    a          b
+1   9 -0.8204684
+2   4  0.4874291
+3   7  0.7383247
+4   1  0.5757814
+5   2 -0.3053884
+6   5  1.5117812
+7   3  0.3898432
+8  10 -0.6212406
+9   6 -2.2146999
+10  8  1.1249309
+> 
+> 
+> 
+> cleanEx()
+> nameEx("dimNALT_-")
+> ### * dimNALT_-
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: dimNA< -
+> ### Title: Sets the dimension of an object with the option to infer one
+> ###   dimension automatically
+> ### Aliases: 'dimNA< -.default' 'dimNA< -' dimNA<- dimNA<-.default
+> ### Keywords: file IO
+> 
+> ### ** Examples
+> 
+>   x <- 1:12
+>   dimNA(x) <- c(2,NA,3)
+>   stopifnot(dim(x) == as.integer(c(2,2,3)))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("displayCode")
+> ### * displayCode
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: displayCode
+> ### Title: Displays the contents of a text file with line numbers and more
+> ### Aliases: displayCode.default displayCode
+> ### Keywords: file IO
+> 
+> ### ** Examples
+> 
+> file <- system.file("DESCRIPTION", package="R.utils")
+> cat("Displaying: ", file, ":\n", sep="")
+Displaying: /usr/local/lib/R/site-library/R.utils/DESCRIPTION:
+> displayCode(file)
+ 1|Package: R.utils
+ 2|Version: 2.13.0
+ 3|Depends: R (>= 2.14.0), R.oo
+ 4|Imports: methods, utils, tools, R.methodsS3
+ 5|Suggests: datasets, digest (>= 0.6.10)
+ 6|Title: Various Programming Utilities
+ 7|Authors@R: c(person("Henrik", "Bengtsson", role=c("aut", "cre", "cph"),
+ 8|                                          email = "henrikb@braju.com"))
+ 9|Author: Henrik Bengtsson [aut, cre, cph]
+10|Maintainer: Henrik Bengtsson <henrikb@braju.com>
+11|Description: Utility functions useful when programming and developing R pack
+  |ages.
+12|License: LGPL (>= 2.1)
+13|LazyLoad: TRUE
+14|URL: https://henrikbengtsson.github.io/R.utils/,
+15|        https://github.com/HenrikBengtsson/R.utils
+16|BugReports: https://github.com/HenrikBengtsson/R.utils/issues
+17|NeedsCompilation: no
+18|Packaged: 2025-02-24 19:44:20 UTC; henrik
+19|Repository: RSPM
+20|Date/Publication: 2025-02-24 21:20:02 UTC
+21|Encoding: UTF-8
+22|Built: R 4.5.0; ; 2025-04-05 02:59:14 UTC; unix
+
+> 
+> file <- system.file("NEWS.md", package="R.utils")
+> cat("Displaying: ", file, ":\n", sep="")
+Displaying: /usr/local/lib/R/site-library/R.utils/NEWS.md:
+> displayCode(file, numerate=FALSE, lines=100:110, wrap=65)
+
+# Version 2.11.0 [2021-09-25]
+
+## New Features
+
+ * Now `insert()` support duplicates in `ats`, which then results
+ in
+   the corresponding `values` being inserted in order at those
+   duplicated indices.
+
+ * Relaxed `insert()` to accept a `values` argument that is a lis
+t but
+   not necessarily a formal vector.
+
+> 
+> file <- system.file("NEWS.md", package="R.utils")
+> cat("Displaying: ", file, ":\n", sep="")
+Displaying: /usr/local/lib/R/site-library/R.utils/NEWS.md:
+> displayCode(file, lines=100:110, wrap=65, highlight=c(101,104:108))
+ 100|
+*101|# Version 2.11.0 [2021-09-25]
+ 102|
+ 103|## New Features
+*104|
+*105| * Now `insert()` support duplicates in `ats`, which then re
+    |sults in
+*106|   the corresponding `values` being inserted in order at tho
+    |se
+*107|   duplicated indices.
+*108|
+ 109| * Relaxed `insert()` to accept a `values` argument that is 
+    |a list but
+ 110|   not necessarily a formal vector.
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("doCall")
+> ### * doCall
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: doCall
+> ### Title: Executes a function call with option to ignore unused arguments
+> ### Aliases: doCall.default doCall
+> ### Keywords: programming
+> 
+> ### ** Examples
+> 
+>   doCall("plot", x=1:10, y=sin(1:10), col="red", dummyArg=54,
++          alwaysArgs=list(xlab="x", ylab="y"),
++          .functions=c("plot", "plot.xy"))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("downloadFile.character")
+> ### * downloadFile.character
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: downloadFile.character
+> ### Title: Downloads a file
+> ### Aliases: downloadFile.character downloadFile
+> ### Keywords: methods programming file
+> 
+> ### ** Examples
+> ## Not run: 
+> ##D  pathname <- downloadFile("https://www.r-project.org/index.html", path="www.r-project.org/")
+> ##D  print(pathname)
+> ## End(Not run)
+> 
+> 
+> cleanEx()
+> nameEx("eget")
+> ### * eget
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: eget
+> ### Title: Gets a variable by name
+> ### Aliases: eget ecget
+> ### Keywords: file IO internal
+> 
+> ### ** Examples
+> 
+> # Get variable 'a' if it exists, otherwise return the default value.
+> value <- eget("a", default=42L)
+> print(value) # 42L
+[1] 42
+> 
+> # Short version doing the same
+> value <- eget(a=42L)
+> print(value) # 42L
+[1] 42
+> 
+> # Same, but look for the variable in 'envir' (here a list)
+> value <- eget("a", default=42L, envir=list(a=1))
+> print(value) # 1L
+[1] 1
+> 
+> # Get variable 'n', which defaults to command-line argument
+> # 'n' ('-n' or '--n'), which in turn defaults to 42L.
+> value <- eget(n=cmdArg(n=42L))
+> print(value)
+[1] 42
+> 
+> # Equivalently.
+> value <- ecget(n=42L)
+> print(value)
+[1] 42
+> 
+> 
+> 
+> cleanEx()
+> nameEx("egsub")
+> ### * egsub
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: egsub
+> ### Title: Global substitute of expression using regular expressions
+> ### Aliases: egsub
+> ### Keywords: utilities programming
+> 
+> ### ** Examples
+> 
+> # Original expression
+> expr <- substitute({
++   res <- foo.bar.yaa(2)
++   print(res)
++   R.utils::use("R.oo")
++   x <- .b.
++ })
+> 
+> # Some predefined objects
+> foo.bar.yaa <- function(x) str(x)
+> a <- 2
+> b <- a
+> 
+> # Substitute with variable name
+> expr2 <- egsub("^[.]([a-zA-Z0-9_.]+)[.]$", "\\1", expr, value=FALSE)
+> print(expr2)
+{
+    res <- foo.bar.yaa(2)
+    print(res)
+    R.utils::use("R.oo")
+    x <- b
+}
+> ## {
+> ##     res <- foo.bar.yaa(2)
+> ##     print(res)
+> ##     R.utils::use("R.oo")
+> ##     x <- b
+> ## }
+> 
+> # Substitute with variable value
+> expr3 <- egsub("^[.]([a-zA-Z0-9_.]+)[.]$", "\\1", expr, value=TRUE)
+> print(expr3)
+{
+    res <- foo.bar.yaa(2)
+    print(res)
+    R.utils::use("R.oo")
+    x <- 2
+}
+> ## {
+> ##     res <- foo.bar.yaa(2)
+> ##     print(res)
+> ##     R.utils::use("R.oo")
+> ##     x <- 2
+> ## }
+> # Substitute the body of a function
+> warnifnot <- egsub("stop", "warning", stopifnot, value=FALSE)
+> print(warnifnot)
+function (..., exprs, exprObject, local = TRUE) 
+{
+    n <- ...length()
+    if ((has.e <- !missing(exprs)) || !missing(exprObject)) {
+        if (n || (has.e && !missing(exprObject))) 
+            warning("Only one of 'exprs', 'exprObject' or expressions, not more")
+        envir <- if (isTRUE(local)) 
+            parent.frame()
+        else if (isFALSE(local)) 
+            .GlobalEnv
+        else if (is.environment(local)) 
+            local
+        else warning("'local' must be TRUE, FALSE or an environment")
+        E1 <- if (has.e && is.call(exprs <- substitute(exprs))) 
+            exprs[[1]]
+        cl <- if (is.symbol(E1) && E1 == quote(`{`)) {
+            exprs[[1]] <- quote(warningifnot)
+            exprs
+        }
+        else as.call(c(quote(warningifnot), if (!has.e) exprObject else as.expression(exprs)))
+        names(cl) <- NULL
+        return(eval(cl, envir = envir))
+    }
+    Dparse <- function(call, cutoff = 60L) {
+        ch <- deparse(call, width.cutoff = cutoff)
+        if (length(ch) > 1L) 
+            paste(ch[1L], "....")
+        else ch
+    }
+    head <- function(x, n = 6L) x[seq_len(if (n < 0L) max(length(x) + 
+        n, 0L) else min(n, length(x)))]
+    abbrev <- function(ae, n = 3L) paste(c(head(ae, n), if (length(ae) > 
+        n) "...."), collapse = "\n  ")
+    for (i in seq_len(n)) {
+        r <- ...elt(i)
+        if (!(is.logical(r) && !anyNA(r) && all(r))) {
+            dots <- match.call()[-1L]
+            if (is.null(msg <- names(dots)) || !nzchar(msg <- msg[i])) {
+                cl.i <- dots[[i]]
+                msg <- if (is.call(cl.i) && identical(1L, pmatch(quote(all.equal), 
+                  cl.i[[1]])) && (is.null(ni <- names(cl.i)) || 
+                  length(cl.i) == 3L || length(cl.i <- cl.i[!nzchar(ni)]) == 
+                  3L)) 
+                  sprintf(gettext("%s and %s are not equal:\n  %s"), 
+                    Dparse(cl.i[[2]]), Dparse(cl.i[[3]]), abbrev(r))
+                else sprintf(ngettext(length(r), "%s is not TRUE", 
+                  "%s are not all TRUE"), Dparse(cl.i))
+            }
+            warning(simpleError(msg, call = if (p <- sys.parent(1L)) 
+                sys.call(p)))
+        }
+    }
+    invisible()
+}
+<environment: namespace:base>
+> warnifnot(pi == 3.14)
+Warning: pi == 3.14 is not TRUE
+> 
+> 
+> 
+> cleanEx()
+> nameEx("env")
+> ### * env
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: env
+> ### Title: Creates a new environment, evaluates an expression therein, and
+> ###   returns the environment
+> ### Aliases: env
+> ### Keywords: device utilities
+> 
+> ### ** Examples
+> 
+> x <- list();
+> 
+> x$case1 <- env({
++  # Cut'n'pasted from elsewhere
++  a <- 1;
++  b <- 2;
++ });
+> 
+> x$case2 <- env({
++  # Cut'n'pasted from elsewhere
++  foo <- function(x) x^2;
++  a <- foo(2);
++  b <- 1;
++  rm(foo); # Not needed anymore
++ });
+> 
+> # Turn into a list of lists
+> x <- lapply(x, FUN=as.list);
+> 
+> str(x);
+List of 2
+ $ case1:List of 2
+  ..$ b: num 2
+  ..$ a: num 1
+ $ case2:List of 2
+  ..$ b: num 1
+  ..$ a: num 4
+> 
+> 
+> 
+> cleanEx()
+> nameEx("extract.array")
+> ### * extract.array
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: extract.array
+> ### Title: Extract a subset of an array, matrix or a vector with unknown
+> ###   dimensions
+> ### Aliases: extract.array extract.matrix extract.default
+> ### Keywords: methods programming
+> 
+> ### ** Examples
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Example using an array with a random number of dimensions
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> maxdim <- 4
+> dim <- sample(3:maxdim, size=sample(2:maxdim, size=1), replace=TRUE)
+> ndim <- length(dim)
+> dimnames <- list()
+> for (kk in 1:ndim)
++   dimnames[[kk]] <- sprintf("%s%d", letters[kk], 1:dim[kk])
+> x <- 1:prod(dim)
+> x <- array(x, dim=dim, dimnames=dimnames)
+> 
+> cat("\nArray 'x':\n")
+
+Array 'x':
+> print(x)
+   b1 b2 b3
+a1  1  5  9
+a2  2  6 10
+a3  3  7 11
+a4  4  8 12
+> 
+> 
+> cat("\nExtract 'x[2:3,...]':\n")
+
+Extract 'x[2:3,...]':
+> print(extract(x, "1"=2:3))
+   b1 b2 b3
+a2  2  6 10
+a3  3  7 11
+> 
+> cat("\nExtract 'x[3,2:3,...]':\n")
+
+Extract 'x[3,2:3,...]':
+> print(extract(x, "1"=3,"2"=2:3))
+   b2 b3
+a3  7 11
+> 
+> cat("\nExtract 'x[...,2:3]':\n")
+
+Extract 'x[...,2:3]':
+> print(extract(x, indices=2:3, dims=length(dim(x))))
+   b2
+a1  5
+a2  6
+a3  7
+a4  8
+> 
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Assertions
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> y <- array(1:24, dim=c(2,3,4))
+> yA <- y[,,2:3]
+> yB <- extract(y, indices=list(2:3), dims=length(dim(y)))
+> stopifnot(identical(yB, yA))
+> 
+> yA <- y[,2:3,2]
+> yB <- extract(y, indices=list(2:3,2), dims=c(2,3), drop=TRUE)
+> stopifnot(identical(yB, yA))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("fileAccess")
+> ### * fileAccess
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: fileAccess
+> ### Title: Checks the permission of a file or a directory
+> ### Aliases: fileAccess.default fileAccess
+> ### Keywords: IO programming
+> 
+> ### ** Examples
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Current directory
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> path <- "."
+> 
+> # Test for existence
+> print(fileAccess(path, mode=0))
+[1] 0
+> # Test for execute permission
+> print(fileAccess(path, mode=1))
+[1] 0
+> # Test for write permission
+> print(fileAccess(path, mode=2))
+[1] 0
+> # Test for read permission
+> print(fileAccess(path, mode=4))
+[1] 0
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # A temporary file
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> pathname <- tempfile()
+> cat(file=pathname, "Hello world!")
+> 
+> # Test for existence
+> print(fileAccess(pathname, mode=0))
+[1] 0
+> # Test for execute permission
+> print(fileAccess(pathname, mode=1))
+[1] -1
+> # Test for write permission
+> print(fileAccess(pathname, mode=2))
+[1] 0
+> # Test for read permission
+> print(fileAccess(pathname, mode=4))
+[1] 0
+> 
+> file.remove(pathname)
+[1] TRUE
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # The 'base' package directory
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> path <- system.file(package="base")
+> 
+> # Test for existence
+> print(fileAccess(path, mode=0))
+[1] 0
+> # Test for execute permission
+> print(fileAccess(path, mode=1))
+[1] 0
+> # Test for write permission
+> print(fileAccess(path, mode=2))
+[1] 0
+> # Test for read permission
+> print(fileAccess(path, mode=4))
+[1] 0
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # The 'base' package DESCRIPTION file
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> pathname <- system.file("DESCRIPTION", package="base")
+> 
+> # Test for existence
+> print(fileAccess(pathname, mode=0))
+[1] 0
+> # Test for execute permission
+> print(fileAccess(pathname, mode=1))
+[1] -1
+> # Test for write permission
+> print(fileAccess(pathname, mode=2))
+[1] 0
+> # Test for read permission
+> print(fileAccess(pathname, mode=4))
+[1] 0
+> 
+> 
+> 
+> cleanEx()
+> nameEx("filePath")
+> ### * filePath
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: filePath
+> ### Title: Construct the path to a file from components and expands Windows
+> ###   Shortcuts along the pathname from root to leaf
+> ### Aliases: filePath.default filePath
+> ### Keywords: IO
+> 
+> ### ** Examples
+> 
+> # Default
+> print(file.path("foo", "bar", "..", "name")) # "foo/bar/../name"
+[1] "foo/bar/../name"
+> 
+> # Shorten pathname, if possible
+> print(filePath("foo", "bar", "..", "name"))  # "foo/name"
+[1] "foo/name"
+> print(filePath("foo/bar/../name"))           # "foo/name"
+[1] "foo/name"
+> 
+> # Recognize Windows Shortcut files along the path, cf. Unix soft links
+> filename <- system.file("data-ex/HISTORY.LNK", package="R.utils")
+> print(filename)
+[1] "/usr/local/lib/R/site-library/R.utils/data-ex/HISTORY.LNK"
+> filename <- filePath(filename, expandLinks="relative")
+> print(filename)
+[1] "/usr/local/lib/R/site-library/R.utils/HISTORY"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("findGhostscript.System")
+> ### * findGhostscript.System
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: System$findGhostscript
+> ### Title: Searches for a Ghostview executable on the current system
+> ### Aliases: System$findGhostscript findGhostscript.System
+> ###   System.findGhostscript findGhostscript,System-method
+> ### Keywords: internal methods
+> 
+> ### ** Examples
+> ## Not run: 
+> ##D   print(System$findGhostscript())
+> ## End(Not run)
+> 
+> 
+> cleanEx()
+> nameEx("findGraphicsDevice.System")
+> ### * findGraphicsDevice.System
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: System$findGraphicsDevice
+> ### Title: Searches for a working PNG device
+> ### Aliases: System$findGraphicsDevice findGraphicsDevice.System
+> ###   System.findGraphicsDevice findGraphicsDevice,System-method
+> ### Keywords: internal methods device
+> 
+> ### ** Examples
+> 
+>   fcn <- System$findGraphicsDevice()
+>   if (identical(fcn, png)) {
++     cat("PNG device found: png()")
++   } else if (identical(fcn, bitmap)) {
++     cat("PNG device found: bitmap()")
++   } else {
++     cat("PNG device not found.")
++   }
+PNG device found: png()> 
+> 
+> 
+> cleanEx()
+> nameEx("findSourceTraceback")
+> ### * findSourceTraceback
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: findSourceTraceback
+> ### Title: Finds all 'srcfile' objects generated by source() in all call
+> ###   frames
+> ### Aliases: findSourceTraceback.default findSourceTraceback
+> ### Keywords: IO programming
+> 
+> ### ** Examples
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Create two R script files where one source():s the other
+> # and both lists the traceback of filenames source():d.
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> path <- tempdir()
+> pathnameA <- Arguments$getWritablePathname("foo.R", path=path)
+> pathnameB <- Arguments$getWritablePathname("bar.R", path=path)
+> 
+> code <- 'cat("BEGIN foo.R\n")'
+> code <- c(code, 'print(findSourceTraceback());')
+> code <- c(code, sprintf('source("%s");', pathnameB))
+> code <- c(code, 'cat("END foo.R\n")')
+> code <- paste(code, collapse="\n")
+> cat(file=pathnameA, code)
+> 
+> code <- 'cat("BEGIN bar.R\n")'
+> code <- c(code, 'x <- findSourceTraceback();')
+> code <- c(code, 'print(x);')
+> code <- c(code, 'cat("END bar.R\n")')
+> code <- paste(code, collapse="\n")
+> cat(file=pathnameB, code)
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Source the first file
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> source(pathnameA, echo=TRUE)
+
+> cat("BEGIN foo.R\n")
+BEGIN foo.R
+
+> print(findSourceTraceback())
+$`/tmp/RtmpMpMQHb/foo.R`
+[1] "/tmp/RtmpMpMQHb/foo.R"
+
+
+> source("/tmp/RtmpMpMQHb/bar.R")
+BEGIN bar.R
+$`/tmp/RtmpMpMQHb/bar.R`
+[1] "/tmp/RtmpMpMQHb/bar.R"
+
+$`/tmp/RtmpMpMQHb/foo.R`
+[1] "/tmp/RtmpMpMQHb/foo.R"
+
+END bar.R
+
+> cat("END foo.R\n")
+END foo.R
+> 
+> 
+> 
+> cleanEx()
+> nameEx("getRelativePath")
+> ### * getRelativePath
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: getRelativePath
+> ### Title: Gets the relative pathname relative to a directory
+> ### Aliases: getRelativePath.default getRelativePath
+> ### Keywords: IO programming
+> 
+> ### ** Examples
+> 
+>   getRelativePath("foo", "foo")                       # "."
+[1] "."
+>   getRelativePath("foo/bar", "foo")                   # "bar"
+[1] "bar"
+>   getRelativePath("foo/bar", "foo/bar/yah")           # ".."
+[1] ".."
+>   getRelativePath("foo/bar/cool", "foo/bar/yah/sub/") # "../../cool"
+[1] "../../cool"
+>   getRelativePath("/tmp/bar/", "/bar/foo/")           # "../../tmp/bar"
+[1] "../../tmp/bar"
+> 
+>   # Windows
+>   getRelativePath("C:/foo/bar/", "C:/bar/")           # "../foo/bar"
+[1] "../foo/bar"
+>   getRelativePath("C:/foo/bar/", "D:/bar/")           # "C:/foo/bar"
+[1] "C:/foo/bar"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("hpaste")
+> ### * hpaste
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: hpaste
+> ### Title: Concatenating vectors into human-readable strings
+> ### Aliases: hpaste.default hpaste
+> ### Keywords: programming
+> 
+> ### ** Examples
+> 
+> 
+> # Some vectors
+> x <- 1:6
+> y <- 10:1
+> z <- LETTERS[x]
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Abbreviation of output vector
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> printf("x = %s.\n", hpaste(x))
+x = 1, 2, 3, ..., 6.
+> ## x = 1, 2, 3, ..., 6.
+> 
+> printf("x = %s.\n", hpaste(x, maxHead=2))
+x = 1, 2, ..., 6.
+> ## x = 1, 2, ..., 6.
+> 
+> printf("x = %s.\n", hpaste(x, maxHead=3)) # Default
+x = 1, 2, 3, ..., 6.
+> ## x = 1, 2, 3, ..., 6.
+> 
+> # It will never output 1, 2, 3, 4, ..., 6
+> printf("x = %s.\n", hpaste(x, maxHead=4))
+x = 1, 2, 3, 4, 5, 6.
+> ## x = 1, 2, 3, 4, 5, 6.
+> 
+> # Showing the tail
+> printf("x = %s.\n", hpaste(x, maxHead=1, maxTail=2))
+x = 1, ..., 5, 6.
+> ## x = 1, ..., 5, 6.
+> 
+> # Turning off abbreviation
+> printf("y = %s.\n", hpaste(y, maxHead=Inf))
+y = 10, 9, 8, 7, 6, 5, 4, 3, 2, 1.
+> ## y = 10, 9, 8, 7, 6, 5, 4, 3, 2, 1
+> 
+> ## ...or simply
+> printf("y = %s.\n", paste(y, collapse=", "))
+y = 10, 9, 8, 7, 6, 5, 4, 3, 2, 1.
+> ## y = 10, 9, 8, 7, 6, 5, 4, 3, 2, 1
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Adding a special separator before the last element
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Change last separator
+> printf("x = %s.\n", hpaste(x, lastCollapse=", and "))
+x = 1, 2, 3, 4, 5, and 6.
+> ## x = 1, 2, 3, 4, 5, and 6.
+> 
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Backward compatibility with paste()
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> s1 <- hpaste(x, maxHead=Inf)
+> s2 <- paste(x, collapse=", ")
+> printf("s = %s.\n", s1);
+s = 1, 2, 3, 4, 5, 6.
+> stopifnot(identical(s1, s2))
+> 
+> s1 <- hpaste('<', x, '>', maxHead=Inf)
+> s2 <- paste('<', x, '>', sep="", collapse=", ")
+> printf("s = %s.\n", s1);
+s = <1>, <2>, <3>, <4>, <5>, <6>.
+> stopifnot(identical(s1, s2))
+> 
+> s1 <- hpaste(x, y, z, sep="/", maxHead=Inf)
+> s2 <- paste(x, y, z, sep="/", collapse=", ")
+> printf("s = %s.\n", s1);
+s = 1/10/A, 2/9/B, 3/8/C, 4/7/D, 5/6/E, 6/5/F, 1/4/A, 2/3/B, 3/2/C, 4/1/D.
+> stopifnot(identical(s1, s2))
+> 
+> s1 <- hpaste(x, collapse=NULL, maxHead=Inf)
+> s2 <- paste(x, collapse=NULL)
+> stopifnot(identical(s1, s2))
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("hsize")
+> ### * hsize
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: hsize
+> ### Title: Convert byte sizes into human-readable byte sizes
+> ### Aliases: hsize hsize.numeric hsize.object_size
+> ### Keywords: programming internal
+> 
+> ### ** Examples
+> 
+> sizes <- c(1000^(0:8), 1024^(0:8))
+> df <- data.frame(size=sizes)
+> df$SI <- hsize(sizes, standard="SI")
+> df$TB <- hsize(sizes, units="TB")
+> df$IEC <- hsize(sizes, standard="IEC")
+> df$TiB <- hsize(sizes, units="TiB")
+> print(df)
+           size     SI                 TB       IEC                 TiB
+1  1.000000e+00    1 B             0.0 TB       1 B             0.0 TiB
+2  1.000000e+03 1.0 kB             0.0 TB    1000 B             0.0 TiB
+3  1.000000e+06 1.0 MB             0.0 TB 976.6 KiB             0.0 TiB
+4  1.000000e+09 1.0 GB             0.0 TB 953.7 MiB             0.0 TiB
+5  1.000000e+12 1.0 TB             1.0 TB 931.3 GiB             0.9 TiB
+6  1.000000e+15 1.0 PB          1000.0 TB 909.5 TiB           909.5 TiB
+7  1.000000e+18 1.0 EB       1000000.0 TB 888.2 PiB        909494.7 TiB
+8  1.000000e+21 1.0 ZB    1000000000.0 TB 867.4 EiB     909494701.8 TiB
+9  1.000000e+24 1.0 YB 1000000000000.0 TB 847.0 ZiB  909494701772.9 TiB
+10 1.000000e+00    1 B             0.0 TB       1 B             0.0 TiB
+11 1.024000e+03 1.0 kB             0.0 TB   1.0 KiB             0.0 TiB
+12 1.048576e+06 1.0 MB             0.0 TB   1.0 MiB             0.0 TiB
+13 1.073742e+09 1.1 GB             0.0 TB   1.0 GiB             0.0 TiB
+14 1.099512e+12 1.1 TB             1.1 TB   1.0 TiB             1.0 TiB
+15 1.125900e+15 1.1 PB          1125.9 TB   1.0 PiB          1024.0 TiB
+16 1.152922e+18 1.2 EB       1152921.5 TB   1.0 EiB       1048576.0 TiB
+17 1.180592e+21 1.2 ZB    1180591620.7 TB   1.0 ZiB    1073741824.0 TiB
+18 1.208926e+24 1.2 YB 1208925819614.6 TB   1.0 YiB 1099511627776.0 TiB
+> 
+> 
+> 
+> cleanEx()
+> nameEx("insert")
+> ### * insert
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: insert
+> ### Title: Insert values to a vector at certain positions
+> ### Aliases: insert.default insert
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> 
+> # Insert NAs (default) between all values
+> y <- c(a=1, b=2, c=3)
+> print(y)
+a b c 
+1 2 3 
+> x <- insert(y, ats=2:length(y))
+> Ex <- c(y[1], NA_real_, y[2], NA_real_, y[3])
+> print(x)
+ a     b     c 
+ 1 NA  2 NA  3 
+> stopifnot(identical(x,Ex))
+> 
+> # Insert at first position
+> y <- c(a=1, b=2, c=3)
+> print(y)
+a b c 
+1 2 3 
+> x <- insert(y, ats=1, values=rep(NA_real_,2))
+> Ex <- c(NA_real_,NA_real_,y)
+> print(x)
+       a  b  c 
+NA NA  1  2  3 
+> stopifnot(identical(x,Ex))
+> 
+> x <- insert(y, ats=1, values=rep(NA_real_,2), useNames=FALSE)
+> print(x)
+[1] NA NA  1  2  3
+> 
+> # Insert at last position (names of 'values' are ignored
+> # because input vector has no names)
+> x <- insert(1:3, ats=4, values=c(d=2, e=1))
+> Ex <- c(1:3,2,1)
+> print(x)
+[1] 1 2 3 2 1
+> stopifnot(identical(x,Ex))
+> 
+> 
+> # Insert in the middle of a vector
+> x <- insert(c(1,3,2,1), ats=2, values=2)
+> print(x)
+[1] 1 2 3 2 1
+> stopifnot(identical(as.double(x),as.double(Ex)))
+> 
+> 
+> # Insert multiple vectors at multiple indices at once
+> x0 <- c(1:4, 8:11, 13:15)
+> 
+> x <- insert(x0, ats=c(5,9), values=list(5:7,12))
+> print(x)
+ [1]  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+> Ex <- 1:max(x)
+> stopifnot(identical(as.double(x),as.double(Ex)))
+> 
+> x <- insert(x0, ats=c(5,9,12), values=list(5:7,12,16:18))
+> print(x)
+ [1]  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18
+> Ex <- 1:max(x)
+> stopifnot(identical(as.double(x),as.double(Ex)))
+> 
+> 
+> # Insert missing indices
+> Ex <- 1:20
+> missing <- setdiff(Ex, x0)
+> x <- x0
+> for (m in missing)
++   x <- insert(x, ats=m, values=m)
+> print(x)
+ [1]  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
+> stopifnot(identical(as.double(x),as.double(Ex)))
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("installPackages")
+> ### * installPackages
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: installPackages
+> ### Title: Install R packages by name or URL
+> ### Aliases: installPackages.default installPackages
+> ### Keywords: file
+> 
+> ### ** Examples
+> ## Not run: 
+> ##D  installPackages("R.rsp")
+> ##D  installPackages("https://cran.r-project.org/src/contrib/Archive/R.rsp/R.rsp_0.8.2.tar.gz")
+> ##D  installPackages("https://cran.r-project.org/bin/windows/contrib/4.0/R.rsp_0.44.0.zip")
+> ## End(Not run)
+> 
+> 
+> cleanEx()
+> nameEx("intervalsToSeq.matrix")
+> ### * intervalsToSeq.matrix
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: intervalsToSeq.matrix
+> ### Title: Generates a vector of indices from a matrix of intervals
+> ### Aliases: intervalsToSeq.matrix
+> ### Keywords: methods attribute
+> 
+> ### ** Examples
+> ## Not run: See example(seqToIntervals)
+> 
+> 
+> cleanEx()
+> nameEx("isReplicated")
+> ### * isReplicated
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: isReplicated
+> ### Title: Identifies all entries with replicated values
+> ### Aliases: isReplicated replicates
+> 
+> ### ** Examples
+> 
+> 
+> x <- c(1,1,2,3,4,2,1)
+> x <- base::letters[x]
+> print(x)
+[1] "a" "a" "b" "c" "d" "b" "a"
+> 
+> # Identify entries with replicated values
+> reps <- isReplicated(x)
+> print(x[reps])
+[1] "a" "a" "b" "b" "a"
+> stopifnot(x[reps] == replicates(x))
+> 
+> # Identify entries with unique values
+> print(x[!reps])
+[1] "c" "d"
+> stopifnot(x[!reps] == singles(x))
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Validation
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> x <- c(1,1,2,3,4,2,1)
+> x <- base::letters[x]
+> reps <- isReplicated(x)
+> 
+> stopifnot(all(table(x[reps]) > 1))
+> stopifnot(all(table(x[!reps]) == 1))
+> stopifnot(all(reps == rev(isReplicated(rev(x)))))
+> stopifnot(all(reps == duplicated(x) | duplicated(x, fromLast=TRUE)))
+> stopifnot(all(reps == !is.element(x, setdiff(x, unique(x[duplicated(x)])))))
+> stopifnot(all(sort(c(singles(x), replicates(x))) == sort(x)))
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Benchmarking singles()
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> set.seed(0xBEEF)
+> n <- 1e6
+> x <- sample(1:(n/2), size=n, replace=TRUE)
+> t <- system.time({
++   s <- isSingle(x)
++ })
+> print(sum(s))
+[1] 135603
+> 
+> t0 <- system.time({
++   s0 <- !(x %in% x[duplicated(x)]);
++ })
+> print(t/t0)
+     user    system   elapsed 
+0.9534884 3.0000000 1.0000000 
+> stopifnot(all(s == s0))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("isZero")
+> ### * isZero
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: isZero
+> ### Title: Checks if a value is (close to) zero or not
+> ### Aliases: isZero.default isZero
+> ### Keywords: logic
+> 
+> ### ** Examples
+> 
+> x <- 0
+> print(x == 0)      # TRUE
+[1] TRUE
+> print(isZero(x))   # TRUE
+[1] TRUE
+> 
+> x <- 1
+> print(x == 0)      # FALSE
+[1] FALSE
+> print(isZero(x))   # FALSE
+[1] FALSE
+> 
+> x <- .Machine$double.eps
+> print(x == 0)      # FALSE
+[1] FALSE
+> print(isZero(x))   # FALSE
+[1] FALSE
+> 
+> x <- 0.9*.Machine$double.eps
+> print(x == 0)      # FALSE
+[1] FALSE
+> print(isZero(x))   # TRUE
+[1] TRUE
+> 
+> # From help(Comparisions)
+> x1 <- 0.5 - 0.3
+> x2 <- 0.3 - 0.1
+> print(x1 - x2)
+[1] 2.775558e-17
+> print(x1 == x2)                           # FALSE on most machines
+[1] FALSE
+> print(identical(all.equal(x1, x2), TRUE)) # TRUE everywhere
+[1] TRUE
+> print(isZero(x1-x2))                      # TRUE everywhere
+[1] TRUE
+> 
+> 
+> 
+> cleanEx()
+> nameEx("mout")
+> ### * mout
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: mout
+> ### Title: Miscellaneous functions for outputting via message()
+> ### Aliases: mout mprint mshow mcat mstr mprintf cmsg cout cprint cshow
+> ###   ccat cstr cprintf
+> ### Keywords: utilities
+> 
+> ### ** Examples
+> 
+>   print(letters[1:8])
+[1] "a" "b" "c" "d" "e" "f" "g" "h"
+>   mprint(letters[1:8])
+[1] "a" "b" "c" "d" "e" "f" "g" "h"
+> 
+>   cat(c(letters[1:8], "\n"))
+a b c d e f g h 
+>   mcat(c(letters[1:8], "\n"))
+a b c d e f g h 
+> 
+>   str(letters[1:8])
+ chr [1:8] "a" "b" "c" "d" "e" "f" "g" "h"
+>   mstr(letters[1:8])
+ chr [1:8] "a" "b" "c" "d" "e" "f" "g" "h"
+> 
+>   printf("x=%d\n", 1:3)
+x=1
+x=2
+x=3
+>   mprintf("x=%d\n", 1:3)
+x=1
+x=2
+x=3
+> 
+> 
+> 
+> cleanEx()
+> nameEx("moveInSearchPath")
+> ### * moveInSearchPath
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: moveInSearchPath
+> ### Title: Moves a environment in the search path to another position
+> ### Aliases: moveInSearchPath.default moveInSearchPath
+> ### Keywords: programming internal
+> 
+> ### ** Examples
+> 
+>   # Make package 'utils' come behind 'datasets' in the search path
+>   moveInSearchPath("package:utils", "package:datasets", where="after")
+The following object is masked _by_ package:R.utils:
+
+    timestamp
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("onGarbageCollect")
+> ### * onGarbageCollect
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: onGarbageCollect
+> ### Title: Registers a function to be called when the R garbage collector
+> ###   is (detected to be) running
+> ### Aliases: onGarbageCollect.default onGarbageCollect
+> ### Keywords: programming
+> 
+> ### ** Examples
+> ## Not run: 
+> ##D   onGarbageCollect(function(...) {
+> ##D     message("The R garbage collector is running!")
+> ##D   })
+> ## End(Not run)
+> 
+> 
+> cleanEx()
+> nameEx("onSessionExit")
+> ### * onSessionExit
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: onSessionExit
+> ### Title: Registers a function to be called when the R session finishes
+> ### Aliases: onSessionExit.default onSessionExit
+> ### Keywords: programming
+> 
+> ### ** Examples
+> ## Not run: 
+> ##D   onSessionExit(function(...) {
+> ##D     message("Bye bye world!")
+> ##D   })
+> ##D 
+> ##D   quit()
+> ## End(Not run)
+> 
+> 
+> cleanEx()
+> nameEx("openBrowser.System")
+> ### * openBrowser.System
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: System$openBrowser
+> ### Title: Opens an HTML document using the OS default HTML browser
+> ### Aliases: System$openBrowser openBrowser.System System.openBrowser
+> ###   openBrowser,System-method
+> ### Keywords: internal methods
+> 
+> ### ** Examples
+> ## Not run: 
+> ##D   System$openBrowser("https://www.r-project.org/")
+> ## End(Not run)
+> 
+> 
+> cleanEx()
+> nameEx("parseDebian.System")
+> ### * parseDebian.System
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: System$parseDebian
+> ### Title: Parses a string, file or connection for Debian formatted
+> ###   parameters
+> ### Aliases: System$parseDebian parseDebian.System System.parseDebian
+> ###   parseDebian,System-method
+> ### Keywords: internal methods
+> 
+> ### ** Examples
+> 
+>  file <- file.path(Package("R.utils")$path, "DESCRIPTION")
+>  l <- System$parseDebian(file=file)
+>  print(l)
+$Package
+[1] "R.utils"
+
+$Version
+[1] "2.13.0"
+
+$Depends
+[1] "R (>= 2.14.0), R.oo"
+
+$Imports
+[1] "methods, utils, tools, R.methodsS3"
+
+$Suggests
+[1] "datasets, digest (>= 0.6.10)"
+
+$Title
+[1] "Various Programming Utilities"
+
+$`Authors@R`
+[1] "c(person(\"Henrik\", \"Bengtsson\", role=c(\"aut\", \"cre\", \"cph\"), email = \"henrikb@braju.com\"))"
+
+$Author
+[1] "Henrik Bengtsson [aut, cre, cph]"
+
+$Maintainer
+[1] "Henrik Bengtsson <henrikb@braju.com>"
+
+$Description
+[1] "Utility functions useful when programming and developing R packages."
+
+$License
+[1] "LGPL (>= 2.1)"
+
+$LazyLoad
+[1] "TRUE"
+
+$URL
+[1] "https://henrikbengtsson.github.io/R.utils/,"
+
+$`        https`
+[1] "//github.com/HenrikBengtsson/R.utils"
+
+$BugReports
+[1] "https://github.com/HenrikBengtsson/R.utils/issues"
+
+$NeedsCompilation
+[1] "no"
+
+$Packaged
+[1] "2025-02-24 19:44:20 UTC; henrik"
+
+$Repository
+[1] "RSPM"
+
+$`Date/Publication`
+[1] "2025-02-24 21:20:02 UTC"
+
+$Encoding
+[1] "UTF-8"
+
+$Built
+[1] "R 4.5.0; ; 2025-04-05 02:59:14 UTC; unix"
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("patchCode")
+> ### * patchCode
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: patchCode
+> ### Title: Patches installed and loaded packages and more
+> ### Aliases: patchCode.default patchCode
+> ### Keywords: utilities programming
+> 
+> ### ** Examples
+> ## Not run: 
+> ##D   # Patch all source code files in the current directory
+> ##D   patchCode(".")
+> ##D 
+> ##D   # Patch all source code files in R_PATCHES
+> ##D   options("R_PATCHES"="~/R-patches/")
+> ##D   # alternatively, Sys.setenv("R_PATCHES"="~/R-patches/")
+> ##D   patchCode()
+> ## End(Not run)
+> 
+> 
+> cleanEx()
+> nameEx("printf")
+> ### * printf
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: printf
+> ### Title: C-style formatted output
+> ### Aliases: printf.default printf
+> ### Keywords: utilities
+> 
+> ### ** Examples
+> 
+>   cat("Hello world\n")
+Hello world
+>   printf("Hello world\n")
+Hello world
+> 
+>   x <- 1.23
+>   cat(sprintf("x=%.2f\n", x))
+x=1.23
+>   printf("x=%.2f\n", x)
+x=1.23
+> 
+>   y <- 4.56
+>   cat(sprintf(c("x=%.2f\n", "y=%.2f\n"), c(x,y)), sep="")
+x=1.23
+y=4.56
+>   printf(c("x=%.2f\n", "y=%.2f\n"), c(x,y))
+x=1.23
+y=4.56
+> 
+> 
+> 
+> cleanEx()
+> nameEx("pushBackupFile")
+> ### * pushBackupFile
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: pushBackupFile
+> ### Title: Appends a backup suffix to the pathname
+> ### Aliases: pushBackupFile.default pushBackupFile
+> ### Keywords: utilities programming IO
+> 
+> ### ** Examples
+> 
+> # Create a file
+> pathname <- file.path(tempdir(), "foobar.txt")
+> cat(file=pathname, "File v1\n")
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # (a) Backup and restore a file
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Turn it into a backup file
+> pathnameB <- pushBackupFile(pathname, verbose=TRUE)
+Adding backup suffix from file...
+ Pathname: /tmp/RtmpMpMQHb/foobar.txt
+ Suffix: .bak
+ Rename existing file?: TRUE
+ Backup pathname: /tmp/RtmpMpMQHb/foobar.txt.bak
+ Renaming existing file...
+  Result: TRUE
+ Renaming existing file...done
+Adding backup suffix from file...done
+> print(pathnameB)
+[1] "/tmp/RtmpMpMQHb/foobar.txt.bak"
+> 
+> # Restore main file from backup
+> pathnameR <- popBackupFile(pathnameB, verbose=TRUE)
+Dropping backup suffix from file...
+ Backup pathname: /tmp/RtmpMpMQHb/foobar.txt.bak
+ Suffix: .bak
+ Regular expression for suffix: \.bak$
+ Pathname: /tmp/RtmpMpMQHb/foobar.txt
+ Renaming existing backup file...
+  Result: TRUE
+ Renaming existing backup file...done
+Dropping backup suffix from file...done
+> print(pathnameR)
+[1] "/tmp/RtmpMpMQHb/foobar.txt"
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # (b) Backup, create a new file and frop backup file
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Turn it into a backup file
+> pathnameB <- pushBackupFile(pathname, verbose=TRUE)
+Adding backup suffix from file...
+ Pathname: /tmp/RtmpMpMQHb/foobar.txt
+ Suffix: .bak
+ Rename existing file?: TRUE
+ Backup pathname: /tmp/RtmpMpMQHb/foobar.txt.bak
+ Renaming existing file...
+  Result: TRUE
+ Renaming existing file...done
+Adding backup suffix from file...done
+> print(pathnameB)
+[1] "/tmp/RtmpMpMQHb/foobar.txt.bak"
+> 
+> # Create a new file
+> cat(file=pathname, "File v2\n")
+> 
+> # Drop backup because a new main file was successfully created
+> pathnameR <- popBackupFile(pathnameB, verbose=TRUE)
+Dropping backup suffix from file...
+ Backup pathname: /tmp/RtmpMpMQHb/foobar.txt.bak
+ Suffix: .bak
+ Regular expression for suffix: \.bak$
+ Pathname: /tmp/RtmpMpMQHb/foobar.txt
+ Dropping backup file because target file already exists...
+  Result: TRUE
+ Dropping backup file because target file already exists...done
+Dropping backup suffix from file...done
+> print(pathnameR)
+[1] "/tmp/RtmpMpMQHb/foobar.txt"
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("pushTemporaryFile")
+> ### * pushTemporaryFile
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: pushTemporaryFile
+> ### Title: Appends a temporary suffix to the pathname
+> ### Aliases: pushTemporaryFile.default pushTemporaryFile
+> ### Keywords: utilities programming IO
+> 
+> ### ** Examples
+> 
+> 
+> createAtomically <- function(pathname, ...) {
++   cat("Pathname: ", pathname, "\n", sep="");
++ 
++   # Generate a file atomically, i.e. the file will either be
++   # complete or not created at all.  If interrupted while
++   # writing, only a temporary file will exist/remain.
++   pathnameT <- pushTemporaryFile(pathname);
++   cat("Temporary pathname: ", pathnameT, "\n", sep="");
++ 
++   cat(file=pathnameT, "This file was created atomically:\n");
++   for (kk in 1:10) {
++     cat(file=pathnameT, kk, "\n", append=TRUE);
++     # Emulate a slow process
++     if (interactive()) Sys.sleep(0.1)
++   }
++   cat(file=pathnameT, "END OF FILE\n", append=TRUE);
++ 
++   # Rename the temporary file
++   pathname <- popTemporaryFile(pathnameT);
++ 
++   pathname;
++ } # createAtomically()
+> 
+> 
+> pathname <- tempfile();
+> 
+> tryCatch({
++   # Try to interrupt the process while writing...
++   pathname <- createAtomically(pathname);
++ }, interrupt=function(intr) {
++   str(intr);
++ })
+Pathname: /tmp/RtmpMpMQHb/file55db53f2dba7
+Temporary pathname: /tmp/RtmpMpMQHb/file55db53f2dba7.tmp
+> 
+> # ...and this will throw an exception
+> bfr <- readLines(pathname);
+> cat(bfr, sep="\n");
+This file was created atomically:
+1 
+2 
+3 
+4 
+5 
+6 
+7 
+8 
+9 
+10 
+END OF FILE
+> 
+> 
+> 
+> cleanEx()
+> nameEx("queryRCmdCheck")
+> ### * queryRCmdCheck
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: queryRCmdCheck
+> ### Title: Gets the on R CMD check if the current R session was launched by
+> ###   it
+> ### Aliases: queryRCmdCheck
+> 
+> ### ** Examples
+> 
+> 
+> status <- queryRCmdCheck()
+> if (status != "notRunning") {
++   cat("The current R session was launched by R CMD check. Status: ", status, "\n")
++ } else {
++   cat("The current R session was not launched by R CMD check.\n")
++ }
+The current R session was launched by R CMD check. Status:  checkingExamples 
+> 
+> # Display how R was launched
+> print(base::commandArgs())
+[1] "/usr/local/lib/R/bin/exec/R" "--no-save"                  
+[3] "--no-restore"                "-f"                         
+[5] "R.utils-Ex.R"                "--restore"                  
+[7] "--save"                      "--no-readline"              
+[9] "--vanilla"                  
+> 
+> # Display loaded packages etc.
+> print(search())
+ [1] ".GlobalEnv"          "package:R.utils"     "package:R.oo"       
+ [4] "package:R.methodsS3" "CheckExEnv"          "package:stats"      
+ [7] "package:graphics"    "package:grDevices"   "package:datasets"   
+[10] "package:utils"       "package:methods"     "Autoloads"          
+[13] "package:base"       
+> 
+> # Display current working directory
+> print(getwd())
+[1] "/__w/rocker_uat/rocker_uat/packages/R.utils"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("readBinFragments")
+> ### * readBinFragments
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: readBinFragments
+> ### Title: Reads binary data from disjoint sections of a connection or a
+> ###   file
+> ### Aliases: readBinFragments.default readBinFragments
+> ### Keywords: IO
+> 
+> ### ** Examples
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Create a data file
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> data <- 1:255
+> size <- 2
+> pathname <- tempfile("exampleReadBinFragments")
+> writeBin(con=pathname, data, size=size)
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Read and write using index vectors
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> cat("Read file...\n")
+Read file...
+> # Read every 16:th byte in the file
+> idxs <- seq(from=1, to=255, by=16)
+> x <- readBinFragments(pathname, what="integer", size=size, signed=FALSE, idxs=idxs)
+> stopifnot(identical(x, data[idxs]))
+> print(x)
+ [1]   1  17  33  49  65  81  97 113 129 145 161 177 193 209 225 241
+> # Read every 16:th byte in a connection starting with the 6th.
+> idxs <- idxs + 5L
+> x <- readBinFragments(pathname, what="integer", size=size, signed=FALSE, idxs=idxs)
+> stopifnot(identical(x, data[idxs]))
+> print(x)
+ [1]   6  22  38  54  70  86 102 118 134 150 166 182 198 214 230 246
+> cat("Read file...done\n")
+Read file...done
+> 
+> cat("Write file...\n")
+Write file...
+> # Update every 16:th byte in the file
+> idxs <- seq(from=1, to=255, by=16)
+> x0 <- data[idxs]
+> writeBinFragments(pathname, idxs=idxs, rev(x0), size=size)
+> x <- readBinFragments(pathname, what="integer", size=size, signed=FALSE, idxs=idxs)
+> print(x)
+ [1] 241 225 209 193 177 161 145 129 113  97  81  65  49  33  17   1
+> stopifnot(identical(rev(x0), x))
+> 
+> # Update every 16:th byte in the file
+> idxs <- seq(from=1, to=255, by=16)
+> writeBinFragments(pathname, idxs=idxs, rev(x), size=size)
+> x <- readBinFragments(pathname, what="integer", size=size, signed=FALSE, idxs=idxs)
+> print(x)
+ [1]   1  17  33  49  65  81  97 113 129 145 161 177 193 209 225 241
+> stopifnot(identical(x0, x))
+> 
+> # Assert everything is as expected
+> # Read the complete file
+> x <- readBin(pathname, what="integer", size=size, signed=FALSE, n=length(data))
+> stopifnot(identical(x, data))
+> cat("Write file...done\n")
+Write file...done
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Ditto but via a connection
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> cat("Read connection...\n")
+Read connection...
+> # Read every 16:th byte in a connection
+> con <- file(pathname, open="rb")
+> idxs <- seq(from=1, to=255, by=16)
+> x <- readBinFragments(con, what="integer", size=size, signed=FALSE, idxs=idxs)
+> stopifnot(identical(x, data[idxs]))
+> print(x)
+ [1]   1  17  33  49  65  81  97 113 129 145 161 177 193 209 225 241
+> 
+> # Read every 16:th byte in a connection starting with the 6th.
+> idxs <- idxs + 5L
+> x <- readBinFragments(con, what="integer", size=size, signed=FALSE, idxs=idxs, origin="start")
+> stopifnot(identical(x, data[idxs]))
+> print(x)
+ [1]   6  22  38  54  70  86 102 118 134 150 166 182 198 214 230 246
+> close(con)
+> cat("Read connection...done\n")
+Read connection...done
+> 
+> 
+> # Update every 16:th byte in a connection
+> cat("Write connection...\n")
+Write connection...
+> con <- file(pathname, open="r+b")
+> idxs <- seq(from=1, to=255, by=16)
+> x0 <- data[idxs]
+> writeBinFragments(pathname, idxs=idxs, rev(x0), size=size)
+> x <- readBinFragments(pathname, what="integer", size=size, signed=FALSE, idxs=idxs)
+> print(x)
+ [1] 241 225 209 193 177 161 145 129 113  97  81  65  49  33  17   1
+> stopifnot(identical(rev(x0), x))
+> 
+> # Update every 16:th byte in the file
+> idxs <- seq(from=1, to=255, by=16)
+> writeBinFragments(pathname, idxs=idxs, rev(x), size=size)
+> x <- readBinFragments(pathname, what="integer", size=size, signed=FALSE, idxs=idxs, origin="start")
+> print(x)
+ [1]   1  17  33  49  65  81  97 113 129 145 161 177 193 209 225 241
+> stopifnot(identical(x0, x))
+> 
+> close(con)
+> 
+> # Assert everything is as expected
+> # Read the complete file
+> x <- readBin(pathname, what="integer", size=size, signed=FALSE, n=length(data))
+> stopifnot(identical(x, data))
+> cat("Write connection...done\n")
+Write connection...done
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Clean up
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> file.remove(pathname)
+[1] TRUE
+> 
+> 
+> 
+> cleanEx()
+> nameEx("readTableIndex")
+> ### * readTableIndex
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: readTableIndex
+> ### Title: Reads a single column from file in table format
+> ### Aliases: readTableIndex.default readTableIndex
+> ### Keywords: IO
+> 
+> ### ** Examples
+> ## Not run: 
+> ##D    # File containing data table to be access many times
+> ##D    filename <- "somefile.txt"
+> ##D 
+> ##D    # Create a look-up index
+> ##D    index <- readTableIndex(filename)
+> ##D 
+> ##D    # Keys of interest
+> ##D    keys <- c("foo", "bar", "wah")
+> ##D 
+> ##D    # Read only those keys and do it fast
+> ##D    df <- readTable(filename, rows=match(keys, index))
+> ## End(Not run)
+> 
+> 
+> cleanEx()
+> nameEx("readWindowsShellLink")
+> ### * readWindowsShellLink
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: readWindowsShellLink
+> ### Title: Reads a Microsoft Windows Shortcut (.lnk file)
+> ### Aliases: readWindowsShellLink.default readWindowsShellLink
+> ### Keywords: file IO internal
+> 
+> ### ** Examples
+> 
+> 
+> pathname <- system.file("data-ex/HISTORY.LNK", package="R.utils")
+> lnk <- readWindowsShellLink(pathname)
+> str(lnk)
+List of 6
+ $ header          :List of 13
+  ..$ linkCLSID     : raw [1:16] 01 14 02 00 ...
+  ..$ linkFlags     : Named logi [1:27] TRUE TRUE TRUE TRUE TRUE FALSE ...
+  .. ..- attr(*, "names")= chr [1:27] "HasLinkTargetIdList" "HasLinkInfo" "HasName" "HasRelativePath" ...
+  ..$ fileAttributes: Named logi [1:15] FALSE FALSE FALSE FALSE FALSE TRUE ...
+  .. ..- attr(*, "names")= chr [1:15] "readOnly" "hidden" "system" "reserved1" ...
+  ..$ creationTime  : POSIXct[1:1], format: "2005-05-26 21:02:07"
+  ..$ accessTime    : POSIXct[1:1], format: "2005-05-27 23:34:12"
+  ..$ writeTime     : POSIXct[1:1], format: "2005-05-26 21:02:07"
+  ..$ fileSize      : int 606
+  ..$ iconIndex     : int 0
+  ..$ showCommand   : int 1
+  ..$ hotKey        : Named int [1:2] 0 0
+  .. ..- attr(*, "names")= chr [1:2] "lowByte" "highByte"
+  ..$ reserved1     : int 0
+  ..$ reserved2     : int 0
+  ..$ reserved3     : int 0
+ $ idList          :List of 1
+  ..$ itemIdList:List of 9
+  .. ..$ : raw [1:18] 1f 50 e0 4f ...
+  .. ..$ : raw [1:23] 2f 43 3a 5c ...
+  .. ..$ : raw [1:90] 31 00 00 00 ...
+  .. ..$ : raw [1:44] 31 00 00 00 ...
+  .. ..$ : raw [1:70] 31 00 00 00 ...
+  .. ..$ : raw [1:62] 31 00 00 00 ...
+  .. ..$ : raw [1:62] 31 00 00 00 ...
+  .. ..$ : raw [1:50] 31 00 00 00 ...
+  .. ..$ : raw [1:58] 32 00 5e 02 ...
+ $ linkInfo        :List of 3
+  ..$ volumeId        :List of 4
+  .. ..$ driveType        : int 3
+  .. ..$ driveSerialNumber: int -2077904061
+  .. ..$ data             : raw [1:12] 49 42 4d 5f ...
+  .. ..$ volumeLabel      : chr "IBM_PRELOAD"
+  ..$ localBasePath   : chr "C:\\Documents and Settings\\hb\\braju.com.R\\R.utils\\R.utils\\inst\\HISTORY"
+  ..$ commonPathSuffix: chr ""
+ $ stringData      :List of 3
+  ..$ name        : chr "C:\\Documents and Settings\\hb\\braju.com.R\\R.utils\\R.utils\\inst\\HISTORY"
+  ..$ relativePath: chr "..\\HISTORY"
+  ..$ workingDir  : chr "C:\\Documents and Settings\\hb\\braju.com.R\\R.utils\\R.utils\\inst"
+ $ relativePathname: chr "..\\HISTORY"
+ $ pathname        : chr "C:\\Documents and Settings\\hb\\braju.com.R\\R.utils\\R.utils\\inst\\HISTORY"
+> str(lnk$pathname)
+ chr "C:\\Documents and Settings\\hb\\braju.com.R\\R.utils\\R.utils\\inst\\HISTORY"
+> 
+> lnk0 <- readWindowsShortcut(pathname)
+> str(lnk0$pathname)
+ chr "C:\\Documents and Settings\\hb\\braju.com.R\\R.utils\\R.utils\\inst\\HISTORY"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("readWindowsShortcut")
+> ### * readWindowsShortcut
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: readWindowsShortcut
+> ### Title: Reads a Microsoft Windows Shortcut (.lnk file)
+> ### Aliases: readWindowsShortcut.default readWindowsShortcut
+> ### Keywords: file IO
+> 
+> ### ** Examples
+> 
+> 
+> pathname <- system.file("data-ex/HISTORY.LNK", package="R.utils")
+> lnk <- readWindowsShortcut(pathname)
+> 
+> # Print all information
+> print(lnk)
+$header
+$header$magic
+[1] 76
+
+$header$guid
+ [1]   1  20   2   0   0   0   0   0 192   0   0   0   0   0   0  70
+
+$header$flags
+     hasShellItemIdList pointsToFileOrDirectory          hasDescription 
+                   TRUE                    TRUE                    TRUE 
+        hasRelativePath     hasWorkingDirectory hasCommandLineArguments 
+                   TRUE                    TRUE                   FALSE 
+          hasCustomIcon         unicodedStrings 
+                  FALSE                    TRUE 
+
+$header$fileAttributes
+               isReadOnly                  isHidden              isSystemFile 
+                    FALSE                     FALSE                     FALSE 
+            isVolumeLabel               isDirectory isModifiedSinceLastBackup 
+                    FALSE                     FALSE                      TRUE 
+              isEncrypted                  isNormal               isTemporary 
+                    FALSE                     FALSE                     FALSE 
+             isSparseFile       hasReparsePointData              isCompressed 
+                    FALSE                     FALSE                     FALSE 
+                isOffline 
+                    FALSE 
+
+$header$creationTime
+[1] 755506800
+
+$header$modificationTime
+[1] -1773539680
+
+$header$lastAccessTime
+[1] 755113120
+
+$header$fileLength
+[1] 606
+
+$header$iconNumber
+[1] 0
+
+$header$showWndValue
+SW_NORMAL 
+        1 
+
+$header$hotKey
+[1] 0
+
+$header$unknown
+[1] 0 0
+
+
+$fileLocationInfo
+$fileLocationInfo$flags
+ availableOnLocalVolume availableOnNetworkShare 
+                   TRUE                   FALSE 
+
+$fileLocationInfo$localVolumeTable
+$fileLocationInfo$localVolumeTable$typeOfVolume
+Fixed 
+    3 
+
+$fileLocationInfo$localVolumeTable$volumeSerialNumber
+[1] -2077904061
+
+$fileLocationInfo$localVolumeTable$volumeLabel
+[1] "IBM_PRELOAD"
+
+
+$fileLocationInfo$basePathname
+[1] "C:\\Documents and Settings\\hb\\braju.com.R\\R.utils\\R.utils\\inst\\HISTORY"
+
+$fileLocationInfo$remainingPathname
+[1] ""
+
+
+$description
+[1] "C:\\Documents and Settings\\hb\\braju.com.R\\R.utils\\R.utils\\inst\\HISTORY"
+
+$relativePath
+[1] "..\\HISTORY"
+
+$workingDirectory
+[1] "C:\\Documents and Settings\\hb\\braju.com.R\\R.utils\\R.utils\\inst"
+
+$relativePathname
+[1] "..\\HISTORY"
+
+$pathname
+[1] "C:\\Documents and Settings\\hb\\braju.com.R\\R.utils\\R.utils\\inst\\HISTORY"
+
+> 
+> # Get the relative path to the target file
+> history <- file.path(dirname(pathname), lnk$relativePath)
+> 
+> # Alternatively, everything in one call
+> history <- filePath(pathname, expandLinks="relative")
+> 
+> 
+> 
+> cleanEx()
+> nameEx("seqToHumanReadable")
+> ### * seqToHumanReadable
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: seqToHumanReadable
+> ### Title: Gets a short human readable string representation of an vector
+> ###   of indices
+> ### Aliases: seqToHumanReadable.default seqToHumanReadable
+> ### Keywords: attribute
+> 
+> ### ** Examples
+> 
+>   print(seqToHumanReadable(1:2))                 # "1, 2"
+[1] "1, 2"
+>   print(seqToHumanReadable(1:2, tau=1))          # "1-2"
+[1] "1-2"
+>   print(seqToHumanReadable(1:10))                # "1-10"
+[1] "1-10"
+>   print(seqToHumanReadable(c(1:10, 15:18, 20)))  # "1-10, 15-18, 20"
+[1] "1-10, 15-18, 20"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("seqToIntervals")
+> ### * seqToIntervals
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: seqToIntervals
+> ### Title: Gets all contiguous intervals of a vector of indices
+> ### Aliases: seqToIntervals.default seqToIntervals
+> ### Keywords: attribute
+> 
+> ### ** Examples
+> 
+> x <- 1:10
+> y <- seqToIntervals(x)
+> print(y)  # [1 10]
+     from to
+[1,]    1 10
+> 
+> x <- c(1:10, 15:18, 20)
+> y <- seqToIntervals(x)
+> print(y)  # [1 10; 15 18; 20 20]
+     from to
+[1,]    1 10
+[2,]   15 18
+[3,]   20 20
+> 
+> z <- intervalsToSeq(y)
+> print(z)
+ [1]  1  2  3  4  5  6  7  8  9 10 15 16 17 18 20
+> stopifnot(all.equal(x,z))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("sourceTo")
+> ### * sourceTo
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: sourceTo
+> ### Title: Parses and evaluates code from a file or a connection
+> ### Aliases: sourceTo.default sourceTo
+> ### Keywords: programming IO
+> 
+> ### ** Examples
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Example 1
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> cat("=== Example 1 ================================================\n")
+=== Example 1 ================================================
+> 
+> foo <- function(file, ...) {
++   cat("Local objects before calling sourceTo():\n")
++   print(ls())
++ 
++   res <- sourceTo(file, ...)
++ 
++   cat("Local objects after calling sourceTo():\n")
++   print(ls())
++ }
+> 
+> cat("Global objects before calling foo():\n")
+Global objects before calling foo():
+> lsBefore <- NA
+> lsBefore <- ls()
+> foo(file=textConnection(c('a <- 1', 'b <- 2')))
+Local objects before calling sourceTo():
+[1] "file"
+Local objects after calling sourceTo():
+[1] "a"    "b"    "file" "res" 
+> 
+> cat("Global objects after calling foo():\n")
+Global objects after calling foo():
+> stopifnot(length(setdiff(ls(), lsBefore)) == 0)
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Example 2 - with VComments preprocessor
+> # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> cat("=== Example 2 ================================================\n")
+=== Example 2 ================================================
+> 
+> preprocessor <- function(lines, ...) {
++   cat("-----------------------------------------\n")
++   cat("Source code before preprocessing:\n")
++   displayCode(code=lines, pager="console")
++   cat("-----------------------------------------\n")
++   cat("Source code after preprocessing:\n")
++   lines <- VComments$compile(lines)
++   displayCode(code=lines, pager="console")
++   cat("-----------------------------------------\n")
++   lines
++ }
+> 
+> oldHooks <- getHook("sourceTo/onPreprocess")
+> setHook("sourceTo/onPreprocess", preprocessor, action="replace")
+> code <- c(
++  'x <- 2',
++  '#V1# threshold=-1',
++  '#Vc# A v-comment log message',
++  'print("Hello world")'
++ )
+> fh <- textConnection(code)
+> sourceTo(fh)
+-----------------------------------------
+Source code before preprocessing:
+sh: 1: console: not found
+Warning: error in running command
+-----------------------------------------
+Source code after preprocessing:
+sh: 1: console: not found
+Warning: error in running command
+-----------------------------------------
+A v-comment log message
+[1] "Hello world"
+> setHook("sourceTo/onPreprocess", oldHooks, action="replace")
+> 
+> 
+> 
+> cleanEx()
+> nameEx("splitByPattern")
+> ### * splitByPattern
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: splitByPattern
+> ### Title: Splits a single character string by pattern
+> ### Aliases: splitByPattern.default splitByPattern
+> ### Keywords: programming
+> 
+> ### ** Examples
+> 
+> 
+> rspCode <- "<body>Hello <%=\"world\"%></body>"
+> rspParts <- splitByPattern(rspCode, pattern="<%.*%>")
+> cat(rspCode, "\n")
+<body>Hello <%="world"%></body> 
+> print(rspParts)
+           FALSE             TRUE            FALSE 
+  "<body>Hello " "<%=\"world\"%>"        "</body>" 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("subplots")
+> ### * subplots
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: subplots
+> ### Title: Creates a grid of subplots
+> ### Aliases: subplots.default subplots
+> 
+> ### ** Examples
+> 
+>    subplots(nrow=2, ncol=3)  # 2-by-3 grid of subplots
+>    subplots(n=6, nrow=2)     # 2-by-3 grid of subplots
+>    subplots(n=5, ncol=2)     # 3-by-2 grid of subplots
+>    subplots(1)               # (Reset) to a 1-by-1 grid of subplots
+>    subplots(2)               # 1-by-2 grid of subplots
+>    subplots(3)               # 2-by-2 grid of subplots
+>    l <- subplots(8)          # 3-by-3 grid of subplots
+>    layout.show(length(l))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("systemR")
+> ### * systemR
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: systemR
+> ### Title: Launches another R process from within R
+> ### Aliases: systemR.default systemR systemR
+> ### Keywords: programming IO
+> 
+> ### ** Examples
+> 
+> res <- systemR(paste("--slave -e", shQuote("cat(runif(1))")), intern=TRUE)
+> cat("A random number: ", res, "\n", sep="")
+A random number: 0.9082375
+> 
+> 
+> 
+> cleanEx()
+> nameEx("tempvar")
+> ### * tempvar
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: tempvar
+> ### Title: Gets a unique non-existing temporary variable name
+> ### Aliases: tempvar
+> ### Keywords: programming internal
+> 
+> ### ** Examples
+> 
+> # Get a temporary variable
+> name <- tempvar()
+> print(name)
+[1] "var1140350788"
+> 
+> # Get and assign a temporary variable
+> name <- tempvar(value=base::letters)
+> print(name)
+[1] "var312928385"
+> str(get(name))
+ chr [1:26] "a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" ...
+> 
+> # Get a temporary variable with custom prefix
+> name <- tempvar(prefix=".hidden")
+> print(name)
+[1] ".hidden866248189"
+> 
+> # Get a temporary variable for a data.frame
+> name <- tempvar(envir = datasets::mtcars)
+> print(name)
+[1] "var1909893419"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("tmpfile")
+> ### * tmpfile
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: tmpfile
+> ### Title: Creates a temporary file with content
+> ### Aliases: tmpfile
+> ### Keywords: programming file internal
+> 
+> ### ** Examples
+> 
+>   md5 <- tools::md5sum(tmpfile("Hello world!"))
+>   print(md5)
+  /tmp/RtmpMpMQHb/file55db51fb4116 
+"86fb269d190d2c85f6e0468ceca42a20" 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("toCamelCase")
+> ### * toCamelCase
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: toCamelCase
+> ### Title: Converts a string of words into a merged camel-cased word
+> ### Aliases: toCamelCase.default toCamelCase
+> ### Keywords: programming IO internal
+> 
+> ### ** Examples
+> 
+> s <- "hello world"
+> print(toCamelCase(s))  # helloWorld
+[1] "helloWorld"
+> print(toCamelCase(s, capitalize=TRUE))  # HelloWorld
+[1] "HelloWorld"
+> stopifnot(toCamelCase(s) == toCamelCase(toCamelCase(s)))
+> 
+> s <- "GEO Accession"
+> print(toCamelCase(s))  # gEOAccession
+[1] "gEOAccession"
+> print(toCamelCase(s, preserveSameCase=TRUE))  # geoAccession
+[1] "geoAccession"
+> print(toCamelCase(s, capitalize=TRUE))  # GEOAccession
+[1] "GEOAccession"
+> print(toCamelCase(s, capitalize=TRUE, preserveSameCase=TRUE))  # GEOAccession
+[1] "GEOAccession"
+> stopifnot(toCamelCase(s) == toCamelCase(toCamelCase(s)))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("touchFile")
+> ### * touchFile
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: touchFile
+> ### Title: Updates the timestamp of a file
+> ### Aliases: touchFile.default touchFile
+> ### Keywords: programming IO file
+> 
+> ### ** Examples
+> 
+> # 1. Create a file
+> pathname <- tempfile()
+> cat(file=pathname, "Hello world!")
+> md5a <- digest::digest(pathname, file=TRUE)
+> 
+> # 2. Current time stamp
+> ta <- file.info(pathname)$mtime
+> print(ta)
+[1] "2025-11-19 09:20:12 UTC"
+> 
+> # 3. Update time stamp
+> Sys.sleep(1.2)
+> touchFile(pathname)
+> tb <- file.info(pathname)$mtime
+> print(tb)
+[1] "2025-11-19 09:20:13 UTC"
+> 
+> # 4. Verify that the timestamp got updated
+> stopifnot(tb > ta)
+> 
+> # 5. Verify that the contents did not change
+> md5b <- digest::digest(pathname, file=TRUE)
+> stopifnot(identical(md5a, md5b))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("unwrap.array")
+> ### * unwrap.array
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: unwrap.array
+> ### Title: Unwrap an array, matrix or a vector to an array of more
+> ###   dimensions
+> ### Aliases: unwrap.array unwrap.matrix unwrap.data.frame unwrap.default
+> ### Keywords: methods programming
+> 
+> ### ** Examples
+> ## Not run: See ?wrap.array for an example
+> 
+> 
+> cleanEx()
+> nameEx("use")
+> ### * use
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: use
+> ### Title: Attaches or loads packages
+> ### Aliases: use.default use
+> ### Keywords: programming utilities internal
+> 
+> ### ** Examples
+> ## Not run: 
+> ##D   use("digest")
+> ##D   use("digest (>= 0.6.3)")
+> ##D   use("digest (>= 0.6.3)", repos=c("CRAN", "R-Forge"))
+> ##D   use("(CRAN|R-Forge)::digest (>= 0.6.3)")
+> ##D   use("BioCsoft::ShortRead")
+> ##D   use("digest, R.rsp (>= 0.9.17)")
+> ## End(Not run)
+> 
+> 
+> cleanEx()
+> nameEx("whichVector.logical")
+> ### * whichVector.logical
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: whichVector.logical
+> ### Title: Identifies TRUE elements in a logical vector
+> ### Aliases: whichVector.logical whichVector.matrix
+> ### Keywords: methods programming internal
+> 
+> ### ** Examples
+> ## Not run: 
+> ##D   # - - - - - - - - - - - - - - - - - - - - - - - - - -
+> ##D # Simulate two large named logical vectors,
+> ##D # one with missing values one without
+> ##D # - - - - - - - - - - - - - - - - - - - - - - - - - -
+> ##D N <- 1e6
+> ##D 
+> ##D # Vector #1
+> ##D x <- sample(c(TRUE, FALSE), size=N, replace=TRUE)
+> ##D names(x) <- seq_along(x)
+> ##D 
+> ##D # Vector #2
+> ##D y <- x
+> ##D y[sample(N, size=0.1*N)] <- NA
+> ##D 
+> ##D 
+> ##D # - - - - - - - - - - - - - - - - - - - - - - - - - -
+> ##D # Validate consistency
+> ##D # - - - - - - - - - - - - - - - - - - - - - - - - - -
+> ##D stopifnot(identical(which(x), whichVector(x)))
+> ##D stopifnot(identical(which(y), whichVector(y)))
+> ##D 
+> ##D 
+> ##D # - - - - - - - - - - - - - - - - - - - - - - - - - -
+> ##D # Benchmarking
+> ##D # - - - - - - - - - - - - - - - - - - - - - - - - - -
+> ##D # Number of iterations
+> ##D K <- 5
+> ##D 
+> ##D t1 <- 0
+> ##D for (kk in 1:K) {
+> ##D   t1 <- t1 + system.time({ idxs1 <- which(x) })
+> ##D }
+> ##D  
+> ##D t2 <- 0
+> ##D for (kk in 1:K) {
+> ##D   t2 <- t2 + system.time({ idxs2 <- whichVector(x, na.rm=FALSE) })
+> ##D }
+> ##D  
+> ##D cat(sprintf("whichVector(x, na.rm=FALSE)/which(x): %.2f\n", (t2/t1)[3]))
+> ##D stopifnot(identical(idxs1, idxs2))
+> ##D 
+> ##D 
+> ##D t1 <- 0
+> ##D for (kk in 1:K) {
+> ##D   t1 <- t1 + system.time({ idxs1 <- which(y) })
+> ##D }
+> ##D  
+> ##D t2 <- 0
+> ##D for (kk in 1:K) {
+> ##D   t2 <- t2 + system.time({ idxs2 <- whichVector(y) })
+> ##D }
+> ##D  
+> ##D cat(sprintf("whichVector(y)/which(y): %.2f\n", (t2/t1)[3]))
+> ##D stopifnot(identical(idxs1, idxs2))
+> ##D 
+> ##D 
+> ##D  
+> ## End(Not run)
+> 
+> 
+> cleanEx()
+> nameEx("withCapture")
+> ### * withCapture
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: withCapture
+> ### Title: Evaluates an expression and captures the code and/or the output
+> ### Aliases: withCapture evalCapture
+> ### Keywords: utilities
+> 
+> ### ** Examples
+> 
+> print(withCapture({
++  n <- 3
++  n
++ 
++  for (kk in 1:3) {
++    printf("Iteration #%d\n", kk)
++  }
++ 
++  print(Sys.time())
++ 
++  type <- "horse"
++  type
++ }))
+> n <- 3
+> n
+[1] 3
+> for (kk in 1:3) {
++     printf("Iteration #%d\n", kk)
++ }
+Iteration #1
+Iteration #2
+Iteration #3
+> print(Sys.time())
+[1] "2025-11-19 09:20:13 UTC"
+> type <- "horse"
+> type
+[1] "horse"
+> 
+> ## > n <- 3
+> ## > n
+> ## [1] 3
+> ## > for (kk in 1:3) {
+> ## +     printf("Iteration #%d\n", kk)
+> ## + }
+> ## Iteration #1
+> ## Iteration #2
+> ## Iteration #3
+> ## > print(Sys.time())
+> ## [1] "2011-11-06 11:06:32 PST"
+> ## > type <- "horse"
+> ## > type
+> ## [1] "horse"
+> 
+> 
+> # Automatic "variable" substitute
+> # (disable with relabel=NULL)
+> a <- 2
+> b <- "Hello world!"
+> 
+> print(withCapture({
++  x <- .a.
++  s <- .b.
++  x
++  s
++ }))
+> x <- 2
+> s <- "Hello world!"
+> x
+[1] 2
+> s
+[1] "Hello world!"
+> 
+> ## > x <- 2
+> ## > s <- "Hello world!"
+> ## > x
+> ## [1] 2
+> ## > s
+> ## [1] "Hello world!"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("withLocale")
+> ### * withLocale
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: withLocale
+> ### Title: Evaluate an R expression with locale set temporarily
+> ### Aliases: withLocale
+> ### Keywords: IO programming
+> 
+> ### ** Examples
+> 
+> # Vector
+> cat("Original vector:\n")
+Original vector:
+> x <- c(letters[1:8], LETTERS[1:8])
+> print(x)
+ [1] "a" "b" "c" "d" "e" "f" "g" "h" "A" "B" "C" "D" "E" "F" "G" "H"
+> 
+> cat("Sorting with 'C' locale:\n")
+Sorting with 'C' locale:
+> y1 <- withLocale(sort(x), "LC_COLLATE", "C")
+> print(y1)
+ [1] "A" "B" "C" "D" "E" "F" "G" "H" "a" "b" "c" "d" "e" "f" "g" "h"
+> 
+> cat("Sorting with an 'English' locale:\n")
+Sorting with an 'English' locale:
+> y2 <- withLocale(sort(x), "LC_COLLATE", c("en_US", "en_US.UTF8", "English_United States.1252"))
+> print(y2)
+ [1] "a" "A" "b" "B" "c" "C" "d" "D" "e" "E" "f" "F" "g" "G" "h" "H"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("withOptions")
+> ### * withOptions
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: withOptions
+> ### Title: Evaluate an R expression with options set temporarily
+> ### Aliases: withOptions
+> ### Keywords: IO programming
+> 
+> ### ** Examples
+> 
+> print(pi)
+[1] 3.141593
+> 
+> # Same, i.e. using default
+> withOptions({
++   print(pi)
++ })
+[1] 3.141593
+> 
+> # Printing with two digits
+> withOptions({
++   print(pi)
++ }, digits=2)
+[1] 3.1
+> 
+> # Printing with two digits then with three more
+> withOptions({
++   print(pi)
++   withOptions({
++     print(pi)
++   }, digits=getOption("digits")+3)
++ }, digits=2)
+[1] 3.1
+[1] 3.1416
+> 
+> # Still printing with the default
+> print(pi)
+[1] 3.141593
+> 
+> 
+> 
+> cleanEx()
+> nameEx("withRepos")
+> ### * withRepos
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: withRepos
+> ### Title: Evaluate an R expression with repositories set temporarily
+> ### Aliases: withRepos
+> ### Keywords: IO programming
+> 
+> ### ** Examples
+> ## Not run: 
+> ##D   # Install from BioC related repositories only
+> ##D   withRepos(install.packages("edgeR"), repos="[[BioC]]")
+> ##D 
+> ##D   # Install from CRAN or BioC related repositories only
+> ##D   withRepos(install.packages("edgeR"), repos=c("CRAN", "[[BioC]]"))
+> ##D 
+> ##D   # Install from mainstream repositories only (same as previous)
+> ##D   withRepos(install.packages("edgeR"), repos="[[mainstream]]")
+> ##D 
+> ##D   # Install from R-Forge and mainstream repositories only
+> ##D   withRepos(install.packages("R.utils"), repos="[[R-Forge]]")
+> ##D 
+> ##D   # Update only CRAN packages
+> ##D   withRepos(update.packages(ask=FALSE), repos="[[CRAN]]")
+> ##D 
+> ##D   # Update only Bioconductor packages
+> ##D   withRepos(update.packages(ask=FALSE), repos="[[BioC]]")
+> ## End(Not run)
+> 
+> 
+> cleanEx()
+> nameEx("withSeed")
+> ### * withSeed
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: withSeed
+> ### Title: Evaluate an R expression with a temporarily set random set
+> ### Aliases: withSeed
+> ### Keywords: IO programming
+> 
+> ### ** Examples
+> 
+> # Generate a random number
+> y0 <- runif(1)
+> print(y0)
+[1] 0.2655087
+> 
+> # Generate a random number using the same seed over and over
+> yp <- NULL
+> for (ii in 1:10) {
++   y <- withSeed({
++     runif(1)
++   }, seed=0x42)
++   print(y)
++   # Assert identical
++   if (!is.null(yp)) stopifnot(identical(y, yp))
++   yp <- y
++ }
+[1] 0.9899366
+[1] 0.9899366
+[1] 0.9899366
+[1] 0.9899366
+[1] 0.9899366
+[1] 0.9899366
+[1] 0.9899366
+[1] 0.9899366
+[1] 0.9899366
+[1] 0.9899366
+> 
+> # Generate a random number
+> y <- runif(1)
+> print(y)
+[1] 0.3721239
+> 
+> 
+> 
+> cleanEx()
+> nameEx("withSink")
+> ### * withSink
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: withSink
+> ### Title: Evaluate an R expression while temporarily diverting output
+> ### Aliases: withSink
+> ### Keywords: IO programming
+> 
+> ### ** Examples
+> 
+> # Divert standard output
+> pathname <- tempfile(fileext=".output.txt")
+> res <- withSink(file=pathname, {
++   print(letters)
++ })
+> mcat(readLines(pathname), sep="\n")
+ [1] "a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s"
+[20] "t" "u" "v" "w" "x" "y" "z"
+> 
+> 
+> # Divert standard error/messages
+> pathname <- tempfile(fileext=".message.txt")
+> res <- withSink(file=pathname, type="message", {
++   mprint(LETTERS)
++ })
+> mcat(readLines(pathname), sep="\n")
+ [1] "A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M" "N" "O" "P" "Q" "R" "S"
+[20] "T" "U" "V" "W" "X" "Y" "Z"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("withTimeout")
+> ### * withTimeout
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: withTimeout
+> ### Title: Evaluate an R expression and interrupts it if it takes too long
+> ### Aliases: withTimeout
+> ### Keywords: IO programming
+> 
+> ### ** Examples
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Function that takes "a long" time to run
+> # - - - - - - - - - - - - - - - - - - - - - - - - -
+> foo <- function() {
++   print("Tic")
++   for (kk in 1:100) {
++     print(kk)
++     Sys.sleep(0.1)
++   }
++   print("Tac")
++ }
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Evaluate code, if it takes too long, generate
+> # a timeout by throwing a TimeoutException.
+> # - - - - - - - - - - - - - - - - - - - - - - - - -
+> res <- NULL
+> tryCatch({
++   res <- withTimeout({
++     foo()
++   }, timeout = 0.75)
++ }, TimeoutException = function(ex) {
++   message("Timeout. Skipping.")
++ })
+[1] "Tic"
+[1] 1
+[1] 2
+[1] 3
+[1] 4
+[1] 5
+[1] 6
+[1] 7
+[1] 8
+Timeout. Skipping.
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Evaluate code, if it takes too long, generate
+> # a timeout returning NULL and generate a warning.
+> # - - - - - - - - - - - - - - - - - - - - - - - - -
+> res <- withTimeout({
++   foo()
++ }, timeout = 0.75, onTimeout = "warning")
+[1] "Tic"
+[1] 1
+[1] 2
+[1] 3
+[1] 4
+[1] 5
+[1] 6
+[1] 7
+[1] 8
+[1] 9
+Warning in value[[3L]](cond) :
+  reached elapsed time limit [cpu=0.75s, elapsed=0.75s]
+> 
+> 
+> # The same using an expression object
+> expr <- quote(foo())
+> res <- withTimeout(expr, substitute = FALSE,
++                    timeout = 0.75, onTimeout = "warning")
+[1] "Tic"
+[1] 1
+[1] 2
+[1] 3
+[1] 4
+[1] 5
+[1] 6
+[1] 7
+[1] 8
+[1] 9
+[1] 10
+[1] 11
+Warning in value[[3L]](cond) :
+  reached elapsed time limit [cpu=0.75s, elapsed=0.75s]
+> 
+> 
+> # - - - - - - - - - - - - - - - - - - - - - - - - -
+> # Evaluate code, if it takes too long, generate
+> # a timeout, and return silently NULL.
+> # - - - - - - - - - - - - - - - - - - - - - - - - -
+> res <- withTimeout({
++   foo()
++ }, timeout = 0.75, onTimeout = "silent")
+[1] "Tic"
+[1] 1
+[1] 2
+[1] 3
+[1] 4
+[1] 5
+[1] 6
+[1] 7
+[1] 8
+[1] 9
+[1] 10
+[1] 11
+> 
+> 
+> 
+> cleanEx()
+> nameEx("wrap.array")
+> ### * wrap.array
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: wrap.array
+> ### Title: Reshape an array or a matrix by permuting and/or joining
+> ###   dimensions
+> ### Aliases: wrap.array wrap.matrix wrap.data.frame
+> ### Keywords: methods programming
+> 
+> ### ** Examples
+> 
+> 
+> # Create a 3x2x3 array
+> dim <- c(3,2,3)
+> ndim <- length(dim)
+> dimnames <- list()
+> for (kk in 1:ndim)
++   dimnames[[kk]] <- sprintf("%s%d", letters[kk], 1:dim[kk])
+> x <- 1:prod(dim)
+> x <- array(x, dim=dim, dimnames=dimnames)
+> 
+> 
+> cat("Array 'x':\n")
+Array 'x':
+> print(x)
+, , c1
+
+   b1 b2
+a1  1  4
+a2  2  5
+a3  3  6
+
+, , c2
+
+   b1 b2
+a1  7 10
+a2  8 11
+a3  9 12
+
+, , c3
+
+   b1 b2
+a1 13 16
+a2 14 17
+a3 15 18
+
+> 
+> 
+> cat("\nReshape 'x' to its identity:\n")
+
+Reshape 'x' to its identity:
+> y <- wrap(x, map=list(1, 2, 3))
+> print(y)
+, , c1
+
+   b1 b2
+a1  1  4
+a2  2  5
+a3  3  6
+
+, , c2
+
+   b1 b2
+a1  7 10
+a2  8 11
+a3  9 12
+
+, , c3
+
+   b1 b2
+a1 13 16
+a2 14 17
+a3 15 18
+
+> # Assert correctness of reshaping
+> stopifnot(identical(y, x))
+> 
+> 
+> cat("\nReshape 'x' by swapping dimensions 2 and 3, i.e. aperm(x, perm=c(1,3,2)):\n")
+
+Reshape 'x' by swapping dimensions 2 and 3, i.e. aperm(x, perm=c(1,3,2)):
+> y <- wrap(x, map=list(1, 3, 2))
+> print(y)
+, , b1
+
+   c1 c2 c3
+a1  1  7 13
+a2  2  8 14
+a3  3  9 15
+
+, , b2
+
+   c1 c2 c3
+a1  4 10 16
+a2  5 11 17
+a3  6 12 18
+
+> # Assert correctness of reshaping
+> stopifnot(identical(y, aperm(x, perm=c(1,3,2))))
+> 
+> 
+> cat("\nWrap 'x' to a matrix 'y' by keeping dimension 1 and joining the others:\n")
+
+Wrap 'x' to a matrix 'y' by keeping dimension 1 and joining the others:
+> y <- wrap(x, map=list(1, NA))
+> print(y)
+   b1.c1 b2.c1 b1.c2 b2.c2 b1.c3 b2.c3
+a1     1     4     7    10    13    16
+a2     2     5     8    11    14    17
+a3     3     6     9    12    15    18
+> # Assert correctness of reshaping
+> for (aa in dimnames(x)[[1]]) {
++   for (bb in dimnames(x)[[2]]) {
++     for (cc in dimnames(x)[[3]]) {
++       tt <- paste(bb, cc, sep=".")
++       stopifnot(identical(y[aa,tt], x[aa,bb,cc]))
++     }
++   }
++ }
+> 
+> 
+> cat("\nUnwrap matrix 'y' back to array 'x':\n")
+
+Unwrap matrix 'y' back to array 'x':
+> z <- unwrap(y)
+> print(z)
+, , c1
+
+   b1 b2
+a1  1  4
+a2  2  5
+a3  3  6
+
+, , c2
+
+   b1 b2
+a1  7 10
+a2  8 11
+a3  9 12
+
+, , c3
+
+   b1 b2
+a1 13 16
+a2 14 17
+a3 15 18
+
+> stopifnot(identical(z,x))
+> 
+> 
+> cat("\nWrap a matrix 'y' to a vector and back again:\n")
+
+Wrap a matrix 'y' to a vector and back again:
+> x <- matrix(1:8, nrow=2, dimnames=list(letters[1:2], 1:4))
+> y <- wrap(x)
+> z <- unwrap(y)
+> print(z)
+  1 2 3 4
+a 1 3 5 7
+b 2 4 6 8
+> stopifnot(identical(z,x))
+> 
+> 
+> cat("\nWrap and unwrap a randomly sized and shaped array 'x2':\n")
+
+Wrap and unwrap a randomly sized and shaped array 'x2':
+> maxdim <- 5
+> dim <- sample(1:maxdim, size=sample(2:maxdim, size=1))
+> ndim <- length(dim)
+> dimnames <- list()
+> for (kk in 1:ndim)
++   dimnames[[kk]] <- sprintf("%s%d", letters[kk], 1:dim[kk])
+> x2 <- 1:prod(dim)
+> x2 <- array(x, dim=dim, dimnames=dimnames)
+> 
+> cat("\nArray 'x2':\n")
+
+Array 'x2':
+> print(x)
+  1 2 3 4
+a 1 3 5 7
+b 2 4 6 8
+> 
+> # Number of dimensions of wrapped array
+> ndim2 <- sample(1:(ndim-1), size=1)
+> 
+> # Create a random map for joining dimensions
+> splits <- NULL
+> if (ndim > 2)
++   splits <- sort(sample(2:(ndim-1), size=ndim2-1))
+> splits <- c(0, splits, ndim)
+> map <- list()
+> for (kk in 1:ndim2)
++   map[[kk]] <- (splits[kk]+1):splits[kk+1]
+> 
+> cat("\nRandom 'map':\n")
+
+Random 'map':
+> print(map)
+[[1]]
+[1] 1 2
+
+> 
+> cat("\nArray 'y2':\n")
+
+Array 'y2':
+> y2 <- wrap(x2, map=map)
+> print(y2)
+a1.b1 a2.b1 a3.b1 a4.b1 a1.b2 a2.b2 a3.b2 a4.b2 a1.b3 a2.b3 a3.b3 a4.b3 
+    1     2     3     4     5     6     7     8     1     2     3     4 
+> 
+> cat("\nArray 'x2':\n")
+
+Array 'x2':
+> z2 <- unwrap(y2)
+> print(z2)
+   b1 b2 b3
+a1  1  5  1
+a2  2  6  2
+a3  3  7  3
+a4  4  8  4
+> 
+> stopifnot(identical(z2,x2))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("writeBinFragments")
+> ### * writeBinFragments
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: writeBinFragments
+> ### Title: Writes binary data to disjoint sections of a connection or a
+> ###   file
+> ### Aliases: writeBinFragments.default writeBinFragments
+> ### Keywords: IO
+> 
+> ### ** Examples
+> ## Not run: # See example(readBinFragments.connection)
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  1.927 0.101 7.343 0.172 0.345 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

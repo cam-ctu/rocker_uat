@@ -1,0 +1,145 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library("R.methodsS3")
+R.methodsS3 v1.8.2 (2022-06-13 22:00:14 UTC) successfully loaded. See ?R.methodsS3 for help.
+> library("R.oo")
+R.oo v1.27.1 (2025-05-02 21:00:05 UTC) successfully loaded. See ?R.oo for help.
+
+Attaching package: ‘R.oo’
+
+The following object is masked from ‘package:R.methodsS3’:
+
+    throw
+
+The following objects are masked from ‘package:methods’:
+
+    getClasses, getMethods
+
+The following objects are masked from ‘package:base’:
+
+    attach, detach, load, save
+
+> 
+> oopts <- options(warn=1L)
+> 
+> message("TESTING: finalize() on Object on and off ...")
+TESTING: finalize() on Object on and off ...
+> 
+> finalized <- NULL
+> if ("covr" %in% loadedNamespaces()) {
++   assertFinalization <- function(name) TRUE
++ } else {
++   assertFinalization <- function(name) {
++     cat(sprintf("Is '%s' in '%s'?\n", name, paste(finalized, collapse=", ")))
++     stopifnot(is.element(name, finalized))
++   }
++ }
+> 
+> name <- NULL
+> nextName <- function() {
++   if (is.null(name)) return(letters[1L])
++   letters[which(letters == name) + 1L]
++ }
+> 
+> setMethodS3("finalize", "Foo", function(this, ...) {
++   cat(sprintf("Finalizing %s()...\n", class(this)[1L]))
++   name <- unclass(this)
++   cat(sprintf("  Value: %s\n", name))
++   finalized <<- c(finalized, name)
++   cat(sprintf("Finalizing %s()...done\n", class(this)[1L]))
++ })
+NULL
+> 
+> 
+> setConstructorS3("Foo", function(..., ...finalize=NA) {
++   extend(Object(...), "Foo", ...finalize=...finalize)
++ })
+> 
+> # Default
+> x <- Foo(name <- nextName())
+> rm(list="x"); gc()
+Finalizing Foo()...
+  Value: a
+Finalizing Foo()...done
+         used (Mb) gc trigger (Mb) max used (Mb)
+Ncells 401096 21.5     707677 37.8   707677 37.8
+Vcells 733982  5.6    8388608 64.0  1973853 15.1
+> assertFinalization(name)
+Is 'a' in 'a'?
+> 
+> # Default (explicit)
+> x <- Foo(name <- nextName(), finalize=TRUE, ...finalize=NA)
+> rm(list="x"); gc()
+Finalizing Foo()...
+  Value: b
+Finalizing Foo()...done
+         used (Mb) gc trigger (Mb) max used (Mb)
+Ncells 402479 21.5     707677 37.8   707677 37.8
+Vcells 761798  5.9    8388608 64.0  1973853 15.1
+> str(finalized)
+ chr [1:2] "a" "b"
+> assertFinalization(name)
+Is 'b' in 'a, b'?
+> 
+> # Disable
+> x <- Foo(name <- nextName(), finalize=FALSE, ...finalize=FALSE)
+> rm(list="x"); gc()
+         used (Mb) gc trigger (Mb) max used (Mb)
+Ncells 411415 22.0     707677 37.8   707677 37.8
+Vcells 756478  5.8    8388608 64.0  1973853 15.1
+> str(finalized)
+ chr [1:2] "a" "b"
+> 
+> # Disable (forced)
+> x <- Foo(name <- nextName(), finalize=TRUE, ...finalize=FALSE)
+> rm(list="x"); gc()
+         used (Mb) gc trigger (Mb) max used (Mb)
+Ncells 411417 22.0     707677 37.8   707677 37.8
+Vcells 756482  5.8    8388608 64.0  1973853 15.1
+> str(finalized)
+ chr [1:2] "a" "b"
+> 
+> # Enable (forced)
+> x <- Foo(name <- nextName(), finalize=FALSE, ...finalize=TRUE)
+> rm(list="x"); gc()
+Finalizing Foo()...
+  Value: e
+Finalizing Foo()...done
+         used (Mb) gc trigger (Mb) max used (Mb)
+Ncells 411434 22.0     707677 37.8   707677 37.8
+Vcells 756675  5.8    8388608 64.0  1973853 15.1
+> str(finalized)
+ chr [1:3] "a" "b" "e"
+> assertFinalization(name)
+Is 'e' in 'a, b, e'?
+> 
+> print(finalized)
+[1] "a" "b" "e"
+> 
+> # Finalize upon exit
+> options("R.oo::Object/finalizeOnExit"=TRUE)
+> y <- Foo(name <- "OnExit")
+> 
+> message("TESTING: finalize() on Object on and off ... DONE")
+TESTING: finalize() on Object on and off ... DONE
+> 
+> options(oopts)
+> 
+Finalizing Foo()...
+  Value: OnExit
+Finalizing Foo()...done

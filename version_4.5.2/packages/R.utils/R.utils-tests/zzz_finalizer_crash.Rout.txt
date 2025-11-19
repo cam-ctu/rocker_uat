@@ -1,0 +1,113 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> # This script crashes in ~40s on R 2.15.3 patched and R 3.0.2 with
+> # R.oo (< 1.18.0).  It only does so when 'methods' is attached.  It
+> # does not crash on R 3.0.2 patched (2014-02-21 r65057) and beyond.
+> # It appears to not crash with 'R CMD check' on 2.15.3 but if run
+> # via 'Rscript' or similar. /HB 2014-02-22
+> library("methods")
+> library("R.methodsS3")
+R.methodsS3 v1.8.2 (2022-06-13 22:00:14 UTC) successfully loaded. See ?R.methodsS3 for help.
+> loadNamespace("R.utils")
+<environment: namespace:R.utils>
+> 
+> # Remove all existing variables
+> rm(list=ls(all.names=TRUE))
+> gc()
+         used (Mb) gc trigger (Mb) max used (Mb)
+Ncells 334844 17.9     707677 37.8   707677 37.8
+Vcells 574875  4.4    8388608 64.0  1973853 15.1
+> 
+> R.oo::setConstructorS3("Verbose2", function(con=stderr(), ...) {
++   R.oo::extend(R.oo::Object(), "Verbose",
++     .con = con
++   )
++ })
+> 
+> print(sessionInfo())
+R version 4.5.2 (2025-10-31)
+Platform: x86_64-pc-linux-gnu
+Running under: Ubuntu 24.04.3 LTS
+
+Matrix products: default
+BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
+LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so;  LAPACK version 3.12.0
+
+locale:
+ [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              
+ [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    
+ [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   
+ [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 
+ [9] LC_ADDRESS=C               LC_TELEPHONE=C            
+[11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
+
+time zone: Etc/UTC
+tzcode source: system (glibc)
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] R.methodsS3_1.8.2
+
+loaded via a namespace (and not attached):
+[1] compiler_4.5.2 R.utils_2.13.0 R.oo_1.27.1   
+> message(Sys.time())
+2025-11-19 09:20:55.607064
+> local({
++   Verbose2(file())
++   gctorture(TRUE)
++   unloadNamespace("R.utils")
++   unloadNamespace("R.oo")
++   NULL
++ })
+NULL
+Warning message:
+In for (n in loadedNamespaces()) { : closing unused connection 3 ()
+> gctorture(FALSE)
+> message(Sys.time())
+2025-11-19 09:20:57.920401
+> print(sessionInfo())
+R version 4.5.2 (2025-10-31)
+Platform: x86_64-pc-linux-gnu
+Running under: Ubuntu 24.04.3 LTS
+
+Matrix products: default
+BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
+LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so;  LAPACK version 3.12.0
+
+locale:
+ [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              
+ [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    
+ [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   
+ [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 
+ [9] LC_ADDRESS=C               LC_TELEPHONE=C            
+[11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
+
+time zone: Etc/UTC
+tzcode source: system (glibc)
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] R.methodsS3_1.8.2
+
+loaded via a namespace (and not attached):
+[1] compiler_4.5.2
+> 

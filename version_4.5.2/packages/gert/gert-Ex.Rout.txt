@@ -1,0 +1,411 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "gert"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('gert')
+Linking to libgit2 v1.4.2, ssh support: YES
+No global .gitconfig found in: /github/home
+No default user configured
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("git_commit")
+> ### * git_commit
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: git_commit
+> ### Title: Stage and commit changes
+> ### Aliases: git_commit git_commit_all git_commit_info git_commit_id
+> ###   git_commit_stats git_commit_descendant_of git_add git_rm git_status
+> ###   git_conflicts git_ls git_log git_stat_files
+> 
+> ### ** Examples
+> 
+> oldwd <- getwd()
+> repo <- file.path(tempdir(), "myrepo")
+> git_init(repo)
+> setwd(repo)
+> 
+> # Set a user if no default
+> if(!user_is_configured()){
++   git_config_set("user.name", "Jerry")
++   git_config_set("user.email", "jerry@gmail.com")
++ }
+> 
+> writeLines(letters[1:6], "alphabet.txt")
+> git_status()
+          file status staged
+1 alphabet.txt    new  FALSE
+> 
+> git_add("alphabet.txt")
+          file status staged
+1 alphabet.txt    new   TRUE
+> git_status()
+          file status staged
+1 alphabet.txt    new   TRUE
+> 
+> git_commit("Start alphabet file")
+[1] "d226141e137091f61f97feec372ead14c7ea030b"
+> git_status()
+[1] file   status staged
+<0 rows> (or 0-length row.names)
+> 
+> git_ls()
+          path filesize            modified             created
+1 alphabet.txt       12 2025-11-19 10:15:10 2025-11-19 10:15:10
+> 
+> git_log()
+                                    commit                  author
+1 d226141e137091f61f97feec372ead14c7ea030b Jerry <jerry@gmail.com>
+                 time files merge               message
+1 2025-11-19 10:15:10     1 FALSE Start alphabet file\n
+> 
+> cat(letters[7:9], file = "alphabet.txt", sep = "\n", append = TRUE)
+> git_status()
+          file   status staged
+1 alphabet.txt modified  FALSE
+> 
+> git_commit_all("Add more letters")
+[1] "ce15c00a42bada2d05df7c0e9d016daeb58638ff"
+> 
+> # cleanup
+> setwd(oldwd)
+> unlink(repo, recursive = TRUE)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("git_config")
+> ### * git_config
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: git_config
+> ### Title: Get or set Git configuration
+> ### Aliases: git_config git_config_global git_config_set
+> ###   git_config_global_set
+> 
+> ### ** Examples
+> 
+> # Set and inspect a local, custom Git option
+> r <- file.path(tempdir(), "gert-demo")
+> git_init(r)
+> 
+> previous <- git_config_set("aaa.bbb", "ccc", repo = r)
+> previous
+NULL
+> cfg <- git_config(repo = r)
+> subset(cfg, level == "local")
+                          name value level
+3                    core.bare false local
+4 core.repositoryformatversion     0 local
+5                core.filemode  true local
+6        core.logallrefupdates  true local
+7                      aaa.bbb   ccc local
+> cfg$value[cfg$name == "aaa.bbb"]
+[1] "ccc"
+> 
+> previous <- git_config_set("aaa.bbb", NULL, repo = r)
+> previous
+[1] "ccc"
+> cfg <- git_config(repo = r)
+> subset(cfg, level == "local")
+                          name value level
+3                    core.bare false local
+4 core.repositoryformatversion     0 local
+5                core.filemode  true local
+6        core.logallrefupdates  true local
+> cfg$value[cfg$name == "aaa.bbb"]
+character(0)
+> 
+> unlink(r, recursive = TRUE)
+> 
+> ## Not run: 
+> ##D # Set global Git options
+> ##D git_config_global_set("user.name", "Your Name")
+> ##D git_config_global_set("user.email", "your@email.com")
+> ##D git_config_global()
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("git_fetch")
+> ### * git_fetch
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: git_fetch
+> ### Title: Push and pull
+> ### Aliases: git_fetch git_remote_ls git_push git_clone git_pull
+> 
+> ### ** Examples
+> 
+> {# Clone a small repository
++ git_dir <- file.path(tempdir(), 'antiword')
++ git_clone('https://github.com/ropensci/antiword', git_dir)
++ 
++ # Change into the repo directory
++ olddir <- getwd()
++ setwd(git_dir)
++ 
++ # Show some stuff
++ git_log()
++ git_branch_list()
++ git_remote_list()
++ 
++ # Add a file
++ write.csv(iris, 'iris.csv')
++ git_add('iris.csv')
++ 
++ # Commit the change
++ jerry <- git_signature("Jerry", "jerry@hotmail.com")
++ git_commit('added the iris file', author = jerry)
++ 
++ # Now in the log:
++ git_log()
++ 
++ # Cleanup
++ setwd(olddir)
++ unlink(git_dir, recursive = TRUE)
++ }
+> 
+> 
+> 
+> cleanEx()
+> nameEx("git_open")
+> ### * git_open
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: git_open
+> ### Title: Open local repository
+> ### Aliases: git_open
+> 
+> ### ** Examples
+> 
+> r <- tempfile(pattern = "gert")
+> git_init(r)
+> r_ptr <- git_open(r)
+> r_ptr
+<git repository>: /tmp/Rtmp0vnbD1/gert13a1f2517ee8e[@NA]
+> git_open(r_ptr)
+<git repository>: /tmp/Rtmp0vnbD1/gert13a1f2517ee8e[@NA]
+> git_info(r)
+$path
+[1] "/tmp/Rtmp0vnbD1/gert13a1f2517ee8e/"
+
+$bare
+[1] FALSE
+
+$head
+[1] NA
+
+$shorthand
+[1] NA
+
+$commit
+[1] NA
+
+$remote
+[1] NA
+
+$upstream
+[1] NA
+
+$reflist
+character(0)
+
+> 
+> # cleanup
+> unlink(r, recursive = TRUE)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("git_repo")
+> ### * git_repo
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: git_repo
+> ### Title: Create or discover a local Git repository
+> ### Aliases: git_repo git_init git_find git_info
+> 
+> ### ** Examples
+> 
+> # directory does not yet exist
+> r <- tempfile(pattern = "gert")
+> git_init(r)
+> git_find(r)
+[1] "/tmp/Rtmp0vnbD1/gert13a1f5f2e149f"
+> 
+> # create a child directory, then a grandchild, then search
+> r_grandchild_dir <- file.path(r, "aaa", "bbb")
+> dir.create(r_grandchild_dir, recursive = TRUE)
+> git_find(r_grandchild_dir)
+[1] "/tmp/Rtmp0vnbD1/gert13a1f5f2e149f"
+> 
+> # cleanup
+> unlink(r, recursive = TRUE)
+> 
+> # directory exists but is empty
+> r <- tempfile(pattern = "gert")
+> dir.create(r)
+> git_init(r)
+> git_find(r)
+[1] "/tmp/Rtmp0vnbD1/gert13a1f4844e893"
+> 
+> # cleanup
+> unlink(r, recursive = TRUE)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("git_signature")
+> ### * git_signature
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: git_signature
+> ### Title: Author Signature
+> ### Aliases: git_signature git_signature_default git_signature_parse
+> 
+> ### ** Examples
+> 
+> # Your default user
+> try(git_signature_default())
+Error in libgit2::git_signature_default : 
+  config value 'user.name' was not found
+> 
+> # Specify explicit name and email
+> git_signature("Some committer", "sarah@gmail.com")
+[git signature]
+Author: Some committer <sarah@gmail.com>
+Date: Wed Nov 19 10:15:11 2025 +0000
+> 
+> # Create signature for an hour ago
+> (sig <- git_signature("Han", "han@company.com", Sys.time() - 3600))
+[git signature]
+Author: Han <han@company.com>
+Date: Wed Nov 19 09:15:11 2025 +0000
+> 
+> # Parse a signature
+> git_signature_parse(sig)
+$name
+[1] "Han"
+
+$email
+[1] "han@company.com"
+
+$time
+[1] "2025-11-19 09:15:11 UTC"
+
+$offset
+[1] 0
+
+> git_signature_parse("Emma <emma@mu.edu>")
+$name
+[1] "Emma"
+
+$email
+[1] "emma@mu.edu"
+
+$time
+[1] "2025-11-19 10:15:11 UTC"
+
+$offset
+[1] 0
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("libgit2_config")
+> ### * libgit2_config
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: libgit2_config
+> ### Title: Show libgit2 version and capabilities
+> ### Aliases: libgit2_config
+> 
+> ### ** Examples
+> 
+> libgit2_config()
+$version
+[1] ‘1.4.2’
+
+$ssh
+[1] TRUE
+
+$https
+[1] TRUE
+
+$threads
+[1] TRUE
+
+$config.global
+[1] ""
+
+$config.system
+[1] ""
+
+$config.home
+[1] "/github/home"
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("user_is_configured")
+> ### * user_is_configured
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: user_is_configured
+> ### Title: Test if a Git user is configured
+> ### Aliases: user_is_configured
+> 
+> ### ** Examples
+> 
+> user_is_configured()
+[1] FALSE
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  0.16 0.081 0.68 0.004 0.008 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

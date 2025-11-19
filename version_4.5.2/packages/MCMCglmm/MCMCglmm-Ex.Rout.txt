@@ -1,0 +1,1040 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "MCMCglmm"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('MCMCglmm')
+Loading required package: Matrix
+Loading required package: coda
+Loading required package: ape
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("Ddivergence")
+> ### * Ddivergence
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Ddivergence
+> ### Title: d-divergence
+> ### Aliases: Ddivergence
+> ### Keywords: multivariate
+> 
+> ### ** Examples
+> 
+> CA<-rIW(diag(2),10, n=1)
+> CB<-rIW(diag(2),10, n=1)
+> Ddivergence(CA, CB)
+[1] 0.4859582
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Dtensor")
+> ### * Dtensor
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Dtensor
+> ### Title: Tensor of (mixed) partial derivatives
+> ### Aliases: Dtensor
+> ### Keywords: math array
+> 
+> ### ** Examples
+> 
+> f<-expression(beta_1 + time * beta_2 + u)
+> Dtensor(f,eval=FALSE)
+[[1]]
+[1] 1
+
+[[2]]
+beta_2
+
+[[3]]
+time
+
+[[4]]
+[1] 1
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("KPPM")
+> ### * KPPM
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: KPPM
+> ### Title: Kronecker Product Permutation Matrix
+> ### Aliases: KPPM
+> ### Keywords: array
+> 
+> ### ** Examples
+> 
+> KPPM(2,3)
+     [,1]      [,2]      [,3]      [,4]      [,5]      [,6]      [,7] [,8]
+[1,]    1 0.0000000 0.0000000 0.0000000 0.0000000 0.0000000 0.0000000    0
+[2,]    0 0.3333333 0.3333333 0.0000000 0.3333333 0.0000000 0.0000000    0
+[3,]    0 0.3333333 0.3333333 0.0000000 0.3333333 0.0000000 0.0000000    0
+[4,]    0 0.0000000 0.0000000 0.3333333 0.0000000 0.3333333 0.3333333    0
+[5,]    0 0.3333333 0.3333333 0.0000000 0.3333333 0.0000000 0.0000000    0
+[6,]    0 0.0000000 0.0000000 0.3333333 0.0000000 0.3333333 0.3333333    0
+[7,]    0 0.0000000 0.0000000 0.3333333 0.0000000 0.3333333 0.3333333    0
+[8,]    0 0.0000000 0.0000000 0.0000000 0.0000000 0.0000000 0.0000000    1
+> 
+> 
+> 
+> cleanEx()
+> nameEx("MCMCglmm")
+> ### * MCMCglmm
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: MCMCglmm
+> ### Title: Multivariate Generalised Linear Mixed Models
+> ### Aliases: MCMCglmm
+> ### Keywords: models
+> 
+> ### ** Examples
+> 
+> 
+> # Example 1: univariate Gaussian model with standard random effect
+>  
+> data(PlodiaPO)  
+> model1<-MCMCglmm(PO~1, random=~FSfamily, data=PlodiaPO, verbose=FALSE,
++  nitt=1300, burnin=300, thin=1)
+> summary(model1)
+
+ Iterations = 301:1300
+ Thinning interval  = 1
+ Sample size  = 1000 
+
+ DIC: -239.6804 
+
+ G-structure:  ~FSfamily
+
+         post.mean l-95% CI u-95% CI eff.samp
+FSfamily   0.01011 0.005185  0.01573    402.9
+
+ R-structure:  ~units
+
+      post.mean l-95% CI u-95% CI eff.samp
+units   0.03412  0.03011  0.03866    739.8
+
+ Location effects: PO ~ 1 
+
+            post.mean l-95% CI u-95% CI eff.samp  pMCMC    
+(Intercept)     1.164    1.131    1.197     1000 <0.001 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> 
+> # Example 2: univariate Gaussian model with phylogenetically correlated
+> # random effect
+> 
+> data(bird.families) 
+> 
+> phylo.effect<-rbv(bird.families, 1, nodes="TIPS") 
+> phenotype<-phylo.effect+rnorm(dim(phylo.effect)[1], 0, 1)  
+> 
+> # simulate phylogenetic and residual effects with unit variance
+> 
+> test.data<-data.frame(phenotype=phenotype, taxon=row.names(phenotype))
+> 
+> Ainv<-inverseA(bird.families)$Ainv
+> 
+> # inverse matrix of shared phyloegnetic history
+> 
+> prior<-list(R=list(V=1, nu=0.002), G=list(G1=list(V=1, nu=0.002)))
+> 
+> model2<-MCMCglmm(phenotype~1, random=~taxon, ginverse=list(taxon=Ainv),
++  data=test.data, prior=prior, verbose=FALSE, nitt=1300, burnin=300, thin=1)
+> 
+> plot(model2$VCV)
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Ptensor")
+> ### * Ptensor
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Ptensor
+> ### Title: Tensor of Sample (Mixed) Central Moments
+> ### Aliases: Ptensor
+> ### Keywords: array
+> 
+> ### ** Examples
+> 
+> n<-1000
+> y<-matrix(rnorm(n), n/2, 2)
+> Ptensor(y,2)
+      I2
+I1            [,1]        [,2]
+  [1,]  1.02195093 -0.04402382
+  [2,] -0.04402382  1.11565665
+attr(,"class")
+[1] "tensor" "matrix"
+> cov(y)*((n-1)/n)
+            [,1]        [,2]
+[1,]  1.02297493 -0.04406794
+[2,] -0.04406794  1.11677454
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Tri2M")
+> ### * Tri2M
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Tri2M
+> ### Title: Lower/Upper Triangle Elements of a Matrix
+> ### Aliases: Tri2M
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> M<-rIW(diag(3), 10)
+> x<-Tri2M(M)
+> x
+[1]  3.244462 -1.473975 -1.906046  1.641273  1.246777  2.527334
+> Tri2M(x, reverse=TRUE)
+          [,1]      [,2]      [,3]
+[1,]  3.244462 -1.473975 -1.906046
+[2,] -1.473975  1.641273  1.246777
+[3,] -1.906046  1.246777  2.527334
+> Tri2M(x, reverse=FALSE)
+          [,1]     [,2]     [,3]
+[1,]  3.244462 0.000000 0.000000
+[2,] -1.473975 1.641273 0.000000
+[3,] -1.906046 1.246777 2.527334
+> 
+> 
+> 
+> cleanEx()
+> nameEx("at.level")
+> ### * at.level
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: at.level
+> ### Title: Incidence Matrix of Levels within a Factor
+> ### Aliases: at.level
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> fac<-gl(3,10,30, labels=letters[1:3])
+> x<-rnorm(30)
+> model.matrix(~at.level(fac,"b"):x)
+   (Intercept) at.level(fac, "b"):x
+1            1           0.00000000
+2            1           0.00000000
+3            1           0.00000000
+4            1           0.00000000
+5            1           0.00000000
+6            1           0.00000000
+7            1           0.00000000
+8            1           0.00000000
+9            1           0.00000000
+10           1           0.00000000
+11           1           1.51178117
+12           1           0.38984324
+13           1          -0.62124058
+14           1          -2.21469989
+15           1           1.12493092
+16           1          -0.04493361
+17           1          -0.01619026
+18           1           0.94383621
+19           1           0.82122120
+20           1           0.59390132
+21           1           0.00000000
+22           1           0.00000000
+23           1           0.00000000
+24           1           0.00000000
+25           1           0.00000000
+26           1           0.00000000
+27           1           0.00000000
+28           1           0.00000000
+29           1           0.00000000
+30           1           0.00000000
+attr(,"assign")
+[1] 0 1
+> 
+> 
+> 
+> cleanEx()
+> nameEx("at.set")
+> ### * at.set
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: at.set
+> ### Title: Incidence Matrix of Combined Levels within a Factor
+> ### Aliases: at.set
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> fac<-gl(3,10,30, labels=letters[1:3])
+> x<-rnorm(30)
+> model.matrix(~at.set(fac,2:3):x)
+   (Intercept) at.set(fac, 2:3):x
+1            1         0.00000000
+2            1         0.00000000
+3            1         0.00000000
+4            1         0.00000000
+5            1         0.00000000
+6            1         0.00000000
+7            1         0.00000000
+8            1         0.00000000
+9            1         0.00000000
+10           1         0.00000000
+11           1         1.51178117
+12           1         0.38984324
+13           1        -0.62124058
+14           1        -2.21469989
+15           1         1.12493092
+16           1        -0.04493361
+17           1        -0.01619026
+18           1         0.94383621
+19           1         0.82122120
+20           1         0.59390132
+21           1         0.91897737
+22           1         0.78213630
+23           1         0.07456498
+24           1        -1.98935170
+25           1         0.61982575
+26           1        -0.05612874
+27           1        -0.15579551
+28           1        -1.47075238
+29           1        -0.47815006
+30           1         0.41794156
+attr(,"assign")
+[1] 0 1
+> 
+> 
+> 
+> cleanEx()
+> nameEx("commutation")
+> ### * commutation
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: commutation
+> ### Title: Commutation Matrix
+> ### Aliases: commutation
+> ### Keywords: array
+> 
+> ### ** Examples
+> 
+> commutation(2,2)
+     [,1] [,2] [,3] [,4]
+[1,]    1    0    0    0
+[2,]    0    0    1    0
+[3,]    0    1    0    0
+[4,]    0    0    0    1
+> 
+> 
+> 
+> cleanEx()
+> nameEx("dcmvnorm")
+> ### * dcmvnorm
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: dcmvnorm
+> ### Title: Density of a (conditional) multivariate normal variate
+> ### Aliases: dcmvnorm
+> ### Keywords: distribution
+> 
+> ### ** Examples
+> 
+> V1<-cbind(c(1,0.5), c(0.5,1))
+> dcmvnorm(c(0,2), c(0,0), V=V1, keep=1, cond=2)
+[1] 0.2365101
+> # density of x[1]=0 conditional on x[2]=2 given 
+> # x ~ MVN(c(0,0), V1) 
+> 
+> dcmvnorm(c(0,2), c(0,0), V=V1, keep=1, cond=NULL)
+[1] 0.3989423
+> # density of x[1]=0 marginal to x[2] 
+> dnorm(0,0,1)
+[1] 0.3989423
+> # same as univariate density 
+> 
+> V2<-diag(2)
+> dcmvnorm(c(0,2), c(0,0), V=V2, keep=1, cond=2)
+[1] 0.3989423
+> # density of x[1]=0 conditional on x[2]=2 given 
+> # x ~ MVN(c(0,0), V2) 
+> dnorm(0,0,1)
+[1] 0.3989423
+> # same as univariate density because V2 is diagonal
+> 
+> 
+> 
+> cleanEx()
+> nameEx("evalDtensor")
+> ### * evalDtensor
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: evalDtensor
+> ### Title: Evaluates a list of (mixed) partial derivatives
+> ### Aliases: evalDtensor
+> ### Keywords: math array
+> 
+> ### ** Examples
+> 
+> f<-expression(beta_1 + time*beta_2+u)
+> Df<-Dtensor(f, eval=FALSE, m=2)
+> evalDtensor(Df, mu=data.frame(beta_1=0.5, beta_2=1, time=3, u=2.3))
+ [1] 0 0 0 0 0 0 1 0 0 1 0 0 0 0 0 0
+attr(,"class")
+[1] "tensor"
+> Dtensor(f, mu=c(1,3,1,2.3), m=2)
+      I2
+I1     [,1] [,2] [,3] [,4]
+  [1,]    0    0    0    0
+  [2,]    0    0    1    0
+  [3,]    0    1    0    0
+  [4,]    0    0    0    0
+attr(,"class")
+[1] "tensor" "matrix"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("gelman.prior")
+> ### * gelman.prior
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: gelman.prior
+> ### Title: Prior Covariance Matrix for Fixed Effects.
+> ### Aliases: gelman.prior
+> ### Keywords: distribution
+> 
+> ### ** Examples
+> 
+> dat<-data.frame(y=c(0,0,1,1), x=gl(2,2))
+> # data with complete separation
+> 
+> #####################
+> # probit regression #
+> #####################
+> 
+> prior1<-list(
++   B=list(mu=c(0,0), V=gelman.prior(~x, data=dat, scale=sqrt(1+1))), 
++   R=list(V=1,fix=1))
+> 
+> m1<-MCMCglmm(y~x, prior=prior1, data=dat, family="ordinal", verbose=FALSE)
+> 
+> c2<-1
+> p1<-pnorm(m1$Sol[,1]/sqrt(1+c2)) # marginal probability when x=1
+> 
+> #######################
+> # logistic regression #
+> #######################
+> 
+> prior2<-list(B=list(mu=c(0,0), V=gelman.prior(~x, data=dat, scale=sqrt(pi^2/3+1))),
++              R=list(V=1,fix=1))
+> 
+> m2<-MCMCglmm(y~x, prior=prior2, data=dat, family="categorical", verbose=FALSE)
+> 
+> c2 <- (16 * sqrt(3)/(15 * pi))^2
+> p2<-plogis(m2$Sol[,1]/sqrt(1+c2)) # marginal probability when x=1
+> 
+> plot(mcmc.list(p1,p2))
+> 
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("inverseA")
+> ### * inverseA
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: inverseA
+> ### Title: Inverse Relatedness Matrix and Phylogenetic Covariance Matrix
+> ### Aliases: inverseA
+> ### Keywords: array
+> 
+> ### ** Examples
+> 
+> data(bird.families)
+> Ainv<-inverseA(bird.families)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("knorm")
+> ### * knorm
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: knorm
+> ### Title: (Mixed) Central Moments of a Multivariate Normal Distribution
+> ### Aliases: knorm
+> ### Keywords: distribution
+> 
+> ### ** Examples
+> 
+> V<-diag(2)
+> knorm(V,2)
+      I2
+I1     [,1] [,2]
+  [1,]    1    0
+  [2,]    0    1
+attr(,"class")
+[1] "tensor" "matrix"
+> knorm(V,4)
+, , 1, 1
+
+      I2
+I1     [,1] [,2]
+  [1,]    3    0
+  [2,]    0    1
+
+, , 2, 1
+
+      I2
+I1     [,1] [,2]
+  [1,]    0    1
+  [2,]    1    0
+
+, , 1, 2
+
+      I2
+I1     [,1] [,2]
+  [1,]    0    1
+  [2,]    1    0
+
+, , 2, 2
+
+      I2
+I1     [,1] [,2]
+  [1,]    1    0
+  [2,]    0    3
+
+attr(,"class")
+[1] "tensor"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("krzanowski.test")
+> ### * krzanowski.test
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: krzanowski.test
+> ### Title: Krzanowski's Comparison of Subspaces
+> ### Aliases: krzanowski.test
+> ### Keywords: multivariate
+> 
+> ### ** Examples
+> 
+> CA<-rIW(diag(5),10, n=1)
+> CB<-rIW(diag(5),10, n=1)
+> krzanowski.test(CA, CB, vecsA=1:2, vecsB=1:2)
+$sumofS
+[1] 0.6652352
+
+$angles
+[1] 41.73334 70.78235
+
+$bisector
+           [,1]       [,2]
+[1,]  0.7520362  0.1029499
+[2,] -0.4499724  0.5092015
+[3,] -0.2277215  0.2528822
+[4,] -0.4097577 -0.6454670
+[5,]  0.1104897 -0.4995379
+
+> krzanowski.test(CA, CA, vecsA=1:2, vecsB=1:2)
+Warning in acos(eigval^0.5) : NaNs produced
+$sumofS
+[1] 2
+
+$angles
+[1]          NaN 1.478779e-06
+
+$bisector
+           [,1]        [,2]
+[1,] -0.3456183 -0.71516016
+[2,]  0.4113747  0.36052735
+[3,]  0.0608570 -0.09607905
+[4,] -0.8238218  0.52786178
+[5,] -0.1700969 -0.26588857
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("kunif")
+> ### * kunif
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: kunif
+> ### Title: Central Moments of a Uniform Distribution
+> ### Aliases: kunif
+> ### Keywords: distribution
+> 
+> ### ** Examples
+> 
+> kunif(-1,1,4)
+[1] 0.2
+> y<-runif(1000,-1,1)
+> mean((y-mean(y))^4)
+[1] 0.2005495
+> 
+> 
+> 
+> cleanEx()
+> nameEx("list2bdiag")
+> ### * list2bdiag
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: list2bdiag
+> ### Title: Forms the direct sum from a list of matrices
+> ### Aliases: list2bdiag
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> M<-list(rIW(diag(3), 10), rIW(diag(2), 10))
+> list2bdiag(M)
+          1         2         3          1          2
+1  3.244462 -1.473975 -1.906046  0.0000000  0.0000000
+2 -1.473975  1.641273  1.246777  0.0000000  0.0000000
+3 -1.906046  1.246777  2.527334  0.0000000  0.0000000
+1  0.000000  0.000000  0.000000  0.8452831 -0.2395253
+2  0.000000  0.000000  0.000000 -0.2395253  1.4651848
+> 
+> 
+> 
+> cleanEx()
+> nameEx("mult.memb")
+> ### * mult.memb
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: mult.memb
+> ### Title: Design Matrices for Multiple Membership Models
+> ### Aliases: mult.memb
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> fac1<-factor(sample(letters[1:3], 5, TRUE), levels=letters[1:3])
+> fac2<-factor(sample(letters[1:3], 5, TRUE), levels=letters[1:3])
+> cbind(fac1, fac2)
+     fac1 fac2
+[1,]    1    3
+[2,]    3    3
+[3,]    1    2
+[4,]    2    2
+[5,]    1    3
+> mult.memb(~fac1+fac2)
+  fac1a fac1b fac1c
+1     1     0     1
+2     0     0     2
+3     1     1     0
+4     0     2     0
+5     1     0     1
+attr(,"assign")
+[1] 1 1 1
+attr(,"contrasts")
+attr(,"contrasts")$fac1
+[1] "contr.treatment"
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("path")
+> ### * path
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: path
+> ### Title: Design Matrix for Path Analyses
+> ### Aliases: path
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> path(1, 2,2)
+     [,1] [,2]
+[1,]    0    0
+[2,]    1    0
+> 
+> 
+> 
+> cleanEx()
+> nameEx("pkk")
+> ### * pkk
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: pkk
+> ### Title: Probability that all multinomial categories have a non-zero
+> ###   count.
+> ### Aliases: pkk
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> p<-runif(4)
+> pkk(p, 10)
+[1] 0.5837623
+> 
+> 
+> 
+> cleanEx()
+> nameEx("plotsubspace")
+> ### * plotsubspace
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: plotsubspace
+> ### Title: Plots covariance matrices
+> ### Aliases: plotsubspace
+> ### Keywords: hplot
+> 
+> ### ** Examples
+> 
+>  if(requireNamespace("rgl")!=FALSE){
++    G1<-rIW(diag(4),10)
++    G2<-G1*1.2
++  #  plotsubspace(G1, G2, shadeCB=FALSE)
++  # commented out because of problems with rgl 
++  } 
+Loading required namespace: rgl
+Error in dyn.load(dynlib <- getDynlib(dir)) : 
+  unable to load shared object '/usr/local/lib/R/site-library/rgl/libs/rgl.so':
+  libGLU.so.1: cannot open shared object file: No such file or directory
+Warning: Trying without OpenGL...
+> 
+> 
+> 
+> cleanEx()
+> nameEx("posterior.ante")
+> ### * posterior.ante
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: posterior.ante
+> ### Title: Posterior distribution of ante-dependence parameters
+> ### Aliases: posterior.ante
+> ### Keywords: distribution
+> 
+> ### ** Examples
+> 
+> v<-rIW(diag(2),10, n=1000)
+> plot(posterior.ante(mcmc(v),1))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("posterior.cor")
+> ### * posterior.cor
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: posterior.cor
+> ### Title: Transforms posterior distribution of covariances into
+> ###   correlations
+> ### Aliases: posterior.cor
+> ### Keywords: distribution
+> 
+> ### ** Examples
+> 
+> v<-rIW(diag(2),3, n=1000)
+> hist(posterior.cor(mcmc(v))[,2])
+> 
+> 
+> 
+> cleanEx()
+> nameEx("posterior.evals")
+> ### * posterior.evals
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: posterior.evals
+> ### Title: Posterior distribution of eigenvalues
+> ### Aliases: posterior.evals
+> ### Keywords: distribution
+> 
+> ### ** Examples
+> 
+> v<-rIW(diag(2),3, n=1000)
+> hist(posterior.evals(mcmc(v))[,2])
+> 
+> 
+> 
+> cleanEx()
+> nameEx("posterior.inverse")
+> ### * posterior.inverse
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: posterior.inverse
+> ### Title: Posterior distribution of matrix inverse
+> ### Aliases: posterior.inverse
+> ### Keywords: distribution
+> 
+> ### ** Examples
+> 
+> v<-rIW(diag(2),3, n=1000)
+> plot(posterior.inverse(mcmc(v)))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("posterior.mode")
+> ### * posterior.mode
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: posterior.mode
+> ### Title: Estimates the marginal parameter modes using kernel density
+> ###   estimation
+> ### Aliases: posterior.mode
+> ### Keywords: distribution
+> 
+> ### ** Examples
+> 
+> v<-rIW(as.matrix(1),10, n=1000)
+> hist(v)
+> abline(v=posterior.mode(mcmc(v)), col="red")
+> 
+> 
+> 
+> cleanEx()
+> nameEx("rIW")
+> ### * rIW
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: rIW
+> ### Title: Random Generation from the Conditional Inverse Wishart
+> ###   Distribution
+> ### Aliases: rIW
+> ### Keywords: distribution
+> 
+> ### ** Examples
+> 
+> nu<-10
+> V<-diag(4)
+> rIW(V, nu, fix=2)
+           [,1]       [,2]     [,3]       [,4]
+[1,]  2.0738043 -0.5200561 -0.49762 -0.1621574
+[2,] -0.5200561  1.0000000  0.00000  0.0000000
+[3,] -0.4976200  0.0000000  1.00000  0.0000000
+[4,] -0.1621574  0.0000000  0.00000  1.0000000
+> 
+> 
+> 
+> cleanEx()
+> nameEx("rbv")
+> ### * rbv
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: rbv
+> ### Title: Random Generation of MVN Breeding Values and Phylogenetic
+> ###   Effects
+> ### Aliases: rbv
+> ### Keywords: distribution
+> 
+> ### ** Examples
+> 
+> data(bird.families)
+> bv<-rbv(bird.families, diag(2))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("rtcmvnorm")
+> ### * rtcmvnorm
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: rtcmvnorm
+> ### Title: Random Generation from a Truncated Conditional Normal
+> ###   Distribution
+> ### Aliases: rtcmvnorm
+> ### Keywords: distribution
+> 
+> ### ** Examples
+> 
+> par(mfrow=c(2,1))
+> V1<-cbind(c(1,0.5), c(0.5,1))
+> x1<-rtcmvnorm(10000, c(0,0), V=V1, c(0,2), keep=1, lower=-1, upper=1)
+> x2<-rtnorm(10000, 0, 1, lower=-1, upper=1)
+> plot(density(x1), main="Correlated conditioning observation")
+> lines(density(x2), col="red")
+> # denisties of conditional (black) and unconditional (red) distribution
+> # when the two variables are correlated (r=0.5) 
+> 
+> V2<-diag(2)
+> x3<-rtcmvnorm(10000, c(0,0), V=V2, c(0,2), keep=1, lower=-1, upper=1)
+> x4<-rtnorm(10000, 0, 1, lower=-1, upper=1)
+> plot(density(x3), main="Uncorrelated conditioning observation")
+> lines(density(x4), col="red")
+> # denisties of conditional (black) and unconditional (red) distribution
+> # when the two variables are uncorrelated (r=0) 
+> 
+> 
+> 
+> 
+> graphics::par(get("par.postscript", pos = 'CheckExEnv'))
+> cleanEx()
+> nameEx("rtnorm")
+> ### * rtnorm
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: rtnorm
+> ### Title: Random Generation from a Truncated Normal Distribution
+> ### Aliases: rtnorm
+> ### Keywords: distribution
+> 
+> ### ** Examples
+> 
+> hist(rtnorm(100, lower=-1, upper=1))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("sir")
+> ### * sir
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: sir
+> ### Title: Design Matrix for Simultaneous and Recursive Relationships
+> ###   between Responses
+> ### Aliases: sir
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> fac1<-factor(sample(letters[1:3], 5, TRUE), levels=letters[1:3])
+> fac2<-factor(sample(letters[1:3], 5, TRUE), levels=letters[1:3])
+> cbind(fac1, fac2)
+     fac1 fac2
+[1,]    1    3
+[2,]    3    3
+[3,]    1    2
+[4,]    2    2
+[5,]    1    3
+> sir(~fac1, ~fac2)
+  1 2 3 4 5
+1 0 0 0 0 0
+2 1 1 0 0 1
+3 0 0 0 0 0
+4 0 0 1 1 0
+5 0 0 0 0 0
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("sm2asreml")
+> ### * sm2asreml
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: sm2asreml
+> ### Title: Converts sparseMatrix to asreml's giv format
+> ### Aliases: sm2asreml
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> data(bird.families)
+> A<-inverseA(bird.families)
+> Aasreml<-sm2asreml(A$Ainv, A$node.names)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("spl")
+> ### * spl
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: spl
+> ### Title: Orthogonal Spline Design Matrix
+> ### Aliases: spl
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D x<-rnorm(100)
+> ##D y<-x^2+cos(x)-x+0.2*x^3+rnorm(100)
+> ##D plot(y~x)
+> ##D lines((x^2+cos(x)-x+0.2*x^3)[order(x)]~sort(x))
+> ##D 
+> ##D dat<-data.frame(y=y, x=x)
+> ##D 
+> ##D m1<-MCMCglmm(y~x, random=~idv(spl(x)), data=dat, pr=TRUE, verbose=FALSE) # penalised smoother
+> ##D m2<-MCMCglmm(y~x+spl(x),data=dat,  verbose=FALSE)                        # non-penalised
+> ##D 
+> ##D pred1<-(cbind(m1$X,m1$Z)%*%colMeans(m1$Sol))@x
+> ##D pred2<-(cbind(m2$X)%*%colMeans(m2$Sol))@x
+> ##D 
+> ##D lines(pred1[order(x)]~sort(x), col="red")
+> ##D lines(pred2[order(x)]~sort(x), col="green")
+> ##D 
+> ##D m1$DIC-mean(m1$Deviance)  # effective number of parameters < 13
+> ##D m2$DIC-mean(m2$Deviance)  # effective number of parameters ~ 13
+> ## End(Not run)
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  1.831 0.408 1.907 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

@@ -1,0 +1,230 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> # test_lmerTest_paper.R
+> 
+> library(lmerTest)
+Loading required package: lme4
+Loading required package: Matrix
+
+Attaching package: ‘lmerTest’
+
+The following object is masked from ‘package:lme4’:
+
+    lmer
+
+The following object is masked from ‘package:stats’:
+
+    step
+
+> 
+> # Kenward-Roger only available with pbkrtest and only then validated in R >= 3.3.3
+> # (faulty results for R < 3.3.3 may be due to unstated dependencies in pbkrtest)
+> has_pbkrtest <- requireNamespace("pbkrtest", quietly = TRUE) && getRversion() >= "3.3.3"
+> 
+> # Read in data set
+> load(system.file("testdata","test_paper_objects.RData", package="lmerTest"))
+> 
+> # Evaluate code from paper:
+> ## Section 8.2:
+> tv <- lmer(Sharpnessofmovement ~ TVset * Picture + (1 | Assessor) +
++              (1 | Assessor:TVset) + (1 | Assessor:Picture), data = TVbo,
++            control=lmerControl(optimizer="bobyqa"))
+> 
+> (an8.2 <- anova(tv))
+Type III Analysis of Variance Table with Satterthwaite's method
+              Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+TVset          1.765  0.8825     2    14  0.2437 0.7869818    
+Picture       51.857 17.2857     3    21  4.7735 0.0108785 *  
+TVset:Picture 90.767 15.1279     6   138  4.1777 0.0006845 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> 
+> if(has_pbkrtest)
++   (ankr8.2 <- anova(tv, type=2, ddf="Kenward-Roger"))
+Type II Analysis of Variance Table with Kenward-Roger's method
+              Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+TVset          1.765  0.8825     2    14  0.2437 0.7869818    
+Picture       51.857 17.2857     3    21  4.7735 0.0108785 *  
+TVset:Picture 90.767 15.1279     6   138  4.1777 0.0006845 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> 
+> ## Section 8.3:
+> m.carrots <- lmer(Preference ~ sens1 + sens2 + (1 + sens1 + sens2 | Consumer) +
++                     (1 | Product), data=carrots,
++                   control=lmerControl(optimizer="bobyqa"))
+boundary (singular) fit: see help('isSingular')
+> (sum8.3 <- coef(summary(m.carrots)))
+              Estimate Std. Error        df    t value     Pr(>|t|)
+(Intercept) 4.79911155 0.07529236 20.721527 63.7396848 2.921549e-25
+sens1       0.01082919 0.01502847  9.167909  0.7205783 4.891337e-01
+sens2       0.07064553 0.01727806 10.944315  4.0887415 1.812128e-03
+> 
+> ## Section 8.4:
+> tv <- lmer(Sharpnessofmovement ~ TVset * Picture +
++              (1 | Assessor:TVset) + (1 | Assessor:Picture) +
++              (1 | Assessor:Picture:TVset) + (1 | Repeat) + (1 | Repeat:Picture) +
++              (1 | Repeat:TVset) + (1 | Repeat:TVset:Picture) + (1 | Assessor),
++            data = TVbo,
++            control=lmerControl(optimizer="bobyqa"))
+boundary (singular) fit: see help('isSingular')
+> st <- step(tv)
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+> (elim_tab_random8.4 <- st$random)
+Backward reduced random-effect table:
+
+                             Eliminated npar  logLik    AIC     LRT Df
+<none>                                    21 -412.70 867.41           
+(1 | Assessor:Picture:TVset)          1   20 -412.70 865.41  0.0000  1
+(1 | Repeat)                          2   19 -412.70 863.41  0.0000  1
+(1 | Repeat:Picture)                  3   18 -412.70 861.41  0.0000  1
+(1 | Repeat:TVset)                    4   17 -412.70 859.41  0.0000  1
+(1 | Repeat:TVset:Picture)            5   16 -412.70 857.41  0.0000  1
+(1 | Assessor:TVset)                  0   15 -414.10 858.20  2.7891  1
+(1 | Assessor:Picture)                0   15 -418.88 867.76 12.3473  1
+(1 | Assessor)                        0   15 -416.44 862.88  7.4698  1
+                             Pr(>Chisq)    
+<none>                                     
+(1 | Assessor:Picture:TVset)  1.0000000    
+(1 | Repeat)                  1.0000000    
+(1 | Repeat:Picture)          0.9999996    
+(1 | Repeat:TVset)            1.0000000    
+(1 | Repeat:TVset:Picture)    0.9999997    
+(1 | Assessor:TVset)          0.0949061 .  
+(1 | Assessor:Picture)        0.0004416 ***
+(1 | Assessor)                0.0062742 ** 
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (elim_tab_fixed8.4 <- st$fixed)
+Backward reduced fixed-effect table:
+Degrees of freedom method: Satterthwaite 
+
+              Eliminated Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+TVset:Picture          0 90.767  15.128     6   138  4.1777 0.0006845 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> (an8.4 <- anova(get_model(st)))
+Type III Analysis of Variance Table with Satterthwaite's method
+              Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
+TVset          1.765  0.8825     2    14  0.2437 0.7869818    
+Picture       51.857 17.2857     3    21  4.7735 0.0108785 *  
+TVset:Picture 90.767 15.1279     6   138  4.1777 0.0006845 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> 
+> ## Section 8.5:
+> # L <- matrix(0, ncol = 12, nrow = 6)
+> # L[1, 7] <- L[2, 8] <- L[3, 9] <- L[4, 10] <- L[5, 11] <- L[6, 12] <- 1
+> L <- cbind(array(0, dim=c(6, 6)), diag(6))
+> (con1_8.5 <- calcSatterth(tv, L))
+$denom
+[1] 138
+
+$Fstat
+         [,1]
+[1,] 4.177656
+
+$pvalue
+             [,1]
+[1,] 0.0006844787
+
+$ndf
+[1] 6
+
+> (con2_8.5 <- contest(tv, L))
+    Sum Sq  Mean Sq NumDF DenDF  F value       Pr(>F)
+1 90.76719 15.12786     6   138 4.177656 0.0006844787
+> 
+> ## Section C:
+> # m.carrots <- lmer(Preference ~ sens1 + sens2 + (1 + sens1 + sens2 | Consumer) +
+> #                     (1 | product), data = carrots)
+> # step(m.carrots, reduce.fixed = FALSE)
+> (ran_C <- ranova(m.carrots))
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+ANOVA-like table for random-effects: Single term deletions
+
+Model:
+Preference ~ sens1 + sens2 + (1 + sens1 + sens2 | Consumer) + (1 | Product)
+                                        npar  logLik    AIC     LRT Df
+<none>                                    11 -1869.7 3761.5           
+sens1 in (1 + sens1 + sens2 | Consumer)    8 -1870.7 3757.3  1.8274  3
+sens2 in (1 + sens1 + sens2 | Consumer)    8 -1874.5 3765.0  9.5464  3
+(1 | Product)                             10 -1878.7 3777.4 17.9080  1
+                                        Pr(>Chisq)    
+<none>                                                
+sens1 in (1 + sens1 + sens2 | Consumer)    0.60899    
+sens2 in (1 + sens1 + sens2 | Consumer)    0.02284 *  
+(1 | Product)                            2.318e-05 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+Warning message:
+Model failed to converge with 1 negative eigenvalue: -1.5e+03 
+> 
+> # Compare to validated outputs:
+> TOL <- 1e-4
+> stopifnot(
++   isTRUE(all.equal(an8.2_save, an8.2, check.attributes = FALSE, tolerance=TOL)),
++   isTRUE(all.equal(sum8.3_save, sum8.3, check.attributes = FALSE, tolerance=TOL)),
++   isTRUE(all.equal(elim_tab_random8.4_save, elim_tab_random8.4,
++                    check.attributes = FALSE, tolerance=TOL)),
++   isTRUE(all.equal(elim_tab_fixed8.4_save, elim_tab_fixed8.4,
++                    check.attributes = FALSE, tolerance=TOL)),
++   isTRUE(all.equal(an8.4_save, an8.4, check.attributes = FALSE, tolerance=TOL)),
++   isTRUE(all.equal(con1_8.5_save, con1_8.5, check.attributes = FALSE, tolerance=TOL)),
++   isTRUE(all.equal(con2_8.5_save, con2_8.5, check.attributes = FALSE, tolerance=TOL))
++ )
+> if(has_pbkrtest) {
++   stopifnot(
++     isTRUE(all.equal(ankr8.2_save, ankr8.2, check.attributes = FALSE, tolerance=TOL))
++   )
++ }
+> 
+> 

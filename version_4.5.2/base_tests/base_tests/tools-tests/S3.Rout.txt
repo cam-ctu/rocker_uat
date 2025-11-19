@@ -1,0 +1,65 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> ## check that all S3 methods in base are registered.
+> (function() {
++   old <-  Sys.getlocale("LC_COLLATE")
++   on.exit(Sys.setlocale("LC_COLLATE", old))
++           Sys.setlocale("LC_COLLATE", "C")
++   stopifnot(identical(base:::.S3_methods_table, # >>> end of ../../base/R/zzz.R ; update *there* !
++                       tools:::.make_S3_methods_table_for_base()))
++ })()
+> 
+> 
+> ## check that all .internalGenerics  have .Internal :
+> (iGens <- .internalGenerics)
+[1] "as.vector"   "cbind"       "rbind"       "unlist"      "is.unsorted"
+[6] "lengths"     "nchar"       "rep.int"     "rep_len"    
+> names(iGens) <- iGens
+> str(bdI <- lapply(iGens, body))
+List of 9
+ $ as.vector  : language .Internal(as.vector(x, mode))
+ $ cbind      : language .Internal(cbind(deparse.level, ...))
+ $ rbind      : language .Internal(rbind(deparse.level, ...))
+ $ unlist     : language {     if (is.function(recursive) || length(recursive) != 1L)  ...
+ $ is.unsorted: language {  if (length(x) <= 1L); return(FALSE); if (!na.rm && anyNA(x)); return(NA); if (na.rm && any(ii <- is.na(x))); x| __truncated__
+ $ lengths    : language .Internal(lengths(x, use.names))
+ $ nchar      : language .Internal(nchar(x, type, allowNA, keepNA))
+ $ rep.int    : language .Internal(rep.int(x, times))
+ $ rep_len    : language .Internal(rep_len(x, length.out))
+> stopifnot(lengths(bdI) >= 2L)
+> 
+> is.qI  <- function(.) identical(., quote(.Internal))
+> has.qI <- function(E) is.qI(E) || is.qI(E[[1L]])
+> str(l1 <- lapply(bdI, \(bd) if(bd[[1]] == quote(`{`)) bd[[length(bd)]] else bd[[1]]))
+List of 9
+ $ as.vector  : symbol .Internal
+ $ cbind      : symbol .Internal
+ $ rbind      : symbol .Internal
+ $ unlist     : language if (.Internal(islistfactor(x, recursive))) {     URapply <- if (recursive)  ...
+ $ is.unsorted: language .Internal(is.unsorted(x, na.rm, strictly))
+ $ lengths    : symbol .Internal
+ $ nchar      : symbol .Internal
+ $ rep.int    : symbol .Internal
+ $ rep_len    : symbol .Internal
+> (r <- vapply(l1, \(b) has.qI(b) || has.qI(b[[length(b)]]), NA))
+  as.vector       cbind       rbind      unlist is.unsorted     lengths 
+       TRUE        TRUE        TRUE        TRUE        TRUE        TRUE 
+      nchar     rep.int     rep_len 
+       TRUE        TRUE        TRUE 
+> stopifnot(r)
+> 
