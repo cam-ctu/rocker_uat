@@ -1080,12 +1080,17 @@ detaching ‘package:glmmTMB’
 + }) # examplesIf
 > model <- lm(mpg ~ disp, data = mtcars)
 > check_predictions(model)
+Ignoring unknown labels:
+• size : ""
 > set.seed(99)
 > d <- iris
 > d$skewed <- rpois(150, 1)
 > model <- glm(skewed ~ Species + Petal.Length + Petal.Width, family = poisson(), 
 +     data = d)
 > check_predictions(model, type = "discrete_both")
+Ignoring unknown labels:
+• size : ""
+• alpha : ""
 > ## End(Don't show)
 > 
 > 
@@ -1435,7 +1440,7 @@ detaching ‘package:lme4’, ‘package:Matrix’
 > 
 > ### Name: cronbachs_alpha
 > ### Title: Cronbach's Alpha for Items or Scales
-> ### Aliases: cronbachs_alpha
+> ### Aliases: cronbachs_alpha item_alpha cronbachs_alpha.data.frame
 > 
 > ### ** Examples
 > 
@@ -1462,9 +1467,9 @@ detaching ‘package:lme4’, ‘package:Matrix’
 > model <- lm(mpg ~ wt + cyl, data = mtcars)
 > mp <- model_performance(model)
 > display(mp)
-[1] "|AIC    |   AICc |    BIC |   R2 | R2 (adj.) | RMSE | Sigma |"
-[2] "|:------|:------:|:------:|:----:|:---------:|:----:|:-----:|"
-[3] "|156.01 | 157.49 | 161.87 | 0.83 |      0.82 | 2.44 |  2.57 |"
+[1] "|AIC   |  AICc |   BIC |   R2 | R2 (adj.) | RMSE | Sigma |"
+[2] "|:-----|:-----:|:-----:|:----:|:---------:|:----:|:-----:|"
+[3] "|156.0 | 157.5 | 161.9 | 0.83 |      0.82 | 2.44 |  2.57 |"
 attr(,"format")
 [1] "pipe"
 attr(,"class")
@@ -1573,14 +1578,16 @@ hp   |       0.44 |  0.50
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: item_discrimination
-> ### Title: Discrimination of Questionnaire Items
-> ### Aliases: item_discrimination
+> ### Title: Discrimination and Item-Total Correlation of Questionnaire Items
+> ### Aliases: item_discrimination item_totalcor
 > 
 > ### ** Examples
 > 
 > data(mtcars)
 > x <- mtcars[, c("cyl", "gear", "carb", "hp")]
 > item_discrimination(x)
+Some of the values are negative. Maybe affected items need to be
+  reverse-coded, e.g. using `datawizard::reverse()`.
 Item Discrimination
 
 Item | Discrimination
@@ -1589,6 +1596,17 @@ cyl  |           0.83
 gear |          -0.13
 carb |           0.75
 hp   |           0.88
+> item_totalcor(x)
+Some of the values are negative. Maybe affected items need to be
+  reverse-coded, e.g. using `datawizard::reverse()`.
+Item-Total Correlation
+
+Item | Total Correlation
+------------------------
+cyl  |              0.83
+gear |             -0.12
+carb |              0.76
+hp   |              1.00
 > 
 > 
 > 
@@ -1612,6 +1630,100 @@ hp   |           0.88
 > 
 > 
 > cleanEx()
+> nameEx("item_omega")
+> ### * item_omega
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: item_omega
+> ### Title: McDonald's Omega for Items or Scales
+> ### Aliases: item_omega item_omega.data.frame item_omega.matrix
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (insight::check_if_installed("parameters", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ data(mtcars)
++ x <- mtcars[1:7]
++ result <- item_omega(x, n = 2)
++ 
++ result
++ 
++ as.numeric(result)
++ 
++ summary(result)
++ 
++ parameters::model_parameters(result)
++ ## Don't show: 
++ }) # examplesIf
+> data(mtcars)
+> x <- mtcars[1:7]
+> result <- item_omega(x, n = 2)
+Loading required namespace: GPArotation
+
+Three factors are required for identification -- general factor loadings set to be equal. 
+Proceed with caution. 
+Think about redoing the analysis with alternative values of the 'option' setting.
+
+> result
+# Reliability Coefficients
+
+Statistic            | Coefficient
+----------------------------------
+Alpha                |        0.93
+G.6                  |        0.97
+Omega (hierarchical) |        0.46
+Omega (asymptotic H) |        0.47
+Omega (total)        |        0.97
+> as.numeric(result)
+               Alpha                  G.6 Omega (hierarchical) 
+           0.9315665            0.9662008            0.4610075 
+Omega (asymptotic H)        Omega (total) 
+           0.4745543            0.9714535 
+> summary(result)
+# Omega Statistics
+
+Statistic            | Coefficient
+----------------------------------
+Alpha                |        0.93
+G.6                  |        0.97
+Omega (hierarchical) |        0.46
+Omega (asymptotic H) |        0.47
+Omega (total)        |        0.97
+
+# Omega Coefficients
+
+Composite | Omega (total) | Omega (hierarchical) | Omega (group)
+----------------------------------------------------------------
+g         |          0.97 |                 0.46 |          0.48
+F1*       |          0.96 |                 0.40 |          0.56
+F2*       |          1.00 |                 0.37 |          0.63
+
+# Variances
+
+Composite | Total (%) | General Factor (%) | Group Factor (%)
+-------------------------------------------------------------
+g         |     97.15 |              46.10 |            48.39
+F1*       |     95.91 |              39.92 |            55.99
+F2*       |     99.52 |              36.61 |            62.91
+> parameters::model_parameters(result)
+# Rotated loadings from Omega (oblimin-rotation)
+
+Variable |    g |      F1* |   F2* |   h2 |       u2 |   p2 | Complexity
+------------------------------------------------------------------------
+mpg-     | 0.59 |     0.70 |  0.07 | 0.85 |     0.15 | 0.41 |       1.96
+cyl      | 0.67 |     0.65 |  0.22 | 0.92 |     0.08 | 0.48 |       2.22
+disp     | 0.61 |     0.73 |  0.07 | 0.91 |     0.09 | 0.41 |       1.96
+hp       | 0.66 |     0.47 |  0.40 | 0.82 |     0.18 | 0.53 |       2.52
+drat-    | 0.37 |     0.67 | -0.17 | 0.61 |     0.39 | 0.23 |       1.73
+wt       | 0.49 |     0.79 | -0.15 | 0.90 |     0.10 | 0.27 |       1.75
+qsec-    | 0.61 | 2.64e-03 |  0.79 | 1.00 | 4.75e-03 | 0.37 |       1.87
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
 > nameEx("item_reliability")
 > ### * item_reliability
 > 
@@ -1626,12 +1738,18 @@ hp   |           0.88
 > data(mtcars)
 > x <- mtcars[, c("cyl", "gear", "carb", "hp")]
 > item_reliability(x)
-  term alpha_if_deleted item_discrimination
-1  cyl            0.048               0.826
-2 gear            0.110              -0.127
-3 carb            0.058               0.751
-4   hp            0.411               0.881
-> 
+Some of the values are negative. Maybe affected items need to be
+  reverse-coded, e.g. using `datawizard::reverse()`.
+# Item Reliability
+
+Item | Alpha if deleted | Total Correlation | Discrimination
+------------------------------------------------------------
+cyl  |             0.05 |              0.83 |           0.83
+gear |             0.11 |             -0.12 |          -0.13
+carb |             0.06 |              0.76 |           0.75
+hp   |             0.41 |              1.00 |           0.88
+
+Mean inter-item-correlation = 0.294  Cronbach's alpha = 0.095> 
 > 
 > 
 > cleanEx()
@@ -1677,7 +1795,7 @@ $spearmanbrown
 + }) # examplesIf
 Loading required package: rstanarm
 Loading required package: Rcpp
-This is rstanarm version 2.32.1
+This is rstanarm version 2.32.2
 - See https://mc-stan.org/rstanarm/articles/priors for changes to default priors!
 - Default priors may change, so it's safest to specify priors, even if equivalent to the defaults.
 - For execution on a local, multicore CPU with excess RAM we recommend calling
@@ -1705,21 +1823,72 @@ detaching ‘package:rstanarm’, ‘package:Rcpp’
 > model_performance(model)
 # Indices of model performance
 
-AIC     |    AICc |     BIC |    R2 | R2 (adj.) |  RMSE | Sigma
----------------------------------------------------------------
-156.010 | 157.492 | 161.873 | 0.830 |     0.819 | 2.444 | 2.568
+AIC   |  AICc |   BIC |    R2 | R2 (adj.) |  RMSE | Sigma
+---------------------------------------------------------
+156.0 | 157.5 | 161.9 | 0.830 |     0.819 | 2.444 | 2.568
 > 
 > model <- glm(vs ~ wt + mpg, data = mtcars, family = "binomial")
 > model_performance(model)
 # Indices of model performance
 
-AIC    |   AICc |    BIC | Tjur's R2 |  RMSE | Sigma | Log_loss | Score_log
----------------------------------------------------------------------------
-31.298 | 32.155 | 35.695 |     0.478 | 0.359 | 1.000 |    0.395 |   -14.903
+AIC  | AICc |  BIC | Tjur's R2 |  RMSE | Sigma | Log_loss | Score_log
+---------------------------------------------------------------------
+31.3 | 32.2 | 35.7 |     0.478 | 0.359 |     1 |    0.395 |   -14.903
 
-AIC    | Score_spherical |   PCP
---------------------------------
-31.298 |           0.095 | 0.743
+AIC  | Score_spherical |   PCP
+------------------------------
+31.3 |           0.095 | 0.743
+> 
+> 
+> 
+> cleanEx()
+> nameEx("model_performance.fa")
+> ### * model_performance.fa
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: model_performance.fa
+> ### Title: Performance of FA / PCA models
+> ### Aliases: model_performance.fa
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (all(insight::check_if_installed(c("psych", "GPArotation", "psychTools"), quietly = TRUE))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ out <- psych::fa(psychTools::bfi[, 1:25], 5)
++ model_performance(out)
++ 
++ out <- item_omega(mtcars, n = 3)
++ model_performance(out)
++ ## Don't show: 
++ }) # examplesIf
+> out <- psych::fa(psychTools::bfi[, 1:25], 5)
+> model_performance(out)
+# Indices of model performance
+
+Chi2(185) | p (Chi2) |  RMSA | RMSA_corrected |   TLI | RMSEA |   RMSEA 90% CI |   BIC
+--------------------------------------------------------------------------------------
+1808.943  |   < .001 | 0.029 |          0.037 | 0.867 | 0.056 | [0.054, 0.058] | 340.5
+> out <- item_omega(mtcars, n = 3)
+> model_performance(out)
+# Indices of model performance
+
+Model             |    Chi2 | df | p (Chi2) |  RMSA | RMSA_corrected |   TLI
+----------------------------------------------------------------------------
+3-factor solution |  31.796 | 25 |   0.164  | 0.015 |          0.023 |      
+g-model           | 264.781 | 44 |   < .001 | 0.393 |          0.440 | 0.195
+
+Model             | RMSEA |   RMSEA 90% CI |   BIC |    R2 | Correlation
+------------------------------------------------------------------------
+3-factor solution | 0.087 | [0.000, 0.181] | -54.8 |       |            
+g-model           | 0.395 | [0.356, 0.450] | 112.3 | 0.761 |       0.873
+
+Compare the model fit of the 3-factor solution with the g-only model.
+  If the g-model has smaller RMSA and RMSEA then your items are more
+  likely to describe a single unidimensional construct. If the 3-factor
+  model has smaller RMSA and RMSEA then your construct is more likely to
+  be made up of 3 sub-constructs.> ## End(Don't show)
 > 
 > 
 > 
@@ -1747,7 +1916,7 @@ AIC    | Score_spherical |   PCP
 
 Sum_Squares_Total | Sum_Squares_Within | Sum_Squares_Between | Iterations
 -------------------------------------------------------------------------
-60.991            |             14.918 |              46.073 |      1.000
+60.991            |             14.918 |              46.073 |          1
 > 
 > 
 > 
@@ -1776,7 +1945,7 @@ Sum_Squares_Total | Sum_Squares_Within | Sum_Squares_Between | Iterations
 + ## Don't show: 
 + }) # examplesIf
 Loading required package: lavaan
-This is lavaan 0.6-19
+This is lavaan 0.6-20
 lavaan is FREE software! Please report any bugs.
 > data(HolzingerSwineford1939, package = "lavaan")
 > structure <- " visual  =~ x1 + x2 + x3\n               textual =~ x4 + x5 + x6\n               speed   =~ x7 + x8 + x9 "
@@ -1792,9 +1961,9 @@ Chi2(24) |  NNFI |   CFI | RMSEA |      RMSEA  CI | p (RMSEA) |   RMR |  SRMR
 -----------------------------------------------------------------------------
 85.306   | 0.896 | 0.931 | 0.092 | [0.071, 0.114] |    < .001 | 0.082 | 0.065
 
-Chi2(24) |   RFI |  PNFI |   IFI |   RNI | Loglikelihood |      AIC |      BIC | BIC_adjusted
----------------------------------------------------------------------------------------------
-85.306   | 0.861 | 0.605 | 0.931 | 0.931 |     -3737.745 | 7517.490 | 7595.339 |     7528.739
+Chi2(24) |   RFI |  PNFI |   IFI |   RNI | Loglikelihood |    AIC |    BIC | BIC_adjusted
+-----------------------------------------------------------------------------------------
+85.306   | 0.861 | 0.605 | 0.931 | 0.931 |     -3737.745 | 7517.5 | 7595.3 |     7528.739
 > ## End(Don't show)
 > 
 > 
@@ -1818,21 +1987,21 @@ detaching ‘package:lavaan’
 > model_performance(model)
 # Indices of model performance
 
-AIC     |    AICc |     BIC |    R2 | R2 (adj.) |  RMSE | Sigma
----------------------------------------------------------------
-156.010 | 157.492 | 161.873 | 0.830 |     0.819 | 2.444 | 2.568
+AIC   |  AICc |   BIC |    R2 | R2 (adj.) |  RMSE | Sigma
+---------------------------------------------------------
+156.0 | 157.5 | 161.9 | 0.830 |     0.819 | 2.444 | 2.568
 > 
 > model <- glm(vs ~ wt + mpg, data = mtcars, family = "binomial")
 > model_performance(model)
 # Indices of model performance
 
-AIC    |   AICc |    BIC | Tjur's R2 |  RMSE | Sigma | Log_loss | Score_log
----------------------------------------------------------------------------
-31.298 | 32.155 | 35.695 |     0.478 | 0.359 | 1.000 |    0.395 |   -14.903
+AIC  | AICc |  BIC | Tjur's R2 |  RMSE | Sigma | Log_loss | Score_log
+---------------------------------------------------------------------
+31.3 | 32.2 | 35.7 |     0.478 | 0.359 |     1 |    0.395 |   -14.903
 
-AIC    | Score_spherical |   PCP
---------------------------------
-31.298 |           0.095 | 0.743
+AIC  | Score_spherical |   PCP
+------------------------------
+31.3 |           0.095 | 0.743
 > 
 > 
 > 
@@ -1861,9 +2030,9 @@ Loading required package: Matrix
 > model_performance(model)
 # Indices of model performance
 
-AIC    |   AICc |    BIC | R2 (cond.) | R2 (marg.) |   ICC |  RMSE | Sigma
---------------------------------------------------------------------------
-77.320 | 77.595 | 89.362 |      0.972 |      0.096 | 0.969 | 0.279 | 0.283
+AIC  | AICc |  BIC | R2 (cond.) | R2 (marg.) |   ICC |  RMSE | Sigma
+--------------------------------------------------------------------
+77.3 | 77.6 | 89.4 |      0.972 |      0.096 | 0.969 | 0.279 | 0.283
 > ## End(Don't show)
 > 
 > 
@@ -1914,13 +2083,9 @@ introduction to the package please type: help(metafor)
 > model_performance(model)
 # Indices of model performance
 
-AIC    |    BIC |    I2 |     H2 |  TAU2 | CochransQ | p (CochransQ) | df
--------------------------------------------------------------------------
-29.376 | 30.505 | 0.922 | 12.856 | 0.313 |   152.233 |        < .001 | 12
-
-AIC    | Omnibus | p (Omnibus)
-------------------------------
-29.376 |  15.796 |      < .001
+AIC  |  BIC |    I2 |     H2 |  TAU2 | CochransQ | p (CochransQ) | df | Omnibus | p (Omnibus)
+---------------------------------------------------------------------------------------------
+29.4 | 30.5 | 0.922 | 12.856 | 0.313 |   152.233 |        < .001 | 12 |  15.796 |      < .001
 > ## End(Don't show)
 > 
 > 
@@ -1948,13 +2113,13 @@ detaching ‘package:metafor’, ‘package:numDeriv’, ‘package:metadat’,
 + }) # examplesIf
 Loading required package: rstanarm
 Loading required package: Rcpp
-This is rstanarm version 2.32.1
+This is rstanarm version 2.32.2
 - See https://mc-stan.org/rstanarm/articles/priors for changes to default priors!
 - Default priors may change, so it's safest to specify priors, even if equivalent to the defaults.
 - For execution on a local, multicore CPU with excess RAM we recommend calling
   options(mc.cores = parallel::detectCores())
 Loading required package: rstantools
-This is rstantools version 2.4.0
+This is rstantools version 2.5.0
 > ## End(Don't show)
 > 
 > 
@@ -2240,8 +2405,6 @@ Summary: model seems to fit well.
 2       Trial (Intercept) 0.5664226
 > m <- glmmTMB::glmmTMB(RT ~ (1 | Participant) + (1 | Trial), data = df)
 > performance_reliability(m)
-Cannot extract confidence intervals for random variance parameters from
-  models with more than one grouping factor.
         Group   Parameter Reliability
 1 Participant (Intercept)  0.15386342
 2       Trial (Intercept)  0.00588784
@@ -2494,19 +2657,23 @@ detaching ‘package:lme4’, ‘package:Matrix’
 + }) # examplesIf
 Loading required package: rstanarm
 Loading required package: Rcpp
-This is rstanarm version 2.32.1
+This is rstanarm version 2.32.2
 - See https://mc-stan.org/rstanarm/articles/priors for changes to default priors!
 - Default priors may change, so it's safest to specify priors, even if equivalent to the defaults.
 - For execution on a local, multicore CPU with excess RAM we recommend calling
   options(mc.cores = parallel::detectCores())
 Loading required package: rstantools
-This is rstantools version 2.4.0
+This is rstantools version 2.5.0
 Loading required package: brms
-Loading 'brms' package (version 2.22.0). Useful instructions
+Loading 'brms' package (version 2.23.0). Useful instructions
 can be found by typing help('brms'). A more detailed introduction
 to the package is available through vignette('brms_overview').
 
 Attaching package: ‘brms’
+
+The following object is masked from ‘package:rstantools’:
+
+    loo_epred
 
 The following objects are masked from ‘package:rstanarm’:
 
@@ -2650,13 +2817,13 @@ Kullback-Leibler R2
 + }) # examplesIf
 Loading required package: rstanarm
 Loading required package: Rcpp
-This is rstanarm version 2.32.1
+This is rstanarm version 2.32.2
 - See https://mc-stan.org/rstanarm/articles/priors for changes to default priors!
 - Default priors may change, so it's safest to specify priors, even if equivalent to the defaults.
 - For execution on a local, multicore CPU with excess RAM we recommend calling
   options(mc.cores = parallel::detectCores())
 Loading required package: rstantools
-This is rstantools version 2.4.0
+This is rstantools version 2.5.0
 > model <- suppressWarnings(rstanarm::stan_glm(mpg ~ wt + cyl, data = mtcars, 
 +     chains = 1, iter = 500, refresh = 0, show_messages = FALSE))
 > r2_loo(model)
@@ -2693,9 +2860,6 @@ detaching ‘package:rstantools’, ‘package:rstanarm’, ‘package:Rcpp’
 + }
 Loading required package: mlogit
 Loading required package: dfidx
-The tidyverse part of the package is now in the tidydfidx package
-so that the dfidx package now depends only on a small set of packages
-
 McFadden's R2 
       0.17823 
 > 
@@ -2965,8 +3129,8 @@ Bayes Factors for Model Comparison
 Name | Model |  df | df_diff |    F |     p
 -------------------------------------------
 m1   |    lm | 148 |         |      |      
-m2   |    lm | 146 |    2.00 | 0.08 | 0.927
-m3   |    lm | 144 |    2.00 | 1.66 | 0.195
+m2   |    lm | 146 |       2 | 0.08 | 0.927
+m3   |    lm | 144 |       2 | 1.66 | 0.195
 Models were detected as nested (in terms of fixed parameters) and are compared in sequential order.
 > 
 > # Equivalent to lmtest::lrtest(m1, m2, m3)
@@ -3059,7 +3223,7 @@ Each model is compared to m1.
 +   }
 + }
 Loading required package: lavaan
-This is lavaan 0.6-19
+This is lavaan 0.6-20
 lavaan is FREE software! Please report any bugs.
 Loading required package: lme4
 Loading required package: Matrix
@@ -3092,7 +3256,7 @@ detaching ‘package:mgcv’, ‘package:nlme’, ‘package:lme4’,
 
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  18.099 3.393 17.988 0 0.003 
+Time elapsed:  23.185 3.348 23.145 0 0.004 
 > grDevices::dev.off()
 null device 
           1 

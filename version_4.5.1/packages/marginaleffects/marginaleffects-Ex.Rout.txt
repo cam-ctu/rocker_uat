@@ -25,6 +25,36 @@ Type 'q()' to quit R.
 > base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
 > base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
 > cleanEx()
+> nameEx("autodiff")
+> ### * autodiff
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: autodiff
+> ### Title: EXPERIMENTAL - Enable Automatic Differentiation with JAX
+> ### Aliases: autodiff
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D # Install the Python package (only needed once)
+> ##D autodiff(install = TRUE)
+> ##D 
+> ##D # Enable automatic differentiation
+> ##D autodiff(TRUE)
+> ##D 
+> ##D # Fit a model and compute marginal effects
+> ##D mod <- glm(am ~ hp + wt, data = mtcars, family = binomial)
+> ##D avg_comparisons(mod) # Will use JAX for faster computation
+> ##D 
+> ##D # Disable automatic differentiation
+> ##D autodiff(FALSE)
+> ## End(Not run)
+> 
+> 
+> 
+> 
+> cleanEx()
 > nameEx("comparisons")
 > ### * comparisons
 > 
@@ -40,8 +70,6 @@ Type 'q()' to quit R.
 > ## Don't show: 
 > if (interactive() || isTRUE(Sys.getenv("R_DOC_BUILD") == "true")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
 + ## End(Don't show)
-+ library(marginaleffects)
-+ 
 + # Linear model
 + tmp <- mtcars
 + tmp$am <- as.logical(tmp$am)
@@ -177,23 +205,20 @@ Type 'q()' to quit R.
 > # The output only has 2 rows, and all the variables except `hp` are at their
 > # mean or mode.
 > datagrid(newdata = mtcars, hp = c(100, 110))
-       mpg    cyl     disp     drat      wt     qsec vs am   gear   carb  hp
-1 20.09062 6.1875 230.7219 3.596563 3.21725 17.84875  0  0 3.6875 2.8125 100
-2 20.09062 6.1875 230.7219 3.596563 3.21725 17.84875  0  0 3.6875 2.8125 110
-  rowid
-1     1
-2     2
+  rowid      mpg cyl     disp     drat      wt     qsec vs am gear carb  hp
+1     1 20.09062   6 230.7219 3.596563 3.21725 17.84875  0  0    4    3 100
+2     2 20.09062   6 230.7219 3.596563 3.21725 17.84875  0  0    4    3 110
 > 
 > # We get the same result by feeding a model instead of a data.frame
 > mod <- lm(mpg ~ hp, mtcars)
 > datagrid(model = mod, hp = c(100, 110))
-   hp rowid
-1 100     1
-2 110     2
+  rowid      mpg  hp
+1     1 20.09062 100
+2     2 20.09062 110
 > 
 > # Use in `marginaleffects` to compute "Typical Marginal Effects". When used
 > # in `slopes()` or `predictions()` we do not need to specify the
-> #`model` or `newdata` arguments.
+> # `model` or `newdata` arguments.
 > slopes(mod, newdata = datagrid(hp = c(100, 110)))
 
   hp Estimate Std. Error     z Pr(>|z|)    S   2.5 %  97.5 %
@@ -207,13 +232,13 @@ Comparison: dY/dX
 > 
 > # datagrid accepts functions
 > datagrid(hp = range, cyl = unique, newdata = mtcars)
-       mpg     disp     drat      wt     qsec vs am   gear   carb  hp cyl rowid
-1 20.09062 230.7219 3.596563 3.21725 17.84875  0  0 3.6875 2.8125  52   6     1
-2 20.09062 230.7219 3.596563 3.21725 17.84875  0  0 3.6875 2.8125  52   4     2
-3 20.09062 230.7219 3.596563 3.21725 17.84875  0  0 3.6875 2.8125  52   8     3
-4 20.09062 230.7219 3.596563 3.21725 17.84875  0  0 3.6875 2.8125 335   6     4
-5 20.09062 230.7219 3.596563 3.21725 17.84875  0  0 3.6875 2.8125 335   4     5
-6 20.09062 230.7219 3.596563 3.21725 17.84875  0  0 3.6875 2.8125 335   8     6
+  rowid      mpg     disp     drat      wt     qsec vs am gear carb  hp cyl
+1     1 20.09062 230.7219 3.596563 3.21725 17.84875  0  0    4    3  52   4
+2     2 20.09062 230.7219 3.596563 3.21725 17.84875  0  0    4    3  52   6
+3     3 20.09062 230.7219 3.596563 3.21725 17.84875  0  0    4    3  52   8
+4     4 20.09062 230.7219 3.596563 3.21725 17.84875  0  0    4    3 335   4
+5     5 20.09062 230.7219 3.596563 3.21725 17.84875  0  0    4    3 335   6
+6     6 20.09062 230.7219 3.596563 3.21725 17.84875  0  0    4    3 335   8
 > comparisons(mod, newdata = datagrid(hp = fivenum))
 
   hp Estimate Std. Error     z Pr(>|z|)    S   2.5 %  97.5 %
@@ -240,6 +265,25 @@ Comparison: +1
 > dg <- datagrid(model = mod, hp = c(100, 110), grid_type = "counterfactual")
 > nrow(dg)
 [1] 64
+> 
+> # Use `by` to hold variables at group-specific values
+> mod2 <- lm(mpg ~ hp + cyl, mtcars)
+> datagrid(model = mod2, hp = mean, by = "cyl")
+  rowid cyl      mpg        hp
+1     1   4 26.66364  82.63636
+2     2   6 19.74286 122.28571
+3     3   8 15.10000 209.21429
+> 
+> # Use `FUN` to apply function to all variables
+> datagrid(model = mod2, FUN = median)
+  rowid cyl  hp  mpg
+1     1   6 123 19.2
+> 
+> # Use `grid_type="dataframe"` for column-wise binding instead of cross-product
+> datagrid(model = mod2, hp = c(100, 200), cyl = c(4, 6), grid_type = "dataframe")
+  rowid      mpg  hp cyl
+1     1 20.09062 100   4
+2     2 20.09062 200   6
 > 
 > 
 > 
@@ -284,7 +328,6 @@ Comparison: +1
 > 
 > ### ** Examples
 > 
-> library(marginaleffects)
 > mod <- lm(mpg ~ hp + wt + factor(cyl), data = mtcars)
 > 
 > hypotheses(mod)
@@ -384,8 +427,8 @@ Disable this warning with: `options(marginaleffects_safe = FALSE)`
 > cmp <- comparisons(mod, newdata = "mean")
 > hypotheses(cmp, hypothesis = "b1 = b2")
 
- Hypothesis Estimate Std. Error    z Pr(>|z|)   S  2.5 %  97.5 %
-      b1=b2    -0.28      0.104 -2.7  0.00684 7.2 -0.483 -0.0771
+ Hypothesis Estimate Std. Error     z Pr(>|z|)   S 2.5 %  97.5 %
+      b1=b2   -0.279      0.102 -2.72  0.00645 7.3 -0.48 -0.0783
 
 
 > 
@@ -393,7 +436,7 @@ Disable this warning with: `options(marginaleffects_safe = FALSE)`
 > hypotheses(cmp, hypothesis = "b2 = 0.2")
 
  Hypothesis Estimate Std. Error     z Pr(>|z|)   S  2.5 % 97.5 %
-     b2=0.2   0.0938      0.109 0.857    0.391 1.4 -0.121  0.308
+     b2=0.2   0.0929      0.108 0.858    0.391 1.4 -0.119  0.305
 
 
 > 
@@ -466,11 +509,11 @@ The following object is masked from ‘package:dplyr’:
 > mod <- polr(gear ~ factor(cyl) + hp, dat)
 > 
 > aggregation_fun <- function(x) {
-+   predictions(x, vcov = FALSE) %>%
-+     mutate(group = ifelse(group %in% c("3", "4"), "3 & 4", "5")) %>%
-+     summarize(estimate = sum(estimate), .by = c("rowid", "cyl", "group")) %>%
-+     summarize(estimate = mean(estimate), .by = c("cyl", "group")) %>%
-+     rename(term = cyl)
++     predictions(x, vcov = FALSE) %>%
++         mutate(group = ifelse(group %in% c("3", "4"), "3 & 4", "5")) %>%
++         summarize(estimate = sum(estimate), .by = c("rowid", "cyl", "group")) %>%
++         summarize(estimate = mean(estimate), .by = c("cyl", "group")) %>%
++         rename(term = cyl)
 + }
 > 
 > hypotheses(mod, hypothesis = aggregation_fun)
@@ -493,10 +536,8 @@ Re-fitting to get Hessian
 > p <- predictions(mod, newdata = "median")
 > hypotheses(p, equivalence = c(17, 18))
 
- Estimate Std. Error    z Pr(>|z|)     S 2.5 % 97.5 % p (NonInf) p (NonSup)
-     19.7          1 19.6   <0.001 281.3  17.7   21.6    0.00404      0.951
- p (Equiv)
-     0.951
+ Estimate Std. Error    z Pr(>|z|)     S 2.5 % 97.5 % p (NonSup) p (Equiv)
+     19.7          1 19.6   <0.001 281.3  17.7   21.6      0.951     0.951
 
 Term: b1
 
@@ -504,10 +545,8 @@ Term: b1
 > mfx <- avg_slopes(mod, variables = "hp")
 > hypotheses(mfx, equivalence = c(-.1, .1))
 
- Estimate Std. Error     z Pr(>|z|)    S   2.5 %  97.5 % p (NonInf) p (NonSup)
-  -0.0669      0.011 -6.05   <0.001 29.4 -0.0885 -0.0452    0.00135     <0.001
- p (Equiv)
-   0.00135
+ Estimate Std. Error     z Pr(>|z|)    S   2.5 %  97.5 % p (NonSup) p (Equiv)
+  -0.0669      0.011 -6.05   <0.001 29.4 -0.0885 -0.0452     <0.001   0.00135
 
 Term: hp
 
@@ -518,8 +557,8 @@ Warning: The `gear` variable is treated as a categorical (factor) variable, but 
 
         Hypothesis Estimate Std. Error    z Pr(>|z|)   S   2.5 % 97.5 %
  (5 - 3) - (4 - 3)     3.94       2.05 1.92   0.0543 4.2 -0.0727   7.95
- p (NonInf) p (NonSup) p (Equiv)
-     0.0271    0.00154    0.0271
+ p (NonSup) p (Equiv)
+    0.00154    0.0271
 
 Term: b1
 
@@ -602,6 +641,7 @@ Joint hypothesis test:
    F Pr(>|F|) Df 1 Df 2
  1.6    0.221    2   26
 
+Type: response
 
 > 
 > # Multiple comparison adjustment
@@ -636,28 +676,42 @@ detaching ‘package:magrittr’, ‘package:MASS’, ‘package:dplyr’
 > ### ** Examples
 > 
 > ## Not run: 
-> ##D library(marginaleffects)
 > ##D library(magrittr)
 > ##D set.seed(1024)
 > ##D mod <- lm(Sepal.Length ~ Sepal.Width * Species, data = iris)
 > ##D 
 > ##D # bootstrap
 > ##D avg_predictions(mod, by = "Species") %>%
-> ##D     inferences2(method = "boot")
+> ##D     inferences(method = "boot")
 > ##D 
 > ##D avg_predictions(mod, by = "Species") %>%
-> ##D     inferences2(method = "rsample")
+> ##D     inferences(method = "rsample")
 > ##D 
 > ##D # Fractional (bayesian) bootstrap
 > ##D avg_slopes(mod, by = "Species") %>%
-> ##D     inferences2(method = "fwb") %>%
+> ##D     inferences(method = "fwb") %>%
 > ##D     get_draws("rvar") %>%
 > ##D     data.frame()
 > ##D 
 > ##D # Simulation-based inference
 > ##D slopes(mod) %>%
-> ##D     inferences2(method = "simulation") %>%
+> ##D     inferences(method = "simulation") %>%
 > ##D     head()
+> ##D 
+> ##D # Two-step estimation procedure: Propensity score + G-Computation
+> ##D lalonde <- get_dataset("lalonde")
+> ##D estimator <- function(data) {
+> ##D     # Step 1: Estimate propensity scores
+> ##D     fit1 <- glm(treat ~ age + educ + race, family = binomial, data = data)
+> ##D     ps <- predict(fit1, type = "response")
+> ##D     # Step 2: Fit weighted outcome model
+> ##D     m <- lm(re78 ~ treat * (re75 + age + educ + race),
+> ##D         data = data, weight = ps
+> ##D     )
+> ##D     # Step 3: Compute average treatment effect by G-computation
+> ##D     avg_comparisons(m, variables = "treat", wts = ps, vcov = FALSE)
+> ##D }
+> ##D inferences(lalonde, method = "rsample", estimator = estimator)
 > ## End(Not run)
 > 
 > 
@@ -694,9 +748,9 @@ detaching ‘package:magrittr’, ‘package:MASS’, ‘package:dplyr’
 + 
 + # marginal comparisons on a counterfactual grid
 + plot_comparisons(mod,
-+   variables = "hp",
-+   by = "am",
-+   newdata = datagrid(am = 0:1, grid_type = "counterfactual")
++     variables = "hp",
++     by = "am",
++     newdata = datagrid(am = 0:1, grid_type = "counterfactual")
 + )
 + ## Don't show: 
 + }) # examplesIf
@@ -735,8 +789,8 @@ detaching ‘package:magrittr’, ‘package:MASS’, ‘package:dplyr’
 + 
 + # marginal predictions on a counterfactual grid
 + plot_predictions(mod,
-+   by = "am",
-+   newdata = datagrid(am = 0:1, grid_type = "counterfactual")
++     by = "am",
++     newdata = datagrid(am = 0:1, grid_type = "counterfactual")
 + )
 + ## Don't show: 
 + }) # examplesIf
@@ -759,7 +813,6 @@ detaching ‘package:magrittr’, ‘package:MASS’, ‘package:dplyr’
 > ## Don't show: 
 > if (interactive() || isTRUE(Sys.getenv("R_DOC_BUILD") == "true")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
 + ## End(Don't show)
-+ library(marginaleffects)
 + mod <- lm(mpg ~ hp * drat * factor(am), data = mtcars)
 + 
 + plot_slopes(mod, variables = "hp", condition = "drat")
@@ -777,9 +830,9 @@ detaching ‘package:magrittr’, ‘package:MASS’, ‘package:dplyr’
 + 
 + # marginal slopes on a counterfactual grid
 + plot_slopes(mod,
-+   variables = "hp",
-+   by = "am",
-+   newdata = datagrid(am = 0:1, grid_type = "counterfactual")
++     variables = "hp",
++     by = "am",
++     newdata = datagrid(am = 0:1, grid_type = "counterfactual")
 + )
 + ## Don't show: 
 + }) # examplesIf
@@ -802,6 +855,7 @@ detaching ‘package:magrittr’, ‘package:MASS’, ‘package:dplyr’
 > ## Don't show: 
 > if (interactive() || isTRUE(Sys.getenv("R_DOC_BUILD") == "true")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
 + ## End(Don't show)
++ library("marginaleffects")
 + # Adjusted Prediction for every row of the original dataset
 + mod <- lm(mpg ~ hp + factor(cyl), data = mtcars)
 + pred <- predictions(mod)
@@ -933,9 +987,9 @@ Type: response
 > 
 > subset(p, am == 1)
 
- Estimate Std. Error    z Pr(>|z|)     S CI low CI high
-     26.3       1.04 25.3   <0.001 466.1   24.2    28.3
-     21.4       1.31 16.3   <0.001 195.2   18.8    24.0
+ Estimate Std. Error    z Pr(>|z|)     S 2.5 % 97.5 %
+     26.3       1.04 25.3   <0.001 466.1  24.2   28.3
+     21.4       1.31 16.3   <0.001 195.2  18.8   24.0
 
 
 > 
@@ -981,6 +1035,7 @@ Type: response
 > ## Don't show: 
 > if (interactive() || isTRUE(Sys.getenv("R_DOC_BUILD") == "true")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
 + ## End(Don't show)
++ library("marginaleffects")
 + # Unit-level (conditional) Marginal Effects
 + mod <- glm(am ~ hp * wt, data = mtcars, family = binomial)
 + mfx <- slopes(mod)
@@ -1009,9 +1064,9 @@ Type: response
 + # original values, and the whole dataset is duplicated once for each
 + # combination of the values in `datagrid()`
 + mfx <- slopes(mod,
-+   newdata = datagrid(
-+     hp = c(100, 110),
-+     grid_type = "counterfactual"))
++     newdata = datagrid(
++         hp = c(100, 110),
++         grid_type = "counterfactual"))
 + head(mfx)
 + 
 + # Heteroskedasticity robust standard errors
@@ -1022,33 +1077,33 @@ Type: response
 + mod <- lm(mpg ~ wt + drat, data = mtcars)
 + 
 + slopes(
-+   mod,
-+   newdata = "mean",
-+   hypothesis = "wt = drat")
++     mod,
++     newdata = "mean",
++     hypothesis = "wt = drat")
 + 
 + # same hypothesis test using row indices
 + slopes(
-+   mod,
-+   newdata = "mean",
-+   hypothesis = "b1 - b2 = 0")
++     mod,
++     newdata = "mean",
++     hypothesis = "b1 - b2 = 0")
 + 
 + # same hypothesis test using numeric vector of weights
 + slopes(
-+   mod,
-+   newdata = "mean",
-+   hypothesis = c(1, -1))
++     mod,
++     newdata = "mean",
++     hypothesis = c(1, -1))
 + 
 + # two custom contrasts using a matrix of weights
 + lc <- matrix(
-+   c(
-+     1, -1,
-+     2, 3),
-+   ncol = 2)
++     c(
++         1, -1,
++         2, 3),
++     ncol = 2)
 + colnames(lc) <- c("Contrast A", "Contrast B")
 + slopes(
-+   mod,
-+   newdata = "mean",
-+   hypothesis = lc)
++     mod,
++     newdata = "mean",
++     hypothesis = lc)
 + ## Don't show: 
 + }) # examplesIf
 > ## End(Don't show)
@@ -1060,7 +1115,7 @@ Type: response
 > cleanEx()
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  2.797 0.099 2.699 0 0 
+Time elapsed:  3.24 0.09 3.142 0 0 
 > grDevices::dev.off()
 null device 
           1 

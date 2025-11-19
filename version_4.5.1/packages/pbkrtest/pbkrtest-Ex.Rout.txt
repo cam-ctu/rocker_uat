@@ -118,96 +118,6 @@ harvest 12.91424 NA  0.0196
 > 
 > 
 > cleanEx()
-> nameEx("comodex")
-> ### * comodex
-> 
-> flush(stderr()); flush(stdout())
-> 
-> ### Name: comodex
-> ### Title: Model comparison
-> ### Aliases: comodex comodex.lmerMod comodex.default
-> 
-> ### ** Examples
-> 
-> (lmm0 <- lmer(Reaction ~ (Days|Subject), sleepstudy))
-Linear mixed model fit by REML ['lmerMod']
-Formula: Reaction ~ (Days | Subject)
-   Data: sleepstudy
-REML criterion at convergence: 1769.845
-Random effects:
- Groups   Name        Std.Dev. Corr 
- Subject  (Intercept) 25.53         
-          Days        11.93    -0.18
- Residual             25.59         
-Number of obs: 180, groups:  Subject, 18
-Fixed Effects:
-(Intercept)  
-      257.8  
-> (lmm1 <- lmer(Reaction ~ Days + (Days|Subject), sleepstudy))
-Linear mixed model fit by REML ['lmerMod']
-Formula: Reaction ~ Days + (Days | Subject)
-   Data: sleepstudy
-REML criterion at convergence: 1743.628
-Random effects:
- Groups   Name        Std.Dev. Corr
- Subject  (Intercept) 24.741       
-          Days         5.922   0.07
- Residual             25.592       
-Number of obs: 180, groups:  Subject, 18
-Fixed Effects:
-(Intercept)         Days  
-     251.41        10.47  
-> (lmm2 <- lmer(Reaction ~ Days + I(Days^2) + (Days|Subject), sleepstudy))
-Linear mixed model fit by REML ['lmerMod']
-Formula: Reaction ~ Days + I(Days^2) + (Days | Subject)
-   Data: sleepstudy
-REML criterion at convergence: 1742.816
-Random effects:
- Groups   Name        Std.Dev. Corr
- Subject  (Intercept) 24.761       
-          Days         5.925   0.06
- Residual             25.534       
-Number of obs: 180, groups:  Subject, 18
-Fixed Effects:
-(Intercept)         Days    I(Days^2)  
-    255.449        7.434        0.337  
-> 
-> lm1 <- lm(dist ~ speed + I(speed^2), data=cars)
-> lm0 <- lm(dist ~ speed, data=cars)
-> 
-> comodex(lmm2, lmm1, test="x2")
-Reaction ~ Days + I(Days^2) + (Days | Subject)
-Reaction ~ Days + (Days | Subject)
-      stat df ddf p.value
-LRT 1.6578  1     0.19791
-> comodex(lmm2, lmm1, test="kr")
-          stat ndf ddf  p.value
-Ftest 1.655752   1 143 0.200257
-> comodex(lmm2, lmm1, test="sat")
-  statistic ndf      ddf  p.value
-1  1.655752   1 143.0001 0.200257
-> comodex(lmm2, lmm1, test="PB", control=list(nsim=50, cl=1))
-          stat df  p.value
-PBtest 1.65775 NA 0.254902
-> comodex(lmm2, .~. - I(Days^2))
-Reaction ~ Days + I(Days^2) + (Days | Subject)
-Reaction ~ Days + (Days | Subject)
-      stat df ddf p.value
-LRT 1.6578  1     0.19791
-> 
-> comodex(lm1, lm0)
-dist ~ speed + I(speed^2)
-dist ~ speed
-      stat df ddf p.value
-LRT 2.3848  1     0.12252
-> comodex(lm1, lm0, test="pb", control=list(nsim=50, cl=1))
-           stat df   p.value
-PBtest 2.384795 NA 0.1960784
-> 
-> 
-> 
-> 
-> cleanEx()
 > nameEx("compare_column_space")
 > ### * compare_column_space
 > 
@@ -333,6 +243,83 @@ Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’
 > 
 > 
 > cleanEx()
+> nameEx("getLRT")
+> ### * getLRT
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: getLRT
+> ### Title: Likelihood Ratio Test Between Nested Models
+> ### Aliases: getLRT
+> 
+> ### ** Examples
+> 
+> ## lm
+> fit1 <- lm(mpg ~ wt + hp, data = mtcars)
+> fit0 <- lm(mpg ~ wt, data = mtcars)
+> getLRT(fit1, fit0)
+        tobs           df      p.value 
+1.137709e+01 1.000000e+00 7.435551e-04 
+> 
+> ## lmerMod
+> if (requireNamespace("lme4", quietly = TRUE)) {
++   library(lme4)
++   fit1 <- lmer(Reaction ~ Days + (Days | Subject), sleepstudy, REML = FALSE)
++   fit0 <- lmer(Reaction ~ 1 + (Days | Subject), sleepstudy, REML = FALSE)
++   getLRT(fit1, fit0)
++ }
+        tobs           df      p.value 
+2.353654e+01 1.000000e+00 1.225640e-06 
+> 
+> ## glmerMod
+> if (requireNamespace("lme4", quietly = TRUE)) {
++   library(lme4)
++   data(cbpp)
++   fit1 <- glmer(cbind(incidence, size - incidence) ~ period + (1 | herd),
++                 data = cbpp, family = binomial)
++   fit0 <- glmer(cbind(incidence, size - incidence) ~ 1 + (1 | herd),
++                 data = cbpp, family = binomial)
++   getLRT(fit1, fit0)
++ }
+        tobs           df      p.value 
+2.560994e+01 3.000000e+00 1.151006e-05 
+> 
+> ## lme
+> if (requireNamespace("nlme", quietly = TRUE)) {
++   library(nlme)
++   fit1 <- lme(distance ~ age + Sex, random = ~1 | Subject,
++               data = Orthodont, method = "ML")
++   fit0 <- lme(distance ~ age, random = ~1 | Subject,
++               data = Orthodont, method = "ML")
++   getLRT(fit1, fit0)
++ }
+
+Attaching package: ‘nlme’
+
+The following object is masked from ‘package:lme4’:
+
+    lmList
+
+       tobs          df     p.value 
+8.533057005 1.000000000 0.003487534 
+> 
+> ## gls
+> if (requireNamespace("nlme", quietly = TRUE)) {
++   library(nlme)
++   fit1 <- gls(mpg ~ wt + hp, data = mtcars, method = "ML")
++   fit0 <- gls(mpg ~ wt, data = mtcars, method = "ML")
++   getLRT(fit1, fit0)
++ }
+        tobs           df      p.value 
+1.137709e+01 1.000000e+00 7.435551e-04 
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:nlme’
+
 > nameEx("get_ddf_Lb")
 > ### * get_ddf_Lb
 > 
@@ -348,7 +335,7 @@ Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’
 > ### ** Examples
 > 
 > 
-> (fmLarge <- lmer(Reaction ~ Days + (Days|Subject), sleepstudy))
+> (fm1 <- lmer(Reaction ~ Days + (Days|Subject), sleepstudy))
 Linear mixed model fit by REML ['lmerMod']
 Formula: Reaction ~ Days + (Days | Subject)
    Data: sleepstudy
@@ -362,8 +349,7 @@ Number of obs: 180, groups:  Subject, 18
 Fixed Effects:
 (Intercept)         Days  
      251.41        10.47  
-> ## removing Days
-> (fmSmall <- lmer(Reaction ~ 1 + (Days|Subject), sleepstudy))
+> (fm0 <- lmer(Reaction ~ 1 + (Days|Subject), sleepstudy))
 Linear mixed model fit by REML ['lmerMod']
 Formula: Reaction ~ 1 + (Days | Subject)
    Data: sleepstudy
@@ -377,31 +363,31 @@ Number of obs: 180, groups:  Subject, 18
 Fixed Effects:
 (Intercept)  
       257.8  
-> anova(fmLarge, fmSmall)
+> anova(fm1, fm0)
 refitting model(s) with ML (instead of REML)
 Data: sleepstudy
 Models:
-fmSmall: Reaction ~ 1 + (Days | Subject)
-fmLarge: Reaction ~ Days + (Days | Subject)
-        npar    AIC    BIC  logLik -2*log(L)  Chisq Df Pr(>Chisq)    
-fmSmall    5 1785.5 1801.4 -887.74    1775.5                         
-fmLarge    6 1763.9 1783.1 -875.97    1751.9 23.537  1  1.226e-06 ***
+fm0: Reaction ~ 1 + (Days | Subject)
+fm1: Reaction ~ Days + (Days | Subject)
+    npar    AIC    BIC  logLik -2*log(L)  Chisq Df Pr(>Chisq)    
+fm0    5 1785.5 1801.4 -887.74    1775.5                         
+fm1    6 1763.9 1783.1 -875.97    1751.9 23.537  1  1.226e-06 ***
 ---
 Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 > 
-> KRmodcomp(fmLarge, fmSmall)  ## 17 denominator df's
+> KRmodcomp(fm1, fm0)  ## 17 denominator df's
 large : Reaction ~ Days + (Days | Subject)
 small : Reaction ~ 1 + (Days | Subject)
         stat    ndf    ddf F.scaling   p.value    
 Ftest 45.853  1.000 17.000         1 3.264e-06 ***
 ---
 Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-> get_Lb_ddf(fmLarge, c(0, 1)) ## 17 denominator df's
+> get_Lb_ddf(fm1, c(0, 1)) ## 17 denominator df's
 [1] 17
 > 
 > # Notice: The restriction matrix L corresponding to the test above
 > # can be found with
-> L <- model2restriction_matrix(fmLarge, fmSmall)
+> L <- model2restriction_matrix(fm1, fm0)
 > L
      [,1] [,2]
 [1,]    0    1
@@ -416,21 +402,143 @@ Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: get_modcomp
-> ### Title: Extract (or "get") components from a 'KRmodcomp' object.
+> ### Title: Extract (or "get") components from a 'KRmodcomp' or 'SATmodcomp'
+> ###   object.
 > ### Aliases: get_modcomp getKR getSAT
 > ### Keywords: utilities
 > 
 > ### ** Examples
 > 
 > 
-> data(beets, package='pbkrtest')
-> lg <- lmer(sugpct ~ block + sow + harvest + (1|block:harvest), 
-+               data=beets, REML=FALSE)
-> sm <- update(lg, .~. - harvest)
-> modcomp <- KRmodcomp(lg, sm)
-> getKR(modcomp, "ddf") # get denominator degrees of freedom.
-[1] 2
+> (fm0 <- lmer(Reaction ~ (Days|Subject), sleepstudy))
+Linear mixed model fit by REML ['lmerMod']
+Formula: Reaction ~ (Days | Subject)
+   Data: sleepstudy
+REML criterion at convergence: 1769.845
+Random effects:
+ Groups   Name        Std.Dev. Corr 
+ Subject  (Intercept) 25.53         
+          Days        11.93    -0.18
+ Residual             25.59         
+Number of obs: 180, groups:  Subject, 18
+Fixed Effects:
+(Intercept)  
+      257.8  
+> (fm1 <- lmer(Reaction ~ Days + (Days|Subject), sleepstudy))
+Linear mixed model fit by REML ['lmerMod']
+Formula: Reaction ~ Days + (Days | Subject)
+   Data: sleepstudy
+REML criterion at convergence: 1743.628
+Random effects:
+ Groups   Name        Std.Dev. Corr
+ Subject  (Intercept) 24.741       
+          Days         5.922   0.07
+ Residual             25.592       
+Number of obs: 180, groups:  Subject, 18
+Fixed Effects:
+(Intercept)         Days  
+     251.41        10.47  
+> (fm2 <- lmer(Reaction ~ Days + I(Days^2) + (Days|Subject), sleepstudy))
+Linear mixed model fit by REML ['lmerMod']
+Formula: Reaction ~ Days + I(Days^2) + (Days | Subject)
+   Data: sleepstudy
+REML criterion at convergence: 1742.816
+Random effects:
+ Groups   Name        Std.Dev. Corr
+ Subject  (Intercept) 24.761       
+          Days         5.925   0.06
+ Residual             25.534       
+Number of obs: 180, groups:  Subject, 18
+Fixed Effects:
+(Intercept)         Days    I(Days^2)  
+    255.449        7.434        0.337  
 > 
+> x10 <- KRmodcomp(fm1, fm0)
+> getKR(x10, "ddf")
+[1] 17
+> 
+> KRmodcomp(fm1, fm0) |> getKR("ddf")
+[1] 17
+> KRmodcomp(fm2, fm0) |> getKR("ddf")
+[1] 39.81704
+> KRmodcomp(fm2, fm1) |> getKR("ddf")
+[1] 143
+> 
+> ## For comparison:
+> 
+> SATmodcomp(fm1, fm0) |> getSAT("ddf")
+[1] 16.99998
+> SATmodcomp(fm2, fm0) |> getSAT("ddf")
+[1] 51.56303
+> SATmodcomp(fm2, fm1) |> getSAT("ddf")
+[1] 143.0001
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("get_nested_model_info")
+> ### * get_nested_model_info
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: get_nested_model_info
+> ### Title: Resolve Nested Model Representation
+> ### Aliases: get_nested_model_info
+> 
+> ### ** Examples
+> 
+> if (requireNamespace("lme4", quietly = TRUE)) {
++   library(lme4)
++   data(sleepstudy)
++   fit1 <- lmer(Reaction ~ Days + (Days | Subject), sleepstudy)
++   fit0 <- lmer(Reaction ~ (Days | Subject), sleepstudy)
++ 
++   get_nested_model_info(fit1, fit0)               # as model object
++   get_nested_model_info(fit1, ~ . - Days)         # as formula
++   get_nested_model_info(fit1, "Days")             # as string
++   ## get_nested_model_info(fit1, c(0, 1))         # numeric (converted to matrix)
++ }
+$formula.large
+Reaction ~ Days + (Days | Subject)
+
+$formula.small
+Reaction ~ (Days | Subject)
+
+$largeModel
+Linear mixed model fit by REML ['lmerMod']
+Formula: Reaction ~ Days + (Days | Subject)
+   Data: sleepstudy
+REML criterion at convergence: 1743.628
+Random effects:
+ Groups   Name        Std.Dev. Corr
+ Subject  (Intercept) 24.741       
+          Days         5.922   0.07
+ Residual             25.592       
+Number of obs: 180, groups:  Subject, 18
+Fixed Effects:
+(Intercept)         Days  
+     251.41        10.47  
+
+$smallModel
+Linear mixed model fit by REML ['lmerMod']
+Formula: Reaction ~ (Days | Subject)
+   Data: sleepstudy
+REML criterion at convergence: 1769.845
+Random effects:
+ Groups   Name        Std.Dev. Corr 
+ Subject  (Intercept) 25.53         
+          Days        11.93    -0.18
+ Residual             25.59         
+Number of obs: 180, groups:  Subject, 18
+Fixed Effects:
+(Intercept)  
+      257.8  
+
+$L
+     [,1] [,2]
+[1,]    0    1
+
 > 
 > 
 > 
@@ -452,38 +560,39 @@ Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’
 > ### ** Examples
 > 
 > 
-> fm1 <- lmer(Reaction ~ Days + (Days|Subject), sleepstudy)
+> fm1 <- lmer(Reaction ~ Days + (Days|Subject), sleepstudy, REML=TRUE)
 > class(fm1)
 [1] "lmerMod"
 attr(,"package")
 [1] "lme4"
 > 
+> set.seed(123)
+> sleepstudy2 <- sleepstudy[sample(nrow(sleepstudy), size=120), ]
+> 
+> fm2 <- lmer(Reaction ~ Days + (Days|Subject), sleepstudy2, REML=TRUE)
+> 
 > ## Here the adjusted and unadjusted covariance matrices are identical,
 > ## but that is not generally the case:
 > 
 > v1 <- vcov(fm1)
-> v2 <- vcovAdj(fm1, details=0)
-> v2 / v1
+> v1a <- vcovAdj(fm1, details=0)
+> v1a / v1
 2 x 2 Matrix of class "dgeMatrix"
             (Intercept) Days
 (Intercept)           1    1
 Days                  1    1
 > 
-> ## For comparison, an alternative estimate of the variance-covariance
-> ## matrix is based on parametric bootstrap (and this is easily
-> ## parallelized): 
+> v2 <- vcov(fm2)
+> v2a <- vcovAdj(fm2, details=0)
+> v2a / v2
+2 x 2 Matrix of class "dgeMatrix"
+            (Intercept)     Days
+(Intercept)    1.008841 1.046870
+Days           1.046870 1.009213
 > 
-> ## Not run: 
-> ##D nsim <- 100
-> ##D sim <- simulate(fm.ml, nsim)
-> ##D B <- lapply(sim, function(newy) try(fixef(refit(fm.ml, newresp=newy))))
-> ##D B <- do.call(rbind, B)
-> ##D v3 <- cov.wt(B)$cov
-> ##D v2/v1
-> ##D v3/v1
-> ## End(Not run)
-> 
-> 
+> # For comparison, an alternative estimate of the
+> # variance-covariance matrix is based on parametric bootstrap (and
+> # this is easily parallelized):
 > 
 > 
 > 
@@ -833,23 +942,24 @@ Coefficients:
 > beet_no.harv <- update(beet0, . ~ . -harvest)
 > rd <- PBrefdist(beet0, beet_no.harv, nsim=20, cl=1)
 > rd
- [1] 0.86051095 1.13491918 0.40496885 0.71527981 4.02449945 0.59058809
- [7] 1.10309559 0.08734952 0.66081574 2.66828296 4.82282420 1.84465055
-[13] 0.11272254 1.28623213 6.34752883 0.01360985 0.54594002 6.41115301
-[19] 0.03063532 1.10948394
-attr(,"cl")
+values: 
+[1] 0.8605110 1.1349192 0.4049689 0.7152798 4.0244995 0.5905881
+attributes: 
+$cl
 [1] 1
-attr(,"ctime")
+
+$ctime
 elapsed 
-  0.492 
-attr(,"stat")
+  0.675 
+
+$stat
         tobs           df      p.value 
 1.291424e+01 1.000000e+00 3.260911e-04 
-attr(,"samples")
+
+$samples
        nsim        npos   n.extreme         pPB 
 20.00000000 20.00000000  0.00000000  0.04761905 
-attr(,"class")
-[1] "refdist"
+
 > ## Not run: 
 > ##D ## Note: Many more simulations must be made in practice.
 > ##D 
@@ -904,9 +1014,8 @@ attr(,"class")
 > 
 > ### Name: pb__modcomp
 > ### Title: Model comparison using parametric bootstrap methods.
-> ### Aliases: pb__modcomp PBmodcomp PBmodcomp.lm PBmodcomp.merMod getLRT
-> ###   getLRT.lm getLRT.merMod plot.XXmodcomp PBmodcomp.mer getLRT.mer
-> ###   seqPBmodcomp
+> ### Aliases: pb__modcomp PBmodcomp PBmodcomp.lm PBmodcomp.merMod
+> ###   plot.XXmodcomp PBmodcomp.mer getLRT.mer seqPBmodcomp
 > ### Keywords: inference models
 > 
 > ### ** Examples
@@ -923,8 +1032,8 @@ attr(,"class")
 > ##D ## Test for no effect of Days in fm1, i.e. test fm0 under fm1
 > ##D PBmodcomp(fm1, "Days", cl=1, nsim=NSIM)
 > ##D PBmodcomp(fm1, ~.-Days, cl=1, nsim=NSIM)
-> ##D L1 <- cbind(0, 1) 
-> ##D PBmodcomp(fm1, L1, cl=1, nsim=NSIM) ## FIXME
+> ##D L1 <- cbind(0, 1)
+> ##D PBmodcomp(fm1, L1, cl=1, nsim=NSIM) 
 > ##D PBmodcomp(fm1, fm0, cl=1, nsim=NSIM)
 > ##D anova(fm1, fm0)
 > ##D 
@@ -933,6 +1042,7 @@ attr(,"class")
 > ##D PBmodcomp(fm2, ~. - Days - I(Days^2), cl=1, nsim=NSIM)
 > ##D L2 <- rbind(c(0, 1, 0), c(0, 0, 1))
 > ##D PBmodcomp(fm2, L2, cl=1, nsim=NSIM) ## FIXME
+> ##D 
 > ##D PBmodcomp(fm2, fm0, cl=1, nsim=NSIM)
 > ##D anova(fm2, fm0)
 > ##D 
@@ -940,7 +1050,7 @@ attr(,"class")
 > ##D PBmodcomp(fm2, "I(Days^2)", cl=1, nsim=NSIM)
 > ##D PBmodcomp(fm2, ~. - I(Days^2), cl=1, nsim=NSIM)
 > ##D L3 <- rbind(c(0, 0, 1))
-> ##D ## PBmodcomp(fm2, L3, cl=1, nsim=NSIM) ## FIXME
+> ##D PBmodcomp(fm2, L3, cl=1, nsim=NSIM) 
 > ##D PBmodcomp(fm2, fm1, cl=1, nsim=NSIM)
 > ##D anova(fm2, fm1)
 > ##D 
@@ -1013,20 +1123,20 @@ attr(,"class")
 > ##D stopCluster(cl)
 > ## End(Not run)
 > 
-> 
 > lm1 <- lm(dist~speed+I(speed^2), data=cars)
 > PBmodcomp(lm1, .~.-speed, cl=2)
-Bootstrap test; time: 0.66 sec; samples: 1000; extremes: 639;
+Bootstrap test; time: 0.76 sec; samples: 1000; extremes: 666;
 large : dist ~ speed + I(speed^2)
         stat df p.value
 LRT    0.214  1  0.6437
-PBtest 0.214     0.6394
+PBtest 0.214     0.6663
 > PBmodcomp(lm1, .~.-I(speed^2), cl=2)
-Bootstrap test; time: 0.67 sec; samples: 1000; extremes: 139;
+Bootstrap test; time: 0.76 sec; samples: 1000; extremes: 133;
 large : dist ~ speed + I(speed^2)
          stat df p.value
 LRT    2.3848  1  0.1225
-PBtest 2.3848     0.1399
+PBtest 2.3848     0.1339
+> 
 > 
 > 
 > 
@@ -1196,7 +1306,7 @@ fm2    7 1764.3 1786.6 -875.14    1750.3 1.6577  1     0.1979
 > cleanEx()
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  9.612 2.905 10.737 2.299 0.388 
+Time elapsed:  11.576 2.963 12.935 2.524 0.505 
 > grDevices::dev.off()
 null device 
           1 

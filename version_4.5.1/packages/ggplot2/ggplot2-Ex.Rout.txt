@@ -25,6 +25,342 @@ Type 'q()' to quit R.
 > base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
 > base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
 > cleanEx()
+> nameEx("Coord")
+> ### * Coord
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Coord
+> ### Title: Coords
+> ### Aliases: Coord CoordCartesian CoordFixed CoordFlip CoordMap CoordPolar
+> ###   CoordQuickmap CoordRadial CoordTransform CoordTrans
+> ### Keywords: datasets internal
+> 
+> ### ** Examples
+> 
+> # Extending the class
+> CoordJitter <- ggproto(
++   "CoordJitter", CoordCartesian,
++   # Fields
++   amount = 0,
++   # Methods
++   is_linear = function() FALSE,
++   transform = function(self, data, panel_params) {
++     data   <- ggproto_parent(CoordCartesian, self)$transform(data, panel_params)
++     data$x <- jitter(data$x, amount = self$amount)
++     data$y <- jitter(data$y, amount = self$amount)
++     data
++   }
++ )
+> 
+> # Building a constructor
+> coord_jitter <- function(amount = 0.005, xlim = NULL, ylim = NULL, expand = TRUE,
++                          clip = "on", reverse = "none") {
++   ggproto(
++     NULL, CoordJitter,
++     amount = amount,
++     limits = list(x = xlim, y = ylim),
++     reverse = reverse, expand = expand, clip = clip
++   )
++ }
+> 
+> # Use new coord in plot
+> set.seed(42)
+> ggplot(mpg, aes(drv, displ)) +
++   geom_boxplot() +
++   coord_jitter()
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Facet")
+> ### * Facet
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Facet
+> ### Title: Facets
+> ### Aliases: Facet FacetGrid FacetNull FacetWrap
+> ### Keywords: datasets internal
+> 
+> ### ** Examples
+> 
+> # Please see extension vignette
+> NULL
+NULL
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Geom")
+> ### * Geom
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Geom
+> ### Title: Geoms
+> ### Aliases: Geom GeomCustomAnn GeomLogticks GeomPolygon GeomMap
+> ###   GeomAnnotationMap GeomRaster GeomRasterAnn GeomAbline GeomRect
+> ###   GeomBar GeomTile GeomBin2d GeomBlank GeomBoxplot GeomCol GeomPath
+> ###   GeomLine GeomStep GeomContour GeomContourFilled GeomPoint
+> ###   GeomCrossbar GeomSegment GeomCurve GeomRibbon GeomArea GeomDensity
+> ###   GeomDensity2d GeomDensity2dFilled GeomDotplot GeomErrorbar
+> ###   GeomErrorbarh GeomFunction GeomHex GeomHline GeomLabel GeomLinerange
+> ###   GeomPointrange GeomQuantile GeomRug GeomSmooth GeomSpoke GeomText
+> ###   GeomViolin GeomVline
+> ### Keywords: datasets internal
+> 
+> ### ** Examples
+> 
+> # Extending the class
+> GeomSimplePoint <- ggproto(
++   "GeomSimplePoint", Geom,
++   # Fields
++   required_aes = c("x", "y"),
++   draw_key     = draw_key_point,
++   # Methods
++   draw_panel = function(data, panel_params, coord) {
++     data <- coord$transform(data, panel_params)
++     grid::pointsGrob(data$x, data$y)
++   }
++ )
+> 
+> # Building a constructor
+> geom_simple_point <- function(mapping = NULL, data = NULL, stat = "identity",
++                               position = "identity", ..., na.rm = FALSE,
++                               show.legend = NA, inherit.aes = TRUE) {
++   layer(
++     mapping = mapping, data = data,
++     geom = GeomSimplePoint, stat = stat, position = position,
++     show.legend = show.legend, inherit.aes = inherit.aes,
++     params = list(na.rm = na.rm, ...)
++   )
++ }
+> 
+> # Use new geom in plot
+> ggplot(mpg, aes(displ, hwy)) +
++   geom_simple_point()
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Guide")
+> ### * Guide
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Guide
+> ### Title: Guides
+> ### Aliases: Guide GuideAxis GuideAxisLogticks GuideAxisStack
+> ###   GuideAxisTheta GuideLegend GuideBins GuideColourbar GuideColoursteps
+> ###   GuideCustom GuideNone GuideOld
+> ### Keywords: datasets internal
+> 
+> ### ** Examples
+> 
+> # Extending the class
+> GuideDescribe <- ggproto(
++   "GuideDescribe", Guide,
++   # Fields
++   elements  = list(text = "legend.text", margin = "legend.margin"),
++   hashables = rlang::exprs(key$.label),
++ 
++   # Methods
++   build_title = function(...) zeroGrob(), # Turn off title
++ 
++   build_labels = function(key, elements, params) {
++     labels <- key$.label
++     n <- length(labels)
++     labels <- paste0(paste0(labels[-n], collapse = ", "), ", and ", labels[n])
++     labels <- paste0("A guide showing ", labels, " categories")
++     element_grob(elements$text, label = labels, margin_x = TRUE, margin_y = TRUE)
++   },
++ 
++   measure_grobs = function(grobs, params, elements) {
++     # Measuring in centimetres is the convention
++     width  <- grid::convertWidth(grid::grobWidth(grobs$labels), "cm", valueOnly = TRUE)
++     height <- grid::convertHeight(grid::grobHeight(grobs$labels), "cm", valueOnly = TRUE)
++     list(width = unit(width, "cm"), height = unit(height, "cm"))
++   },
++ 
++   assemble_drawing = function(self, grobs, layout, sizes, params, elements) {
++     gt <- gtable::as.gtable(grobs$labels, width = sizes$width, height = sizes$height)
++     gt <- gtable::gtable_add_padding(gt, elements$margin)
++     gt
++   }
++ )
+> 
+> # Building a constructor
+> guide_describe <- function(position = NULL) {
++   new_guide(position = position, super = GuideDescribe)
++ }
+> 
+> # Use new guide plot
+> ggplot(mpg, aes(displ, hwy, colour = class)) +
++   geom_point() +
++   guides(colour = guide_describe("bottom"))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Layer-class")
+> ### * Layer-class
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Layer-class
+> ### Title: Layers
+> ### Aliases: Layer-class Layer
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> # None: Layer is not intended to be extended
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Layout")
+> ### * Layout
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Layout
+> ### Title: Layout
+> ### Aliases: Layout
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> # Some dummy layout components
+> facet <- facet_null()
+> coord <- coord_cartesian()
+> 
+> # Use in custom `ggplot_build()` methods
+> layout <- ggproto(NULL, Layout, facet = facet, coord = coord)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Position")
+> ### * Position
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Position
+> ### Title: Positions
+> ### Aliases: Position PositionDodge PositionDodge2 PositionIdentity
+> ###   PositionJitter PositionJitterdodge PositionNudge PositionStack
+> ###   PositionFill
+> ### Keywords: datasets internal
+> 
+> ### ** Examples
+> 
+> # Extending the class
+> PositionRank <- ggproto(
++   "PositionRank", Position,
++   # Fields
++   required_aes = c("x", "y"),
++   # Methods
++   setup_params = function(self, data) list(width = self$width),
++   compute_panel = function(data, params, scales) {
++     width <- params$width
++     if (is.null(width)) {
++       width <- resolution(data$x, zero = FALSE, TRUE) * 0.4
++     }
++     rank   <- stats::ave(data$y, data$group, FUN = rank)
++     rank   <- scales::rescale(rank, to = c(-width, width) / 2)
++     data$x <- data$x + rank
++     data
++   }
++ )
+> 
+> # Building a constructor
+> position_rank <- function(width = NULL) {
++   ggproto(NULL, PositionRank, width = width)
++ }
+> 
+> # Use new position in plot
+> ggplot(mpg, aes(drv, displ)) +
++   geom_point(position = position_rank(width = 0.5))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Scale")
+> ### * Scale
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Scale
+> ### Title: Scales
+> ### Aliases: Scale ScaleContinuous ScaleDiscrete ScaleBinned
+> ###   ScaleBinnedPosition ScaleContinuousPosition ScaleContinuousDatetime
+> ###   ScaleContinuousDate ScaleDiscretePosition ScaleDiscreteIdentity
+> ###   ScaleContinuousIdentity
+> ### Keywords: datasets internal
+> 
+> ### ** Examples
+> 
+> # TODO: find easy to digest example
+> NULL
+NULL
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Stat")
+> ### * Stat
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Stat
+> ### Title: Stats
+> ### Aliases: Stat StatAlign StatBin StatSummary2d StatBin2d StatBindot
+> ###   StatBinhex StatBoxplot StatConnect StatContour StatContourFilled
+> ###   StatCount StatDensity2d StatDensity2dFilled StatDensity StatEcdf
+> ###   StatEllipse StatFunction StatIdentity StatManual StatQqLine StatQq
+> ###   StatQuantile StatSmooth StatSum StatSummaryBin StatSummaryHex
+> ###   StatSummary StatUnique StatYdensity
+> ### Keywords: datasets internal
+> 
+> ### ** Examples
+> 
+> # Extending the class
+> StatKmeans <- ggproto(
++   "StatKmeans", Stat,
++   # Fields
++   required_aes = c("x", "y"),
++   # You can relate computed variables to aesthetics using `after_stat()`
++   # in defaults
++   default_aes = aes(colour = after_stat(cluster)),
++   # Methods
++   compute_panel = function(data, scales, k = 2L) {
++     km <- kmeans(cbind(scale(data$x), scale(data$y)), centers = k)
++     data$cluster <- factor(km$cluster)
++     data
++   }
++ )
+> 
+> # Building a constructor
+> stat_kmeans <- function(mapping = NULL, data = NULL, geom = "point",
++                         position = "identity", ..., k = 2L, na.rm = FALSE,
++                         show.legend = NA, inherit.aes = TRUE) {
++   layer(
++     mapping = mapping, data = data,
++     geom = geom, stat = StatKmeans, position = position,
++     show.legend = show.legend, inherit.aes = inherit.aes,
++     params = list(na.rm = na.rm, k = k, ...)
++   )
++ }
+> 
+> # Use new stat in plot
+> ggplot(mpg, aes(displ, hwy)) +
++   stat_kmeans(k = 3)
+> 
+> 
+> 
+> cleanEx()
 > nameEx("aes")
 > ### * aes
 > 
@@ -157,19 +493,19 @@ Aesthetic mapping:
 > 
 > ### Name: aes_eval
 > ### Title: Control aesthetic evaluation
-> ### Aliases: aes_eval after_stat stat after_scale stage
+> ### Aliases: aes_eval after_stat stat after_scale from_theme stage
 > 
 > ### ** Examples
 > 
 > # Default histogram display
 > ggplot(mpg, aes(displ)) +
 +   geom_histogram(aes(y = after_stat(count)))
-`stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+`stat_bin()` using `bins = 30`. Pick better value `binwidth`.
 > 
 > # Scale tallest bin to 1
 > ggplot(mpg, aes(displ)) +
 +   geom_histogram(aes(y = after_stat(count / max(count))))
-`stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+`stat_bin()` using `bins = 30`. Pick better value `binwidth`.
 > 
 > # Use a transparent version of colour for fill
 > ggplot(mpg, aes(class, hwy)) +
@@ -418,6 +754,43 @@ Warning in geom_segment(aes(x = 5, y = 30, xend = 3.5, yend = 25), arrow = arrow
 > 
 > 
 > cleanEx()
+> nameEx("annotation_borders")
+> ### * annotation_borders
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: annotation_borders
+> ### Title: Create a layer of map borders
+> ### Aliases: annotation_borders borders
+> 
+> ### ** Examples
+> 
+> if (require("maps")) {
++ data(us.cities)
++ capitals <- subset(us.cities, capital == 2)
++ ggplot(capitals, aes(long, lat)) +
++   annotation_borders("state") +
++   geom_point(aes(size = pop)) +
++   scale_size_area() +
++   coord_quickmap()
++ }
+Loading required package: maps
+> 
+> if (require("maps")) {
++ # Same map, with some world context
++ ggplot(capitals, aes(long, lat)) +
++   annotation_borders("world", xlim = c(-130, -60), ylim = c(20, 50)) +
++   geom_point(aes(size = pop)) +
++   scale_size_area() +
++   coord_quickmap()
++ }
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:maps’
+
 > nameEx("annotation_custom")
 > ### * annotation_custom
 > 
@@ -467,11 +840,11 @@ Warning in geom_segment(aes(x = 5, y = 30, xend = 3.5, yend = 25), arrow = arrow
 > a <- ggplot(msleep, aes(bodywt, brainwt)) +
 +  geom_point(na.rm = TRUE) +
 +  scale_x_log10(
-+    breaks = scales::trans_breaks("log10", function(x) 10^x),
++    breaks = scales::trans_breaks("log10", \(x) 10^x),
 +    labels = scales::trans_format("log10", scales::math_format(10^.x))
 +  ) +
 +  scale_y_log10(
-+    breaks = scales::trans_breaks("log10", function(x) 10^x),
++    breaks = scales::trans_breaks("log10", \(x) 10^x),
 +    labels = scales::trans_format("log10", scales::math_format(10^.x))
 +  ) +
 +  theme_bw()
@@ -499,7 +872,7 @@ Warning in geom_segment(aes(x = 5, y = 30, xend = 3.5, yend = 25), arrow = arrow
 > # Using a coordinate transform requires scaled = FALSE
 > t <- ggplot(msleep, aes(bodywt, brainwt)) +
 +   geom_point() +
-+   coord_trans(x = "log10", y = "log10") +
++   coord_transform(x = "log10", y = "log10") +
 +   theme_bw()
 > t + annotation_logticks(scaled = FALSE)
 Warning: Removed 27 rows containing missing values or values outside the scale range
@@ -652,82 +1025,32 @@ Warning: Removed 27 rows containing missing values or values outside the scale r
 > 
 > benchplot(ggplot(mtcars, aes(mpg, wt)) + geom_point())
        step user.self sys.self elapsed
-1 construct     0.002        0   0.002
-2     build     0.017        0   0.018
-3    render     0.018        0   0.017
-4      draw     0.019        0   0.019
-5     TOTAL     0.056        0   0.056
+1 construct     0.005        0   0.004
+2     build     0.025        0   0.026
+3    render     0.037        0   0.036
+4      draw     0.018        0   0.019
+5     TOTAL     0.085        0   0.085
 > benchplot(ggplot(mtcars, aes(mpg, wt)) + geom_point() + facet_grid(. ~ cyl))
        step user.self sys.self elapsed
-1 construct     0.003        0   0.002
-2     build     0.038        0   0.037
-3    render     0.045        0   0.045
-4      draw     0.033        0   0.033
-5     TOTAL     0.119        0   0.117
+1 construct     0.004        0   0.005
+2     build     0.025        0   0.026
+3    render     0.086        0   0.086
+4      draw     0.032        0   0.032
+5     TOTAL     0.147        0   0.149
 > 
 > # With tidy eval:
 > p <- expr(ggplot(mtcars, aes(mpg, wt)) + geom_point())
 > benchplot(!!p)
        step user.self sys.self elapsed
-1 construct     0.002        0   0.002
-2     build     0.018        0   0.018
-3    render     0.017        0   0.018
-4      draw     0.019        0   0.019
-5     TOTAL     0.056        0   0.057
+1 construct     0.004        0   0.004
+2     build     0.025        0   0.024
+3    render     0.036        0   0.036
+4      draw     0.019        0   0.018
+5     TOTAL     0.084        0   0.082
 > 
 > 
 > 
 > cleanEx()
-> nameEx("borders")
-> ### * borders
-> 
-> flush(stderr()); flush(stdout())
-> 
-> ### Name: borders
-> ### Title: Create a layer of map borders
-> ### Aliases: borders
-> 
-> ### ** Examples
-> 
-> if (require("maps")) {
-+ 
-+ ia <- map_data("county", "iowa")
-+ mid_range <- function(x) mean(range(x))
-+ seats <- do.call(rbind, lapply(split(ia, ia$subregion), function(d) {
-+   data.frame(lat = mid_range(d$lat), long = mid_range(d$long), subregion = unique(d$subregion))
-+ }))
-+ 
-+ ggplot(ia, aes(long, lat)) +
-+   geom_polygon(aes(group = group), fill = NA, colour = "grey60") +
-+   geom_text(aes(label = subregion), data = seats, size = 2, angle = 45)
-+ }
-Loading required package: maps
-> 
-> if (require("maps")) {
-+ data(us.cities)
-+ capitals <- subset(us.cities, capital == 2)
-+ ggplot(capitals, aes(long, lat)) +
-+   borders("state") +
-+   geom_point(aes(size = pop)) +
-+   scale_size_area() +
-+   coord_quickmap()
-+ }
-> 
-> if (require("maps")) {
-+ # Same map, with some world context
-+ ggplot(capitals, aes(long, lat)) +
-+   borders("world", xlim = c(-130, -60), ylim = c(20, 50)) +
-+   geom_point(aes(size = pop)) +
-+   scale_size_area() +
-+   coord_quickmap()
-+ }
-> 
-> 
-> 
-> cleanEx()
-
-detaching ‘package:maps’
-
 > nameEx("calc_element")
 > ### * calc_element
 > 
@@ -743,37 +1066,39 @@ detaching ‘package:maps’
 > 
 > t <- theme_grey()
 > calc_element('text', t)
-List of 11
- $ family       : chr ""
- $ face         : chr "plain"
- $ colour       : chr "black"
- $ size         : num 11
- $ hjust        : num 0.5
- $ vjust        : num 0.5
- $ angle        : num 0
- $ lineheight   : num 0.9
- $ margin       : 'margin' num [1:4] 0points 0points 0points 0points
-  ..- attr(*, "unit")= int 8
- $ debug        : logi FALSE
- $ inherit.blank: logi TRUE
- - attr(*, "class")= chr [1:2] "element_text" "element"
+<ggplot2::element_text>
+ @ family       : chr ""
+ @ face         : chr "plain"
+ @ italic       : chr NA
+ @ fontweight   : num NA
+ @ fontwidth    : num NA
+ @ colour       : chr "black"
+ @ size         : num 11
+ @ hjust        : num 0.5
+ @ vjust        : num 0.5
+ @ angle        : num 0
+ @ lineheight   : num 0.9
+ @ margin       : <ggplot2::margin> num [1:4] 0 0 0 0
+ @ debug        : logi FALSE
+ @ inherit.blank: logi TRUE
 > 
 > # Compare the "raw" element definition to the element with calculated inheritance
 > t$axis.text.x
-List of 11
- $ family       : NULL
- $ face         : NULL
- $ colour       : NULL
- $ size         : NULL
- $ hjust        : NULL
- $ vjust        : num 1
- $ angle        : NULL
- $ lineheight   : NULL
- $ margin       : 'margin' num [1:4] 2.2points 0points 0points 0points
-  ..- attr(*, "unit")= int 8
- $ debug        : NULL
- $ inherit.blank: logi TRUE
- - attr(*, "class")= chr [1:2] "element_text" "element"
+<ggplot2::element_text>
+ @ family       : NULL
+ @ face         : NULL
+ @ italic       : chr NA
+ @ fontweight   : num NA
+ @ fontwidth    : num NA
+ @ colour       : NULL
+ @ size         : NULL
+ @ hjust        : NULL
+ @ vjust        : num 1
+ @ angle        : NULL
+ @ lineheight   : NULL
+ @ margin       : <ggplot2::margin> num [1:4] 2.2 0 0 0
+ @ debug        : NULL
+ @ inherit.blank: logi TRUE
 > calc_element('axis.text.x', t, verbose = TRUE)
 axis.text.x -->
 axis.text
@@ -781,67 +1106,72 @@ axis.text -->
 text
 text -->
 nothing (top level)
-List of 11
- $ family       : chr ""
- $ face         : chr "plain"
- $ colour       : chr "grey30"
- $ size         : num 8.8
- $ hjust        : num 0.5
- $ vjust        : num 1
- $ angle        : num 0
- $ lineheight   : num 0.9
- $ margin       : 'margin' num [1:4] 2.2points 0points 0points 0points
-  ..- attr(*, "unit")= int 8
- $ debug        : logi FALSE
- $ inherit.blank: logi TRUE
- - attr(*, "class")= chr [1:2] "element_text" "element"
+<ggplot2::element_text>
+ @ family       : chr ""
+ @ face         : chr "plain"
+ @ italic       : chr NA
+ @ fontweight   : num NA
+ @ fontwidth    : num NA
+ @ colour       : chr "#4D4D4DFF"
+ @ size         : num 8.8
+ @ hjust        : num 0.5
+ @ vjust        : num 1
+ @ angle        : num 0
+ @ lineheight   : num 0.9
+ @ margin       : <ggplot2::margin> num [1:4] 2.2 0 0 0
+ @ debug        : logi FALSE
+ @ inherit.blank: logi TRUE
 > 
 > # This reports that axis.text.x inherits from axis.text,
 > # which inherits from text. You can view each of them with:
 > t$axis.text.x
-List of 11
- $ family       : NULL
- $ face         : NULL
- $ colour       : NULL
- $ size         : NULL
- $ hjust        : NULL
- $ vjust        : num 1
- $ angle        : NULL
- $ lineheight   : NULL
- $ margin       : 'margin' num [1:4] 2.2points 0points 0points 0points
-  ..- attr(*, "unit")= int 8
- $ debug        : NULL
- $ inherit.blank: logi TRUE
- - attr(*, "class")= chr [1:2] "element_text" "element"
+<ggplot2::element_text>
+ @ family       : NULL
+ @ face         : NULL
+ @ italic       : chr NA
+ @ fontweight   : num NA
+ @ fontwidth    : num NA
+ @ colour       : NULL
+ @ size         : NULL
+ @ hjust        : NULL
+ @ vjust        : num 1
+ @ angle        : NULL
+ @ lineheight   : NULL
+ @ margin       : <ggplot2::margin> num [1:4] 2.2 0 0 0
+ @ debug        : NULL
+ @ inherit.blank: logi TRUE
 > t$axis.text
-List of 11
- $ family       : NULL
- $ face         : NULL
- $ colour       : chr "grey30"
- $ size         : 'rel' num 0.8
- $ hjust        : NULL
- $ vjust        : NULL
- $ angle        : NULL
- $ lineheight   : NULL
- $ margin       : NULL
- $ debug        : NULL
- $ inherit.blank: logi TRUE
- - attr(*, "class")= chr [1:2] "element_text" "element"
+<ggplot2::element_text>
+ @ family       : NULL
+ @ face         : NULL
+ @ italic       : chr NA
+ @ fontweight   : num NA
+ @ fontwidth    : num NA
+ @ colour       : chr "#4D4D4DFF"
+ @ size         : 'rel' num 0.8
+ @ hjust        : NULL
+ @ vjust        : NULL
+ @ angle        : NULL
+ @ lineheight   : NULL
+ @ margin       : NULL
+ @ debug        : NULL
+ @ inherit.blank: logi TRUE
 > t$text
-List of 11
- $ family       : chr ""
- $ face         : chr "plain"
- $ colour       : chr "black"
- $ size         : num 11
- $ hjust        : num 0.5
- $ vjust        : num 0.5
- $ angle        : num 0
- $ lineheight   : num 0.9
- $ margin       : 'margin' num [1:4] 0points 0points 0points 0points
-  ..- attr(*, "unit")= int 8
- $ debug        : logi FALSE
- $ inherit.blank: logi TRUE
- - attr(*, "class")= chr [1:2] "element_text" "element"
+<ggplot2::element_text>
+ @ family       : chr ""
+ @ face         : chr "plain"
+ @ italic       : chr NA
+ @ fontweight   : num NA
+ @ fontwidth    : num NA
+ @ colour       : chr "black"
+ @ size         : num 11
+ @ hjust        : num 0.5
+ @ vjust        : num 0.5
+ @ angle        : num 0
+ @ lineheight   : num 0.9
+ @ margin       : <ggplot2::margin> num [1:4] 0 0 0 0
+ @ debug        : logi FALSE
+ @ inherit.blank: logi TRUE
 > 
 > 
 > 
@@ -880,6 +1210,378 @@ Warning: The pdf device does not support compositing.
 > # Possibly throw an error
 > try(check_device("glyphs", action = "abort"))
 [1] TRUE
+> 
+> 
+> 
+> cleanEx()
+> nameEx("complete_theme")
+> ### * complete_theme
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: complete_theme
+> ### Title: Complete a theme
+> ### Aliases: complete_theme
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> my_theme <- theme(line = element_line(colour = "red"))
+> complete_theme(my_theme)
+<theme> List of 144
+ $ line                            : <ggplot2::element_line>
+  ..@ colour       : chr "red"
+  ..@ linewidth    : num 0.5
+  ..@ linetype     : num 1
+  ..@ lineend      : chr "butt"
+  ..@ linejoin     : chr "round"
+  ..@ arrow        : logi FALSE
+  ..@ arrow.fill   : chr "red"
+  ..@ inherit.blank: logi FALSE
+ $ rect                            : <ggplot2::element_rect>
+  ..@ fill         : chr "white"
+  ..@ colour       : chr "black"
+  ..@ linewidth    : num 0.5
+  ..@ linetype     : num 1
+  ..@ linejoin     : chr "round"
+  ..@ inherit.blank: logi TRUE
+ $ text                            : <ggplot2::element_text>
+  ..@ family       : chr ""
+  ..@ face         : chr "plain"
+  ..@ italic       : chr NA
+  ..@ fontweight   : num NA
+  ..@ fontwidth    : num NA
+  ..@ colour       : chr "black"
+  ..@ size         : num 11
+  ..@ hjust        : num 0.5
+  ..@ vjust        : num 0.5
+  ..@ angle        : num 0
+  ..@ lineheight   : num 0.9
+  ..@ margin       : <ggplot2::margin> num [1:4] 0 0 0 0
+  ..@ debug        : logi FALSE
+  ..@ inherit.blank: logi TRUE
+ $ title                           : <ggplot2::element_text>
+  ..@ family       : NULL
+  ..@ face         : NULL
+  ..@ italic       : chr NA
+  ..@ fontweight   : num NA
+  ..@ fontwidth    : num NA
+  ..@ colour       : NULL
+  ..@ size         : NULL
+  ..@ hjust        : NULL
+  ..@ vjust        : NULL
+  ..@ angle        : NULL
+  ..@ lineheight   : NULL
+  ..@ margin       : NULL
+  ..@ debug        : NULL
+  ..@ inherit.blank: logi TRUE
+ $ point                           : <ggplot2::element_point>
+  ..@ colour       : chr "black"
+  ..@ shape        : num 19
+  ..@ size         : num 1.5
+  ..@ fill         : chr "white"
+  ..@ stroke       : num 0.5
+  ..@ inherit.blank: logi TRUE
+ $ polygon                         : <ggplot2::element_polygon>
+  ..@ fill         : chr "white"
+  ..@ colour       : chr "black"
+  ..@ linewidth    : num 0.5
+  ..@ linetype     : num 1
+  ..@ linejoin     : chr "round"
+  ..@ inherit.blank: logi TRUE
+ $ geom                            : <ggplot2::element_geom>
+  ..@ ink        : chr "black"
+  ..@ paper      : chr "white"
+  ..@ accent     : chr "#3366FF"
+  ..@ linewidth  : num 0.5
+  ..@ borderwidth: num 0.5
+  ..@ linetype   : int 1
+  ..@ bordertype : int 1
+  ..@ family     : chr ""
+  ..@ fontsize   : num 3.87
+  ..@ pointsize  : num 1.5
+  ..@ pointshape : num 19
+  ..@ colour     : NULL
+  ..@ fill       : NULL
+ $ spacing                         : 'simpleUnit' num 5.5points
+  ..- attr(*, "unit")= int 8
+ $ margins                         : <ggplot2::margin> num [1:4] 5.5 5.5 5.5 5.5
+ $ aspect.ratio                    : NULL
+ $ axis.title                      : NULL
+ $ axis.title.x                    : <ggplot2::element_text>
+  ..@ family       : NULL
+  ..@ face         : NULL
+  ..@ italic       : chr NA
+  ..@ fontweight   : num NA
+  ..@ fontwidth    : num NA
+  ..@ colour       : NULL
+  ..@ size         : NULL
+  ..@ hjust        : NULL
+  ..@ vjust        : num 1
+  ..@ angle        : NULL
+  ..@ lineheight   : NULL
+  ..@ margin       : <ggplot2::margin> num [1:4] 2.75 0 0 0
+  ..@ debug        : NULL
+  ..@ inherit.blank: logi TRUE
+ $ axis.title.x.top                : <ggplot2::element_text>
+  ..@ family       : NULL
+  ..@ face         : NULL
+  ..@ italic       : chr NA
+  ..@ fontweight   : num NA
+  ..@ fontwidth    : num NA
+  ..@ colour       : NULL
+  ..@ size         : NULL
+  ..@ hjust        : NULL
+  ..@ vjust        : num 0
+  ..@ angle        : NULL
+  ..@ lineheight   : NULL
+  ..@ margin       : <ggplot2::margin> num [1:4] 0 0 2.75 0
+  ..@ debug        : NULL
+  ..@ inherit.blank: logi TRUE
+ $ axis.title.x.bottom             : NULL
+ $ axis.title.y                    : <ggplot2::element_text>
+  ..@ family       : NULL
+  ..@ face         : NULL
+  ..@ italic       : chr NA
+  ..@ fontweight   : num NA
+  ..@ fontwidth    : num NA
+  ..@ colour       : NULL
+  ..@ size         : NULL
+  ..@ hjust        : NULL
+  ..@ vjust        : num 1
+  ..@ angle        : num 90
+  ..@ lineheight   : NULL
+  ..@ margin       : <ggplot2::margin> num [1:4] 0 2.75 0 0
+  ..@ debug        : NULL
+  ..@ inherit.blank: logi TRUE
+ $ axis.title.y.left               : NULL
+ $ axis.title.y.right              : <ggplot2::element_text>
+  ..@ family       : NULL
+  ..@ face         : NULL
+  ..@ italic       : chr NA
+  ..@ fontweight   : num NA
+  ..@ fontwidth    : num NA
+  ..@ colour       : NULL
+  ..@ size         : NULL
+  ..@ hjust        : NULL
+  ..@ vjust        : num 1
+  ..@ angle        : num -90
+  ..@ lineheight   : NULL
+  ..@ margin       : <ggplot2::margin> num [1:4] 0 0 0 2.75
+  ..@ debug        : NULL
+  ..@ inherit.blank: logi TRUE
+ $ axis.text                       : <ggplot2::element_text>
+  ..@ family       : NULL
+  ..@ face         : NULL
+  ..@ italic       : chr NA
+  ..@ fontweight   : num NA
+  ..@ fontwidth    : num NA
+  ..@ colour       : chr "#4D4D4DFF"
+  ..@ size         : 'rel' num 0.8
+  ..@ hjust        : NULL
+  ..@ vjust        : NULL
+  ..@ angle        : NULL
+  ..@ lineheight   : NULL
+  ..@ margin       : NULL
+  ..@ debug        : NULL
+  ..@ inherit.blank: logi TRUE
+ $ axis.text.x                     : <ggplot2::element_text>
+  ..@ family       : NULL
+  ..@ face         : NULL
+  ..@ italic       : chr NA
+  ..@ fontweight   : num NA
+  ..@ fontwidth    : num NA
+  ..@ colour       : NULL
+  ..@ size         : NULL
+  ..@ hjust        : NULL
+  ..@ vjust        : num 1
+  ..@ angle        : NULL
+  ..@ lineheight   : NULL
+  ..@ margin       : <ggplot2::margin> num [1:4] 2.2 0 0 0
+  ..@ debug        : NULL
+  ..@ inherit.blank: logi TRUE
+ $ axis.text.x.top                 : <ggplot2::element_text>
+  ..@ family       : NULL
+  ..@ face         : NULL
+  ..@ italic       : chr NA
+  ..@ fontweight   : num NA
+  ..@ fontwidth    : num NA
+  ..@ colour       : NULL
+  ..@ size         : NULL
+  ..@ hjust        : NULL
+  ..@ vjust        : num 0
+  ..@ angle        : NULL
+  ..@ lineheight   : NULL
+  ..@ margin       : <ggplot2::margin> num [1:4] 0 0 2.2 0
+  ..@ debug        : NULL
+  ..@ inherit.blank: logi TRUE
+ $ axis.text.x.bottom              : NULL
+ $ axis.text.y                     : <ggplot2::element_text>
+  ..@ family       : NULL
+  ..@ face         : NULL
+  ..@ italic       : chr NA
+  ..@ fontweight   : num NA
+  ..@ fontwidth    : num NA
+  ..@ colour       : NULL
+  ..@ size         : NULL
+  ..@ hjust        : num 1
+  ..@ vjust        : NULL
+  ..@ angle        : NULL
+  ..@ lineheight   : NULL
+  ..@ margin       : <ggplot2::margin> num [1:4] 0 2.2 0 0
+  ..@ debug        : NULL
+  ..@ inherit.blank: logi TRUE
+ $ axis.text.y.left                : NULL
+ $ axis.text.y.right               : <ggplot2::element_text>
+  ..@ family       : NULL
+  ..@ face         : NULL
+  ..@ italic       : chr NA
+  ..@ fontweight   : num NA
+  ..@ fontwidth    : num NA
+  ..@ colour       : NULL
+  ..@ size         : NULL
+  ..@ hjust        : num 0
+  ..@ vjust        : NULL
+  ..@ angle        : NULL
+  ..@ lineheight   : NULL
+  ..@ margin       : <ggplot2::margin> num [1:4] 0 0 0 2.2
+  ..@ debug        : NULL
+  ..@ inherit.blank: logi TRUE
+ $ axis.text.theta                 : NULL
+ $ axis.text.r                     : <ggplot2::element_text>
+  ..@ family       : NULL
+  ..@ face         : NULL
+  ..@ italic       : chr NA
+  ..@ fontweight   : num NA
+  ..@ fontwidth    : num NA
+  ..@ colour       : NULL
+  ..@ size         : NULL
+  ..@ hjust        : num 0.5
+  ..@ vjust        : NULL
+  ..@ angle        : NULL
+  ..@ lineheight   : NULL
+  ..@ margin       : <ggplot2::margin> num [1:4] 0 2.2 0 2.2
+  ..@ debug        : NULL
+  ..@ inherit.blank: logi TRUE
+ $ axis.ticks                      : <ggplot2::element_line>
+  ..@ colour       : chr "#333333FF"
+  ..@ linewidth    : NULL
+  ..@ linetype     : NULL
+  ..@ lineend      : NULL
+  ..@ linejoin     : NULL
+  ..@ arrow        : logi FALSE
+  ..@ arrow.fill   : chr "#333333FF"
+  ..@ inherit.blank: logi TRUE
+ $ axis.ticks.x                    : NULL
+ $ axis.ticks.x.top                : NULL
+ $ axis.ticks.x.bottom             : NULL
+ $ axis.ticks.y                    : NULL
+ $ axis.ticks.y.left               : NULL
+ $ axis.ticks.y.right              : NULL
+ $ axis.ticks.theta                : NULL
+ $ axis.ticks.r                    : NULL
+ $ axis.minor.ticks.x.top          : NULL
+ $ axis.minor.ticks.x.bottom       : NULL
+ $ axis.minor.ticks.y.left         : NULL
+ $ axis.minor.ticks.y.right        : NULL
+ $ axis.minor.ticks.theta          : NULL
+ $ axis.minor.ticks.r              : NULL
+ $ axis.ticks.length               : 'rel' num 0.5
+ $ axis.ticks.length.x             : NULL
+ $ axis.ticks.length.x.top         : NULL
+ $ axis.ticks.length.x.bottom      : NULL
+ $ axis.ticks.length.y             : NULL
+ $ axis.ticks.length.y.left        : NULL
+ $ axis.ticks.length.y.right       : NULL
+ $ axis.ticks.length.theta         : NULL
+ $ axis.ticks.length.r             : NULL
+ $ axis.minor.ticks.length         : 'rel' num 0.75
+ $ axis.minor.ticks.length.x       : NULL
+ $ axis.minor.ticks.length.x.top   : NULL
+ $ axis.minor.ticks.length.x.bottom: NULL
+ $ axis.minor.ticks.length.y       : NULL
+ $ axis.minor.ticks.length.y.left  : NULL
+ $ axis.minor.ticks.length.y.right : NULL
+ $ axis.minor.ticks.length.theta   : NULL
+ $ axis.minor.ticks.length.r       : NULL
+ $ axis.line                       : <ggplot2::element_blank>
+ $ axis.line.x                     : NULL
+ $ axis.line.x.top                 : NULL
+ $ axis.line.x.bottom              : NULL
+ $ axis.line.y                     : NULL
+ $ axis.line.y.left                : NULL
+ $ axis.line.y.right               : NULL
+ $ axis.line.theta                 : NULL
+ $ axis.line.r                     : NULL
+ $ legend.background               : <ggplot2::element_rect>
+  ..@ fill         : NULL
+  ..@ colour       : logi NA
+  ..@ linewidth    : NULL
+  ..@ linetype     : NULL
+  ..@ linejoin     : NULL
+  ..@ inherit.blank: logi TRUE
+ $ legend.margin                   : NULL
+ $ legend.spacing                  : 'rel' num 2
+ $ legend.spacing.x                : NULL
+ $ legend.spacing.y                : NULL
+ $ legend.key                      : NULL
+ $ legend.key.size                 : 'simpleUnit' num 1.2lines
+  ..- attr(*, "unit")= int 3
+ $ legend.key.height               : NULL
+ $ legend.key.width                : NULL
+ $ legend.key.spacing              : NULL
+ $ legend.key.spacing.x            : NULL
+ $ legend.key.spacing.y            : NULL
+ $ legend.key.justification        : NULL
+ $ legend.frame                    : NULL
+ $ legend.ticks                    : NULL
+ $ legend.ticks.length             : 'rel' num 0.2
+ $ legend.axis.line                : NULL
+ $ legend.text                     : <ggplot2::element_text>
+  ..@ family       : NULL
+  ..@ face         : NULL
+  ..@ italic       : chr NA
+  ..@ fontweight   : num NA
+  ..@ fontwidth    : num NA
+  ..@ colour       : NULL
+  ..@ size         : 'rel' num 0.8
+  ..@ hjust        : NULL
+  ..@ vjust        : NULL
+  ..@ angle        : NULL
+  ..@ lineheight   : NULL
+  ..@ margin       : NULL
+  ..@ debug        : NULL
+  ..@ inherit.blank: logi TRUE
+ $ legend.text.position            : NULL
+ $ legend.title                    : <ggplot2::element_text>
+  ..@ family       : NULL
+  ..@ face         : NULL
+  ..@ italic       : chr NA
+  ..@ fontweight   : num NA
+  ..@ fontwidth    : num NA
+  ..@ colour       : NULL
+  ..@ size         : NULL
+  ..@ hjust        : num 0
+  ..@ vjust        : NULL
+  ..@ angle        : NULL
+  ..@ lineheight   : NULL
+  ..@ margin       : NULL
+  ..@ debug        : NULL
+  ..@ inherit.blank: logi TRUE
+ $ legend.title.position           : NULL
+ $ legend.position                 : chr "right"
+ $ legend.position.inside          : NULL
+ $ legend.direction                : NULL
+ $ legend.byrow                    : NULL
+ $ legend.justification            : chr "center"
+ $ legend.justification.top        : NULL
+ $ legend.justification.bottom     : NULL
+ $ legend.justification.left       : NULL
+ $ legend.justification.right      : NULL
+ $ legend.justification.inside     : NULL
+  [list output truncated]
+ @ complete: logi TRUE
+ @ validate: logi FALSE
 > 
 > 
 > 
@@ -928,6 +1630,11 @@ Warning: Removed 24 rows containing missing values or values outside the scale r
 > p + coord_cartesian(expand = FALSE)
 `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
 > 
+> # Using a fixed ratio: 1 y-axis unit is 100 x-axis units
+> # Plot window can be resized and aspect ratio will be maintained
+> p + coord_cartesian(ratio = 100)
+`geom_smooth()` using method = 'loess' and formula = 'y ~ x'
+> 
 > # You can see the same thing with this 2d histogram
 > d <- ggplot(diamonds, aes(carat, price)) +
 +   stat_bin_2d(bins = 25, colour = "white")
@@ -938,7 +1645,7 @@ Warning: Removed 24 rows containing missing values or values outside the scale r
 > d + scale_x_continuous(limits = c(0, 1))
 Warning: Removed 17502 rows containing non-finite outside the scale range
 (`stat_bin2d()`).
-Warning: Removed 17 rows containing missing values or values outside the scale range
+Warning: Removed 16 rows containing missing values or values outside the scale range
 (`geom_tile()`).
 > 
 > # When zooming the coordinate system, we see a subset of original 50 bins,
@@ -997,14 +1704,14 @@ Warning: Removed 17 rows containing missing values or values outside the scale r
 > ggplot(diamonds, aes(y = carat)) +
 +   geom_histogram() +
 +   scale_y_reverse()
-`stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+`stat_bin()` using `bins = 30`. Pick better value `binwidth`.
 > 
 > # In `coord_flip()`, the x-scale controls the left axis
 > ggplot(diamonds, aes(carat)) +
 +   geom_histogram() +
 +   coord_flip() +
 +   scale_x_reverse()
-`stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+`stat_bin()` using `bins = 30`. Pick better value `binwidth`.
 > 
 > # In line and area plots, swapped aesthetics require an explicit orientation
 > df <- data.frame(a = 1:5, b = (1:5) ^ 2)
@@ -1120,8 +1827,8 @@ Loading required package: maps
 
 detaching ‘package:maps’
 
-> nameEx("coord_polar")
-> ### * coord_polar
+> nameEx("coord_radial")
+> ### * coord_radial
 > 
 > flush(stderr()); flush(stdout())
 > 
@@ -1136,27 +1843,37 @@ detaching ‘package:maps’
 > # to demonstrate how these common plots can be described in the
 > # grammar.  Use with EXTREME caution.
 > 
-> #' # A pie chart = stacked bar chart + polar coordinates
+> # A pie chart = stacked bar chart + polar coordinates
 > pie <- ggplot(mtcars, aes(x = factor(1), fill = factor(cyl))) +
 +  geom_bar(width = 1)
-> pie + coord_polar(theta = "y")
+> pie + coord_radial(theta = "y", expand = FALSE)
 > 
 > # A partial polar plot
 > ggplot(mtcars, aes(disp, mpg)) +
 +   geom_point() +
 +   coord_radial(start = -0.4 * pi, end = 0.4 * pi, inner.radius = 0.3)
 > 
+> # Similar with coord_cartesian(), you can set limits.
+> ggplot(mtcars, aes(disp, mpg)) +
++   geom_point() +
++   coord_radial(
++     start = -0.4 * pi,
++     end = 0.4 * pi, inner.radius = 0.3,
++     thetalim = c(200, 300),
++     rlim = c(15, 30),
++   )
+> 
 > 
 > 
 > cleanEx()
-> nameEx("coord_trans")
-> ### * coord_trans
+> nameEx("coord_transform")
+> ### * coord_transform
 > 
 > flush(stderr()); flush(stdout())
 > 
-> ### Name: coord_trans
+> ### Name: coord_transform
 > ### Title: Transformed Cartesian coordinate system
-> ### Aliases: coord_trans
+> ### Aliases: coord_transform coord_trans
 > 
 > ### ** Examples
 > 
@@ -1253,37 +1970,50 @@ detaching ‘package:maps’
 > 
 > flush(stderr()); flush(stdout())
 > 
-> ### Name: element
+> ### Name: margin
 > ### Title: Theme elements
-> ### Aliases: element_blank element_rect element_line element_text
-> ###   is_theme_element rel margin
+> ### Aliases: margin margin_part margin_auto element element_blank
+> ###   element_rect element_line element_text element_polygon element_point
+> ###   element_geom rel
 > 
 > ### ** Examples
 > 
+> # A standard plot
 > plot <- ggplot(mpg, aes(displ, hwy)) + geom_point()
 > 
+> # Turning off theme elements by setting them to blank
 > plot + theme(
 +   panel.background = element_blank(),
 +   axis.text = element_blank()
 + )
 > 
+> # Text adjustments
 > plot + theme(
 +   axis.text = element_text(colour = "red", size = rel(1.5))
 + )
 > 
+> # Turning on the axis line with an arrow
 > plot + theme(
 +   axis.line = element_line(arrow = arrow())
 + )
 > 
 > plot + theme(
 +   panel.background = element_rect(fill = "white"),
-+   plot.margin = margin(2, 2, 2, 2, "cm"),
++   plot.margin = margin_auto(2, unit = "cm"),
 +   plot.background = element_rect(
 +     fill = "grey90",
 +     colour = "black",
 +     linewidth = 1
 +   )
 + )
+> 
+> ggplot(mpg, aes(displ, hwy)) +
++   geom_point() +
++   geom_smooth(formula = y ~ x, method = "lm") +
++   theme(geom = element_geom(
++     ink = "red", accent = "black",
++     pointsize = 1, linewidth = 2
++   ))
 > 
 > 
 > 
@@ -1442,6 +2172,14 @@ detaching ‘package:maps’
 > p + facet_wrap(vars(class), nrow = 4)
 > 
 > 
+> # The two letters determine the starting position, so 'tr' starts
+> # in the top-right.
+> # The first letter determines direction, so 'tr' fills top-to-bottom.
+> # `dir = "tr"` is equivalent to `dir = "v", as.table = FALSE`
+> ggplot(mpg, aes(displ, hwy)) +
++   geom_point() +
++   facet_wrap(vars(class), dir = "tr")
+> 
 > 
 > 
 > cleanEx()
@@ -1510,27 +2248,39 @@ attr(,"class")
 > 
 > ### ** Examples
 > 
-> if (require("multcomp")) {
+> ## Don't show: 
+> if (require("multcomp") && require("broom")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
 + amod <- aov(breaks ~ wool + tension, data = warpbreaks)
-+ wht <- glht(amod, linfct = mcp(tension = "Tukey"))
++ wht <- multcomp::glht(amod, linfct = multcomp::mcp(tension = "Tukey"))
 + 
++ tidy(wht) # recommended
 + fortify(wht)
-+ ggplot(wht, aes(lhs, estimate)) + geom_point()
 + 
-+ CI <- confint(wht)
-+ fortify(CI)
-+ ggplot(CI, aes(lhs, estimate, ymin = lwr, ymax = upr)) +
++ ggplot(tidy(wht), aes(contrast, estimate)) + geom_point()
++ 
++ ci <- confint(wht)
++ tidy(ci) # recommended
++ fortify(ci)
++ 
++ ggplot(tidy(confint(wht)),
++        aes(contrast, estimate, ymin = conf.low, ymax = conf.high)) +
 +    geom_pointrange()
 + 
-+ fortify(summary(wht))
-+ ggplot(mapping = aes(lhs, estimate)) +
-+    geom_linerange(aes(ymin = lwr, ymax = upr), data = CI) +
-+    geom_point(aes(size = p), data = summary(wht)) +
++ smry <- summary(wht)
++ tidy(smry) # recommended
++ fortify(smry)
++ 
++ ggplot(mapping = aes(contrast, estimate)) +
++    geom_linerange(aes(ymin = conf.low, ymax = conf.high), data = tidy(ci)) +
++    geom_point(aes(size = adj.p.value), data = tidy(smry)) +
 +    scale_size(transform = "reverse")
 + 
-+ cld <- cld(wht)
++ cld <- multcomp::cld(wht)
++ tidy(cld) # recommended
 + fortify(cld)
-+ }
++ ## Don't show: 
++ }) # examplesIf
 Loading required package: multcomp
 Loading required package: mvtnorm
 Loading required package: survival
@@ -1543,17 +2293,80 @@ The following object is masked from ‘package:MASS’:
 
     geyser
 
+Loading required package: broom
+> amod <- aov(breaks ~ wool + tension, data = warpbreaks)
+> wht <- multcomp::glht(amod, linfct = multcomp::mcp(tension = "Tukey"))
+> tidy(wht)
+# A tibble: 3 × 7
+  term    contrast null.value estimate std.error statistic adj.p.value
+  <chr>   <chr>         <dbl>    <dbl>     <dbl>     <dbl>       <dbl>
+1 tension M - L             0   -10         3.87     -2.58     0.0336 
+2 tension H - L             0   -14.7       3.87     -3.80     0.00113
+3 tension H - M             0    -4.72      3.87     -1.22     0.447  
+> fortify(wht)
+Warning: `fortify(<glht>)` was deprecated in ggplot2 3.6.0.
+ℹ Please use `broom::tidy(<glht>)` instead.
+           lhs rhs   estimate
+tension1 M - L   0 -10.000000
+tension2 H - L   0 -14.722222
+tension3 H - M   0  -4.722222
+> ggplot(tidy(wht), aes(contrast, estimate)) + geom_point()
+> ci <- confint(wht)
+> tidy(ci)
+# A tibble: 3 × 5
+  term    contrast estimate conf.low conf.high
+  <chr>   <chr>       <dbl>    <dbl>     <dbl>
+1 tension M - L      -10       -19.4    -0.642
+2 tension H - L      -14.7     -24.1    -5.36 
+3 tension H - M       -4.72    -14.1     4.64 
+> fortify(ci)
+Warning: `fortify(<confint.glht>)` was deprecated in ggplot2 3.6.0.
+ℹ Please use `broom::tidy(<confint.glht>)` instead.
+        lhs rhs   estimate       lwr        upr
+M - L M - L   0 -10.000000 -19.35756 -0.6424387
+H - L H - L   0 -14.722222 -24.07978 -5.3646609
+H - M H - M   0  -4.722222 -14.07978  4.6353391
+> ggplot(tidy(confint(wht)), aes(contrast, estimate, ymin = conf.low, ymax = conf.high)) + 
++     geom_pointrange()
+> smry <- summary(wht)
+> tidy(smry)
+# A tibble: 3 × 7
+  term    contrast null.value estimate std.error statistic adj.p.value
+  <chr>   <chr>         <dbl>    <dbl>     <dbl>     <dbl>       <dbl>
+1 tension M - L             0   -10         3.87     -2.58     0.0337 
+2 tension H - L             0   -14.7       3.87     -3.80     0.00116
+3 tension H - M             0    -4.72      3.87     -1.22     0.447  
+> fortify(smry)
+Warning: `fortify(<summary.glht>)` was deprecated in ggplot2 3.6.0.
+ℹ Please use `broom::tidy(<summary.glht>)` instead.
+        lhs rhs   estimate       se         t          p
+M - L M - L   0 -10.000000 3.872378 -2.582393 0.03365905
+H - L H - L   0 -14.722222 3.872378 -3.801856 0.00116132
+H - M H - M   0  -4.722222 3.872378 -1.219463 0.44741305
+> ggplot(mapping = aes(contrast, estimate)) + geom_linerange(aes(ymin = conf.low, 
++     ymax = conf.high), data = tidy(ci)) + geom_point(aes(size = adj.p.value), data = tidy(smry)) + 
++     scale_size(transform = "reverse")
+> cld <- multcomp::cld(wht)
+> tidy(cld)
+# A tibble: 3 × 2
+  tension letters
+  <chr>   <chr>  
+1 L       a      
+2 M       b      
+3 H       b      
+> fortify(cld)
   lhs letters
 L   L       a
 M   M       b
 H   H       b
+> ## End(Don't show)
 > 
 > 
 > 
 > cleanEx()
 
-detaching ‘package:multcomp’, ‘package:TH.data’, ‘package:MASS’,
-  ‘package:survival’, ‘package:mvtnorm’
+detaching ‘package:broom’, ‘package:multcomp’, ‘package:TH.data’,
+  ‘package:MASS’, ‘package:survival’, ‘package:mvtnorm’
 
 > nameEx("fortify.lm")
 > ### * fortify.lm
@@ -1568,8 +2381,41 @@ detaching ‘package:multcomp’, ‘package:TH.data’, ‘package:MASS’,
 > 
 > ### ** Examples
 > 
+> ## Don't show: 
+> if (require("broom")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ mod <- lm(mpg ~ wt, data = mtcars)
++ 
++ # Show augmented model
++ head(augment(mod))
++ head(fortify(mod))
++ 
++ # Using augment to convert model to ready-to-plot data
++ ggplot(augment(mod), aes(.fitted, .resid)) +
++   geom_point() +
++   geom_hline(yintercept = 0) +
++   geom_smooth(se = FALSE)
++ 
++ # Colouring by original data not included in the model
++ ggplot(augment(mod, mtcars), aes(.fitted, .std.resid, colour = factor(cyl))) +
++   geom_point()
++ ## Don't show: 
++ }) # examplesIf
+Loading required package: broom
 > mod <- lm(mpg ~ wt, data = mtcars)
+> head(augment(mod))
+# A tibble: 6 × 9
+  .rownames           mpg    wt .fitted .resid   .hat .sigma  .cooksd .std.resid
+  <chr>             <dbl> <dbl>   <dbl>  <dbl>  <dbl>  <dbl>    <dbl>      <dbl>
+1 Mazda RX4          21    2.62    23.3 -2.28  0.0433   3.07  1.33e-2    -0.766 
+2 Mazda RX4 Wag      21    2.88    21.9 -0.920 0.0352   3.09  1.72e-3    -0.307 
+3 Datsun 710         22.8  2.32    24.9 -2.09  0.0584   3.07  1.54e-2    -0.706 
+4 Hornet 4 Drive     21.4  3.22    20.1  1.30  0.0313   3.09  3.02e-3     0.433 
+5 Hornet Sportabout  18.7  3.44    18.9 -0.200 0.0329   3.10  7.60e-5    -0.0668
+6 Valiant            18.1  3.46    18.8 -0.693 0.0332   3.10  9.21e-4    -0.231 
 > head(fortify(mod))
+Warning: `fortify(<lm>)` was deprecated in ggplot2 3.6.0.
+ℹ Please use `broom::augment(<lm>)` instead.
                    mpg    wt       .hat   .sigma      .cooksd  .fitted
 Mazda RX4         21.0 2.620 0.04326896 3.067494 1.327407e-02 23.28261
 Mazda RX4 Wag     21.0 2.875 0.03519677 3.093068 1.723963e-03 21.91977
@@ -1584,84 +2430,19 @@ Datsun 710        -2.0859521 -0.70575249
 Hornet 4 Drive     1.2973499  0.43275114
 Hornet Sportabout -0.2001440 -0.06681879
 Valiant           -0.6932545 -0.23148309
-> head(fortify(mod, mtcars))
-                   mpg cyl disp  hp drat    wt  qsec vs am gear carb       .hat
-Mazda RX4         21.0   6  160 110 3.90 2.620 16.46  0  1    4    4 0.04326896
-Mazda RX4 Wag     21.0   6  160 110 3.90 2.875 17.02  0  1    4    4 0.03519677
-Datsun 710        22.8   4  108  93 3.85 2.320 18.61  1  1    4    1 0.05837573
-Hornet 4 Drive    21.4   6  258 110 3.08 3.215 19.44  1  0    3    1 0.03125017
-Hornet Sportabout 18.7   8  360 175 3.15 3.440 17.02  0  0    3    2 0.03292182
-Valiant           18.1   6  225 105 2.76 3.460 20.22  1  0    3    1 0.03323551
-                    .sigma      .cooksd  .fitted     .resid   .stdresid
-Mazda RX4         3.067494 1.327407e-02 23.28261 -2.2826106 -0.76616765
-Mazda RX4 Wag     3.093068 1.723963e-03 21.91977 -0.9197704 -0.30743051
-Datsun 710        3.072127 1.543937e-02 24.88595 -2.0859521 -0.70575249
-Hornet 4 Drive    3.088268 3.020558e-03 20.10265  1.2973499  0.43275114
-Hornet Sportabout 3.097722 7.599578e-05 18.90014 -0.2001440 -0.06681879
-Valiant           3.095184 9.210650e-04 18.79325 -0.6932545 -0.23148309
-> 
-> plot(mod, which = 1)
-> 
-> ggplot(mod, aes(.fitted, .resid)) +
-+   geom_point() +
-+   geom_hline(yintercept = 0) +
-+   geom_smooth(se = FALSE)
+> ggplot(augment(mod), aes(.fitted, .resid)) + geom_point() + geom_hline(yintercept = 0) + 
++     geom_smooth(se = FALSE)
 `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
-> 
-> ggplot(mod, aes(.fitted, .stdresid)) +
-+   geom_point() +
-+   geom_hline(yintercept = 0) +
-+   geom_smooth(se = FALSE)
-`geom_smooth()` using method = 'loess' and formula = 'y ~ x'
-> 
-> ggplot(fortify(mod, mtcars), aes(.fitted, .stdresid)) +
-+   geom_point(aes(colour = factor(cyl)))
-> 
-> ggplot(fortify(mod, mtcars), aes(mpg, .stdresid)) +
-+   geom_point(aes(colour = factor(cyl)))
-> 
-> plot(mod, which = 2)
-> ggplot(mod) +
-+   stat_qq(aes(sample = .stdresid)) +
-+   geom_abline()
-> 
-> plot(mod, which = 3)
-> ggplot(mod, aes(.fitted, sqrt(abs(.stdresid)))) +
-+   geom_point() +
-+   geom_smooth(se = FALSE)
-`geom_smooth()` using method = 'loess' and formula = 'y ~ x'
-> 
-> plot(mod, which = 4)
-> ggplot(mod, aes(seq_along(.cooksd), .cooksd)) +
-+   geom_col()
-> 
-> plot(mod, which = 5)
-> ggplot(mod, aes(.hat, .stdresid)) +
-+   geom_vline(linewidth = 2, colour = "white", xintercept = 0) +
-+   geom_hline(linewidth = 2, colour = "white", yintercept = 0) +
-+   geom_point() + geom_smooth(se = FALSE)
-`geom_smooth()` using method = 'loess' and formula = 'y ~ x'
-> 
-> ggplot(mod, aes(.hat, .stdresid)) +
-+   geom_point(aes(size = .cooksd)) +
-+   geom_smooth(se = FALSE, linewidth = 0.5)
-`geom_smooth()` using method = 'loess' and formula = 'y ~ x'
-> 
-> plot(mod, which = 6)
-> ggplot(mod, aes(.hat, .cooksd)) +
-+   geom_vline(xintercept = 0, colour = NA) +
-+   geom_abline(slope = seq(0, 3, by = 0.5), colour = "white") +
-+   geom_smooth(se = FALSE) +
-+   geom_point()
-`geom_smooth()` using method = 'loess' and formula = 'y ~ x'
-> 
-> ggplot(mod, aes(.hat, .cooksd)) +
-+   geom_point(aes(size = .cooksd / .hat)) +
-+   scale_size_area()
+> ggplot(augment(mod, mtcars), aes(.fitted, .std.resid, colour = factor(cyl))) + 
++     geom_point()
+> ## End(Don't show)
 > 
 > 
 > 
 > cleanEx()
+
+detaching ‘package:broom’
+
 > nameEx("fortify.map")
 > ### * fortify.map
 > 
@@ -1681,6 +2462,8 @@ Valiant           3.095184 9.210650e-04 18.79325 -0.6932545 -0.23148309
 +   geom_polygon(aes(group = group))
 + }
 Loading required package: maps
+Warning: `fortify(<map>)` was deprecated in ggplot2 3.6.0.
+ℹ Please use `map_data()` instead.
 > 
 > if (require("maps")) {
 + tx <- map("county", "texas", plot = FALSE, fill = TRUE)
@@ -1813,30 +2596,29 @@ detaching ‘package:maps’
 > 
 > d <- ggplot(diamonds, aes(x, y)) + xlim(4, 10) + ylim(4, 10)
 > d + geom_bin_2d()
+`stat_bin2d()` using `bins = 30`. Pick better value `binwidth`.
 Warning: Removed 478 rows containing non-finite outside the scale range
 (`stat_bin2d()`).
 Warning: Removed 5 rows containing missing values or values outside the scale range
-(`geom_tile()`).
+(`geom_bin2d()`).
 > 
 > # You can control the size of the bins by specifying the number of
 > # bins in each direction:
 > d + geom_bin_2d(bins = 10)
 Warning: Removed 478 rows containing non-finite outside the scale range
 (`stat_bin2d()`).
-Warning: Removed 6 rows containing missing values or values outside the scale range
-(`geom_tile()`).
-> d + geom_bin_2d(bins = 30)
+Warning: Removed 5 rows containing missing values or values outside the scale range
+(`geom_bin2d()`).
+> d + geom_bin_2d(bins = list(x = 30, y = 10))
 Warning: Removed 478 rows containing non-finite outside the scale range
 (`stat_bin2d()`).
-Warning: Removed 5 rows containing missing values or values outside the scale range
-(`geom_tile()`).
+Warning: Removed 6 rows containing missing values or values outside the scale range
+(`geom_bin2d()`).
 > 
 > # Or by specifying the width of the bins
 > d + geom_bin_2d(binwidth = c(0.1, 0.1))
 Warning: Removed 478 rows containing non-finite outside the scale range
 (`stat_bin2d()`).
-Warning: Removed 5 rows containing missing values or values outside the scale range
-(`geom_tile()`).
 > 
 > 
 > 
@@ -2092,38 +2874,6 @@ Bin width defaults to 1/30 of the range of the data. Pick better value with
 > 
 > 
 > cleanEx()
-> nameEx("geom_errorbarh")
-> ### * geom_errorbarh
-> 
-> flush(stderr()); flush(stdout())
-> 
-> ### Name: geom_errorbarh
-> ### Title: Horizontal error bars
-> ### Aliases: geom_errorbarh
-> 
-> ### ** Examples
-> 
-> df <- data.frame(
-+   trt = factor(c(1, 1, 2, 2)),
-+   resp = c(1, 5, 3, 4),
-+   group = factor(c(1, 2, 1, 2)),
-+   se = c(0.1, 0.3, 0.3, 0.2)
-+ )
-> 
-> # Define the top and bottom of the errorbars
-> 
-> p <- ggplot(df, aes(resp, trt, colour = group))
-> p +
-+   geom_point() +
-+   geom_errorbarh(aes(xmax = resp + se, xmin = resp - se))
-> 
-> p +
-+   geom_point() +
-+   geom_errorbarh(aes(xmax = resp + se, xmin = resp - se, height = .2))
-> 
-> 
-> 
-> cleanEx()
 > nameEx("geom_function")
 > ### * geom_function
 > 
@@ -2167,11 +2917,9 @@ Bin width defaults to 1/30 of the range of the data. Pick better value with
 +   geom_function(aes(colour = "t, df = 1"), fun = dt, args = list(df = 1))
 > 
 > # Using a custom anonymous function
-> base + geom_function(fun = function(x) 0.5 * exp(-abs(x)))
+> base + geom_function(fun = \(x) 0.5 * exp(-abs(x)))
 > # or using lambda syntax:
 > # base + geom_function(fun = ~ 0.5 * exp(-abs(.x)))
-> # or in R4.1.0 and above:
-> # base + geom_function(fun = \(x) 0.5 * exp(-abs(x)))
 > # or using a custom named function:
 > # f <- function(x) 0.5 * exp(-abs(x))
 > # base + geom_function(fun = f)
@@ -2221,7 +2969,7 @@ Bin width defaults to 1/30 of the range of the data. Pick better value with
 > 
 > ggplot(diamonds, aes(carat)) +
 +   geom_histogram()
-`stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+`stat_bin()` using `bins = 30`. Pick better value `binwidth`.
 > ggplot(diamonds, aes(carat)) +
 +   geom_histogram(binwidth = 0.01)
 > ggplot(diamonds, aes(carat)) +
@@ -2229,7 +2977,7 @@ Bin width defaults to 1/30 of the range of the data. Pick better value with
 > # Map values to y to flip the orientation
 > ggplot(diamonds, aes(y = carat)) +
 +   geom_histogram()
-`stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+`stat_bin()` using `bins = 30`. Pick better value `binwidth`.
 > 
 > # For histograms with tick marks between each bin, use `geom_bar()` with
 > # `scale_x_binned()`.
@@ -2248,6 +2996,18 @@ Bin width defaults to 1/30 of the range of the data. Pick better value with
 > # put density on the y axis instead of the default count
 > ggplot(diamonds, aes(price, after_stat(density), colour = cut)) +
 +   geom_freqpoly(binwidth = 500)
+> 
+> 
+> # When using the non-equal-width bins, we should set the area of the bars to
+> # represent the counts (not the height).
+> # Here we're using 10 equi-probable bins:
+> price_bins <- quantile(diamonds$price, probs = seq(0, 1, length = 11))
+> 
+> ggplot(diamonds, aes(price)) +
++   geom_histogram(breaks = price_bins, color = "black") # misleading (height = count)
+> 
+> ggplot(diamonds, aes(price, after_stat(count / width))) +
++   geom_histogram(breaks = price_bins, color = "black") # area = count
 > 
 > if (require("ggplot2movies")) {
 + # Often we don't want the height of the bar to represent the
@@ -2281,11 +3041,11 @@ Bin width defaults to 1/30 of the range of the data. Pick better value with
 + # no observations have 0 ratings.
 + m +
 +   geom_histogram(boundary = 0) +
-+   coord_trans(x = "log10")
++   coord_transform(x = "log10")
 + # Use boundary = 0, to make sure we don't take sqrt of negative values
 + m +
 +   geom_histogram(boundary = 0) +
-+   coord_trans(x = "sqrt")
++   coord_transform(x = "sqrt")
 + 
 + # You can also transform the y axis.  Remember that the base of the bars
 + # has value 0, so log transformations are not appropriate
@@ -2301,7 +3061,7 @@ Loading required package: ggplot2movies
 > # different ranges because the function will be called once per facet
 > ggplot(economics_long, aes(value)) +
 +   facet_wrap(~variable, scales = 'free_x') +
-+   geom_histogram(binwidth = function(x) 2 * IQR(x) / (length(x)^(1/3)))
++   geom_histogram(binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)))
 > 
 > 
 > 
@@ -2349,7 +3109,8 @@ detaching ‘package:ggplot2movies’
 > 
 > ### Name: geom_crossbar
 > ### Title: Vertical intervals: lines, crossbars & errorbars
-> ### Aliases: geom_crossbar geom_errorbar geom_linerange geom_pointrange
+> ### Aliases: geom_crossbar geom_errorbar geom_errorbarh geom_linerange
+> ###   geom_pointrange
 > 
 > ### ** Examples
 > 
@@ -2418,7 +3179,7 @@ detaching ‘package:ggplot2movies’
 > # how `geom_map()` works. It requires two data frames:
 > # One contains the coordinates of each polygon (`positions`), and is
 > # provided via the `map` argument. The other contains the
-> # other the values associated with each polygon (`values`).  An id
+> # values associated with each polygon (`values`).  An id
 > # variable links the two together.
 > 
 > ids <- factor(c("1.1", "2.1", "1.2", "2.2", "1.3", "2.3"))
@@ -2451,7 +3212,7 @@ detaching ‘package:ggplot2movies’
 + 
 +   crimes <- data.frame(state = tolower(rownames(USArrests)), USArrests)
 + 
-+   # Equivalent to crimes %>% tidyr::pivot_longer(Murder:Rape)
++   # Equivalent to crimes |> tidyr::pivot_longer(Murder:Rape)
 +   vars <- lapply(names(crimes)[-1], function(j) {
 +     data.frame(state = crimes$state, variable = j, value = crimes[[j]])
 +   })
@@ -2506,8 +3267,9 @@ detaching ‘package:maps’
 > 
 > # geom_line() is suitable for time series
 > ggplot(economics, aes(date, unemploy)) + geom_line()
+> # separate by colour and use "timeseries" legend key glyph
 > ggplot(economics_long, aes(date, value01, colour = variable)) +
-+   geom_line()
++   geom_line(key_glyph = "timeseries")
 > 
 > # You can get a timeseries that run vertically by setting the orientation
 > ggplot(economics, aes(unemploy, date)) + geom_line(orientation = "y")
@@ -2583,6 +3345,13 @@ Warning: Removed 1 row containing missing values or values outside the scale ran
 > ggplot(mtcars, aes(wt, mpg)) +
 +   geom_point(shape = 21, colour = "black", fill = "white", size = 5, stroke = 5)
 > 
+> # The default shape in legends is not filled, but you can override the shape
+> # in the guide to reflect the fill in the legend
+> ggplot(mtcars, aes(wt, mpg, fill = factor(carb), shape = factor(cyl))) +
++   geom_point(size = 5, stroke = 1) +
++   scale_shape_manual(values = 21:25) +
++   scale_fill_ordinal(guide = guide_legend(override.aes = list(shape = 21)))
+> 
 > 
 > 
 > 
@@ -2656,7 +3425,6 @@ Warning: Removed 1 row containing missing values or values outside the scale ran
 +     geom_polygon(aes(fill = value, group = id, subgroup = subid))
 +   p
 + }
-> 
 > 
 > 
 > 
@@ -2762,6 +3530,7 @@ Smoothing formula not specified. Using: y ~ x
 > 
 > 
 > 
+> 
 > cleanEx()
 > nameEx("geom_rug")
 > ### * geom_rug
@@ -2800,14 +3569,13 @@ Smoothing formula not specified. Using: y ~ x
 > p +
 +   geom_rug(outside = TRUE, sides = "tr") +
 +   coord_cartesian(clip = "off") +
-+   theme(plot.margin = margin(1, 1, 1, 1, "cm"))
++   theme(plot.margin = margin_auto(1, unit = "cm"))
 > 
 > # increase the line length and
 > # expand axis to avoid overplotting
 > p +
 +   geom_rug(length = unit(0.05, "npc")) +
 +   scale_y_continuous(expand = c(0.1, 0.1))
-> 
 > 
 > 
 > 
@@ -2843,7 +3611,7 @@ Smoothing formula not specified. Using: y ~ x
 + ggplot(seals, aes(long, lat)) +
 +   geom_segment(aes(xend = long + delta_long, yend = lat + delta_lat),
 +     arrow = arrow(length = unit(0.1,"cm"))) +
-+   borders("state")
++   annotation_borders("state")
 + }
 > 
 > # Use lineend and linejoin to change the style of the segments
@@ -2998,13 +3766,14 @@ Smoothing formula not specified. Using: y ~ x
 > # Add aesthetic mappings
 > p + geom_text(aes(colour = factor(cyl)))
 > p + geom_text(aes(colour = factor(cyl))) +
-+   scale_colour_discrete(l = 40)
++   scale_colour_hue(l = 40)
 > p + geom_label(aes(fill = factor(cyl)), colour = "white", fontface = "bold")
 > 
-> p + geom_text(aes(size = wt))
+> # Scale size of text, and change legend key glyph from a to point
+> p + geom_text(aes(size = wt), key_glyph = "point")
 > # Scale height of text, rather than sqrt(height)
 > p +
-+   geom_text(aes(size = wt)) +
++   geom_text(aes(size = wt), key_glyph = "point") +
 +   scale_radius(range = c(3,6))
 > 
 > # You can display expressions by setting parse = TRUE.  The
@@ -3134,13 +3903,13 @@ Smoothing formula not specified. Using: y ~ x
 > 
 > # Using a function
 > get_geom_defaults(geom_raster)
-    fill alpha
-1 grey20    NA
+       fill alpha
+1 #333333FF    NA
 > 
 > # Using a layer includes static aesthetics as default
 > get_geom_defaults(geom_tile(fill = "white"))
    fill colour linewidth linetype alpha width height
-1 white     NA       0.1        1    NA    NA     NA
+1 white     NA       0.2        1    NA     1      1
 > 
 > # Using a class name
 > get_geom_defaults("density_2d")
@@ -3149,8 +3918,13 @@ Smoothing formula not specified. Using: y ~ x
 > 
 > # Using a class
 > get_geom_defaults(GeomPoint)
-  shape colour size fill alpha stroke
-1    19  black  1.5   NA    NA    0.5
+  shape colour fill size alpha stroke
+1    19  black   NA  1.5    NA    0.5
+> 
+> # Changed theme
+> get_geom_defaults("point", theme(geom = element_geom(ink = "purple")))
+  shape colour fill size alpha stroke
+1    19 purple   NA  1.5    NA    0.5
 > 
 > 
 > 
@@ -3193,10 +3967,10 @@ Smoothing formula not specified. Using: y ~ x
 > # Guide information for positions
 > get_guide_data(p, "x", panel = 2)
           x .value .label y
-1 0.0959596     18     18 0
-2 0.3484848     19     19 0
-3 0.6010101     20     20 0
-4 0.8535354     21     21 0
+1 0.0959596     18     18 1
+2 0.3484848     19     19 1
+3 0.6010101     20     20 1
+4 0.8535354     21     21 1
 > 
 > # Coord polar doesn't support proper guides, so we get a list
 > polar <- p + coord_polar()
@@ -3217,14 +3991,145 @@ $theta.labels
 > 
 > 
 > cleanEx()
+> nameEx("get_strip_labels")
+> ### * get_strip_labels
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: get_strip_labels
+> ### Title: Accessing a plot's facet strip labels
+> ### Aliases: get_strip_labels
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> # Basic plot
+> p <- ggplot(mpg, aes(displ, hwy)) +
++   geom_point()
+> 
+> get_strip_labels(p) # empty facets
+NULL
+> get_strip_labels(p + facet_wrap(year ~ cyl))
+$facets
+  year cyl
+1 1999   4
+2 1999   6
+3 1999   8
+4 2008   4
+5 2008   5
+6 2008   6
+7 2008   8
+
+> get_strip_labels(p + facet_grid(year ~ cyl))
+$cols
+  cyl
+1   4
+2   5
+3   6
+4   8
+
+$rows
+  year
+1 1999
+2 2008
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("get_theme")
+> ### * get_theme
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: get_theme
+> ### Title: Get, set, and modify the active theme
+> ### Aliases: get_theme theme_get set_theme theme_set update_theme
+> ###   theme_update replace_theme theme_replace %+replace%
+> 
+> ### ** Examples
+> 
+> p <- ggplot(mtcars, aes(mpg, wt)) +
++   geom_point()
+> p
+> 
+> # Use set_theme() to completely override the current theme.
+> # update_theme() and replace_theme() are similar except they
+> # apply directly to the current/active theme.
+> # update_theme() modifies a particular element of the current theme.
+> # Here we have the old theme so we can later restore it.
+> # Note that the theme is applied when the plot is drawn, not
+> # when it is created.
+> old <- set_theme(theme_bw())
+> p
+> 
+> set_theme(old)
+> update_theme(panel.grid.minor = element_line(colour = "red"))
+> p
+> 
+> set_theme(old)
+> replace_theme(panel.grid.minor = element_line(colour = "red"))
+> p
+> 
+> set_theme(old)
+> p
+> 
+> 
+> # Modifying theme objects -----------------------------------------
+> # You can use + and %+replace% to modify a theme object.
+> # They differ in how they deal with missing arguments in
+> # the theme elements.
+> 
+> add_el <- theme_grey() +
++   theme(text = element_text(family = "Times"))
+> add_el$text
+<ggplot2::element_text>
+ @ family       : chr "Times"
+ @ face         : chr "plain"
+ @ italic       : chr NA
+ @ fontweight   : num NA
+ @ fontwidth    : num NA
+ @ colour       : chr "black"
+ @ size         : num 11
+ @ hjust        : num 0.5
+ @ vjust        : num 0.5
+ @ angle        : num 0
+ @ lineheight   : num 0.9
+ @ margin       : <ggplot2::margin> num [1:4] 0 0 0 0
+ @ debug        : logi FALSE
+ @ inherit.blank: logi FALSE
+> 
+> rep_el <- theme_grey() %+replace%
++   theme(text = element_text(family = "Times"))
+> rep_el$text
+<ggplot2::element_text>
+ @ family       : chr "Times"
+ @ face         : NULL
+ @ italic       : chr NA
+ @ fontweight   : num NA
+ @ fontwidth    : num NA
+ @ colour       : NULL
+ @ size         : NULL
+ @ hjust        : NULL
+ @ vjust        : NULL
+ @ angle        : NULL
+ @ lineheight   : NULL
+ @ margin       : NULL
+ @ debug        : NULL
+ @ inherit.blank: logi FALSE
+> 
+> 
+> 
+> 
+> cleanEx()
 > nameEx("gg-add")
 > ### * gg-add
 > 
 > flush(stderr()); flush(stdout())
 > 
-> ### Name: +.gg
+> ### Name: add_gg
 > ### Title: Add components to a plot
-> ### Aliases: +.gg %+%
+> ### Aliases: add_gg +.gg %+%
 > 
 > ### ** Examples
 > 
@@ -3236,6 +4141,8 @@ $theta.labels
 > 
 > # To override the data, you must use %+%
 > base %+% subset(mpg, fl == "p")
+Warning: <ggplot> %+% x was deprecated in ggplot2 4.0.0.
+ℹ Please use <ggplot> + x instead.
 > 
 > # Alternatively, you can add multiple components with a list.
 > # This can be useful to return from a function.
@@ -3562,7 +4469,7 @@ detaching ‘package:maps’
 +   scale_y_log10(guide = "axis_logticks")
 > 
 > # Or with log-transformed coordinates
-> p + coord_trans(x = "log10", y = "log10") +
+> p + coord_transform(x = "log10", y = "log10") +
 +   guides(x = "axis_logticks", y = "axis_logticks")
 > 
 > # When data is transformed manually, one should provide `prescale.base`
@@ -3602,7 +4509,7 @@ detaching ‘package:maps’
 > 
 > ### ** Examples
 > 
-> #' # A standard plot
+> # A standard plot
 > p <- ggplot(mpg, aes(displ, hwy)) +
 +   geom_point() +
 +   theme(axis.line = element_line())
@@ -4005,6 +4912,17 @@ List of 2
 > p + labs(colour = "Cylinders")
 > p + labs(x = "New x label")
 > 
+> # Set labels by variable name instead of aesthetic
+> p + labs(dict = c(
++   disp = "Displacment", # Not in use
++   cyl  = "Number of cylinders",
++   mpg  = "Miles per gallon",
++   wt   = "Weight (1000 lbs)"
++ ))
+Ignoring unknown labels:
+• dict : "c(disp = \"Displacment\", cyl = \"Number of cylinders\", mpg =
+  \"Miles per gallon\", wt = \"Weight (1000 lbs)\")"
+> 
 > # The plot title appears at the top-left, with the subtitle
 > # display in smaller text underneath it
 > p + labs(title = "New plot title")
@@ -4080,13 +4998,14 @@ List of 2
  Limits:   -5 --   -1
 > ggplot2:::limits(c("A", "b", "c"), "x")
 <ggproto object: Class ScaleDiscretePosition, ScaleDiscrete, Scale, gg>
-    aesthetics: x xmin xmax xend
+    aesthetics: x xmin xmax xend xintercept xmin_final xmax_final xlower ...
     axis_order: function
     break_info: function
     break_positions: function
     breaks: waiver
     call: environment
     clone: function
+    continuous_limits: NULL
     dimension: function
     drop: TRUE
     expand: waiver
@@ -4104,6 +5023,7 @@ List of 2
     make_title: function
     map: function
     map_df: function
+    minor_breaks: waiver
     n.breaks.cache: NULL
     na.translate: TRUE
     na.value: NA
@@ -4115,6 +5035,7 @@ List of 2
     range_c: environment
     rescale: function
     reset: function
+    sec_name: function
     train: function
     train_df: function
     transform: function
@@ -4146,11 +5067,12 @@ List of 2
     make_title: function
     map: function
     map_df: function
+    minor_breaks: waiver
     n.breaks.cache: NULL
     na.translate: TRUE
     na.value: grey50
     name: waiver
-    palette: function
+    palette: NULL
     palette.cache: NULL
     position: left
     range: environment
@@ -4249,6 +5171,72 @@ Warning: Removed 30 rows containing missing values or values outside the scale r
 > 
 > 
 > cleanEx()
+> nameEx("make_constructor")
+> ### * make_constructor
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: make_constructor
+> ### Title: Produce boilerplate constructors
+> ### Aliases: make_constructor make_constructor.Geom make_constructor.Stat
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> # For testing purposes, a geom that returns grobs
+> GeomTest <- ggproto(
++   "GeomTest", Geom,
++   draw_group = function(..., grob = grid::pointsGrob()) {
++     return(grob)
++   }
++ )
+> # Creating a constructor
+> geom_test <- make_constructor(GeomTest)
+> 
+> # Note that `grob` is automatically an argument to the function
+> names(formals(geom_test))
+[1] "mapping"     "data"        "stat"        "position"    "..."        
+[6] "grob"        "na.rm"       "show.legend" "inherit.aes"
+> 
+> # Use in a plot
+> set.seed(1234)
+> p <- ggplot(mtcars, aes(disp, mpg))
+> p + geom_test()
+> p + geom_test(grob = grid::circleGrob())
+> 
+> # The `checks` argument can be used to evaluate arbitrary expressions in
+> # the constructor before building the layer.
+> geom_path2 <- make_constructor(
++   GeomPath, checks = rlang::exprs(
++     match.arg(lineend, c("butt", "round", "square")),
++     match.arg(linejoin, c("round", "mitre", "bevel"))
++   )
++ )
+> 
+> # Note the inclusion of the expressions
+> print(geom_path2)
+function (mapping = NULL, data = NULL, stat = "identity", position = "identity", 
+    ..., arrow = NULL, arrow.fill = NULL, lineend = "butt", linejoin = "round", 
+    linemitre = 10, na.rm = FALSE, show.legend = NA, inherit.aes = TRUE) 
+{
+    match.arg(lineend, c("butt", "round", "square"))
+    match.arg(linejoin, c("round", "mitre", "bevel"))
+    layer(mapping = mapping, data = data, geom = "path", stat = stat, 
+        position = position, show.legend = show.legend, inherit.aes = inherit.aes, 
+        params = list2(na.rm = na.rm, arrow = arrow, arrow.fill = arrow.fill, 
+            lineend = lineend, linejoin = linejoin, linemitre = linemitre, 
+            ...))
+}
+<environment: 0x55c770440560>
+> 
+> # Argument mismatch is detected
+> try(geom_path2(linejoin = "foo"))
+Error in match.arg(linejoin, c("round", "mitre", "bevel")) : 
+  'arg' should be one of “round”, “mitre”, “bevel”
+> 
+> 
+> 
+> cleanEx()
 > nameEx("map_data")
 > ### * map_data
 > 
@@ -4314,8 +5302,7 @@ detaching ‘package:maps’
 > 
 > ### Name: merge_element
 > ### Title: Merge a parent element into a child element
-> ### Aliases: merge_element merge_element.default
-> ###   merge_element.element_blank merge_element.element
+> ### Aliases: merge_element
 > ### Keywords: internal
 > 
 > ### ** Examples
@@ -4325,19 +5312,21 @@ detaching ‘package:maps’
 > 
 > # Adopt size but ignore colour
 > merge_element(new, old)
-List of 11
- $ family       : NULL
- $ face         : NULL
- $ colour       : chr "red"
- $ size         : num 10
- $ hjust        : NULL
- $ vjust        : NULL
- $ angle        : NULL
- $ lineheight   : NULL
- $ margin       : NULL
- $ debug        : NULL
- $ inherit.blank: logi FALSE
- - attr(*, "class")= chr [1:2] "element_text" "element"
+<ggplot2::element_text>
+ @ family       : NULL
+ @ face         : NULL
+ @ italic       : chr NA
+ @ fontweight   : num NA
+ @ fontwidth    : num NA
+ @ colour       : chr "red"
+ @ size         : num 10
+ @ hjust        : NULL
+ @ vjust        : NULL
+ @ angle        : NULL
+ @ lineheight   : NULL
+ @ margin       : NULL
+ @ debug        : NULL
+ @ inherit.blank: logi FALSE
 > 
 > 
 > 
@@ -4443,7 +5432,7 @@ Warning: Width not defined
 +   geom_jitter(position = position_jitter(width = 0.1, height = 0.1))
 > 
 > # Create a jitter object for reproducible jitter:
-> jitter <- position_jitter(width = 0.1, height = 0.1)
+> jitter <- position_jitter(width = 0.1, height = 0.1, seed = 0)
 > ggplot(mtcars, aes(am, vs)) +
 +   geom_point(position = jitter) +
 +   geom_point(position = jitter, color = "red", aes(am + 0.2, vs + 0.2))
@@ -4499,6 +5488,11 @@ Warning: Width not defined
 > ggplot(df, aes(x, y)) +
 +   geom_point() +
 +   geom_text(aes(label = y), nudge_y = -0.1)
+> 
+> # For each text individually
+> ggplot(df, aes(x, y)) +
++   geom_point() +
++   geom_text(aes(label = y, nudge_y = c(-0.1, 0.1, -0.1, 0.1)))
 > 
 > 
 > 
@@ -4586,14 +5580,12 @@ Warning: Width not defined
 > 
 > # Negative values -----------------------------------------------------------
 > 
-> df <- tibble::tribble(
-+   ~x, ~y, ~grp,
-+   "a", 1,  "x",
-+   "a", 2,  "y",
-+   "b", 1,  "x",
-+   "b", 3,  "y",
-+   "b", -1, "y"
+> df <- data.frame(
++   x = rep(c("a", "b"), 2:3),
++   y = c(1, 2, 1, 3, -1),
++   grp = c("x", "y", "x", "y", "y")
 + )
+> 
 > ggplot(data = df, aes(x, y, group = grp)) +
 +   geom_col(aes(fill = grp), position = position_stack(reverse = TRUE)) +
 +   geom_hline(yintercept = 0)
@@ -4618,20 +5610,17 @@ Warning: Width not defined
 > 
 > ### ** Examples
 > 
-> colours <- list(~class, ~drv, ~fl)
+> colours <- c("class", "drv", "fl")
 > 
 > # Doesn't seem to do anything!
 > for (colour in colours) {
-+   ggplot(mpg, aes_(~ displ, ~ hwy, colour = colour)) +
++   ggplot(mpg, aes(displ, hwy, colour = .data[[colour]])) +
 +     geom_point()
 + }
-Warning: `aes_()` was deprecated in ggplot2 3.0.0.
-ℹ Please use tidy evaluation idioms with `aes()`
 > 
-> # Works when we explicitly print the plots
 > for (colour in colours) {
-+   print(ggplot(mpg, aes_(~ displ, ~ hwy, colour = colour)) +
-+     geom_point())
++   print(ggplot(mpg, aes(displ, hwy, colour = .data[[colour]])) +
++           geom_point())
 + }
 > 
 > 
@@ -4722,7 +5711,7 @@ Warning: `qplot()` was deprecated in ggplot2 3.4.0.
 > # plot panels. To do so, it registers a new theme element `ggxyz.panel.annotation`
 > register_theme_elements(
 +   ggxyz.panel.annotation = element_text(color = "blue", hjust = 0.95, vjust = 0.05),
-+   element_tree = list(ggxyz.panel.annotation = el_def("element_text", "text"))
++   element_tree = list(ggxyz.panel.annotation = el_def(element_text, "text"))
 + )
 > 
 > # Now the package can define a new coord that includes a panel annotation
@@ -4882,26 +5871,28 @@ Warning: `qplot()` was deprecated in ggplot2 3.4.0.
 > 
 > ### ** Examples
 > 
-> v <- ggplot(faithfuld, aes(waiting, eruptions, fill = density)) +
-+ geom_tile()
-> v
+> # A standard plot
+> p <- ggplot(mpg, aes(displ, hwy, colour = cty)) +
++   geom_point()
 > 
-> v + scale_fill_continuous(type = "gradient")
-> v + scale_fill_continuous(type = "viridis")
+> # You can use the scale to give a palette directly
+> p + scale_colour_continuous(palette = c("#FEE0D2", "#FC9272", "#DE2D26"))
 > 
-> # The above are equivalent to
-> v + scale_fill_gradient()
-> v + scale_fill_viridis_c()
+> # The default colours are encoded into the theme
+> p + theme(palette.colour.continuous = c("#DEEBF7", "#9ECAE1", "#3182BD"))
 > 
-> # To make a binned version of this plot
-> v + scale_fill_binned(type = "viridis")
+> # You can globally set default colour palette via the theme
+> old <- update_theme(palette.colour.continuous = c("#E5F5E0", "#A1D99B", "#31A354"))
 > 
-> # Set a different default scale using the options
-> # mechanism
-> tmp <- getOption("ggplot2.continuous.fill") # store current setting
-> options(ggplot2.continuous.fill = scale_fill_distiller)
-> v
-> options(ggplot2.continuous.fill = tmp) # restore previous setting
+> # Plot now shows new global default
+> p
+> 
+> # The default binned colour scale uses the continuous palette
+> p + scale_colour_binned() +
++   theme(palette.colour.continuous = c("#EFEDF5", "#BCBDDC", "#756BB1"))
+> 
+> # Restoring the previous theme
+> theme_set(old)
 > 
 > 
 > 
@@ -4917,41 +5908,24 @@ Warning: `qplot()` was deprecated in ggplot2 3.4.0.
 > 
 > ### ** Examples
 > 
-> # Template function for creating densities grouped by a variable
-> cty_by_var <- function(var) {
-+   ggplot(mpg, aes(cty, colour = factor({{var}}), fill = factor({{var}}))) +
-+     geom_density(alpha = 0.2)
-+ }
+> # A standard plot
+> p <- ggplot(mpg, aes(displ, hwy, colour = class)) +
++   geom_point()
 > 
-> # The default, scale_fill_hue(), is not colour-blind safe
-> cty_by_var(class)
+> # You can use the scale to give a palette directly
+> p + scale_colour_discrete(palette = scales::pal_brewer(palette = "Dark2"))
 > 
-> # (Temporarily) set the default to Okabe-Ito (which is colour-blind safe)
-> okabe <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-> withr::with_options(
-+   list(ggplot2.discrete.fill = okabe),
-+   print(cty_by_var(class))
-+ )
+> # The default colours are encoded into the theme
+> p + theme(palette.colour.discrete = scales::pal_grey())
 > 
-> # Define a collection of palettes to alter the default based on number of levels to encode
-> discrete_palettes <- list(
-+   c("skyblue", "orange"),
-+   RColorBrewer::brewer.pal(3, "Set2"),
-+   RColorBrewer::brewer.pal(6, "Accent")
-+ )
-> withr::with_options(
-+   list(ggplot2.discrete.fill = discrete_palettes), {
-+   # 1st palette is used when there 1-2 levels (e.g., year)
-+   print(cty_by_var(year))
-+   # 2nd palette is used when there are 3 levels
-+   print(cty_by_var(drv))
-+   # 3rd palette is used when there are 4-6 levels
-+   print(cty_by_var(fl))
-+ })
-Warning: Groups with fewer than two data points have been dropped.
-Warning in max(ids, na.rm = TRUE) :
-  no non-missing arguments to max; returning -Inf
+> # You can globally set default colour palette via the theme
+> old <- update_theme(palette.colour.discrete = scales::pal_viridis())
 > 
+> # Plot now shows new global default
+> p
+> 
+> # Restoring the previous theme
+> theme_set(old)
 > 
 > 
 > 
@@ -5128,6 +6102,14 @@ Warning: Removed 22 rows containing missing values or values outside the scale r
 > ggplot(df, aes(x, y)) +
 +   geom_point(aes(colour = z1)) +
 +   scale_colour_gradientn(colours = terrain.colors(10))
+> 
+> # The gradientn scale can be centered by using a rescaler
+> ggplot(df, aes(x, y)) +
++   geom_point(aes(colour = z1)) +
++   scale_colour_gradientn(
++     colours = c("blue", "dodgerblue", "white", "orange", "red"),
++     rescaler = ~ scales::rescale_mid(.x, mid = 0)
++   )
 > 
 > # Equivalent fill scales do the same job for the fill aesthetic
 > ggplot(faithfuld, aes(waiting, eruptions)) +
@@ -5673,6 +6655,33 @@ Warning: Using shapes for an ordinal variable is not advised
 > 
 > 
 > cleanEx()
+> nameEx("stat_connect")
+> ### * stat_connect
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: stat_connect
+> ### Title: Connect observations
+> ### Aliases: stat_connect
+> 
+> ### ** Examples
+> 
+> ggplot(head(economics, 20), aes(date, unemploy)) +
++   stat_connect(connection = "hv")
+> 
+> # Setup custom connections
+> x <- seq(0, 1, length.out = 20)[-1]
+> smooth <- cbind(x, scales::rescale(1 / (1 + exp(-(x * 10 - 5)))))
+> zigzag <- cbind(c(0.4, 0.6, 1), c(0.75, 0.25, 1))
+> 
+> ggplot(head(economics, 10), aes(date, unemploy)) +
++   geom_point() +
++   stat_connect(aes(colour = "zigzag"), connection = zigzag) +
++   stat_connect(aes(colour = "smooth"), connection = smooth)
+> 
+> 
+> 
+> cleanEx()
 > nameEx("stat_ecdf")
 > ### * stat_ecdf
 > 
@@ -5699,6 +6708,17 @@ Warning: Using shapes for an ordinal variable is not advised
 > # Multiple ECDFs
 > ggplot(df, aes(x, colour = g)) +
 +   stat_ecdf()
+> 
+> # Using weighted eCDF
+> weighted <- data.frame(x = 1:10, weights = c(1:5, 5:1))
+> plain <- data.frame(x = rep(weighted$x, weighted$weights))
+> 
+> ggplot(plain, aes(x)) +
++   stat_ecdf(linewidth = 1) +
++   stat_ecdf(
++     aes(weight = weights),
++     data = weighted, colour = "green"
++   )
 > 
 > 
 > 
@@ -5756,6 +6776,84 @@ Warning: Using shapes for an ordinal variable is not advised
 > 
 > 
 > cleanEx()
+> nameEx("stat_manual")
+> ### * stat_manual
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: stat_manual
+> ### Title: Manually compute transformations
+> ### Aliases: stat_manual
+> 
+> ### ** Examples
+> 
+> # A standard scatterplot
+> p <- ggplot(mtcars, aes(disp, mpg, colour = factor(cyl))) +
++   geom_point()
+> 
+> # The default just displays points as-is
+> p + stat_manual()
+> 
+> # Using a custom function
+> make_hull <- function(data) {
++   hull <- chull(x = data$x, y = data$y)
++   data.frame(x = data$x[hull], y = data$y[hull])
++ }
+> 
+> p + stat_manual(
++   geom = "polygon",
++   fun  = make_hull,
++   fill = NA
++ )
+> 
+> # Using the `with` function with quoting
+> p + stat_manual(
++   fun  = with,
++   args = list(expr = quote({
++     hull <- chull(x, y)
++     list(x = x[hull], y = y[hull])
++   })),
++   geom = "polygon", fill = NA
++ )
+> 
+> # Using the `transform` function with quoting
+> p + stat_manual(
++   geom = "segment",
++   fun  = transform,
++   args = list(
++     xend = quote(mean(x)),
++     yend = quote(mean(y))
++   )
++ )
+> 
+> # Using dplyr verbs with `vars()`
+> if (requireNamespace("dplyr", quietly = TRUE)) {
++ 
++   # Get centroids with `summarise()`
++   p + stat_manual(
++     size = 10, shape = 21,
++     fun  = dplyr::summarise,
++     args = vars(x = mean(x), y = mean(y))
++   )
++ 
++   # Connect to centroid with `mutate`
++   p + stat_manual(
++     geom = "segment",
++     fun  = dplyr::mutate,
++     args = vars(xend = mean(x), yend = mean(y))
++   )
++ 
++   # Computing hull with `reframe()`
++   p + stat_manual(
++     geom = "polygon", fill = NA,
++     fun  = dplyr::reframe,
++     args = vars(hull = chull(x, y), x = x[hull], y = y[hull])
++   )
++ }
+> 
+> 
+> 
+> cleanEx()
 > nameEx("stat_sf_coordinates")
 > ### * stat_sf_coordinates
 > 
@@ -5791,6 +6889,10 @@ Geometry type: MULTIPOLYGON
 Dimension:     XY
 Bounding box:  xmin: -84.32385 ymin: 33.88199 xmax: -75.45698 ymax: 36.58965
 Geodetic CRS:  NAD27
+Warning: `geom_errobarh()` was deprecated in ggplot2 4.0.0.
+ℹ Please use the `orientation` argument of `geom_errorbar()` instead.
+Warning in geom_errorbar(..., orientation = orientation) :
+  Ignoring unknown aesthetics: height
 Warning in st_point_on_surface.sfc(sf::st_zm(x)) :
   st_point_on_surface may not give correct results for longitude/latitude data
 > 
@@ -5852,7 +6954,7 @@ Warning in st_point_on_surface.sfc(sf::st_zm(x)) :
 > d + stat_summary_2d()
 > 
 > # Specifying function
-> d + stat_summary_2d(fun = function(x) sum(x^2))
+> d + stat_summary_2d(fun = \(x) sum(x^2))
 > d + stat_summary_2d(fun = ~ sum(.x^2))
 > d + stat_summary_2d(fun = var)
 > d + stat_summary_2d(fun = "quantile", fun.args = list(probs = 0.1))
@@ -5884,6 +6986,46 @@ Warning in st_point_on_surface.sfc(sf::st_zm(x)) :
 > 
 > 
 > cleanEx()
+> nameEx("subtheme")
+> ### * subtheme
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: subtheme
+> ### Title: Shortcuts for theme settings
+> ### Aliases: subtheme theme_sub_axis theme_sub_axis_x theme_sub_axis_y
+> ###   theme_sub_axis_bottom theme_sub_axis_top theme_sub_axis_left
+> ###   theme_sub_axis_right theme_sub_legend theme_sub_panel theme_sub_plot
+> ###   theme_sub_strip
+> 
+> ### ** Examples
+> 
+> # A standard plot
+> p <- ggplot(mtcars, aes(disp, mpg, colour = drat)) +
++   geom_point()
+> 
+> red_text <- element_text(colour = "red")
+> red_line <- element_line(colour = "red")
+> 
+> # The theme settings below:
+> p + theme(
++   axis.title.x.bottom = red_text,
++   axis.text.x.bottom  = red_text,
++   axis.line.x.bottom  = red_line,
++   axis.ticks.x.bottom = red_line
++ )
+> 
+> # Are equivalent to these less verbose theme settings
+> p + theme_sub_axis_bottom(
++   title = red_text,
++   text  = red_text,
++   line  = red_line,
++   ticks = red_line
++ )
+> 
+> 
+> 
+> cleanEx()
 > nameEx("summarise_plot")
 > ### * summarise_plot
 > 
@@ -5904,16 +7046,22 @@ Warning in st_point_on_surface.sfc(sf::st_zm(x)) :
 > b <- ggplot_build(p)
 > 
 > summarise_layout(b)
-# A tibble: 7 × 10
-  panel   row   col vars          xmin  xmax  ymin  ymax xscale     yscale    
-  <fct> <int> <int> <list>       <dbl> <dbl> <dbl> <dbl> <list>     <list>    
-1 1         1     1 <named list>  1.33  7.27  10.4  45.6 <SclCntnP> <SclCntnP>
-2 2         1     2 <named list>  1.33  7.27  10.4  45.6 <SclCntnP> <SclCntnP>
-3 3         1     3 <named list>  1.33  7.27  10.4  45.6 <SclCntnP> <SclCntnP>
-4 4         2     1 <named list>  1.33  7.27  10.4  45.6 <SclCntnP> <SclCntnP>
-5 5         2     2 <named list>  1.33  7.27  10.4  45.6 <SclCntnP> <SclCntnP>
-6 6         2     3 <named list>  1.33  7.27  10.4  45.6 <SclCntnP> <SclCntnP>
-7 7         3     1 <named list>  1.33  7.27  10.4  45.6 <SclCntnP> <SclCntnP>
+  panel row col       vars xmin xmax ymin ymax                        xscale
+1     1   1   1    2seater 1.33 7.27 10.4 45.6 <environment: 0x55c773486398>
+2     2   1   2    compact 1.33 7.27 10.4 45.6 <environment: 0x55c773486398>
+3     3   1   3    midsize 1.33 7.27 10.4 45.6 <environment: 0x55c773486398>
+4     4   2   1    minivan 1.33 7.27 10.4 45.6 <environment: 0x55c773486398>
+5     5   2   2     pickup 1.33 7.27 10.4 45.6 <environment: 0x55c773486398>
+6     6   2   3 subcompact 1.33 7.27 10.4 45.6 <environment: 0x55c773486398>
+7     7   3   1        suv 1.33 7.27 10.4 45.6 <environment: 0x55c773486398>
+                         yscale
+1 <environment: 0x55c7732e5468>
+2 <environment: 0x55c7732e5468>
+3 <environment: 0x55c7732e5468>
+4 <environment: 0x55c7732e5468>
+5 <environment: 0x55c7732e5468>
+6 <environment: 0x55c7732e5468>
+7 <environment: 0x55c7732e5468>
 > summarise_coord(b)
 $xlog
 [1] NA
@@ -5925,53 +7073,9 @@ $flip
 [1] FALSE
 
 > summarise_layers(b)
-# A tibble: 1 × 1
-  mapping         
-  <list>          
-1 <named list [2]>
+       mapping
+1 ~displ, ~hwy
 > 
-> 
-> 
-> 
-> cleanEx()
-> nameEx("summary.ggplot")
-> ### * summary.ggplot
-> 
-> flush(stderr()); flush(stdout())
-> 
-> ### Name: summary.ggplot
-> ### Title: Displays a useful description of a ggplot object
-> ### Aliases: summary.ggplot
-> ### Keywords: internal
-> 
-> ### ** Examples
-> 
-> p <- ggplot(mtcars, aes(mpg, wt)) +
-+   geom_point()
-> summary(p)
-data: mpg, cyl, disp, hp, drat, wt, qsec, vs, am, gear, carb [32x11]
-mapping:  x = ~mpg, y = ~wt
-faceting: <ggproto object: Class FacetNull, Facet, gg>
-    compute_layout: function
-    draw_back: function
-    draw_front: function
-    draw_labels: function
-    draw_panels: function
-    finish_data: function
-    init_scales: function
-    map_data: function
-    params: list
-    setup_data: function
-    setup_params: function
-    shrink: TRUE
-    train_scales: function
-    vars: function
-    super:  <ggproto object: Class FacetNull, Facet, gg>
------------------------------------
-geom_point: na.rm = FALSE
-stat_identity: na.rm = FALSE
-position_identity 
-
 > 
 > 
 > 
@@ -5999,7 +7103,7 @@ position_identity
 > # Panels --------------------------------------------------------------------
 > 
 > p1 + theme(panel.background = element_rect(fill = "white", colour = "grey50"))
-> p1 + theme(panel.border = element_rect(linetype = "dashed", fill = NA))
+> p1 + theme(panel.border = element_rect(linetype = "dashed"))
 > p1 + theme(panel.grid.major = element_line(colour = "black"))
 > p1 + theme(
 +   panel.grid.major.y = element_blank(),
@@ -6028,87 +7132,6 @@ position_identity
 +   axis.ticks.length.x = unit(-.25, "cm"),
 +   axis.text.x = element_text(margin = margin(t = .3, unit = "cm"))
 + )
-> 
-> 
-> 
-> 
-> cleanEx()
-> nameEx("theme_get")
-> ### * theme_get
-> 
-> flush(stderr()); flush(stdout())
-> 
-> ### Name: theme_get
-> ### Title: Get, set, and modify the active theme
-> ### Aliases: theme_get theme_set theme_update theme_replace %+replace%
-> 
-> ### ** Examples
-> 
-> p <- ggplot(mtcars, aes(mpg, wt)) +
-+   geom_point()
-> p
-> 
-> # Use theme_set() to completely override the current theme.
-> # theme_update() and theme_replace() are similar except they
-> # apply directly to the current/active theme.
-> # theme_update() modifies a particular element of the current theme.
-> # Here we have the old theme so we can later restore it.
-> # Note that the theme is applied when the plot is drawn, not
-> # when it is created.
-> old <- theme_set(theme_bw())
-> p
-> 
-> theme_set(old)
-> theme_update(panel.grid.minor = element_line(colour = "red"))
-> p
-> 
-> theme_set(old)
-> theme_replace(panel.grid.minor = element_line(colour = "red"))
-> p
-> 
-> theme_set(old)
-> p
-> 
-> 
-> # Modifying theme objects -----------------------------------------
-> # You can use + and %+replace% to modify a theme object.
-> # They differ in how they deal with missing arguments in
-> # the theme elements.
-> 
-> add_el <- theme_grey() +
-+   theme(text = element_text(family = "Times"))
-> add_el$text
-List of 11
- $ family       : chr "Times"
- $ face         : chr "plain"
- $ colour       : chr "black"
- $ size         : num 11
- $ hjust        : num 0.5
- $ vjust        : num 0.5
- $ angle        : num 0
- $ lineheight   : num 0.9
- $ margin       : 'margin' num [1:4] 0points 0points 0points 0points
-  ..- attr(*, "unit")= int 8
- $ debug        : logi FALSE
- $ inherit.blank: logi FALSE
- - attr(*, "class")= chr [1:2] "element_text" "element"
-> 
-> rep_el <- theme_grey() %+replace%
-+   theme(text = element_text(family = "Times"))
-> rep_el$text
-List of 11
- $ family       : chr "Times"
- $ face         : NULL
- $ colour       : NULL
- $ size         : NULL
- $ hjust        : NULL
- $ vjust        : NULL
- $ angle        : NULL
- $ lineheight   : NULL
- $ margin       : NULL
- $ debug        : NULL
- $ inherit.blank: logi FALSE
- - attr(*, "class")= chr [1:2] "element_text" "element"
 > 
 > 
 > 
@@ -6143,7 +7166,8 @@ List of 11
 > 
 > ### Name: update_geom_defaults
 > ### Title: Modify geom/stat aesthetic defaults for future plots
-> ### Aliases: update_geom_defaults update_stat_defaults
+> ### Aliases: update_geom_defaults update_stat_defaults reset_geom_defaults
+> ###   reset_stat_defaults
 > ### Keywords: internal
 > 
 > ### ** Examples
@@ -6153,26 +7177,28 @@ List of 11
 > # example: change geom_point()'s default color
 > GeomPoint$default_aes
 Aesthetic mapping: 
-* `shape`  -> 19
-* `colour` -> "black"
-* `size`   -> 1.5
-* `fill`   -> NA
+* `shape`  -> `from_theme(pointshape)`
+* `colour` -> `from_theme(colour %||% ink)`
+* `fill`   -> `from_theme(fill %||% NA)`
+* `size`   -> `from_theme(pointsize)`
 * `alpha`  -> NA
-* `stroke` -> 0.5
+* `stroke` -> `from_theme(borderwidth)`
 > update_geom_defaults("point", aes(color = "red"))
 > GeomPoint$default_aes
 Aesthetic mapping: 
-* `shape`  -> 19
+* `shape`  -> `from_theme(pointshape)`
 * `colour` -> "red"
-* `size`   -> 1.5
-* `fill`   -> NA
+* `fill`   -> `from_theme(fill %||% NA)`
+* `size`   -> `from_theme(pointsize)`
 * `alpha`  -> NA
-* `stroke` -> 0.5
+* `stroke` -> `from_theme(borderwidth)`
 > ggplot(mtcars, aes(mpg, wt)) + geom_point()
 > 
-> # reset default
-> update_geom_defaults("point", aes(color = "black"))
+> # reset single default
+> update_geom_defaults("point", NULL)
 > 
+> # reset all defaults
+> reset_geom_defaults()
 > 
 > # updating a stat's default aesthetic settings
 > # example: change stat_bin()'s default y-axis to the density scale
@@ -6190,11 +7216,43 @@ Aesthetic mapping:
 > ggplot(data.frame(x = rnorm(1e3)), aes(x)) +
 +   geom_histogram() +
 +   geom_function(fun = dnorm, color = "red")
-`stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+`stat_bin()` using `bins = 30`. Pick better value `binwidth`.
 > 
-> # reset default
-> update_stat_defaults("bin", aes(y = after_stat(count)))
+> # reset single default
+> update_stat_defaults("bin", NULL)
 > 
+> # reset all defaults
+> reset_stat_defaults()
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("update_ggplot")
+> ### * update_ggplot
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: update_ggplot
+> ### Title: Add custom objects to ggplot
+> ### Aliases: update_ggplot ggplot_add
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> # making a new method for the generic
+> # in this example, we enable adding text elements
+> S7::method(update_ggplot, list(element_text, class_ggplot)) <-
++   function(object, plot, ...) {
++     plot + theme(text = object)
++   }
+> 
+> # we can now use `+` to add our object to a plot
+> ggplot(mpg, aes(displ, cty)) +
++   geom_point() +
++   element_text(colour = "red")
+> 
+> # clean-up
 > 
 > 
 > 
@@ -6216,6 +7274,8 @@ Aesthetic mapping:
 > update_labels(p, list(x = expression(x / y ^ 2)))
 > update_labels(p, list(x = "New x", y = "New Y"))
 > update_labels(p, list(colour = "Fail silently"))
+Ignoring unknown labels:
+• colour : "Fail silently"
 > 
 > 
 > 
@@ -6272,7 +7332,7 @@ Aesthetic mapping:
 > cleanEx()
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  68.244 3.506 68.342 0 0 
+Time elapsed:  91.931 3.51 92.055 0 0 
 > grDevices::dev.off()
 null device 
           1 

@@ -37,7 +37,7 @@ Type 'q()' to quit R.
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (all(insight::check_if_installed(c("bayestestR", "rstanarm", "gamm4"), quietly = TRUE))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (all(insight::check_if_installed(c("bayestestR", "rstanarm", "gamm4"), quietly = TRUE))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + adjusted_all <- adjust(attitude)
 + head(adjusted_all)
@@ -103,6 +103,142 @@ Type 'q()' to quit R.
 > points(adjusted_icpt$V1, adjusted_icpt$V2, pch = 19, col = "red")
 > abline(lm(V2 ~ V1, data = adjusted_icpt), col = "red")
 > ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("as.prop.table")
+> ### * as.prop.table
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: as.prop.table
+> ### Title: Convert a crosstable to a frequency or a propensity table
+> ### Aliases: as.prop.table as.prop.table.datawizard_crosstab
+> ###   as.data.frame.datawizard_tables as.table.datawizard_table
+> 
+> ### ** Examples
+> 
+> data(efc)
+> 
+> # Some cross tabulation
+> cross <- data_tabulate(efc, select = "e42dep", by = "c172code", proportions = "row")
+> cross
+e42dep | low level of education | intermediate level of education
+-------+------------------------+--------------------------------
+1      |              0  (0.0%) |                      2 (100.0%)
+2      |              0  (0.0%) |                      4 (100.0%)
+3      |              4 (14.3%) |                     16  (57.1%)
+4      |              4  (6.3%) |                     42  (66.7%)
+<NA>   |              0  (0.0%) |                      2  (66.7%)
+-------+------------------------+--------------------------------
+Total  |                      8 |                              66
+
+e42dep | high level of education |      <NA> | Total
+-------+-------------------------+-----------+------
+1      |               0  (0.0%) | 0  (0.0%) |     2
+2      |               0  (0.0%) | 0  (0.0%) |     4
+3      |               6 (21.4%) | 2  (7.1%) |    28
+4      |              10 (15.9%) | 7 (11.1%) |    63
+<NA>   |               0  (0.0%) | 1 (33.3%) |     3
+-------+-------------------------+-----------+------
+Total  |                      16 |        10 |   100
+> 
+> # Convert to a propensity table
+> as.prop.table(cross)
+Removing NA values from frequency table.
+[[1]]
+  low level of education intermediate level of education
+1             0.00000000                      1.00000000
+2             0.00000000                      1.00000000
+3             0.14285714                      0.57142857
+4             0.06349206                      0.66666667
+  high level of education
+1              0.00000000
+2              0.00000000
+3              0.21428571
+4              0.15873016
+
+> 
+> # Convert to data.frame
+> result <- data_tabulate(efc, "c172code", by = "e16sex")
+> as.data.frame(result)
+       var        table
+1 c172code c(1, 2, ....
+> as.data.frame(result)$table
+[[1]]
+  c172code male female NA
+1        1    5      3  0
+2        2   32     34  0
+3        3    4     12  0
+4     <NA>    5      5  0
+
+> as.data.frame(result, add_total = TRUE)$table
+[[1]]
+  c172code male female <NA> Total
+1        1    5      3    0     8
+2        2   32     34    0    66
+3        3    4     12    0    16
+4     <NA>    5      5    0    10
+5    Total   46     54    0   100
+
+> 
+> # Convert to a table that can be passed to chisq.test()
+> 
+> out <- data_tabulate(efc, "c172code", by = "e16sex")
+> # we need to simplify the output, else we get a list of tables
+> tbl <- as.table(out, simplify = TRUE)
+Removing NA values from frequency table.
+> tbl
+  male female
+1    5      3
+2   32     34
+3    4     12
+> suppressWarnings(chisq.test(tbl))
+
+	Pearson's Chi-squared test
+
+data:  tbl
+X-squared = 3.8802, df = 2, p-value = 0.1437
+
+> 
+> # apply chisq.test to each table
+> out <- data_tabulate(efc, c("c172code", "e16sex"))
+> suppressWarnings(lapply(as.table(out), chisq.test))
+Removing NA values from frequency table.
+[[1]]
+
+	Chi-squared test for given probabilities
+
+data:  X[[i]]
+X-squared = 65.867, df = 2, p-value = 4.98e-15
+
+
+[[2]]
+
+	Chi-squared test for given probabilities
+
+data:  X[[i]]
+X-squared = 0.64, df = 1, p-value = 0.4237
+
+
+> 
+> # can also handle grouped data frames
+> d <- data_group(mtcars, "am")
+> x <- data_tabulate(d, "cyl", by = "gear")
+> as.table(x)
+$`am (0)`
+   3  4
+4  1  2
+6  2  2
+8 12  0
+
+$`am (1)`
+  4 5
+4 6 2
+6 2 1
+8 0 2
+
 > 
 > 
 > 
@@ -480,7 +616,7 @@ Levels: (10.4-15) (15.2-19.7) (21-24.4) (26-27.3) (30.4-33.9)
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (!identical(Sys.getenv("IN_PKGDOWN"), "true")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (!identical(Sys.getenv("IN_PKGDOWN"), "true")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + ## Don't show: 
 + }) # examplesIf
@@ -727,7 +863,7 @@ Error : The following column(s) don't exist in the dataset: foo.
 > 
 > ### Name: data_codebook
 > ### Title: Generate a codebook of a data frame.
-> ### Aliases: data_codebook print_html.data_codebook
+> ### Aliases: data_codebook print_html.data_codebook display.data_codebook
 > 
 > ### ** Examples
 > 
@@ -1061,7 +1197,7 @@ Volvo 142E            4 121.0 109 4.11 2.780 18.60  1  1    4    2
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (requireNamespace("poorman")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (requireNamespace("poorman")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + data(efc)
 + suppressPackageStartupMessages(library(poorman, quietly = TRUE))
@@ -2555,12 +2691,12 @@ am | gear | first |  last
 > ### Name: data_tabulate
 > ### Title: Create frequency and crosstables of variables
 > ### Aliases: data_tabulate data_tabulate.default data_tabulate.data.frame
-> ###   as.data.frame.datawizard_tables
+> ###   print.datawizard_table display.datawizard_table
 > 
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (requireNamespace("poorman")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (requireNamespace("poorman")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + # frequency tables -------
 + # ------------------------
@@ -2623,12 +2759,6 @@ am | gear | first |  last
 + # round percentages
 + out <- data_tabulate(efc, "c172code", by = "e16sex", proportions = "column")
 + print(out, digits = 0)
-+ 
-+ # coerce to data frames
-+ result <- data_tabulate(efc, "c172code", by = "e16sex")
-+ as.data.frame(result)
-+ as.data.frame(result)$table
-+ as.data.frame(result, add_total = TRUE)$table
 + ## Don't show: 
 + }) # examplesIf
 > data(efc)
@@ -2638,10 +2768,10 @@ carer's level of education (efc$c172code) <numeric>
 
 Value |  N | Raw % | Valid % | Cumulative %
 ------+----+-------+---------+-------------
-1     |  8 |  8.00 |    8.89 |         8.89
-2     | 66 | 66.00 |   73.33 |        82.22
-3     | 16 | 16.00 |   17.78 |       100.00
-<NA>  | 10 | 10.00 |    <NA> |         <NA>
+1     |  8 |     8 |    8.89 |         8.89
+2     | 66 |    66 |   73.33 |        82.22
+3     | 16 |    16 |   17.78 |       100.00
+<NA>  | 10 |    10 |    <NA> |         <NA>
 > data_tabulate(efc$c172code, remove_na = TRUE)
 carer's level of education (efc$c172code) <numeric>
 # total N=90 valid N=90
@@ -2657,21 +2787,21 @@ elder's dependency (e42dep) <categorical>
 
 Value |  N | Raw % | Valid % | Cumulative %
 ------+----+-------+---------+-------------
-1     |  2 |  2.00 |    2.06 |         2.06
-2     |  4 |  4.00 |    4.12 |         6.19
-3     | 28 | 28.00 |   28.87 |        35.05
-4     | 63 | 63.00 |   64.95 |       100.00
-<NA>  |  3 |  3.00 |    <NA> |         <NA>
+1     |  2 |     2 |    2.06 |         2.06
+2     |  4 |     4 |    4.12 |         6.19
+3     | 28 |    28 |   28.87 |        35.05
+4     | 63 |    63 |   64.95 |       100.00
+<NA>  |  3 |     3 |    <NA> |         <NA>
 
 carer's level of education (c172code) <numeric>
 # total N=100 valid N=90
 
 Value |  N | Raw % | Valid % | Cumulative %
 ------+----+-------+---------+-------------
-1     |  8 |  8.00 |    8.89 |         8.89
-2     | 66 | 66.00 |   73.33 |        82.22
-3     | 16 | 16.00 |   17.78 |       100.00
-<NA>  | 10 | 10.00 |    <NA> |         <NA>
+1     |  8 |     8 |    8.89 |         8.89
+2     | 66 |    66 |   73.33 |        82.22
+3     | 16 |    16 |   17.78 |       100.00
+<NA>  | 10 |    10 |    <NA> |         <NA>
 > suppressPackageStartupMessages(library(poorman, quietly = TRUE))
 > efc %>% group_by(c172code) %>% data_tabulate("e16sex")
 elder's gender (e16sex) <numeric>
@@ -2700,9 +2830,9 @@ Grouped by c172code (3)
 
 Value |  N | Raw % | Valid % | Cumulative %
 ------+----+-------+---------+-------------
-1     |  4 | 25.00 |   25.00 |        25.00
-2     | 12 | 75.00 |   75.00 |       100.00
-<NA>  |  0 |  0.00 |    <NA> |         <NA>
+1     |  4 |    25 |      25 |           25
+2     | 12 |    75 |      75 |          100
+<NA>  |  0 |     0 |    <NA> |         <NA>
 
 elder's gender (e16sex) <numeric>
 Grouped by c172code (NA)
@@ -2710,9 +2840,9 @@ Grouped by c172code (NA)
 
 Value | N | Raw % | Valid % | Cumulative %
 ------+---+-------+---------+-------------
-1     | 5 | 50.00 |   50.00 |        50.00
-2     | 5 | 50.00 |   50.00 |       100.00
-<NA>  | 0 |  0.00 |    <NA> |         <NA>
+1     | 5 |    50 |      50 |           50
+2     | 5 |    50 |      50 |          100
+<NA>  | 0 |     0 |    <NA> |         <NA>
 > efc %>% group_by(c172code) %>% data_tabulate("e16sex", collapse = TRUE)
 # Frequency Table
 
@@ -2726,13 +2856,13 @@ e16sex   |  c172code (2) |     1 | 32 | 48.48 |   48.48 |        48.48
          |               |     2 | 34 | 51.52 |   51.52 |       100.00
          |               |  <NA> |  0 |  0.00 |    <NA> |         <NA>
 ---------+---------------+-------+----+-------+---------+-------------
-e16sex   |  c172code (3) |     1 |  4 | 25.00 |   25.00 |        25.00
-         |               |     2 | 12 | 75.00 |   75.00 |       100.00
-         |               |  <NA> |  0 |  0.00 |    <NA> |         <NA>
+e16sex   |  c172code (3) |     1 |  4 |    25 |      25 |           25
+         |               |     2 | 12 |    75 |      75 |          100
+         |               |  <NA> |  0 |     0 |    <NA> |         <NA>
 ---------+---------------+-------+----+-------+---------+-------------
-e16sex   | c172code (NA) |     1 |  5 | 50.00 |   50.00 |        50.00
-         |               |     2 |  5 | 50.00 |   50.00 |       100.00
-         |               |  <NA> |  0 |  0.00 |    <NA> |         <NA>
+e16sex   | c172code (NA) |     1 |  5 |    50 |      50 |           50
+         |               |     2 |  5 |    50 |      50 |          100
+         |               |  <NA> |  0 |     0 |    <NA> |         <NA>
 ----------------------------------------------------------------------
 > set.seed(123)
 > x <- sample(1:3, 1e+06, TRUE)
@@ -2764,10 +2894,10 @@ elder's dependency (efc$e42dep) <categorical>
 
 Value |  N | Raw % | Valid % | Cumulative %
 ------+----+-------+---------+-------------
-1     |  3 |  2.86 |    3.00 |         3.00
-2     |  4 |  3.81 |    4.00 |         7.00
-3     | 26 | 24.76 |   26.00 |        33.00
-4     | 67 | 63.81 |   67.00 |       100.00
+1     |  3 |  2.86 |       3 |            3
+2     |  4 |  3.81 |       4 |            7
+3     | 26 | 24.76 |      26 |           33
+4     | 67 | 63.81 |      67 |          100
 <NA>  |  5 |  4.76 |    <NA> |         <NA>
 > set.seed(123)
 > efc$e16sex[sample.int(nrow(efc), 5)] <- NA
@@ -2816,27 +2946,6 @@ c172code |     male |   female |    <NA> | Total
 <NA>     |  5 (11%) |  5 (10%) | 0  (0%) |    10
 ---------+----------+----------+---------+------
 Total    |       44 |       51 |       5 |   100
-> result <- data_tabulate(efc, "c172code", by = "e16sex")
-> as.data.frame(result)
-       var        table
-1 c172code c(1, 2, ....
-> as.data.frame(result)$table
-[[1]]
-  c172code male female NA
-1        1    5      2  1
-2        2   30     34  2
-3        3    4     10  2
-4     <NA>    5      5  0
-
-> as.data.frame(result, add_total = TRUE)$table
-[[1]]
-  c172code male female <NA> Total
-1        1    5      2    1     8
-2        2   30     34    2    66
-3        3    4     10    2    16
-4     <NA>    5      5    0    10
-5    Total   44     51    5   100
-
 > ## End(Don't show)
 > 
 > 
@@ -2857,7 +2966,7 @@ detaching ‘package:poorman’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (all(insight::check_if_installed(c("psych", "tidyr"), quietly = TRUE))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (all(insight::check_if_installed(c("psych", "tidyr"), quietly = TRUE))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + wide_data <- setNames(
 +   data.frame(replicate(2, rnorm(8))),
@@ -3046,7 +3155,7 @@ detaching ‘package:poorman’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (requireNamespace("lme4", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (requireNamespace("lme4", quietly = TRUE)) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + data_long <- read.table(header = TRUE, text = "
 +  subject sex condition measurement
@@ -3097,6 +3206,27 @@ detaching ‘package:poorman’
 +   names_glue = "prod_{product}_{country}"
 + )
 + 
++ # reshaping multiple long columns into wide format. to avoid duplicate
++ # column names, new names are a combination of the old column names in
++ # `values_from` and the values from `names_from`
++ data_long <- read.table(header = TRUE, text = "
++ subject_id time score anxiety test
++          1    1    10       5   NA
++          1    2    NA       7   NA
++          2    1    15       6   NA
++          2    2    12      NA   NA
++          3    1    18       8   NA
++          5    2    11       4   NA
++          4    1    NA       5   NA
++          4    2    14      NA   NA")
++ 
++ data_to_wide(
++   data_long,
++   id_cols = "subject_id",
++   names_from = "time",
++   values_from = c("score", "anxiety", "test")
++ )
++ 
 + # using the "sleepstudy" dataset
 + data(sleepstudy, package = "lme4")
 + 
@@ -3138,16 +3268,6 @@ detaching ‘package:poorman’
 +   values_from = "Reaction",
 +   names_prefix = "Reaction_Day_"
 + )
-+ 
-+ # filling missing values with 0
-+ data_to_wide(
-+   d,
-+   id_cols = "Subject",
-+   names_from = "Days",
-+   values_from = "Reaction",
-+   names_prefix = "Reaction_Day_",
-+   values_fill = 0
-+ )
 + ## Don't show: 
 + }) # examplesIf
 > data_long <- read.table(header = TRUE, text = "\n subject sex condition measurement\n       1   M   control         7.9\n       1   M     cond1        12.3\n       1   M     cond2        10.7\n       2   F   control         6.3\n       2   F     cond1        10.6\n       2   F     cond2        11.1\n       3   F   control         9.5\n       3   F     cond1        13.1\n       3   F     cond2        13.8\n       4   M   control        11.5\n       4   M     cond1        13.4\n       4   M     cond2        12.9")
@@ -3188,6 +3308,15 @@ detaching ‘package:poorman’
 13 2012 -0.39428995 -0.05931340  1.1000254
 14 2013  0.76317575 -0.16452360 -0.2533617
 15 2014  0.69696338  0.55666320 -0.6887557
+> data_long <- read.table(header = TRUE, text = "\nsubject_id time score anxiety test\n         1    1    10       5   NA\n         1    2    NA       7   NA\n         2    1    15       6   NA\n         2    2    12      NA   NA\n         3    1    18       8   NA\n         5    2    11       4   NA\n         4    1    NA       5   NA\n         4    2    14      NA   NA")
+> data_to_wide(data_long, id_cols = "subject_id", names_from = "time", values_from = c("score", 
++     "anxiety", "test"))
+  subject_id score_1 score_2 anxiety_1 anxiety_2 test_1 test_2
+1          1      10      NA         5         7     NA     NA
+2          2      15      12         6        NA     NA     NA
+3          3      18      NA         8        NA     NA     NA
+4          5      NA      11        NA         4     NA     NA
+5          4      NA      14         5        NA     NA     NA
 > data(sleepstudy, package = "lme4")
 > head(sleepstudy)
   Reaction Days Subject
@@ -3328,20 +3457,6 @@ detaching ‘package:poorman’
 3             NA
 4             NA
 5             NA
-> data_to_wide(d, id_cols = "Subject", names_from = "Days", values_from = "Reaction", 
-+     names_prefix = "Reaction_Day_", values_fill = 0)
-  Subject Reaction_Day_0 Reaction_Day_1 Reaction_Day_2 Reaction_Day_3
-1     308       249.5600       258.7047       250.8006       321.4398
-2     309       222.7339       205.2658       202.9778       204.7070
-3     310       199.0539       194.3322       234.3200         0.0000
-4     330       321.5426       300.4002         0.0000         0.0000
-5     331       287.6079         0.0000         0.0000         0.0000
-  Reaction_Day_4
-1       356.8519
-2         0.0000
-3         0.0000
-4         0.0000
-5         0.0000
 > ## End(Don't show)
 > 
 > 
@@ -3549,7 +3664,7 @@ Categorical predictors (binary, Species) have been coerced to numeric
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (require("bayestestR", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (require("bayestestR", quietly = TRUE)) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + describe_distribution(rnorm(100))
 + 
@@ -3697,10 +3812,10 @@ x <categorical>
 
 Value |  N | Raw % | Valid % | Cumulative %
 ------+----+-------+---------+-------------
-1     |  8 |  8.00 |    8.89 |         8.89
-2     | 66 | 66.00 |   73.33 |        82.22
-3     | 16 | 16.00 |   17.78 |       100.00
-<NA>  | 10 | 10.00 |    <NA> |         <NA>
+1     |  8 |     8 |    8.89 |         8.89
+2     | 66 |    66 |   73.33 |        82.22
+3     | 16 |    16 |   17.78 |       100.00
+<NA>  | 10 |    10 |    <NA> |         <NA>
 > 
 > x <- labels_to_levels(x)
 > levels(x)
@@ -3711,10 +3826,10 @@ x <categorical>
 
 Value |  N | Raw % | Valid % | Cumulative %
 ------+----+-------+---------+-------------
-low   |  8 |  8.00 |    8.89 |         8.89
-mid   | 66 | 66.00 |   73.33 |        82.22
-high  | 16 | 16.00 |   17.78 |       100.00
-<NA>  | 10 | 10.00 |    <NA> |         <NA>
+low   |  8 |     8 |    8.89 |         8.89
+mid   | 66 |    66 |   73.33 |        82.22
+high  | 16 |    16 |   17.78 |       100.00
+<NA>  | 10 |    10 |    <NA> |         <NA>
 > 
 > 
 > 
@@ -4417,7 +4532,7 @@ Variables of class `factor` can't be rescaled and remain unchanged.
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (all(insight::check_if_installed(c("lme4", "parameters"), quietly = TRUE))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (all(insight::check_if_installed(c("lme4", "parameters"), quietly = TRUE))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + data(nhanes_sample)
 + head(rescale_weights(nhanes_sample, "WTINT2YR", "SDMVSTRA"))
@@ -5312,7 +5427,7 @@ abc abc abc abc
 > cleanEx()
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  6.384 0.316 6.473 0 0 
+Time elapsed:  6.5 0.31 6.532 0 0 
 > grDevices::dev.off()
 null device 
           1 

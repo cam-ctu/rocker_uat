@@ -37,7 +37,7 @@ Type 'q()' to quit R.
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("mclust")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("mclust")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load library for models and data
@@ -61,12 +61,12 @@ Type 'q()' to quit R.
 +   x2 = c(-1, 1, -2)
 + )
 + 
-+ points <- centers %>%
++ points <- centers |>
 +   mutate(
 +     x1 = map2(num_points, x1, rnorm),
 +     x2 = map2(num_points, x2, rnorm)
-+   ) %>%
-+   select(-num_points, -cluster) %>%
++   ) |>
++   select(-num_points, -cluster) |>
 +   unnest(c(x1, x2))
 + 
 + # fit model
@@ -106,8 +106,8 @@ The following object is masked from ‘package:mclust’:
 > set.seed(27)
 > centers <- tibble(cluster = factor(1:3), num_points = c(100, 150, 50), 
 +     x1 = c(5, 0, -3), x2 = c(-1, 1, -2))
-> points <- centers %>% mutate(x1 = map2(num_points, x1, rnorm), x2 = map2(num_points, 
-+     x2, rnorm)) %>% select(-num_points, -cluster) %>% unnest(c(x1, x2))
+> points <- unnest(select(mutate(centers, x1 = map2(num_points, x1, rnorm), 
++     x2 = map2(num_points, x2, rnorm)), -num_points, -cluster), c(x1, x2))
 > m <- Mclust(points)
 > tidy(m)
 # A tibble: 3 × 6
@@ -157,7 +157,7 @@ detaching ‘package:tidyr’, ‘package:purrr’, ‘package:tibble’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("mfx")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("mfx")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + library(mfx)
@@ -250,7 +250,7 @@ detaching ‘package:mfx’, ‘package:betareg’, ‘package:MASS’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("betareg")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("betareg")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -380,7 +380,7 @@ detaching ‘package:betareg’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("ordinal")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("ordinal")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -514,7 +514,7 @@ detaching ‘package:ordinal’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("survival", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("survival", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -641,7 +641,7 @@ detaching ‘package:ggplot2’, ‘package:survival’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("ggplot2")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("ggplot2")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # time series of temperatures in Nottingham, 1920-1939:
@@ -672,18 +672,18 @@ detaching ‘package:ggplot2’, ‘package:survival’
 +   # add the models in, one for each row.
 +   decomp = c("decompose", "stl"),
 +   model = list(d1, d2)
-+ ) %>%
-+   rowwise() %>%
++ ) |>
++   rowwise() |>
 +   # pull out the fitted data using broom::augment.
-+   mutate(augment = list(broom::augment(model))) %>%
-+   ungroup() %>%
++   mutate(augment = list(broom::augment(model))) |>
++   ungroup() |>
 +   # unnest the data frames into a tidy arrangement of
 +   # the series next to its seasonal decomposition, grouped
 +   # by the method (stl or decompose).
-+   group_by(decomp) %>%
-+   unnest(c(series, augment)) %>%
-+   mutate(index = 1:n()) %>%
-+   ungroup() %>%
++   group_by(decomp) |>
++   unnest(c(series, augment)) |>
++   mutate(index = 1:n()) |>
++   ungroup() |>
 +   select(decomp, index, x, adjusted = .seasadj)
 + 
 + ggplot(decomps) +
@@ -1216,10 +1216,10 @@ The following objects are masked from ‘package:base’:
 
 > library(tidyr)
 > library(ggplot2)
-> decomps <- tibble(series = list(as.data.frame(nottem), as.data.frame(nottem)), 
-+     decomp = c("decompose", "stl"), model = list(d1, d2)) %>% rowwise() %>% mutate(augment = list(broom::augment(model))) %>% 
-+     ungroup() %>% group_by(decomp) %>% unnest(c(series, augment)) %>% mutate(index = 1:n()) %>% 
-+     ungroup() %>% select(decomp, index, x, adjusted = .seasadj)
+> decomps <- select(ungroup(mutate(unnest(group_by(ungroup(mutate(rowwise(tibble(series = list(as.data.frame(nottem), 
++     as.data.frame(nottem)), decomp = c("decompose", "stl"), model = list(d1, d2))), 
++     augment = list(broom::augment(model)))), decomp), c(series, augment)), index = 1:n())), 
++     decomp, index, x, adjusted = .seasadj)
 > ggplot(decomps) + geom_line(aes(x = index, y = x), colour = "black") + 
 +     geom_line(aes(x = index, y = adjusted, colour = decomp, group = decomp))
 > ## End(Don't show)
@@ -1243,7 +1243,7 @@ detaching ‘package:ggplot2’, ‘package:tidyr’, ‘package:dplyr’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("drc")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("drc")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -1344,7 +1344,7 @@ detaching ‘package:drc’, ‘package:MASS’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("lfe")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("lfe")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -1525,7 +1525,7 @@ detaching ‘package:lfe’, ‘package:Matrix’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("fixest") & !broom:::is_cran_check()) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("fixest") & !broom:::is_cran_check()) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -1563,9 +1563,9 @@ detaching ‘package:lfe’, ‘package:Matrix’
 +     Year, trade)
 > tidy(gravity)
 # A tibble: 1 × 5
-  term         estimate std.error statistic       p.value
-  <chr>           <dbl>     <dbl>     <dbl>         <dbl>
-1 log(dist_km)    -2.17     0.154     -14.1 0.00000000119
+  term         estimate std.error statistic p.value
+  <chr>           <dbl>     <dbl>     <dbl>   <dbl>
+1 log(dist_km)    -2.17    0.0209     -104.       0
 > glance(gravity)
 # A tibble: 1 × 9
   r.squared adj.r.squared within.r.squared pseudo.r.squared sigma  nobs     AIC
@@ -1623,7 +1623,7 @@ detaching ‘package:fixest’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("mgcv")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("mgcv")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -1772,7 +1772,7 @@ detaching ‘package:mgcv’, ‘package:nlme’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("AER")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("AER")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -1905,7 +1905,7 @@ detaching ‘package:AER’, ‘package:survival’, ‘package:sandwich’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (FALSE) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (FALSE) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + library(cluster)
@@ -1940,7 +1940,7 @@ detaching ‘package:AER’, ‘package:survival’, ‘package:sandwich’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("ggplot2")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("ggplot2")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + library(ggplot2)
@@ -1970,8 +1970,8 @@ detaching ‘package:AER’, ‘package:survival’, ‘package:sandwich’,
 + augment(mod, mtcars, interval = "confidence")
 + 
 + # predict on new data
-+ newdata <- mtcars %>%
-+   head(6) %>%
++ newdata <- mtcars |>
++   head(6) |>
 +   mutate(wt = wt + 1)
 + augment(mod, newdata = newdata)
 + 
@@ -1988,7 +1988,7 @@ detaching ‘package:AER’, ‘package:survival’, ‘package:sandwich’,
 +   geom_ribbon(aes(ymin = .lower, ymax = .upper), col = NA, alpha = 0.3)
 + 
 + # predict on new data without outcome variable. Output does not include .resid
-+ newdata <- newdata %>%
++ newdata <- newdata |>
 +   select(-mpg)
 + 
 + augment(mod, newdata = newdata)
@@ -2047,6 +2047,8 @@ The following objects are masked from ‘package:base’:
 > d <- tidy(mod, conf.int = TRUE)
 > ggplot(d, aes(estimate, term, xmin = conf.low, xmax = conf.high, height = 0)) + 
 +     geom_point() + geom_vline(xintercept = 0, lty = 4) + geom_errorbarh()
+Warning: `geom_errobarh()` was deprecated in ggplot2 4.0.0.
+ℹ Please use the `orientation` argument of `geom_errorbar()` instead.
 > s <- summary(mod)
 > tidy(s, conf.int = TRUE)
 # A tibble: 3 × 7
@@ -2092,7 +2094,7 @@ The following objects are masked from ‘package:base’:
 # ℹ 22 more rows
 # ℹ 8 more variables: .fitted <dbl>, .lower <dbl>, .upper <dbl>, .resid <dbl>,
 #   .hat <dbl>, .sigma <dbl>, .cooksd <dbl>, .std.resid <dbl>
-> newdata <- mtcars %>% head(6) %>% mutate(wt = wt + 1)
+> newdata <- mutate(head(mtcars, 6), wt = wt + 1)
 > augment(mod, newdata = newdata)
 # A tibble: 6 × 14
   .rownames      mpg   cyl  disp    hp  drat    wt  qsec    vs    am  gear  carb
@@ -2108,7 +2110,7 @@ The following objects are masked from ‘package:base’:
 > au <- augment(mod2, newdata = newdata, interval = "prediction")
 > ggplot(au, aes(wt, mpg)) + geom_point() + geom_line(aes(y = .fitted)) + 
 +     geom_ribbon(aes(ymin = .lower, ymax = .upper), col = NA, alpha = 0.3)
-> newdata <- newdata %>% select(-mpg)
+> newdata <- select(newdata, -mpg)
 > augment(mod, newdata = newdata)
 # A tibble: 6 × 12
   .rownames    cyl  disp    hp  drat    wt  qsec    vs    am  gear  carb .fitted
@@ -2164,7 +2166,7 @@ detaching ‘package:dplyr’, ‘package:ggplot2’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("robust")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("robust")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load modeling library
@@ -2298,7 +2300,7 @@ detaching ‘package:robust’, ‘package:fit.models’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("mfx")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("mfx")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -2449,7 +2451,7 @@ detaching ‘package:mfx’, ‘package:betareg’, ‘package:MASS’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("joineRML")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("joineRML")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # broom only skips running these examples because the example models take a
@@ -2526,7 +2528,7 @@ Registered S3 methods overwritten by 'joineRML':
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("mlogit")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("mlogit")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -2546,9 +2548,6 @@ Registered S3 methods overwritten by 'joineRML':
 + }) # examplesIf
 > library(mlogit)
 Loading required package: dfidx
-The tidyverse part of the package is now in the tidydfidx package
-so that the dfidx package now depends only on a small set of packages
-
 > data("Fishing", package = "mlogit")
 > Fish <- dfidx(Fishing, varying = 2:9, shape = "wide", choice = "mode")
 > m <- mlogit(mode ~ price + catch | income, data = Fish)
@@ -2604,7 +2603,7 @@ detaching ‘package:mlogit’, ‘package:dfidx’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("ggplot2")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("ggplot2")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # fit model
@@ -2689,7 +2688,7 @@ detaching ‘package:ggplot2’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("ggplot2")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("ggplot2")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # fit model
@@ -2774,7 +2773,7 @@ detaching ‘package:ggplot2’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("cluster", "modeldata", "ggplot2")) && identical(Sys.getenv("NOT_CRAN"), "true")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("cluster", "modeldata", "ggplot2")) && identical(Sys.getenv("NOT_CRAN"), "true")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -2792,7 +2791,7 @@ detaching ‘package:ggplot2’
 + glance(p)
 + augment(p, x)
 + 
-+ augment(p, x) %>%
++ augment(p, x) |>
 +   ggplot(aes(compounds, input_fields)) +
 +   geom_point(aes(color = .cluster)) +
 +   geom_text(aes(label = cluster), data = tidy(p), size = 10)
@@ -2815,7 +2814,7 @@ detaching ‘package:ggplot2’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("plm")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("plm")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -2935,7 +2934,7 @@ detaching ‘package:plm’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("poLCA", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("poLCA", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -3194,7 +3193,7 @@ detaching ‘package:ggplot2’, ‘package:dplyr’, ‘package:poLCA’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("MASS")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("MASS")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -3289,7 +3288,7 @@ detaching ‘package:MASS’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("MASS")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("MASS")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -3355,7 +3354,7 @@ detaching ‘package:MASS’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("metafor")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("metafor")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load modeling library
@@ -3541,7 +3540,7 @@ detaching ‘package:robustbase’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("quantreg")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("quantreg")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load modeling library and data
@@ -3636,30 +3635,30 @@ Loading required package: SparseM
 > mod3 <- rq(stack.loss ~ stack.x, tau = c(0.25, 0.5))
 > tidy(mod3)
 # A tibble: 8 × 5
-  term               estimate conf.low conf.high   tau
-  <chr>                 <dbl>    <dbl>     <dbl> <dbl>
-1 (Intercept)       -3.6 e+ 1  -59.0     -7.84    0.25
-2 stack.xAir.Flow    5.00e- 1    0.229    0.970   0.25
-3 stack.xWater.Temp  1.00e+ 0    0.286    2.26    0.25
-4 stack.xAcid.Conc. -4.58e-16   -0.643    0.0861  0.25
-5 (Intercept)       -3.97e+ 1  -53.8    -24.5     0.5 
-6 stack.xAir.Flow    8.32e- 1    0.509    1.17    0.5 
-7 stack.xWater.Temp  5.74e- 1    0.272    3.04    0.5 
-8 stack.xAcid.Conc. -6.09e- 2   -0.278    0.0153  0.5 
+  term                estimate conf.low conf.high   tau
+  <chr>                  <dbl>    <dbl>     <dbl> <dbl>
+1 (Intercept)       -3.6  e+ 1  -59.0     -7.84    0.25
+2 stack.xAir.Flow    5.00 e- 1    0.229    0.970   0.25
+3 stack.xWater.Temp  1.000e+ 0    0.286    2.26    0.25
+4 stack.xAcid.Conc. -4.58 e-16   -0.643    0.0861  0.25
+5 (Intercept)       -3.97 e+ 1  -53.8    -24.5     0.5 
+6 stack.xAir.Flow    8.32 e- 1    0.509    1.17    0.5 
+7 stack.xWater.Temp  5.74 e- 1    0.272    3.04    0.5 
+8 stack.xAcid.Conc. -6.09 e- 2   -0.278    0.0153  0.5 
 > augment(mod3)
 # A tibble: 42 × 5
-   stack.loss stack.x[,"Air.Flow"] [,"Water.Temp"] .tau     .resid .fitted
-        <dbl>                <dbl>           <dbl> <chr>     <dbl>   <dbl>
- 1         42                   80              27 0.25   1.10e+ 1    31.0
- 2         42                   80              27 0.5    5.06e+ 0    36.9
- 3         37                   80              27 0.25   6.00e+ 0    31.0
- 4         37                   80              27 0.5   -1.42e-14    37  
- 5         37                   75              25 0.25   1.05e+ 1    26.5
- 6         37                   75              25 0.5    5.43e+ 0    31.6
- 7         28                   62              24 0.25   9.00e+ 0    19  
- 8         28                   62              24 0.5    7.63e+ 0    20.4
- 9         18                   62              22 0.25   1.00e+ 0    17.0
-10         18                   62              22 0.5   -1.22e+ 0    19.2
+   stack.loss stack.x[,"Air.Flow"] [,"Water.Temp"] .tau      .resid .fitted
+        <dbl>                <dbl>           <dbl> <chr>      <dbl>   <dbl>
+ 1         42                   80              27 0.25   1.10 e+ 1    31.0
+ 2         42                   80              27 0.5    5.06 e+ 0    36.9
+ 3         37                   80              27 0.25   6.00 e+ 0    31.0
+ 4         37                   80              27 0.5   -1.42 e-14    37  
+ 5         37                   75              25 0.25   1.05 e+ 1    26.5
+ 6         37                   75              25 0.5    5.43 e+ 0    31.6
+ 7         28                   62              24 0.25   9.00 e+ 0    19  
+ 8         28                   62              24 0.5    7.63 e+ 0    20.4
+ 9         18                   62              22 0.25   1.000e+ 0    17.0
+10         18                   62              22 0.5   -1.22 e+ 0    19.2
 # ℹ 32 more rows
 # ℹ 1 more variable: stack.x[3] <dbl>
 > ## End(Don't show)
@@ -3682,7 +3681,7 @@ detaching ‘package:quantreg’, ‘package:SparseM’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("quantreg")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("quantreg")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load modeling library and data
@@ -3777,30 +3776,30 @@ Loading required package: SparseM
 > mod3 <- rq(stack.loss ~ stack.x, tau = c(0.25, 0.5))
 > tidy(mod3)
 # A tibble: 8 × 5
-  term               estimate conf.low conf.high   tau
-  <chr>                 <dbl>    <dbl>     <dbl> <dbl>
-1 (Intercept)       -3.6 e+ 1  -59.0     -7.84    0.25
-2 stack.xAir.Flow    5.00e- 1    0.229    0.970   0.25
-3 stack.xWater.Temp  1.00e+ 0    0.286    2.26    0.25
-4 stack.xAcid.Conc. -4.58e-16   -0.643    0.0861  0.25
-5 (Intercept)       -3.97e+ 1  -53.8    -24.5     0.5 
-6 stack.xAir.Flow    8.32e- 1    0.509    1.17    0.5 
-7 stack.xWater.Temp  5.74e- 1    0.272    3.04    0.5 
-8 stack.xAcid.Conc. -6.09e- 2   -0.278    0.0153  0.5 
+  term                estimate conf.low conf.high   tau
+  <chr>                  <dbl>    <dbl>     <dbl> <dbl>
+1 (Intercept)       -3.6  e+ 1  -59.0     -7.84    0.25
+2 stack.xAir.Flow    5.00 e- 1    0.229    0.970   0.25
+3 stack.xWater.Temp  1.000e+ 0    0.286    2.26    0.25
+4 stack.xAcid.Conc. -4.58 e-16   -0.643    0.0861  0.25
+5 (Intercept)       -3.97 e+ 1  -53.8    -24.5     0.5 
+6 stack.xAir.Flow    8.32 e- 1    0.509    1.17    0.5 
+7 stack.xWater.Temp  5.74 e- 1    0.272    3.04    0.5 
+8 stack.xAcid.Conc. -6.09 e- 2   -0.278    0.0153  0.5 
 > augment(mod3)
 # A tibble: 42 × 5
-   stack.loss stack.x[,"Air.Flow"] [,"Water.Temp"] .tau     .resid .fitted
-        <dbl>                <dbl>           <dbl> <chr>     <dbl>   <dbl>
- 1         42                   80              27 0.25   1.10e+ 1    31.0
- 2         42                   80              27 0.5    5.06e+ 0    36.9
- 3         37                   80              27 0.25   6.00e+ 0    31.0
- 4         37                   80              27 0.5   -1.42e-14    37  
- 5         37                   75              25 0.25   1.05e+ 1    26.5
- 6         37                   75              25 0.5    5.43e+ 0    31.6
- 7         28                   62              24 0.25   9.00e+ 0    19  
- 8         28                   62              24 0.5    7.63e+ 0    20.4
- 9         18                   62              22 0.25   1.00e+ 0    17.0
-10         18                   62              22 0.5   -1.22e+ 0    19.2
+   stack.loss stack.x[,"Air.Flow"] [,"Water.Temp"] .tau      .resid .fitted
+        <dbl>                <dbl>           <dbl> <chr>      <dbl>   <dbl>
+ 1         42                   80              27 0.25   1.10 e+ 1    31.0
+ 2         42                   80              27 0.5    5.06 e+ 0    36.9
+ 3         37                   80              27 0.25   6.00 e+ 0    31.0
+ 4         37                   80              27 0.5   -1.42 e-14    37  
+ 5         37                   75              25 0.25   1.05 e+ 1    26.5
+ 6         37                   75              25 0.5    5.43 e+ 0    31.6
+ 7         28                   62              24 0.25   9.00 e+ 0    19  
+ 8         28                   62              24 0.5    7.63 e+ 0    20.4
+ 9         18                   62              22 0.25   1.000e+ 0    17.0
+10         18                   62              22 0.5   -1.22 e+ 0    19.2
 # ℹ 32 more rows
 # ℹ 1 more variable: stack.x[3] <dbl>
 > ## End(Don't show)
@@ -3823,7 +3822,7 @@ detaching ‘package:quantreg’, ‘package:SparseM’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("spdep", "spatialreg")) && identical(Sys.getenv("NOT_CRAN"), "true")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("spdep", "spatialreg")) && identical(Sys.getenv("NOT_CRAN"), "true")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + 
@@ -3886,7 +3885,7 @@ detaching ‘package:quantreg’, ‘package:SparseM’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (FALSE) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (FALSE) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # fit model
@@ -3921,7 +3920,7 @@ detaching ‘package:quantreg’, ‘package:SparseM’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("speedglm")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("speedglm")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load modeling library
@@ -3991,7 +3990,7 @@ detaching ‘package:speedglm’, ‘package:biglm’, ‘package:DBI’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("survival", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("survival", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -4053,6 +4052,7 @@ detaching ‘package:speedglm’, ‘package:biglm’, ‘package:DBI’,
 > library(ggplot2)
 > ggplot(td, aes(estimate, term)) + geom_point() + geom_errorbarh(aes(xmin = conf.low, 
 +     xmax = conf.high), height = 0) + geom_vline(xintercept = 0)
+`height` was translated to `width`.
 > ## End(Don't show)
 > 
 > 
@@ -4074,7 +4074,7 @@ detaching ‘package:ggplot2’, ‘package:survival’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("ggplot2")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("ggplot2")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + td <- tidy(mtcars)
@@ -4139,7 +4139,7 @@ detaching ‘package:ggplot2’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("car")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("car")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load modeling library
@@ -4220,7 +4220,7 @@ detaching ‘package:car’, ‘package:carData’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("mclust")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("mclust")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load library for models and data
@@ -4244,12 +4244,12 @@ detaching ‘package:car’, ‘package:carData’
 +   x2 = c(-1, 1, -2)
 + )
 + 
-+ points <- centers %>%
++ points <- centers |>
 +   mutate(
 +     x1 = map2(num_points, x1, rnorm),
 +     x2 = map2(num_points, x2, rnorm)
-+   ) %>%
-+   select(-num_points, -cluster) %>%
++   ) |>
++   select(-num_points, -cluster) |>
 +   unnest(c(x1, x2))
 + 
 + # fit model
@@ -4289,8 +4289,8 @@ The following object is masked from ‘package:mclust’:
 > set.seed(27)
 > centers <- tibble(cluster = factor(1:3), num_points = c(100, 150, 50), 
 +     x1 = c(5, 0, -3), x2 = c(-1, 1, -2))
-> points <- centers %>% mutate(x1 = map2(num_points, x1, rnorm), x2 = map2(num_points, 
-+     x2, rnorm)) %>% select(-num_points, -cluster) %>% unnest(c(x1, x2))
+> points <- unnest(select(mutate(centers, x1 = map2(num_points, x1, rnorm), 
++     x2 = map2(num_points, x2, rnorm)), -num_points, -cluster), c(x1, x2))
 > m <- Mclust(points)
 > tidy(m)
 # A tibble: 3 × 6
@@ -4340,7 +4340,7 @@ detaching ‘package:tidyr’, ‘package:purrr’, ‘package:tibble’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("survival")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("survival")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -4387,7 +4387,7 @@ detaching ‘package:survival’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (FALSE) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (FALSE) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # fit models
@@ -4449,7 +4449,7 @@ detaching ‘package:survival’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("mfx")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("mfx")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + library(mfx)
@@ -4542,7 +4542,7 @@ detaching ‘package:mfx’, ‘package:betareg’, ‘package:MASS’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("betareg")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("betareg")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -4672,7 +4672,7 @@ detaching ‘package:betareg’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("biglm")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("biglm")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load modeling library
@@ -4786,7 +4786,7 @@ detaching ‘package:biglm’, ‘package:DBI’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("binGroup", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("binGroup", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -4850,7 +4850,7 @@ detaching ‘package:ggplot2’, ‘package:binGroup’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("survival", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("survival", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -4910,6 +4910,7 @@ detaching ‘package:ggplot2’, ‘package:binGroup’
 > library(ggplot2)
 > ggplot(tidy(fit.ccP), aes(x = estimate, y = term)) + geom_point() + geom_errorbarh(aes(xmin = conf.low, 
 +     xmax = conf.high), height = 0) + geom_vline(xintercept = 0)
+`height` was translated to `width`.
 > ## End(Don't show)
 > 
 > 
@@ -4930,7 +4931,7 @@ detaching ‘package:ggplot2’, ‘package:survival’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("ordinal")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("ordinal")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -5064,7 +5065,7 @@ detaching ‘package:ordinal’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("ordinal")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("ordinal")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -5161,7 +5162,7 @@ detaching ‘package:ordinal’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("lmtest")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("lmtest")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -5282,7 +5283,7 @@ detaching ‘package:sandwich’, ‘package:lmtest’, ‘package:zoo’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("survival", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("survival", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -5409,7 +5410,7 @@ detaching ‘package:ggplot2’, ‘package:survival’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("cmprsk")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("cmprsk")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + library(cmprsk)
@@ -5466,7 +5467,7 @@ detaching ‘package:cmprsk’, ‘package:survival’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("glmnet", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("glmnet", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -5526,7 +5527,7 @@ detaching ‘package:cmprsk’, ‘package:survival’
 + }) # examplesIf
 > library(glmnet)
 Loading required package: Matrix
-Loaded glmnet 4.1-9
+Loaded glmnet 4.1-10
 > set.seed(27)
 > nobs <- 100
 > nvar <- 50
@@ -5590,7 +5591,7 @@ detaching ‘package:ggplot2’, ‘package:glmnet’, ‘package:Matrix’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("drc")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("drc")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -5857,7 +5858,7 @@ detaching ‘package:purrr’, ‘package:dplyr’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("lfe")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("lfe")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -6035,7 +6036,7 @@ detaching ‘package:lfe’, ‘package:Matrix’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("MASS")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("MASS")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -6097,7 +6098,7 @@ detaching ‘package:MASS’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("fixest") & !broom:::is_cran_check()) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("fixest") & !broom:::is_cran_check()) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -6139,9 +6140,9 @@ Warning: In fixest_env(fml = fml, data = data, weights = weig...:
 Warning: In vcov.fixest(object, vcov = vcov, ssc = ssc, force...:
  Asked for 2 threads while the maximum is 1. Set to 1 threads instead.
 # A tibble: 1 × 5
-  term         estimate std.error statistic       p.value
-  <chr>           <dbl>     <dbl>     <dbl>         <dbl>
-1 log(dist_km)    -2.17     0.154     -14.1 0.00000000119
+  term         estimate std.error statistic p.value
+  <chr>           <dbl>     <dbl>     <dbl>   <dbl>
+1 log(dist_km)    -2.17    0.0209     -104.       0
 > glance(gravity)
 Warning: In vcov.fixest(object, vcov = vcov, ssc = ssc, force...:
  Asked for 2 threads while the maximum is 1. Set to 1 threads instead.
@@ -6211,7 +6212,7 @@ detaching ‘package:fixest’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("mgcv")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("mgcv")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -6284,7 +6285,7 @@ detaching ‘package:mgcv’, ‘package:nlme’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("geepack")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("geepack")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load modeling library
@@ -6369,7 +6370,7 @@ detaching ‘package:geepack’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("robust")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("robust")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -6417,7 +6418,7 @@ detaching ‘package:robust’, ‘package:fit.models’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (FALSE) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (FALSE) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -6435,7 +6436,7 @@ detaching ‘package:robust’, ‘package:fit.models’
 + library(dplyr)
 + library(ggplot2)
 + 
-+ tidied <- tidy(fit1) %>% filter(term != "(Intercept)")
++ tidied <- tidy(fit1) |> filter(term != "(Intercept)")
 + 
 + ggplot(tidied, aes(step, estimate, group = term)) +
 +   geom_line()
@@ -6470,7 +6471,7 @@ detaching ‘package:robust’, ‘package:fit.models’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("gmm", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("gmm", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -6498,8 +6499,8 @@ detaching ‘package:robust’, ‘package:fit.models’
 + library(ggplot2)
 + library(dplyr)
 + 
-+ tidy(res, conf.int = TRUE) %>%
-+   mutate(variable = reorder(term, estimate)) %>%
++ tidy(res, conf.int = TRUE) |>
++   mutate(variable = reorder(term, estimate)) |>
 +   ggplot(aes(estimate, variable)) +
 +   geom_point() +
 +   geom_errorbarh(aes(xmin = conf.low, xmax = conf.high)) +
@@ -6530,8 +6531,8 @@ detaching ‘package:robust’, ‘package:fit.models’
 + td2
 + 
 + # coefficient plot
-+ td2 %>%
-+   mutate(variable = reorder(term, estimate)) %>%
++ td2 |>
++   mutate(variable = reorder(term, estimate)) |>
 +   ggplot(aes(estimate, variable)) +
 +   geom_point() +
 +   geom_errorbarh(aes(xmin = conf.low, xmax = conf.high)) +
@@ -6634,8 +6635,8 @@ The following objects are masked from ‘package:base’:
 
     intersect, setdiff, setequal, union
 
-> tidy(res, conf.int = TRUE) %>% mutate(variable = reorder(term, estimate)) %>% 
-+     ggplot(aes(estimate, variable)) + geom_point() + geom_errorbarh(aes(xmin = conf.low, 
+> ggplot(mutate(tidy(res, conf.int = TRUE), variable = reorder(term, estimate)), 
++     aes(estimate, variable)) + geom_point() + geom_errorbarh(aes(xmin = conf.low, 
 +     xmax = conf.high)) + geom_vline(xintercept = 0, color = "red", lty = 2)
 > g <- function(theta, x) {
 +     e <- x[, 2:11] - theta[1] - (x[, 1] - theta[1]) %*% matrix(theta[2:11], 1, 10)
@@ -6695,7 +6696,7 @@ The following objects are masked from ‘package:base’:
  9 VOXX_(Intercept) -0.00706    0.179    -0.0394   0.969  -0.359     0.344 
 10 ZOOM_(Intercept) -0.189      0.215    -0.878    0.380  -0.610     0.233 
 # ℹ 30 more rows
-> td2 %>% mutate(variable = reorder(term, estimate)) %>% ggplot(aes(estimate, 
+> ggplot(mutate(td2, variable = reorder(term, estimate)), aes(estimate, 
 +     variable)) + geom_point() + geom_errorbarh(aes(xmin = conf.low, xmax = conf.high)) + 
 +     geom_vline(xintercept = 0, color = "red", lty = 2)
 > ## End(Don't show)
@@ -6719,7 +6720,7 @@ detaching ‘package:dplyr’, ‘package:ggplot2’, ‘package:gmm’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("AER")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("AER")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -6852,7 +6853,7 @@ detaching ‘package:AER’, ‘package:survival’, ‘package:sandwich’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (FALSE) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (FALSE) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + library(cluster)
@@ -6887,7 +6888,7 @@ detaching ‘package:AER’, ‘package:survival’, ‘package:sandwich’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("lavaan")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("lavaan")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + library(lavaan)
@@ -6903,7 +6904,7 @@ detaching ‘package:AER’, ‘package:survival’, ‘package:sandwich’,
 + ## Don't show: 
 + }) # examplesIf
 > library(lavaan)
-This is lavaan 0.6-19
+This is lavaan 0.6-20
 lavaan is FREE software! Please report any bugs.
 > cfa.fit <- cfa("F =~ x1 + x2 + x3 + x4 + x5", data = HolzingerSwineford1939, 
 +     group = "school")
@@ -6934,7 +6935,7 @@ detaching ‘package:lavaan’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("ggplot2")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("ggplot2")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + library(ggplot2)
@@ -6964,8 +6965,8 @@ detaching ‘package:lavaan’
 + augment(mod, mtcars, interval = "confidence")
 + 
 + # predict on new data
-+ newdata <- mtcars %>%
-+   head(6) %>%
++ newdata <- mtcars |>
++   head(6) |>
 +   mutate(wt = wt + 1)
 + augment(mod, newdata = newdata)
 + 
@@ -6982,7 +6983,7 @@ detaching ‘package:lavaan’
 +   geom_ribbon(aes(ymin = .lower, ymax = .upper), col = NA, alpha = 0.3)
 + 
 + # predict on new data without outcome variable. Output does not include .resid
-+ newdata <- newdata %>%
++ newdata <- newdata |>
 +   select(-mpg)
 + 
 + augment(mod, newdata = newdata)
@@ -7086,7 +7087,7 @@ The following objects are masked from ‘package:base’:
 # ℹ 22 more rows
 # ℹ 8 more variables: .fitted <dbl>, .lower <dbl>, .upper <dbl>, .resid <dbl>,
 #   .hat <dbl>, .sigma <dbl>, .cooksd <dbl>, .std.resid <dbl>
-> newdata <- mtcars %>% head(6) %>% mutate(wt = wt + 1)
+> newdata <- mutate(head(mtcars, 6), wt = wt + 1)
 > augment(mod, newdata = newdata)
 # A tibble: 6 × 14
   .rownames      mpg   cyl  disp    hp  drat    wt  qsec    vs    am  gear  carb
@@ -7102,7 +7103,7 @@ The following objects are masked from ‘package:base’:
 > au <- augment(mod2, newdata = newdata, interval = "prediction")
 > ggplot(au, aes(wt, mpg)) + geom_point() + geom_line(aes(y = .fitted)) + 
 +     geom_ribbon(aes(ymin = .lower, ymax = .upper), col = NA, alpha = 0.3)
-> newdata <- newdata %>% select(-mpg)
+> newdata <- select(newdata, -mpg)
 > augment(mod, newdata = newdata)
 # A tibble: 6 × 12
   .rownames    cyl  disp    hp  drat    wt  qsec    vs    am  gear  carb .fitted
@@ -7156,7 +7157,7 @@ detaching ‘package:dplyr’, ‘package:ggplot2’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("robust")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("robust")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load modeling library
@@ -7220,7 +7221,7 @@ detaching ‘package:robust’, ‘package:fit.models’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("lmodel2", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("lmodel2", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -7321,7 +7322,7 @@ detaching ‘package:ggplot2’, ‘package:lmodel2’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("margins")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("margins")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -7507,7 +7508,7 @@ detaching ‘package:margins’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("mfx")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("mfx")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -7658,7 +7659,7 @@ detaching ‘package:mfx’, ‘package:betareg’, ‘package:MASS’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("joineRML")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("joineRML")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # broom only skips running these examples because the example models take a
@@ -7730,7 +7731,7 @@ detaching ‘package:mfx’, ‘package:betareg’, ‘package:MASS’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("mlogit")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("mlogit")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -7750,9 +7751,6 @@ detaching ‘package:mfx’, ‘package:betareg’, ‘package:MASS’,
 + }) # examplesIf
 > library(mlogit)
 Loading required package: dfidx
-The tidyverse part of the package is now in the tidydfidx package
-so that the dfidx package now depends only on a small set of packages
-
 > data("Fishing", package = "mlogit")
 > Fish <- dfidx(Fishing, varying = 2:9, shape = "wide", choice = "mode")
 > m <- mlogit(mode ~ price + catch | income, data = Fish)
@@ -7808,7 +7806,7 @@ detaching ‘package:mlogit’, ‘package:dfidx’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("muhaz", "survival"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("muhaz", "survival"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -7866,7 +7864,7 @@ detaching ‘package:survival’, ‘package:muhaz’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("nnet", "MASS"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("nnet", "MASS"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -7990,7 +7988,7 @@ detaching ‘package:MASS’, ‘package:nnet’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("MASS")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("MASS")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -8049,7 +8047,7 @@ detaching ‘package:MASS’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("quantreg")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("quantreg")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load modeling library
@@ -8163,7 +8161,7 @@ detaching ‘package:quantreg’, ‘package:SparseM’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("ggplot2")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("ggplot2")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # fit model
@@ -8248,7 +8246,7 @@ detaching ‘package:ggplot2’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("cluster", "modeldata", "ggplot2")) && identical(Sys.getenv("NOT_CRAN"), "true")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("cluster", "modeldata", "ggplot2")) && identical(Sys.getenv("NOT_CRAN"), "true")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -8266,7 +8264,7 @@ detaching ‘package:ggplot2’
 + glance(p)
 + augment(p, x)
 + 
-+ augment(p, x) %>%
++ augment(p, x) |>
 +   ggplot(aes(compounds, input_fields)) +
 +   geom_point(aes(color = .cluster)) +
 +   geom_text(aes(label = cluster), data = tidy(p), size = 10)
@@ -8289,7 +8287,7 @@ detaching ‘package:ggplot2’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("plm")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("plm")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -8409,7 +8407,7 @@ detaching ‘package:plm’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("poLCA", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("poLCA", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -8668,7 +8666,7 @@ detaching ‘package:ggplot2’, ‘package:dplyr’, ‘package:poLCA’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("MASS")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("MASS")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -8763,7 +8761,7 @@ detaching ‘package:MASS’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("survival")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("survival")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -8865,7 +8863,7 @@ detaching ‘package:survival’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("MASS", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("MASS", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -8937,7 +8935,7 @@ detaching ‘package:ggplot2’, ‘package:MASS’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("MASS")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("MASS")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -9003,7 +9001,7 @@ detaching ‘package:MASS’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("metafor")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("metafor")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + library(metafor)
@@ -9120,7 +9118,7 @@ detaching ‘package:robustbase’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("quantreg")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("quantreg")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load modeling library and data
@@ -9215,30 +9213,30 @@ Loading required package: SparseM
 > mod3 <- rq(stack.loss ~ stack.x, tau = c(0.25, 0.5))
 > tidy(mod3)
 # A tibble: 8 × 5
-  term               estimate conf.low conf.high   tau
-  <chr>                 <dbl>    <dbl>     <dbl> <dbl>
-1 (Intercept)       -3.6 e+ 1  -59.0     -7.84    0.25
-2 stack.xAir.Flow    5.00e- 1    0.229    0.970   0.25
-3 stack.xWater.Temp  1.00e+ 0    0.286    2.26    0.25
-4 stack.xAcid.Conc. -4.58e-16   -0.643    0.0861  0.25
-5 (Intercept)       -3.97e+ 1  -53.8    -24.5     0.5 
-6 stack.xAir.Flow    8.32e- 1    0.509    1.17    0.5 
-7 stack.xWater.Temp  5.74e- 1    0.272    3.04    0.5 
-8 stack.xAcid.Conc. -6.09e- 2   -0.278    0.0153  0.5 
+  term                estimate conf.low conf.high   tau
+  <chr>                  <dbl>    <dbl>     <dbl> <dbl>
+1 (Intercept)       -3.6  e+ 1  -59.0     -7.84    0.25
+2 stack.xAir.Flow    5.00 e- 1    0.229    0.970   0.25
+3 stack.xWater.Temp  1.000e+ 0    0.286    2.26    0.25
+4 stack.xAcid.Conc. -4.58 e-16   -0.643    0.0861  0.25
+5 (Intercept)       -3.97 e+ 1  -53.8    -24.5     0.5 
+6 stack.xAir.Flow    8.32 e- 1    0.509    1.17    0.5 
+7 stack.xWater.Temp  5.74 e- 1    0.272    3.04    0.5 
+8 stack.xAcid.Conc. -6.09 e- 2   -0.278    0.0153  0.5 
 > augment(mod3)
 # A tibble: 42 × 5
-   stack.loss stack.x[,"Air.Flow"] [,"Water.Temp"] .tau     .resid .fitted
-        <dbl>                <dbl>           <dbl> <chr>     <dbl>   <dbl>
- 1         42                   80              27 0.25   1.10e+ 1    31.0
- 2         42                   80              27 0.5    5.06e+ 0    36.9
- 3         37                   80              27 0.25   6.00e+ 0    31.0
- 4         37                   80              27 0.5   -1.42e-14    37  
- 5         37                   75              25 0.25   1.05e+ 1    26.5
- 6         37                   75              25 0.5    5.43e+ 0    31.6
- 7         28                   62              24 0.25   9.00e+ 0    19  
- 8         28                   62              24 0.5    7.63e+ 0    20.4
- 9         18                   62              22 0.25   1.00e+ 0    17.0
-10         18                   62              22 0.5   -1.22e+ 0    19.2
+   stack.loss stack.x[,"Air.Flow"] [,"Water.Temp"] .tau      .resid .fitted
+        <dbl>                <dbl>           <dbl> <chr>      <dbl>   <dbl>
+ 1         42                   80              27 0.25   1.10 e+ 1    31.0
+ 2         42                   80              27 0.5    5.06 e+ 0    36.9
+ 3         37                   80              27 0.25   6.00 e+ 0    31.0
+ 4         37                   80              27 0.5   -1.42 e-14    37  
+ 5         37                   75              25 0.25   1.05 e+ 1    26.5
+ 6         37                   75              25 0.5    5.43 e+ 0    31.6
+ 7         28                   62              24 0.25   9.00 e+ 0    19  
+ 8         28                   62              24 0.5    7.63 e+ 0    20.4
+ 9         18                   62              22 0.25   1.000e+ 0    17.0
+10         18                   62              22 0.5   -1.22 e+ 0    19.2
 # ℹ 32 more rows
 # ℹ 1 more variable: stack.x[3] <dbl>
 > ## End(Don't show)
@@ -9261,7 +9259,7 @@ detaching ‘package:quantreg’, ‘package:SparseM’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("spdep", "spatialreg")) && identical(Sys.getenv("NOT_CRAN"), "true")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("spdep", "spatialreg")) && identical(Sys.getenv("NOT_CRAN"), "true")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + 
@@ -9324,7 +9322,7 @@ detaching ‘package:quantreg’, ‘package:SparseM’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (FALSE) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (FALSE) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # fit model
@@ -9359,7 +9357,7 @@ detaching ‘package:quantreg’, ‘package:SparseM’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("speedglm")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("speedglm")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -9419,7 +9417,7 @@ detaching ‘package:speedglm’, ‘package:biglm’, ‘package:DBI’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("speedglm")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("speedglm")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load modeling library
@@ -9489,7 +9487,7 @@ detaching ‘package:speedglm’, ‘package:biglm’, ‘package:DBI’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("ggplot2")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("ggplot2")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + library(ggplot2)
@@ -9519,8 +9517,8 @@ detaching ‘package:speedglm’, ‘package:biglm’, ‘package:DBI’,
 + augment(mod, mtcars, interval = "confidence")
 + 
 + # predict on new data
-+ newdata <- mtcars %>%
-+   head(6) %>%
++ newdata <- mtcars |>
++   head(6) |>
 +   mutate(wt = wt + 1)
 + augment(mod, newdata = newdata)
 + 
@@ -9537,7 +9535,7 @@ detaching ‘package:speedglm’, ‘package:biglm’, ‘package:DBI’,
 +   geom_ribbon(aes(ymin = .lower, ymax = .upper), col = NA, alpha = 0.3)
 + 
 + # predict on new data without outcome variable. Output does not include .resid
-+ newdata <- newdata %>%
++ newdata <- newdata |>
 +   select(-mpg)
 + 
 + augment(mod, newdata = newdata)
@@ -9641,7 +9639,7 @@ The following objects are masked from ‘package:base’:
 # ℹ 22 more rows
 # ℹ 8 more variables: .fitted <dbl>, .lower <dbl>, .upper <dbl>, .resid <dbl>,
 #   .hat <dbl>, .sigma <dbl>, .cooksd <dbl>, .std.resid <dbl>
-> newdata <- mtcars %>% head(6) %>% mutate(wt = wt + 1)
+> newdata <- mutate(head(mtcars, 6), wt = wt + 1)
 > augment(mod, newdata = newdata)
 # A tibble: 6 × 14
   .rownames      mpg   cyl  disp    hp  drat    wt  qsec    vs    am  gear  carb
@@ -9657,7 +9655,7 @@ The following objects are masked from ‘package:base’:
 > au <- augment(mod2, newdata = newdata, interval = "prediction")
 > ggplot(au, aes(wt, mpg)) + geom_point() + geom_line(aes(y = .fitted)) + 
 +     geom_ribbon(aes(ymin = .lower, ymax = .upper), col = NA, alpha = 0.3)
-> newdata <- newdata %>% select(-mpg)
+> newdata <- select(newdata, -mpg)
 > augment(mod, newdata = newdata)
 # A tibble: 6 × 12
   .rownames    cyl  disp    hp  drat    wt  qsec    vs    am  gear  carb .fitted
@@ -9711,7 +9709,7 @@ detaching ‘package:dplyr’, ‘package:ggplot2’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("survival")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("survival")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -9767,7 +9765,7 @@ detaching ‘package:survival’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("survival")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("survival")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -9797,16 +9795,16 @@ detaching ‘package:survival’
 # A tibble: 88 × 3
     time estimate n.risk
    <dbl>    <dbl>  <int>
- 1     0     1       102
- 2     1     1.00    102
- 3     2     1.00     99
- 4     4     1.00     96
- 5     5     1.00     94
- 6     7     1.00     92
- 7     8     1.00     91
- 8    10     1.00     90
- 9    11     1.00     89
-10    15     1.00     88
+ 1     0    1        102
+ 2     1    1.000    102
+ 3     2    1.000     99
+ 4     4    1.000     96
+ 5     5    1.000     94
+ 6     7    1.000     92
+ 7     8    1.000     91
+ 8    10    1.000     90
+ 9    11    1.000     89
+10    15    1.000     88
 # ℹ 78 more rows
 > glance(sexpfit)
 # A tibble: 1 × 3
@@ -9833,7 +9831,7 @@ detaching ‘package:survival’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("survival", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("survival", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -9875,7 +9873,7 @@ detaching ‘package:survival’
     time n.risk n.event n.censor estimate std.error conf.high conf.low
    <dbl>  <dbl>   <dbl>    <dbl>    <dbl>     <dbl>     <dbl>    <dbl>
  1     5    228       1        0    0.996   0.00419     1        0.988
- 2    11    227       3        0    0.983   0.00845     1.00     0.967
+ 2    11    227       3        0    0.983   0.00845     1.000    0.967
  3    12    224       1        0    0.979   0.00947     0.997    0.961
  4    13    223       2        0    0.971   0.0113      0.992    0.949
  5    15    221       1        0    0.966   0.0121      0.990    0.944
@@ -9904,7 +9902,7 @@ detaching ‘package:survival’
  1     6    241       0        0    0.996   0.00414     1        0.988 (s0) 
  2     7    240       0        0    0.992   0.00584     1        0.980 (s0) 
  3    31    239       0        0    0.988   0.00714     1        0.974 (s0) 
- 4    32    238       0        0    0.983   0.00823     1.00     0.967 (s0) 
+ 4    32    238       0        0    0.983   0.00823     1.000    0.967 (s0) 
  5    39    237       0        0    0.979   0.00918     0.997    0.961 (s0) 
  6    60    236       0        0    0.975   0.0100      0.995    0.956 (s0) 
  7    61    235       0        0    0.967   0.0115      0.990    0.944 (s0) 
@@ -9914,6 +9912,8 @@ detaching ‘package:survival’
 # ℹ 701 more rows
 > ggplot(td_multi, aes(time, estimate, group = state)) + geom_line(aes(color = state)) + 
 +     geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.25)
+Warning: Removed 13 rows containing missing values or values outside the scale range
+(`geom_ribbon()`).
 > ## End(Don't show)
 > 
 > 
@@ -9934,7 +9934,7 @@ detaching ‘package:ggplot2’, ‘package:survival’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("survival", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("survival", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -9996,6 +9996,7 @@ detaching ‘package:ggplot2’, ‘package:survival’
 > library(ggplot2)
 > ggplot(td, aes(estimate, term)) + geom_point() + geom_errorbarh(aes(xmin = conf.low, 
 +     xmax = conf.high), height = 0) + geom_vline(xintercept = 0)
+`height` was translated to `width`.
 > ## End(Don't show)
 > 
 > 
@@ -10016,7 +10017,7 @@ detaching ‘package:ggplot2’, ‘package:survival’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("survey")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("survey")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -10088,7 +10089,7 @@ detaching ‘package:survey’, ‘package:survival’, ‘package:Matrix’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("survey", "MASS"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("survey", "MASS"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + library(broom)
 + library(survey)
@@ -10163,7 +10164,7 @@ detaching ‘package:survey’, ‘package:survival’, ‘package:Matrix’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("vars")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("vars")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -10257,7 +10258,7 @@ detaching ‘package:vars’, ‘package:lmtest’, ‘package:urca’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("car")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("car")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -10302,7 +10303,7 @@ detaching ‘package:car’, ‘package:carData’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("metafor")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("metafor")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -10438,7 +10439,7 @@ Warning in tidy.summaryDefault(summary(v2)) :
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("Kendall")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("Kendall")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -10500,7 +10501,7 @@ detaching ‘package:Kendall’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("mclust")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("mclust")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load library for models and data
@@ -10524,12 +10525,12 @@ detaching ‘package:Kendall’
 +   x2 = c(-1, 1, -2)
 + )
 + 
-+ points <- centers %>%
++ points <- centers |>
 +   mutate(
 +     x1 = map2(num_points, x1, rnorm),
 +     x2 = map2(num_points, x2, rnorm)
-+   ) %>%
-+   select(-num_points, -cluster) %>%
++   ) |>
++   select(-num_points, -cluster) |>
 +   unnest(c(x1, x2))
 + 
 + # fit model
@@ -10569,8 +10570,8 @@ The following object is masked from ‘package:mclust’:
 > set.seed(27)
 > centers <- tibble(cluster = factor(1:3), num_points = c(100, 150, 50), 
 +     x1 = c(5, 0, -3), x2 = c(-1, 1, -2))
-> points <- centers %>% mutate(x1 = map2(num_points, x1, rnorm), x2 = map2(num_points, 
-+     x2, rnorm)) %>% select(-num_points, -cluster) %>% unnest(c(x1, x2))
+> points <- unnest(select(mutate(centers, x1 = map2(num_points, x1, rnorm), 
++     x2 = map2(num_points, x2, rnorm)), -num_points, -cluster), c(x1, x2))
 > m <- Mclust(points)
 > tidy(m)
 # A tibble: 3 × 6
@@ -10644,8 +10645,8 @@ detaching ‘package:tidyr’, ‘package:purrr’, ‘package:tibble’,
  6 as.factor(cyl)    8-6               0    0.172   -3.70       4.04  0.993     
  7 as.factor(gear):… 4:4-3:4           0    5.43    -6.65      17.5   0.832     
  8 as.factor(gear):… 5:4-3:4           0    6.70    -7.24      20.6   0.778     
- 9 as.factor(gear):… 3:6-3:4           0   -1.75   -15.7       12.2   1.00      
-10 as.factor(gear):… 4:6-3:4           0   -1.75   -14.5       11.0   1.00      
+ 9 as.factor(gear):… 3:6-3:4           0   -1.75   -15.7       12.2   1.000     
+10 as.factor(gear):… 4:6-3:4           0   -1.75   -14.5       11.0   1.000     
 # ℹ 32 more rows
 > 
 > 
@@ -10663,7 +10664,7 @@ detaching ‘package:tidyr’, ‘package:purrr’, ‘package:tibble’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("survival")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("survival")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -10782,7 +10783,7 @@ detaching ‘package:survival’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (FALSE) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (FALSE) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # fit models
@@ -10870,7 +10871,7 @@ detaching ‘package:survival’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("mfx")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("mfx")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + library(mfx)
@@ -10963,7 +10964,7 @@ detaching ‘package:mfx’, ‘package:betareg’, ‘package:MASS’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("betareg")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("betareg")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -11093,7 +11094,7 @@ detaching ‘package:betareg’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("biglm")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("biglm")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load modeling library
@@ -11207,7 +11208,7 @@ detaching ‘package:biglm’, ‘package:DBI’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("binGroup", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("binGroup", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + library(binGroup)
@@ -11269,7 +11270,7 @@ detaching ‘package:ggplot2’, ‘package:binGroup’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("binGroup")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("binGroup")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries
@@ -11326,7 +11327,7 @@ detaching ‘package:binGroup’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("boot")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("boot")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load modeling library
@@ -11392,7 +11393,7 @@ detaching ‘package:boot’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("btergm", "network"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("btergm", "network"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + library(btergm)
@@ -11506,7 +11507,7 @@ detaching ‘package:network’, ‘package:btergm’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("survival", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("survival", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -11566,6 +11567,7 @@ detaching ‘package:network’, ‘package:btergm’
 > library(ggplot2)
 > ggplot(tidy(fit.ccP), aes(x = estimate, y = term)) + geom_point() + geom_errorbarh(aes(xmin = conf.low, 
 +     xmax = conf.high), height = 0) + geom_vline(xintercept = 0)
+`height` was translated to `width`.
 > ## End(Don't show)
 > 
 > 
@@ -11586,7 +11588,7 @@ detaching ‘package:ggplot2’, ‘package:survival’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("multcomp", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("multcomp", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -11641,6 +11643,10 @@ The following object is masked from ‘package:MASS’:
 2 tension H - L             0   -14.7       3.87     -3.80     0.00113
 3 tension H - M             0    -4.72      3.87     -1.22     0.447  
 > ggplot(wht, aes(lhs, estimate)) + geom_point()
+Warning: `fortify(<glht>)` was deprecated in ggplot2 3.6.0.
+ℹ Please use `broom::tidy(<glht>)` instead.
+ℹ The deprecated feature was likely used in the ggplot2 package.
+  Please report the issue at <https://github.com/tidyverse/ggplot2/issues>.
 > CI <- confint(wht)
 > tidy(CI)
 # A tibble: 3 × 5
@@ -11650,6 +11656,10 @@ The following object is masked from ‘package:MASS’:
 2 tension H - L      -14.7     -24.1    -5.37 
 3 tension H - M       -4.72    -14.1     4.63 
 > ggplot(CI, aes(lhs, estimate, ymin = lwr, ymax = upr)) + geom_pointrange()
+Warning: `fortify(<confint.glht>)` was deprecated in ggplot2 3.6.0.
+ℹ Please use `broom::tidy(<confint.glht>)` instead.
+ℹ The deprecated feature was likely used in the ggplot2 package.
+  Please report the issue at <https://github.com/tidyverse/ggplot2/issues>.
 > tidy(summary(wht))
 # A tibble: 3 × 7
   term    contrast null.value estimate std.error statistic adj.p.value
@@ -11659,6 +11669,10 @@ The following object is masked from ‘package:MASS’:
 3 tension H - M             0    -4.72      3.87     -1.22     0.447  
 > ggplot(mapping = aes(lhs, estimate)) + geom_linerange(aes(ymin = lwr, 
 +     ymax = upr), data = CI) + geom_point(aes(size = p), data = summary(wht)) + scale_size(trans = "reverse")
+Warning: `fortify(<summary.glht>)` was deprecated in ggplot2 3.6.0.
+ℹ Please use `broom::tidy(<summary.glht>)` instead.
+ℹ The deprecated feature was likely used in the ggplot2 package.
+  Please report the issue at <https://github.com/tidyverse/ggplot2/issues>.
 > cld <- cld(wht)
 > tidy(cld)
 # A tibble: 3 × 2
@@ -11688,7 +11702,7 @@ detaching ‘package:ggplot2’, ‘package:multcomp’, ‘package:TH.data’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("ordinal")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("ordinal")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -11822,7 +11836,7 @@ detaching ‘package:ordinal’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("ordinal")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("ordinal")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -11919,7 +11933,7 @@ detaching ‘package:ordinal’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("lmtest")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("lmtest")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -12035,7 +12049,7 @@ detaching ‘package:sandwich’, ‘package:lmtest’, ‘package:zoo’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("multcomp", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("multcomp", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -12137,7 +12151,7 @@ detaching ‘package:ggplot2’, ‘package:multcomp’, ‘package:TH.data’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("caret")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("caret")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -12256,7 +12270,7 @@ detaching ‘package:caret’, ‘package:lattice’, ‘package:ggplot2’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("survival", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("survival", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -12383,7 +12397,7 @@ detaching ‘package:ggplot2’, ‘package:survival’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("cmprsk")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("cmprsk")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + library(cmprsk)
@@ -12440,7 +12454,7 @@ detaching ‘package:cmprsk’, ‘package:survival’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("glmnet", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("glmnet", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -12500,7 +12514,7 @@ detaching ‘package:cmprsk’, ‘package:survival’
 + }) # examplesIf
 > library(glmnet)
 Loading required package: Matrix
-Loaded glmnet 4.1-9
+Loaded glmnet 4.1-10
 > set.seed(27)
 > nobs <- 100
 > nvar <- 50
@@ -12628,7 +12642,7 @@ hp    824.37547  878.17652  656.64044
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("drc")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("drc")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -12729,7 +12743,7 @@ detaching ‘package:drc’, ‘package:MASS’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("emmeans", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("emmeans", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -12910,7 +12924,7 @@ detaching ‘package:ggplot2’, ‘package:emmeans’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("epiR")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("epiR")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -12935,7 +12949,7 @@ detaching ‘package:ggplot2’, ‘package:emmeans’
 + }) # examplesIf
 > library(epiR)
 Loading required package: survival
-Package epiR 2.0.84 is loaded
+Package epiR 2.0.88 is loaded
 Type help(epi.about) for summary information
 Type browseVignettes(package = 'epiR') to learn how to use epiR for applied epidemiological analyses
 
@@ -12946,31 +12960,34 @@ Type browseVignettes(package = 'epiR') to learn how to use epiR for applied epid
 > fit <- epi.2by2(dat = as.table(dat), method = "cross.sectional", conf.level = 0.95, 
 +     units = 100, outcome = "as.columns")
 > tidy(fit, parameters = "moa")
-# A tibble: 15 × 4
+# A tibble: 16 × 4
    term                estimate conf.low conf.high
    <chr>                  <dbl>    <dbl>     <dbl>
  1 PR.strata.wald         4.01    1.43      11.2  
  2 PR.strata.taylor       4.01    1.43      11.2  
  3 PR.strata.score        4.01    1.49      10.8  
- 4 OR.strata.wald         4.03    1.43      11.3  
- 5 OR.strata.cfield       4.03   NA         NA    
- 6 OR.strata.score        4.03    1.49      10.9  
- 7 OR.strata.mle          4.02    1.34      14.4  
- 8 ARisk.strata.wald      0.448   0.0992     0.797
- 9 ARisk.strata.score     0.448   0.142      0.882
-10 NNT.strata.wald      223.    125.      1008.   
-11 NNT.strata.score     223.    113.       705.   
-12 AFRisk.strata.wald     0.750   0.329      0.907
-13 PARisk.strata.wald     0.176  -0.0225     0.375
-14 PARisk.strata.piri     0.176   0.0389     0.314
-15 PAFRisk.strata.wald    0.542   0.324      0.749
+ 4 PR.strata.koopman      4.01    1.49      10.8  
+ 5 OR.strata.wald         4.03    1.43      11.3  
+ 6 OR.strata.cfield       4.03   NA         NA    
+ 7 OR.strata.score        4.03    1.49      10.9  
+ 8 OR.strata.mle          4.02    1.34      14.4  
+ 9 ARisk.strata.wald      0.448   0.0992     0.797
+10 ARisk.strata.score     0.448   0.142      0.882
+11 NNT.strata.wald      223.    125.      1008.   
+12 NNT.strata.score     223.    113.       705.   
+13 AFRisk.strata.wald     0.750   0.329      0.907
+14 PARisk.strata.wald     0.176  -0.0225     0.375
+15 PARisk.strata.piri     0.176   0.0389     0.314
+16 PAFRisk.strata.wald    0.542   0.324      0.749
 > tidy(fit, parameters = "stat")
-# A tibble: 3 × 4
+# A tibble: 5 × 4
   term               statistic    df p.value
   <chr>                  <dbl> <dbl>   <dbl>
-1 chi2.strata.uncor       8.18     1 0.00424
-2 chi2.strata.yates       6.85     1 0.00885
-3 chi2.strata.fisher     NA       NA 0.00635
+1 wald.strata.rr          2.64    NA 0.00825
+2 wald.strata.or          2.64    NA 0.00822
+3 chi2.strata.uncor       8.18     1 0.00424
+4 chi2.strata.yates       6.85     1 0.00885
+5 chi2.strata.fisher     NA       NA 0.00635
 > ## End(Don't show)
 > 
 > 
@@ -12991,7 +13008,7 @@ detaching ‘package:epiR’, ‘package:survival’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("ergm")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("ergm")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -13026,7 +13043,7 @@ Loading required package: network
 * ‘https://statnet.org’ for help, support, and other information
 
 
-‘ergm’ 4.9.0 (2025-06-09), part of the Statnet Project
+‘ergm’ 4.10.1 (2025-08-26), part of the Statnet Project
 * ‘news(package="ergm")’ for changes since last version
 * ‘citation("ergm")’ for citation information
 * ‘https://statnet.org’ for help, support, and other information
@@ -13056,7 +13073,7 @@ link.
   term        estimate std.error mcmc.error statistic p.value conf.low conf.high
   <chr>          <dbl>     <dbl>      <dbl>     <dbl>   <dbl>    <dbl>     <dbl>
 1 edges          0.100   0.402            0     -5.73 1.02e-8   0.0355     0.282
-2 absdiff.we…    1.02    0.00616          0      2.52 1.17e-2   1.00       1.03 
+2 absdiff.we…    1.02    0.00616          0      2.52 1.17e-2   1.000      1.03 
 > glance(gest)
 # A tibble: 1 × 5
   independence iterations logLik   AIC   BIC
@@ -13262,7 +13279,7 @@ detaching ‘package:purrr’, ‘package:dplyr’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("lfe")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("lfe")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -13440,7 +13457,7 @@ detaching ‘package:lfe’, ‘package:Matrix’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("MASS")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("MASS")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -13502,7 +13519,7 @@ detaching ‘package:MASS’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("fixest") & !broom:::is_cran_check()) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("fixest") & !broom:::is_cran_check()) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -13544,9 +13561,9 @@ Warning: In fixest_env(fml = fml, data = data, weights = weig...:
 Warning: In vcov.fixest(object, vcov = vcov, ssc = ssc, force...:
  Asked for 2 threads while the maximum is 1. Set to 1 threads instead.
 # A tibble: 1 × 5
-  term         estimate std.error statistic       p.value
-  <chr>           <dbl>     <dbl>     <dbl>         <dbl>
-1 log(dist_km)    -2.17     0.154     -14.1 0.00000000119
+  term         estimate std.error statistic p.value
+  <chr>           <dbl>     <dbl>     <dbl>   <dbl>
+1 log(dist_km)    -2.17    0.0209     -104.       0
 > glance(gravity)
 Warning: In vcov.fixest(object, vcov = vcov, ssc = ssc, force...:
  Asked for 2 threads while the maximum is 1. Set to 1 threads instead.
@@ -13616,7 +13633,7 @@ detaching ‘package:fixest’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("mgcv")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("mgcv")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -13689,7 +13706,7 @@ detaching ‘package:mgcv’, ‘package:nlme’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("tseries")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("tseries")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -13805,7 +13822,7 @@ detaching ‘package:tseries’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("geepack")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("geepack")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load modeling library
@@ -13868,7 +13885,7 @@ detaching ‘package:geepack’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("multcomp", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("multcomp", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -13970,7 +13987,7 @@ detaching ‘package:ggplot2’, ‘package:multcomp’, ‘package:TH.data’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("robust")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("robust")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -14018,7 +14035,7 @@ detaching ‘package:robust’, ‘package:fit.models’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (FALSE) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (FALSE) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -14036,7 +14053,7 @@ detaching ‘package:robust’, ‘package:fit.models’
 + library(dplyr)
 + library(ggplot2)
 + 
-+ tidied <- tidy(fit1) %>% filter(term != "(Intercept)")
++ tidied <- tidy(fit1) |> filter(term != "(Intercept)")
 + 
 + ggplot(tidied, aes(step, estimate, group = term)) +
 +   geom_line()
@@ -14071,7 +14088,7 @@ detaching ‘package:robust’, ‘package:fit.models’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("gmm", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("gmm", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -14099,8 +14116,8 @@ detaching ‘package:robust’, ‘package:fit.models’
 + library(ggplot2)
 + library(dplyr)
 + 
-+ tidy(res, conf.int = TRUE) %>%
-+   mutate(variable = reorder(term, estimate)) %>%
++ tidy(res, conf.int = TRUE) |>
++   mutate(variable = reorder(term, estimate)) |>
 +   ggplot(aes(estimate, variable)) +
 +   geom_point() +
 +   geom_errorbarh(aes(xmin = conf.low, xmax = conf.high)) +
@@ -14131,8 +14148,8 @@ detaching ‘package:robust’, ‘package:fit.models’
 + td2
 + 
 + # coefficient plot
-+ td2 %>%
-+   mutate(variable = reorder(term, estimate)) %>%
++ td2 |>
++   mutate(variable = reorder(term, estimate)) |>
 +   ggplot(aes(estimate, variable)) +
 +   geom_point() +
 +   geom_errorbarh(aes(xmin = conf.low, xmax = conf.high)) +
@@ -14235,8 +14252,8 @@ The following objects are masked from ‘package:base’:
 
     intersect, setdiff, setequal, union
 
-> tidy(res, conf.int = TRUE) %>% mutate(variable = reorder(term, estimate)) %>% 
-+     ggplot(aes(estimate, variable)) + geom_point() + geom_errorbarh(aes(xmin = conf.low, 
+> ggplot(mutate(tidy(res, conf.int = TRUE), variable = reorder(term, estimate)), 
++     aes(estimate, variable)) + geom_point() + geom_errorbarh(aes(xmin = conf.low, 
 +     xmax = conf.high)) + geom_vline(xintercept = 0, color = "red", lty = 2)
 > g <- function(theta, x) {
 +     e <- x[, 2:11] - theta[1] - (x[, 1] - theta[1]) %*% matrix(theta[2:11], 1, 10)
@@ -14296,7 +14313,7 @@ The following objects are masked from ‘package:base’:
  9 VOXX_(Intercept) -0.00706    0.179    -0.0394   0.969  -0.359     0.344 
 10 ZOOM_(Intercept) -0.189      0.215    -0.878    0.380  -0.610     0.233 
 # ℹ 30 more rows
-> td2 %>% mutate(variable = reorder(term, estimate)) %>% ggplot(aes(estimate, 
+> ggplot(mutate(td2, variable = reorder(term, estimate)), aes(estimate, 
 +     variable)) + geom_point() + geom_errorbarh(aes(xmin = conf.low, xmax = conf.high)) + 
 +     geom_vline(xintercept = 0, color = "red", lty = 2)
 > ## End(Don't show)
@@ -14396,7 +14413,7 @@ detaching ‘package:dplyr’, ‘package:ggplot2’, ‘package:gmm’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("AER")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("AER")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -14529,7 +14546,7 @@ detaching ‘package:AER’, ‘package:survival’, ‘package:sandwich’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("psych", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("psych", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -14593,7 +14610,7 @@ detaching ‘package:ggplot2’, ‘package:psych’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("ks", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("ks", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -14611,11 +14628,11 @@ detaching ‘package:ggplot2’, ‘package:psych’
 + library(dplyr)
 + library(tidyr)
 + 
-+ td %>%
++ td |>
 +   pivot_wider(c(obs, estimate),
 +     names_from = variable,
 +     values_from = value
-+   ) %>%
++   ) |>
 +   ggplot(aes(x1, x2, fill = estimate)) +
 +   geom_tile() +
 +   theme_void()
@@ -14661,8 +14678,8 @@ The following objects are masked from ‘package:base’:
     intersect, setdiff, setequal, union
 
 > library(tidyr)
-> td %>% pivot_wider(c(obs, estimate), names_from = variable, values_from = value) %>% 
-+     ggplot(aes(x1, x2, fill = estimate)) + geom_tile() + theme_void()
+> ggplot(pivot_wider(td, c(obs, estimate), names_from = variable, values_from = value), 
++     aes(x1, x2, fill = estimate)) + geom_tile() + theme_void()
 Warning: Specifying the `id_cols` argument by position was deprecated in tidyr 1.3.0.
 ℹ Please explicitly name `id_cols`, like `id_cols = c(obs, estimate)`.
 > dat3 <- replicate(3, rnorm(100))
@@ -14704,7 +14721,7 @@ detaching ‘package:tidyr’, ‘package:dplyr’, ‘package:ggplot2’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (FALSE) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (FALSE) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + library(cluster)
@@ -14739,7 +14756,7 @@ detaching ‘package:tidyr’, ‘package:dplyr’, ‘package:ggplot2’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("lavaan")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("lavaan")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -14753,7 +14770,7 @@ detaching ‘package:tidyr’, ‘package:dplyr’, ‘package:ggplot2’,
 + ## Don't show: 
 + }) # examplesIf
 > library(lavaan)
-This is lavaan 0.6-19
+This is lavaan 0.6-20
 lavaan is FREE software! Please report any bugs.
 > cfa.fit <- cfa("F =~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9", data = HolzingerSwineford1939, 
 +     group = "school")
@@ -14792,7 +14809,7 @@ detaching ‘package:lavaan’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("ggplot2")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("ggplot2")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + library(ggplot2)
@@ -14822,8 +14839,8 @@ detaching ‘package:lavaan’
 + augment(mod, mtcars, interval = "confidence")
 + 
 + # predict on new data
-+ newdata <- mtcars %>%
-+   head(6) %>%
++ newdata <- mtcars |>
++   head(6) |>
 +   mutate(wt = wt + 1)
 + augment(mod, newdata = newdata)
 + 
@@ -14840,7 +14857,7 @@ detaching ‘package:lavaan’
 +   geom_ribbon(aes(ymin = .lower, ymax = .upper), col = NA, alpha = 0.3)
 + 
 + # predict on new data without outcome variable. Output does not include .resid
-+ newdata <- newdata %>%
++ newdata <- newdata |>
 +   select(-mpg)
 + 
 + augment(mod, newdata = newdata)
@@ -14944,7 +14961,7 @@ The following objects are masked from ‘package:base’:
 # ℹ 22 more rows
 # ℹ 8 more variables: .fitted <dbl>, .lower <dbl>, .upper <dbl>, .resid <dbl>,
 #   .hat <dbl>, .sigma <dbl>, .cooksd <dbl>, .std.resid <dbl>
-> newdata <- mtcars %>% head(6) %>% mutate(wt = wt + 1)
+> newdata <- mutate(head(mtcars, 6), wt = wt + 1)
 > augment(mod, newdata = newdata)
 # A tibble: 6 × 14
   .rownames      mpg   cyl  disp    hp  drat    wt  qsec    vs    am  gear  carb
@@ -14960,7 +14977,7 @@ The following objects are masked from ‘package:base’:
 > au <- augment(mod2, newdata = newdata, interval = "prediction")
 > ggplot(au, aes(wt, mpg)) + geom_point() + geom_line(aes(y = .fitted)) + 
 +     geom_ribbon(aes(ymin = .lower, ymax = .upper), col = NA, alpha = 0.3)
-> newdata <- newdata %>% select(-mpg)
+> newdata <- select(newdata, -mpg)
 > augment(mod, newdata = newdata)
 # A tibble: 6 × 12
   .rownames    cyl  disp    hp  drat    wt  qsec    vs    am  gear  carb .fitted
@@ -15014,7 +15031,7 @@ detaching ‘package:dplyr’, ‘package:ggplot2’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("lm.beta")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("lm.beta")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -15082,7 +15099,7 @@ detaching ‘package:lm.beta’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("robust")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("robust")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load modeling library
@@ -15146,7 +15163,7 @@ detaching ‘package:robust’, ‘package:fit.models’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("lmodel2", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("lmodel2", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -15247,7 +15264,7 @@ detaching ‘package:ggplot2’, ‘package:lmodel2’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("emmeans", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("emmeans", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -15458,7 +15475,7 @@ detaching ‘package:ggplot2’, ‘package:emmeans’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("maps", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("maps", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -15499,6 +15516,10 @@ detaching ‘package:ggplot2’, ‘package:emmeans’
 # ℹ 2,967 more rows
 > qplot(long, lat, data = ca, geom = "polygon", group = group)
 Warning: `qplot()` was deprecated in ggplot2 3.4.0.
+Warning: `fortify(<map>)` was deprecated in ggplot2 3.6.0.
+ℹ Please use `map_data()` instead.
+ℹ The deprecated feature was likely used in the ggplot2 package.
+  Please report the issue at <https://github.com/tidyverse/ggplot2/issues>.
 > tx <- map("county", "texas", plot = FALSE, fill = TRUE)
 > tidy(tx)
 # A tibble: 4,488 × 7
@@ -15536,7 +15557,7 @@ detaching ‘package:ggplot2’, ‘package:maps’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("margins")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("margins")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -15721,7 +15742,7 @@ detaching ‘package:margins’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("mediation")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("mediation")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -15802,7 +15823,7 @@ detaching ‘package:mediation’, ‘package:sandwich’, ‘package:mvtnorm’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("mfx")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("mfx")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -15953,7 +15974,7 @@ detaching ‘package:mfx’, ‘package:betareg’, ‘package:MASS’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("joineRML")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("joineRML")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # broom only skips running these examples because the example models take a
@@ -16025,7 +16046,7 @@ detaching ‘package:mfx’, ‘package:betareg’, ‘package:MASS’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("bbmle")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("bbmle")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -16106,7 +16127,7 @@ detaching ‘package:bbmle’, ‘package:stats4’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("mlogit")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("mlogit")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -16126,9 +16147,6 @@ detaching ‘package:bbmle’, ‘package:stats4’
 + }) # examplesIf
 > library(mlogit)
 Loading required package: dfidx
-The tidyverse part of the package is now in the tidydfidx package
-so that the dfidx package now depends only on a small set of packages
-
 > data("Fishing", package = "mlogit")
 > Fish <- dfidx(Fishing, varying = 2:9, shape = "wide", choice = "mode")
 > m <- mlogit(mode ~ price + catch | income, data = Fish)
@@ -16184,7 +16202,7 @@ detaching ‘package:mlogit’, ‘package:dfidx’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("muhaz", "survival"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("muhaz", "survival"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -16242,7 +16260,7 @@ detaching ‘package:survival’, ‘package:muhaz’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("nnet", "MASS"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("nnet", "MASS"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -16366,7 +16384,7 @@ detaching ‘package:MASS’, ‘package:nnet’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("MASS")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("MASS")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -16425,7 +16443,7 @@ detaching ‘package:MASS’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("quantreg")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("quantreg")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load modeling library
@@ -16539,7 +16557,7 @@ detaching ‘package:quantreg’, ‘package:SparseM’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("ggplot2")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("ggplot2")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # fit model
@@ -16624,7 +16642,7 @@ detaching ‘package:ggplot2’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("modeldata")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("modeldata")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + attach(airquality)
@@ -16732,7 +16750,7 @@ detaching ‘hpc_data’, ‘package:modeldata’, ‘airquality’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("cluster", "modeldata", "ggplot2")) && identical(Sys.getenv("NOT_CRAN"), "true")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("cluster", "modeldata", "ggplot2")) && identical(Sys.getenv("NOT_CRAN"), "true")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -16750,7 +16768,7 @@ detaching ‘hpc_data’, ‘package:modeldata’, ‘airquality’
 + glance(p)
 + augment(p, x)
 + 
-+ augment(p, x) %>%
++ augment(p, x) |>
 +   ggplot(aes(compounds, input_fields)) +
 +   geom_point(aes(color = .cluster)) +
 +   geom_text(aes(label = cluster), data = tidy(p), size = 10)
@@ -16773,7 +16791,7 @@ detaching ‘hpc_data’, ‘package:modeldata’, ‘airquality’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("plm")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("plm")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -16893,7 +16911,7 @@ detaching ‘package:plm’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("poLCA", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("poLCA", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -17152,7 +17170,7 @@ detaching ‘package:ggplot2’, ‘package:dplyr’, ‘package:poLCA’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("MASS")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("MASS")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -17247,7 +17265,7 @@ detaching ‘package:MASS’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("ggplot2")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("ggplot2")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + ptt <- power.t.test(n = 2:30, delta = 1)
@@ -17297,7 +17315,7 @@ detaching ‘package:ggplot2’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("maps", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("maps", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + pc <- prcomp(USArrests, scale = TRUE)
@@ -17316,10 +17334,10 @@ detaching ‘package:ggplot2’
 + library(ggplot2)
 + library(maps)
 + 
-+ pc %>%
-+   tidy(matrix = "samples") %>%
-+   mutate(region = tolower(row)) %>%
-+   inner_join(map_data("state"), by = "region") %>%
++ pc |>
++   tidy(matrix = "samples") |>
++   mutate(region = tolower(row)) |>
++   inner_join(map_data("state"), by = "region") |>
 +   ggplot(aes(long, lat, group = group, fill = value)) +
 +   geom_polygon() +
 +   facet_wrap(~PC) +
@@ -17388,10 +17406,10 @@ The following objects are masked from ‘package:base’:
 
 > library(ggplot2)
 > library(maps)
-> pc %>% tidy(matrix = "samples") %>% mutate(region = tolower(row)) %>% 
-+     inner_join(map_data("state"), by = "region") %>% ggplot(aes(long, lat, group = group, 
-+     fill = value)) + geom_polygon() + facet_wrap(~PC) + theme_void() + ggtitle("Principal components of arrest data")
-Warning in inner_join(., map_data("state"), by = "region") :
+> ggplot(inner_join(mutate(tidy(pc, matrix = "samples"), region = tolower(row)), 
++     map_data("state"), by = "region"), aes(long, lat, group = group, fill = value)) + 
++     geom_polygon() + facet_wrap(~PC) + theme_void() + ggtitle("Principal components of arrest data")
+Warning in inner_join(mutate(tidy(pc, matrix = "samples"), region = tolower(row)),  :
   Detected an unexpected many-to-many relationship between `x` and `y`.
 ℹ Row 1 of `x` matches multiple rows in `y`.
 ℹ Row 1 of `y` matches multiple rows in `x`.
@@ -17436,7 +17454,7 @@ detaching ‘package:maps’, ‘package:ggplot2’, ‘package:dplyr’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("survival")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("survival")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -17538,7 +17556,7 @@ detaching ‘package:survival’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("Hmisc", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("Hmisc", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -17619,7 +17637,7 @@ detaching ‘package:ggplot2’, ‘package:Hmisc’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("emmeans", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("emmeans", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -17800,7 +17818,7 @@ detaching ‘package:ggplot2’, ‘package:emmeans’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("leaps")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("leaps")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -17849,7 +17867,7 @@ detaching ‘package:leaps’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("MASS", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("MASS", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -18035,7 +18053,7 @@ detaching ‘package:robustbase’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("AUC", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("AUC", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -18060,13 +18078,13 @@ detaching ‘package:robustbase’
 + library(dplyr)
 + library(tidyr)
 + 
-+ rocs <- churn %>%
++ rocs <- churn |>
 +   pivot_longer(contains("predictions"),
 +     names_to = "algorithm",
 +     values_to = "value"
-+   ) %>%
-+   nest(data = -algorithm) %>%
-+   mutate(tidy_roc = purrr::map(data, ~ tidy(roc(.x$value, .x$labels)))) %>%
++   ) |>
++   nest(data = -algorithm) |>
++   mutate(tidy_roc = purrr::map(data, \(x) tidy(roc(x$value, x$labels)))) |>
 +   unnest(tidy_roc)
 + 
 + ggplot(rocs, aes(fpr, tpr, color = algorithm)) +
@@ -18109,9 +18127,9 @@ The following objects are masked from ‘package:base’:
     intersect, setdiff, setequal, union
 
 > library(tidyr)
-> rocs <- churn %>% pivot_longer(contains("predictions"), names_to = "algorithm", 
-+     values_to = "value") %>% nest(data = -algorithm) %>% mutate(tidy_roc = purrr::map(data, 
-+     ~tidy(roc(.x$value, .x$labels)))) %>% unnest(tidy_roc)
+> rocs <- unnest(mutate(nest(pivot_longer(churn, contains("predictions"), 
++     names_to = "algorithm", values_to = "value"), data = -algorithm), tidy_roc = purrr::map(data, 
++     function(x) tidy(roc(x$value, x$labels)))), tidy_roc)
 > ggplot(rocs, aes(fpr, tpr, color = algorithm)) + geom_line()
 > ## End(Don't show)
 > 
@@ -18134,7 +18152,7 @@ detaching ‘package:tidyr’, ‘package:dplyr’, ‘package:ggplot2’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("quantreg")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("quantreg")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load modeling library and data
@@ -18229,30 +18247,30 @@ Loading required package: SparseM
 > mod3 <- rq(stack.loss ~ stack.x, tau = c(0.25, 0.5))
 > tidy(mod3)
 # A tibble: 8 × 5
-  term               estimate conf.low conf.high   tau
-  <chr>                 <dbl>    <dbl>     <dbl> <dbl>
-1 (Intercept)       -3.6 e+ 1  -59.0     -7.84    0.25
-2 stack.xAir.Flow    5.00e- 1    0.229    0.970   0.25
-3 stack.xWater.Temp  1.00e+ 0    0.286    2.26    0.25
-4 stack.xAcid.Conc. -4.58e-16   -0.643    0.0861  0.25
-5 (Intercept)       -3.97e+ 1  -53.8    -24.5     0.5 
-6 stack.xAir.Flow    8.32e- 1    0.509    1.17    0.5 
-7 stack.xWater.Temp  5.74e- 1    0.272    3.04    0.5 
-8 stack.xAcid.Conc. -6.09e- 2   -0.278    0.0153  0.5 
+  term                estimate conf.low conf.high   tau
+  <chr>                  <dbl>    <dbl>     <dbl> <dbl>
+1 (Intercept)       -3.6  e+ 1  -59.0     -7.84    0.25
+2 stack.xAir.Flow    5.00 e- 1    0.229    0.970   0.25
+3 stack.xWater.Temp  1.000e+ 0    0.286    2.26    0.25
+4 stack.xAcid.Conc. -4.58 e-16   -0.643    0.0861  0.25
+5 (Intercept)       -3.97 e+ 1  -53.8    -24.5     0.5 
+6 stack.xAir.Flow    8.32 e- 1    0.509    1.17    0.5 
+7 stack.xWater.Temp  5.74 e- 1    0.272    3.04    0.5 
+8 stack.xAcid.Conc. -6.09 e- 2   -0.278    0.0153  0.5 
 > augment(mod3)
 # A tibble: 42 × 5
-   stack.loss stack.x[,"Air.Flow"] [,"Water.Temp"] .tau     .resid .fitted
-        <dbl>                <dbl>           <dbl> <chr>     <dbl>   <dbl>
- 1         42                   80              27 0.25   1.10e+ 1    31.0
- 2         42                   80              27 0.5    5.06e+ 0    36.9
- 3         37                   80              27 0.25   6.00e+ 0    31.0
- 4         37                   80              27 0.5   -1.42e-14    37  
- 5         37                   75              25 0.25   1.05e+ 1    26.5
- 6         37                   75              25 0.5    5.43e+ 0    31.6
- 7         28                   62              24 0.25   9.00e+ 0    19  
- 8         28                   62              24 0.5    7.63e+ 0    20.4
- 9         18                   62              22 0.25   1.00e+ 0    17.0
-10         18                   62              22 0.5   -1.22e+ 0    19.2
+   stack.loss stack.x[,"Air.Flow"] [,"Water.Temp"] .tau      .resid .fitted
+        <dbl>                <dbl>           <dbl> <chr>      <dbl>   <dbl>
+ 1         42                   80              27 0.25   1.10 e+ 1    31.0
+ 2         42                   80              27 0.5    5.06 e+ 0    36.9
+ 3         37                   80              27 0.25   6.00 e+ 0    31.0
+ 4         37                   80              27 0.5   -1.42 e-14    37  
+ 5         37                   75              25 0.25   1.05 e+ 1    26.5
+ 6         37                   75              25 0.5    5.43 e+ 0    31.6
+ 7         28                   62              24 0.25   9.00 e+ 0    19  
+ 8         28                   62              24 0.5    7.63 e+ 0    20.4
+ 9         18                   62              22 0.25   1.000e+ 0    17.0
+10         18                   62              22 0.5   -1.22 e+ 0    19.2
 # ℹ 32 more rows
 # ℹ 1 more variable: stack.x[3] <dbl>
 > ## End(Don't show)
@@ -18275,7 +18293,7 @@ detaching ‘package:quantreg’, ‘package:SparseM’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("quantreg")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("quantreg")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load modeling library and data
@@ -18370,30 +18388,30 @@ Loading required package: SparseM
 > mod3 <- rq(stack.loss ~ stack.x, tau = c(0.25, 0.5))
 > tidy(mod3)
 # A tibble: 8 × 5
-  term               estimate conf.low conf.high   tau
-  <chr>                 <dbl>    <dbl>     <dbl> <dbl>
-1 (Intercept)       -3.6 e+ 1  -59.0     -7.84    0.25
-2 stack.xAir.Flow    5.00e- 1    0.229    0.970   0.25
-3 stack.xWater.Temp  1.00e+ 0    0.286    2.26    0.25
-4 stack.xAcid.Conc. -4.58e-16   -0.643    0.0861  0.25
-5 (Intercept)       -3.97e+ 1  -53.8    -24.5     0.5 
-6 stack.xAir.Flow    8.32e- 1    0.509    1.17    0.5 
-7 stack.xWater.Temp  5.74e- 1    0.272    3.04    0.5 
-8 stack.xAcid.Conc. -6.09e- 2   -0.278    0.0153  0.5 
+  term                estimate conf.low conf.high   tau
+  <chr>                  <dbl>    <dbl>     <dbl> <dbl>
+1 (Intercept)       -3.6  e+ 1  -59.0     -7.84    0.25
+2 stack.xAir.Flow    5.00 e- 1    0.229    0.970   0.25
+3 stack.xWater.Temp  1.000e+ 0    0.286    2.26    0.25
+4 stack.xAcid.Conc. -4.58 e-16   -0.643    0.0861  0.25
+5 (Intercept)       -3.97 e+ 1  -53.8    -24.5     0.5 
+6 stack.xAir.Flow    8.32 e- 1    0.509    1.17    0.5 
+7 stack.xWater.Temp  5.74 e- 1    0.272    3.04    0.5 
+8 stack.xAcid.Conc. -6.09 e- 2   -0.278    0.0153  0.5 
 > augment(mod3)
 # A tibble: 42 × 5
-   stack.loss stack.x[,"Air.Flow"] [,"Water.Temp"] .tau     .resid .fitted
-        <dbl>                <dbl>           <dbl> <chr>     <dbl>   <dbl>
- 1         42                   80              27 0.25   1.10e+ 1    31.0
- 2         42                   80              27 0.5    5.06e+ 0    36.9
- 3         37                   80              27 0.25   6.00e+ 0    31.0
- 4         37                   80              27 0.5   -1.42e-14    37  
- 5         37                   75              25 0.25   1.05e+ 1    26.5
- 6         37                   75              25 0.5    5.43e+ 0    31.6
- 7         28                   62              24 0.25   9.00e+ 0    19  
- 8         28                   62              24 0.5    7.63e+ 0    20.4
- 9         18                   62              22 0.25   1.00e+ 0    17.0
-10         18                   62              22 0.5   -1.22e+ 0    19.2
+   stack.loss stack.x[,"Air.Flow"] [,"Water.Temp"] .tau      .resid .fitted
+        <dbl>                <dbl>           <dbl> <chr>      <dbl>   <dbl>
+ 1         42                   80              27 0.25   1.10 e+ 1    31.0
+ 2         42                   80              27 0.5    5.06 e+ 0    36.9
+ 3         37                   80              27 0.25   6.00 e+ 0    31.0
+ 4         37                   80              27 0.5   -1.42 e-14    37  
+ 5         37                   75              25 0.25   1.05 e+ 1    26.5
+ 6         37                   75              25 0.5    5.43 e+ 0    31.6
+ 7         28                   62              24 0.25   9.00 e+ 0    19  
+ 8         28                   62              24 0.5    7.63 e+ 0    20.4
+ 9         18                   62              22 0.25   1.000e+ 0    17.0
+10         18                   62              22 0.5   -1.22 e+ 0    19.2
 # ℹ 32 more rows
 # ℹ 1 more variable: stack.x[3] <dbl>
 > ## End(Don't show)
@@ -18416,7 +18434,7 @@ detaching ‘package:quantreg’, ‘package:SparseM’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("spdep", "spatialreg")) && identical(Sys.getenv("NOT_CRAN"), "true")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("spdep", "spatialreg")) && identical(Sys.getenv("NOT_CRAN"), "true")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + 
@@ -18479,7 +18497,7 @@ detaching ‘package:quantreg’, ‘package:SparseM’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("ggplot2")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("ggplot2")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + spc <- spectrum(lh)
@@ -18528,7 +18546,7 @@ detaching ‘package:ggplot2’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("speedglm")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("speedglm")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -18588,7 +18606,7 @@ detaching ‘package:speedglm’, ‘package:biglm’, ‘package:DBI’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("speedglm")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("speedglm")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load modeling library
@@ -18658,7 +18676,7 @@ detaching ‘package:speedglm’, ‘package:biglm’, ‘package:DBI’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("multcomp", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("multcomp", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -18812,7 +18830,7 @@ detaching ‘package:ggplot2’, ‘package:multcomp’, ‘package:TH.data’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("emmeans", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("emmeans", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -18993,7 +19011,7 @@ detaching ‘package:ggplot2’, ‘package:emmeans’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("survival")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("survival")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -19049,7 +19067,7 @@ detaching ‘package:survival’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("survival")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("survival")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -19079,16 +19097,16 @@ detaching ‘package:survival’
 # A tibble: 88 × 3
     time estimate n.risk
    <dbl>    <dbl>  <int>
- 1     0     1       102
- 2     1     1.00    102
- 3     2     1.00     99
- 4     4     1.00     96
- 5     5     1.00     94
- 6     7     1.00     92
- 7     8     1.00     91
- 8    10     1.00     90
- 9    11     1.00     89
-10    15     1.00     88
+ 1     0    1        102
+ 2     1    1.000    102
+ 3     2    1.000     99
+ 4     4    1.000     96
+ 5     5    1.000     94
+ 6     7    1.000     92
+ 7     8    1.000     91
+ 8    10    1.000     90
+ 9    11    1.000     89
+10    15    1.000     88
 # ℹ 78 more rows
 > glance(sexpfit)
 # A tibble: 1 × 3
@@ -19115,7 +19133,7 @@ detaching ‘package:survival’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("survival", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("survival", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -19157,7 +19175,7 @@ detaching ‘package:survival’
     time n.risk n.event n.censor estimate std.error conf.high conf.low
    <dbl>  <dbl>   <dbl>    <dbl>    <dbl>     <dbl>     <dbl>    <dbl>
  1     5    228       1        0    0.996   0.00419     1        0.988
- 2    11    227       3        0    0.983   0.00845     1.00     0.967
+ 2    11    227       3        0    0.983   0.00845     1.000    0.967
  3    12    224       1        0    0.979   0.00947     0.997    0.961
  4    13    223       2        0    0.971   0.0113      0.992    0.949
  5    15    221       1        0    0.966   0.0121      0.990    0.944
@@ -19186,7 +19204,7 @@ detaching ‘package:survival’
  1     6    241       0        0    0.996   0.00414     1        0.988 (s0) 
  2     7    240       0        0    0.992   0.00584     1        0.980 (s0) 
  3    31    239       0        0    0.988   0.00714     1        0.974 (s0) 
- 4    32    238       0        0    0.983   0.00823     1.00     0.967 (s0) 
+ 4    32    238       0        0    0.983   0.00823     1.000    0.967 (s0) 
  5    39    237       0        0    0.979   0.00918     0.997    0.961 (s0) 
  6    60    236       0        0    0.975   0.0100      0.995    0.956 (s0) 
  7    61    235       0        0    0.967   0.0115      0.990    0.944 (s0) 
@@ -19196,6 +19214,8 @@ detaching ‘package:survival’
 # ℹ 701 more rows
 > ggplot(td_multi, aes(time, estimate, group = state)) + geom_line(aes(color = state)) + 
 +     geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.25)
+Warning: Removed 13 rows containing missing values or values outside the scale range
+(`geom_ribbon()`).
 > ## End(Don't show)
 > 
 > 
@@ -19216,7 +19236,7 @@ detaching ‘package:ggplot2’, ‘package:survival’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("survival", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("survival", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -19278,6 +19298,7 @@ detaching ‘package:ggplot2’, ‘package:survival’
 > library(ggplot2)
 > ggplot(td, aes(estimate, term)) + geom_point() + geom_errorbarh(aes(xmin = conf.low, 
 +     xmax = conf.high), height = 0) + geom_vline(xintercept = 0)
+`height` was translated to `width`.
 > ## End(Don't show)
 > 
 > 
@@ -19298,7 +19319,7 @@ detaching ‘package:ggplot2’, ‘package:survival’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("survey", "MASS"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("survey", "MASS"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + library(broom)
 + library(survey)
@@ -19373,7 +19394,7 @@ detaching ‘package:survey’, ‘package:survival’, ‘package:Matrix’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("systemfit")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("systemfit")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + set.seed(27)
@@ -19507,7 +19528,7 @@ detaching ‘package:systemfit’, ‘package:lmtest’, ‘package:zoo’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("vars")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("vars")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -19582,7 +19603,7 @@ detaching ‘package:vars’, ‘package:lmtest’, ‘package:urca’,
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("zoo", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("zoo", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -19666,7 +19687,7 @@ detaching ‘package:ggplot2’, ‘package:zoo’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed("gam")) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed("gam")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + # load libraries for models and data
@@ -19683,7 +19704,7 @@ detaching ‘package:ggplot2’, ‘package:zoo’
 > library(gam)
 Loading required package: splines
 Loading required package: foreach
-Loaded gam 1.22-5
+Loaded gam 1.22-6
 
 > g <- gam(mpg ~ s(hp, 4) + am + qsec, data = mtcars)
 > tidy(g)
@@ -19719,7 +19740,7 @@ detaching ‘package:gam’, ‘package:foreach’, ‘package:splines’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("modeldata", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("modeldata", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + library(modeldata)
@@ -19744,8 +19765,8 @@ detaching ‘package:gam’, ‘package:foreach’, ‘package:splines’
 +   geom_point() +
 +   ylab("% of variance explained")
 + 
-+ tidy_u %>%
-+   mutate(class = hpc_data$class[row]) %>%
++ tidy_u |>
++   mutate(class = hpc_data$class[row]) |>
 +   ggplot(aes(class, value)) +
 +   geom_boxplot() +
 +   facet_wrap(~PC, scale = "free_y")
@@ -19822,7 +19843,7 @@ The following objects are masked from ‘package:base’:
     intersect, setdiff, setequal, union
 
 > ggplot(tidy_d, aes(PC, percent)) + geom_point() + ylab("% of variance explained")
-> tidy_u %>% mutate(class = hpc_data$class[row]) %>% ggplot(aes(class, value)) + 
+> ggplot(mutate(tidy_u, class = hpc_data$class[row]), aes(class, value)) + 
 +     geom_boxplot() + facet_wrap(~PC, scale = "free_y")
 > ## End(Don't show)
 > 
@@ -19863,7 +19884,7 @@ detaching ‘package:dplyr’, ‘package:ggplot2’, ‘package:modeldata’
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (rlang::is_installed(c("modeldata", "ggplot2"))) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (rlang::is_installed(c("modeldata", "ggplot2"))) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + 
 + library(modeldata)
@@ -19888,8 +19909,8 @@ detaching ‘package:dplyr’, ‘package:ggplot2’, ‘package:modeldata’
 +   geom_point() +
 +   ylab("% of variance explained")
 + 
-+ tidy_u %>%
-+   mutate(class = hpc_data$class[row]) %>%
++ tidy_u |>
++   mutate(class = hpc_data$class[row]) |>
 +   ggplot(aes(class, value)) +
 +   geom_boxplot() +
 +   facet_wrap(~PC, scale = "free_y")
@@ -19966,7 +19987,7 @@ The following objects are masked from ‘package:base’:
     intersect, setdiff, setequal, union
 
 > ggplot(tidy_d, aes(PC, percent)) + geom_point() + ylab("% of variance explained")
-> tidy_u %>% mutate(class = hpc_data$class[row]) %>% ggplot(aes(class, value)) + 
+> ggplot(mutate(tidy_u, class = hpc_data$class[row]), aes(class, value)) + 
 +     geom_boxplot() + facet_wrap(~PC, scale = "free_y")
 > ## End(Don't show)
 > 
@@ -20039,7 +20060,7 @@ detaching ‘package:dplyr’, ‘package:ggplot2’, ‘package:modeldata’
 > cleanEx()
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  52.37 13.163 51.759 0.004 0.005 
+Time elapsed:  56.207 12.663 55.394 0.003 0.006 
 > grDevices::dev.off()
 null device 
           1 

@@ -22,7 +22,7 @@ Type 'q()' to quit R.
 > options(warn = 1)
 > library('brms')
 Loading required package: Rcpp
-Loading 'brms' package (version 2.22.0). Useful instructions
+Loading 'brms' package (version 2.23.0). Useful instructions
 can be found by typing help('brms'). A more detailed introduction
 to the package is available through vignette('brms_overview').
 
@@ -56,9 +56,9 @@ b ~ R2D2(mean_R2 = 0.8, prec_R2 = 10)
                                           prior class coef group resp dpar
  R2D2(mean_R2 = 0.8, prec_R2 = 10, main = TRUE)     b                     
                                          R2D2()    sd                     
- nlpar   lb   ub source
-       <NA> <NA>   user
-       <NA> <NA>   user
+ nlpar   lb   ub tag source
+       <NA> <NA>       user
+       <NA> <NA>       user
 > 
 > 
 > 
@@ -436,12 +436,18 @@ autocor ~ arma(p = 1, q = 1) + car(M)
 > ##D summary(fit7)
 > ##D conditional_effects(fit7)
 > ##D 
-> ##D 
 > ##D # use the future package for more flexible parallelization
 > ##D library(future)
 > ##D plan(multisession, workers = 4)
-> ##D fit7 <- update(fit7, future = TRUE)
+> ##D fit7a <- update(fit7, future = TRUE)
 > ##D 
+> ##D # we may also use mirai allowing the use of remote machines as
+> ##D # well, including the use of computer clusters managed by queuing
+> ##D # systems
+> ##D mirai::daemons(4) # distributed computing with url and remote argument
+> ##D plan(future.mirai::mirai_cluster)
+> ##D fit7b <- update(fit7, future = TRUE)
+> ##D mirai::daemons(0) # shuts down the 4 workers
 > ##D 
 > ##D # fit a model manually via rstan
 > ##D scode <- stancode(count ~ Trt, data = epilepsy)
@@ -510,13 +516,13 @@ autocor ~ arma(p = 1, q = 1) + car(M)
 > ### Title: Special Family Functions for 'brms' Models
 > ### Aliases: brmsfamily student bernoulli beta_binomial negbinomial
 > ###   geometric lognormal shifted_lognormal skew_normal exponential weibull
-> ###   frechet gen_extreme_value exgaussian wiener Beta dirichlet
+> ###   frechet gen_extreme_value exgaussian wiener Beta xbeta dirichlet
 > ###   logistic_normal von_mises asym_laplace cox hurdle_poisson
 > ###   hurdle_negbinomial hurdle_gamma hurdle_lognormal hurdle_cumulative
 > ###   zero_inflated_beta zero_one_inflated_beta zero_inflated_poisson
 > ###   zero_inflated_negbinomial zero_inflated_binomial
-> ###   zero_inflated_beta_binomial categorical multinomial cumulative sratio
-> ###   cratio acat
+> ###   zero_inflated_beta_binomial categorical multinomial
+> ###   dirichlet_multinomial cumulative sratio cratio acat
 > 
 > ### ** Examples
 > 
@@ -958,7 +964,7 @@ tau ~ 1
 > 
 > stancode(count ~ Base + Age, data = epilepsy,
 +          prior = prior(constant(1), class = "b"))
-// generated with brms 2.22.0
+// generated with brms 2.23.0
 functions {
 }
 data {
@@ -983,7 +989,8 @@ parameters {
 }
 transformed parameters {
   vector[Kc] b;  // regression coefficients
-  real lprior = 0;  // prior contributions to the log posterior
+  // prior contributions to the log posterior
+  real lprior = 0;
   b = rep_vector(1, rows(b));
   lprior += student_t_lpdf(Intercept | 3, 4, 4.4);
   lprior += student_t_lpdf(sigma | 3, 0, 4.4)
@@ -1006,7 +1013,7 @@ generated quantities {
 > stancode(count ~ Base + Age, data = epilepsy,
 +          prior = prior(constant(alpha), class = "b"),
 +          stanvars = stanvar(c(1, 0), name = "alpha"))
-// generated with brms 2.22.0
+// generated with brms 2.23.0
 functions {
 }
 data {
@@ -1032,7 +1039,8 @@ parameters {
 }
 transformed parameters {
   vector[Kc] b;  // regression coefficients
-  real lprior = 0;  // prior contributions to the log posterior
+  // prior contributions to the log posterior
+  real lprior = 0;
   b = rep_vector(alpha, rows(b));
   lprior += student_t_lpdf(Intercept | 3, 4, 4.4);
   lprior += student_t_lpdf(sigma | 3, 0, 4.4)
@@ -1054,7 +1062,7 @@ generated quantities {
 > stancode(count ~ Base + Age, data = epilepsy,
 +          prior = prior(constant(alpha, broadcast = FALSE), class = "b"),
 +          stanvars = stanvar(c(1, 0), name = "alpha"))
-// generated with brms 2.22.0
+// generated with brms 2.23.0
 functions {
 }
 data {
@@ -1080,7 +1088,8 @@ parameters {
 }
 transformed parameters {
   vector[Kc] b;  // regression coefficients
-  real lprior = 0;  // prior contributions to the log posterior
+  // prior contributions to the log posterior
+  real lprior = 0;
   b = alpha;
   lprior += student_t_lpdf(Intercept | 3, 4, 4.4);
   lprior += student_t_lpdf(sigma | 3, 0, 4.4)
@@ -1440,18 +1449,18 @@ arma(~visit | patient, 0, 2)
 > ## get all parameters and parameters classes to define priors on
 > (prior <- default_prior(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 +                         data = epilepsy, family = poisson()))
-                  prior     class       coef   group resp dpar nlpar lb ub
-                 (flat)         b                                         
-                 (flat)         b       Trt1                              
-                 (flat)         b       zAge                              
-                 (flat)         b      zBase                              
-                 (flat)         b zBase:Trt1                              
- student_t(3, 1.4, 2.5) Intercept                                         
-   student_t(3, 0, 2.5)        sd                                     0   
-   student_t(3, 0, 2.5)        sd                obs                  0   
-   student_t(3, 0, 2.5)        sd  Intercept     obs                  0   
-   student_t(3, 0, 2.5)        sd            patient                  0   
-   student_t(3, 0, 2.5)        sd  Intercept patient                  0   
+                  prior     class       coef   group resp dpar nlpar lb ub tag
+                 (flat)         b                                             
+                 (flat)         b       Trt1                                  
+                 (flat)         b       zAge                                  
+                 (flat)         b      zBase                                  
+                 (flat)         b zBase:Trt1                                  
+ student_t(3, 1.4, 2.5) Intercept                                             
+   student_t(3, 0, 2.5)        sd                                     0       
+   student_t(3, 0, 2.5)        sd                obs                  0       
+   student_t(3, 0, 2.5)        sd  Intercept     obs                  0       
+   student_t(3, 0, 2.5)        sd            patient                  0       
+   student_t(3, 0, 2.5)        sd  Intercept patient                  0       
        source
       default
  (vectorized)
@@ -1483,18 +1492,18 @@ arma(~visit | patient, 0, 2)
 > # get all parameters and parameters classes to define priors on
 > (prior <- default_prior(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 +                         data = epilepsy, family = poisson()))
-                  prior     class       coef   group resp dpar nlpar lb ub
-                 (flat)         b                                         
-                 (flat)         b       Trt1                              
-                 (flat)         b       zAge                              
-                 (flat)         b      zBase                              
-                 (flat)         b zBase:Trt1                              
- student_t(3, 1.4, 2.5) Intercept                                         
-   student_t(3, 0, 2.5)        sd                                     0   
-   student_t(3, 0, 2.5)        sd                obs                  0   
-   student_t(3, 0, 2.5)        sd  Intercept     obs                  0   
-   student_t(3, 0, 2.5)        sd            patient                  0   
-   student_t(3, 0, 2.5)        sd  Intercept patient                  0   
+                  prior     class       coef   group resp dpar nlpar lb ub tag
+                 (flat)         b                                             
+                 (flat)         b       Trt1                                  
+                 (flat)         b       zAge                                  
+                 (flat)         b      zBase                                  
+                 (flat)         b zBase:Trt1                                  
+ student_t(3, 1.4, 2.5) Intercept                                             
+   student_t(3, 0, 2.5)        sd                                     0       
+   student_t(3, 0, 2.5)        sd                obs                  0       
+   student_t(3, 0, 2.5)        sd  Intercept     obs                  0       
+   student_t(3, 0, 2.5)        sd            patient                  0       
+   student_t(3, 0, 2.5)        sd  Intercept patient                  0       
        source
       default
  (vectorized)
@@ -1518,7 +1527,7 @@ arma(~visit | patient, 0, 2)
 > stancode(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 +          data = epilepsy, family = poisson(),
 +          prior = prior)
-// generated with brms 2.22.0
+// generated with brms 2.23.0
 functions {
 }
 data {
@@ -1560,7 +1569,8 @@ parameters {
 transformed parameters {
   vector[N_1] r_1_1;  // actual group-level effects
   vector[N_2] r_2_1;  // actual group-level effects
-  real lprior = 0;  // prior contributions to the log posterior
+  // prior contributions to the log posterior
+  real lprior = 0;
   r_1_1 = (sd_1[1] * (z_1[1]));
   r_2_1 = (sd_2[1] * (z_2[1]));
   lprior += normal_lpdf(b[1] | 0,10);
@@ -1958,6 +1968,12 @@ generated quantities {
 > ##D # include Trt as a by variable
 > ##D fit3 <- brm(count ~ Trt + (1|gr(patient, by = Trt)), data = epilepsy)
 > ##D summary(fit3)
+> ##D 
+> ##D # include a group-level weight variable
+> ##D epilepsy[['patient_samp_wgt']] <- c(1, rep(c(0.9, 1.1), each = 29))
+> ##D fit4 <- brm(count ~ Trt + (1|gr(patient, pw = patient_samp_wgt)),
+> ##D             data = epilepsy)
+> ##D summary(fit4)
 > ## End(Not run)
 > 
 > 
@@ -1984,9 +2000,9 @@ b ~ horseshoe(df = 3, par_ratio = 0.1)
                                            prior class coef group resp dpar
  horseshoe(df = 3, par_ratio = 0.1, main = TRUE)     b                     
                                      horseshoe()    sd                     
- nlpar   lb   ub source
-       <NA> <NA>   user
-       <NA> <NA>   user
+ nlpar   lb   ub tag source
+       <NA> <NA>       user
+       <NA> <NA>       user
 > 
 > 
 > 
@@ -3748,18 +3764,18 @@ sd ~ cauchy(0, 1)
 > # check which parameters can have priors
 > default_prior(rating ~ treat + period + carry + (1|subject),
 +              data = inhaler, family = cumulative())
-                prior     class      coef   group resp dpar nlpar lb ub
-               (flat)         b                                        
-               (flat)         b     carry                              
-               (flat)         b    period                              
-               (flat)         b     treat                              
- student_t(3, 0, 2.5) Intercept                                        
- student_t(3, 0, 2.5) Intercept         1                              
- student_t(3, 0, 2.5) Intercept         2                              
- student_t(3, 0, 2.5) Intercept         3                              
- student_t(3, 0, 2.5)        sd                                    0   
- student_t(3, 0, 2.5)        sd           subject                  0   
- student_t(3, 0, 2.5)        sd Intercept subject                  0   
+                prior     class      coef   group resp dpar nlpar lb ub tag
+               (flat)         b                                            
+               (flat)         b     carry                                  
+               (flat)         b    period                                  
+               (flat)         b     treat                                  
+ student_t(3, 0, 2.5) Intercept                                            
+ student_t(3, 0, 2.5) Intercept         1                                  
+ student_t(3, 0, 2.5) Intercept         2                                  
+ student_t(3, 0, 2.5) Intercept         3                                  
+ student_t(3, 0, 2.5)        sd                                    0       
+ student_t(3, 0, 2.5)        sd           subject                  0       
+ student_t(3, 0, 2.5)        sd Intercept subject                  0       
        source
       default
  (vectorized)
@@ -3783,7 +3799,7 @@ sd ~ cauchy(0, 1)
 > stancode(rating ~ treat + period + carry + (1|subject),
 +          data = inhaler, family = cumulative(),
 +          prior = bprior)
-// generated with brms 2.22.0
+// generated with brms 2.23.0
 functions {
   /* cumulative-logit log-PDF for a single response
    * Args:
@@ -3863,7 +3879,8 @@ parameters {
 transformed parameters {
   real disc = 1;  // discrimination parameters
   vector[N_1] r_1_1;  // actual group-level effects
-  real lprior = 0;  // prior contributions to the log posterior
+  // prior contributions to the log posterior
+  real lprior = 0;
   r_1_1 = (sd_1[1] * (z_1[1]));
   lprior += normal_lpdf(b[1] | 1, 2);
   lprior += normal_lpdf(b[2] | 0,10);
@@ -3899,7 +3916,7 @@ generated quantities {
 > stancode(count ~ zAge + zBase * Trt,
 +          data = epilepsy, family = poisson(),
 +          prior = set_prior("horseshoe(3)"))
-// generated with brms 2.22.0
+// generated with brms 2.23.0
 functions {
   /* Efficient computation of the horseshoe scale parameters
    * see Appendix C.1 in https://projecteuclid.org/euclid.ejs/1513306866
@@ -3952,7 +3969,8 @@ transformed parameters {
   vector[Kc] b;  // scaled coefficients
   vector<lower=0>[Kc] sdb;  // SDs of the coefficients
   vector<lower=0>[Kscales] scales;  // local horseshoe scale parameters
-  real lprior = 0;  // prior contributions to the log posterior
+  // prior contributions to the log posterior
+  real lprior = 0;
   // compute horseshoe scale parameters
   scales = scales_horseshoe(hs_local, hs_global, hs_scale_slab^2 * hs_slab);
   sdb = scales[(1):(Kc)];
@@ -3984,7 +4002,7 @@ generated quantities {
 +   prior(constant(0.5), class = "sd")
 > stancode(count ~ zAge + zBase + (1 | patient),
 +               data = epilepsy, prior = bprior)
-// generated with brms 2.22.0
+// generated with brms 2.23.0
 functions {
 }
 data {
@@ -4018,7 +4036,8 @@ transformed parameters {
   vector[Kc] b;  // regression coefficients
   vector<lower=0>[M_1] sd_1;  // group-level standard deviations
   vector[N_1] r_1_1;  // actual group-level effects
-  real lprior = 0;  // prior contributions to the log posterior
+  // prior contributions to the log posterior
+  real lprior = 0;
   b[1] = 1;
   b[2] = 2;
   sd_1 = rep_vector(0.5, rows(sd_1));
@@ -4051,7 +4070,7 @@ generated quantities {
 > # pass priors to Stan without checking
 > prior <- prior_string("target += normal_lpdf(b[1] | 0, 1)", check = FALSE)
 > stancode(count ~ Trt, data = epilepsy, prior = prior)
-// generated with brms 2.22.0
+// generated with brms 2.23.0
 functions {
 }
 data {
@@ -4076,7 +4095,8 @@ parameters {
   real<lower=0> sigma;  // dispersion parameter
 }
 transformed parameters {
-  real lprior = 0;  // prior contributions to the log posterior
+  // prior contributions to the log posterior
+  real lprior = 0;
   lprior += student_t_lpdf(Intercept | 3, 4, 4.4);
   lprior += student_t_lpdf(sigma | 3, 0, 4.4)
     - 1 * student_t_lccdf(0 | 3, 0, 4.4);
@@ -4098,10 +4118,88 @@ generated quantities {
 > # define priors in a vectorized manner
 > # useful in particular for categorical or multivariate models
 > set_prior("normal(0, 2)", dpar = c("muX", "muY", "muZ"))
-        prior class coef group resp dpar nlpar   lb   ub source
- normal(0, 2)     b                  muX       <NA> <NA>   user
- normal(0, 2)     b                  muY       <NA> <NA>   user
- normal(0, 2)     b                  muZ       <NA> <NA>   user
+        prior class coef group resp dpar nlpar   lb   ub tag source
+ normal(0, 2)     b                  muX       <NA> <NA>       user
+ normal(0, 2)     b                  muY       <NA> <NA>       user
+ normal(0, 2)     b                  muZ       <NA> <NA>       user
+> 
+> # specify tags for different priors for sensitivity analysis using priorsense
+> # It is then possible to check the sensitivity when changing the priors with
+> # the same tag while leaving others the same
+> prior_cov <- prior(normal(0, 10), class = "b", tag = "covariates")
+> prior_trt <- prior(normal(0, 1), class = "b", coef = "Trt1", tag = "treatment")
+> stancode(count ~ Trt + zAge + zBase + (1 | patient),
++          data = epilepsy, prior = c(prior_cov, prior_trt))
+// generated with brms 2.23.0
+functions {
+}
+data {
+  int<lower=1> N;  // total number of observations
+  vector[N] Y;  // response variable
+  int<lower=1> K;  // number of population-level effects
+  matrix[N, K] X;  // population-level design matrix
+  int<lower=1> Kc;  // number of population-level effects after centering
+  // data for group-level effects of ID 1
+  int<lower=1> N_1;  // number of grouping levels
+  int<lower=1> M_1;  // number of coefficients per level
+  array[N] int<lower=1> J_1;  // grouping indicator per observation
+  // group-level predictor values
+  vector[N] Z_1_1;
+  int prior_only;  // should the likelihood be ignored?
+}
+transformed data {
+  matrix[N, Kc] Xc;  // centered version of X without an intercept
+  vector[Kc] means_X;  // column means of X before centering
+  for (i in 2:K) {
+    means_X[i - 1] = mean(X[, i]);
+    Xc[, i - 1] = X[, i] - means_X[i - 1];
+  }
+}
+parameters {
+  vector[Kc] b;  // regression coefficients
+  real Intercept;  // temporary intercept for centered predictors
+  real<lower=0> sigma;  // dispersion parameter
+  vector<lower=0>[M_1] sd_1;  // group-level standard deviations
+  array[M_1] vector[N_1] z_1;  // standardized group-level effects
+}
+transformed parameters {
+  vector[N_1] r_1_1;  // actual group-level effects
+  // prior contributions to the log posterior
+  real lprior = 0;
+  real lprior_covariates = 0;
+  real lprior_treatment = 0;
+  r_1_1 = (sd_1[1] * (z_1[1]));
+  lprior_treatment += normal_lpdf(b[1] | 0, 1);
+  lprior_covariates += normal_lpdf(b[2] | 0, 10);
+  lprior_covariates += normal_lpdf(b[3] | 0, 10);
+  lprior += student_t_lpdf(Intercept | 3, 4, 4.4);
+  lprior += student_t_lpdf(sigma | 3, 0, 4.4)
+    - 1 * student_t_lccdf(0 | 3, 0, 4.4);
+  lprior += student_t_lpdf(sd_1 | 3, 0, 4.4)
+    - 1 * student_t_lccdf(0 | 3, 0, 4.4);
+  lprior += lprior_covariates;
+  lprior += lprior_treatment;
+}
+model {
+  // likelihood including constants
+  if (!prior_only) {
+    // initialize linear predictor term
+    vector[N] mu = rep_vector(0.0, N);
+    mu += Intercept;
+    for (n in 1:N) {
+      // add more terms to the linear predictor
+      mu[n] += r_1_1[J_1[n]] * Z_1_1[n];
+    }
+    target += normal_id_glm_lpdf(Y | Xc, mu, b, sigma);
+  }
+  // priors including constants
+  target += lprior;
+  target += std_normal_lpdf(z_1[1]);
+}
+generated quantities {
+  // actual population-level intercept
+  real b_Intercept = Intercept - dot_product(means_X, b);
+}
 > 
 > 
 > 
@@ -4120,7 +4218,7 @@ generated quantities {
 > 
 > stancode(rating ~ treat + period + carry + (1|subject),
 +          data = inhaler, family = "cumulative")
-// generated with brms 2.22.0
+// generated with brms 2.23.0
 functions {
   /* cumulative-logit log-PDF for a single response
    * Args:
@@ -4200,7 +4298,8 @@ parameters {
 transformed parameters {
   real disc = 1;  // discrimination parameters
   vector[N_1] r_1_1;  // actual group-level effects
-  real lprior = 0;  // prior contributions to the log posterior
+  // prior contributions to the log posterior
+  real lprior = 0;
   r_1_1 = (sd_1[1] * (z_1[1]));
   lprior += student_t_lpdf(Intercept | 3, 0, 2.5);
   lprior += student_t_lpdf(sd_1 | 3, 0, 2.5)
@@ -4246,7 +4345,7 @@ generated quantities {
 > 
 > stancode(rating ~ treat + period + carry + (1|subject),
 +          data = inhaler, family = "cumulative")
-// generated with brms 2.22.0
+// generated with brms 2.23.0
 functions {
   /* cumulative-logit log-PDF for a single response
    * Args:
@@ -4326,7 +4425,8 @@ parameters {
 transformed parameters {
   real disc = 1;  // discrimination parameters
   vector[N_1] r_1_1;  // actual group-level effects
-  real lprior = 0;  // prior contributions to the log posterior
+  // prior contributions to the log posterior
+  real lprior = 0;
   r_1_1 = (sd_1[1] * (z_1[1]));
   lprior += student_t_lpdf(Intercept | 3, 0, 2.5);
   lprior += student_t_lpdf(sd_1 | 3, 0, 2.5)
@@ -4357,7 +4457,7 @@ generated quantities {
 > 
 > stancode(count ~ zAge + zBase * Trt + (1|patient),
 +          data = epilepsy, family = "poisson")
-// generated with brms 2.22.0
+// generated with brms 2.23.0
 functions {
 }
 data {
@@ -4390,7 +4490,8 @@ parameters {
 }
 transformed parameters {
   vector[N_1] r_1_1;  // actual group-level effects
-  real lprior = 0;  // prior contributions to the log posterior
+  // prior contributions to the log posterior
+  real lprior = 0;
   r_1_1 = (sd_1[1] * (z_1[1]));
   lprior += student_t_lpdf(Intercept | 3, 1.4, 2.5);
   lprior += student_t_lpdf(sd_1 | 3, 0, 2.5)
@@ -4542,7 +4643,7 @@ List of 11
 > stanvars <- stanvar(5, name = "mean_intercept")
 > stancode(count ~ Trt, epilepsy, prior = bprior,
 +          stanvars = stanvars)
-// generated with brms 2.22.0
+// generated with brms 2.23.0
 functions {
 }
 data {
@@ -4568,7 +4669,8 @@ parameters {
   real<lower=0> sigma;  // dispersion parameter
 }
 transformed parameters {
-  real lprior = 0;  // prior contributions to the log posterior
+  // prior contributions to the log posterior
+  real lprior = 0;
   lprior += normal_lpdf(Intercept | mean_intercept, 10);
   lprior += student_t_lpdf(sigma | 3, 0, 4.4)
     - 1 * student_t_lccdf(0 | 3, 0, 4.4);
@@ -4592,7 +4694,7 @@ generated quantities {
 +   stanvar(diag(2), "V", scode = "  matrix[K, K] V;")
 > stancode(count ~ Trt + zBase, epilepsy,
 +          prior = bprior, stanvars = stanvars)
-// generated with brms 2.22.0
+// generated with brms 2.23.0
 functions {
 }
 data {
@@ -4619,7 +4721,8 @@ parameters {
   real<lower=0> sigma;  // dispersion parameter
 }
 transformed parameters {
-  real lprior = 0;  // prior contributions to the log posterior
+  // prior contributions to the log posterior
+  real lprior = 0;
   lprior += multi_normal_lpdf(b | M, V);
   lprior += student_t_lpdf(Intercept | 3, 4, 4.4);
   lprior += student_t_lpdf(sigma | 3, 0, 4.4)
@@ -4645,7 +4748,7 @@ generated quantities {
 +                     block = "parameters")
 > stancode(count ~ Trt + zBase, epilepsy,
 +          prior = bprior, stanvars = stanvars)
-// generated with brms 2.22.0
+// generated with brms 2.23.0
 functions {
 }
 data {
@@ -4671,7 +4774,8 @@ parameters {
   real<lower=0> tau;
 }
 transformed parameters {
-  real lprior = 0;  // prior contributions to the log posterior
+  // prior contributions to the log posterior
+  real lprior = 0;
   lprior += normal_lpdf(b | 0, tau);
   lprior += student_t_lpdf(Intercept | 3, 4, 4.4);
   lprior += student_t_lpdf(sigma | 3, 0, 4.4)
@@ -4697,7 +4801,7 @@ generated quantities {
 +                     block = "parameters", pll_args = "real tau")
 > stancode(count ~ Trt + zBase, epilepsy,
 +          stanvars = stanvars, threads = threading(2))
-// generated with brms 2.22.0
+// generated with brms 2.23.0
 functions {
   /* integer sequence of values
    * Args:
@@ -4746,7 +4850,8 @@ parameters {
   real<lower=0> tau;
 }
 transformed parameters {
-  real lprior = 0;  // prior contributions to the log posterior
+  // prior contributions to the log posterior
+  real lprior = 0;
   lprior += student_t_lpdf(Intercept | 3, 4, 4.4);
   lprior += student_t_lpdf(sigma | 3, 0, 4.4)
     - 1 * student_t_lccdf(0 | 3, 0, 4.4);
@@ -4974,16 +5079,16 @@ y | trials(10) ~ x
 +   prior(cauchy(0,2), class = sd)
 > validate_prior(prior1, count ~ zAge + zBase * Trt + (1|patient),
 +                data = epilepsy, family = poisson())
-                  prior     class       coef   group resp dpar nlpar lb ub
-          normal(0, 10)         b                                         
-          normal(0, 10)         b       Trt1                              
-          normal(0, 10)         b       zAge                              
-          normal(0, 10)         b      zBase                              
-          normal(0, 10)         b zBase:Trt1                              
- student_t(3, 1.4, 2.5) Intercept                                         
-           cauchy(0, 2)        sd                                     0   
-           cauchy(0, 2)        sd            patient                  0   
-           cauchy(0, 2)        sd  Intercept patient                  0   
+                  prior     class       coef   group resp dpar nlpar lb ub tag
+          normal(0, 10)         b                                             
+          normal(0, 10)         b       Trt1                                  
+          normal(0, 10)         b       zAge                                  
+          normal(0, 10)         b      zBase                                  
+          normal(0, 10)         b zBase:Trt1                                  
+ student_t(3, 1.4, 2.5) Intercept                                             
+           cauchy(0, 2)        sd                                     0       
+           cauchy(0, 2)        sd            patient                  0       
+           cauchy(0, 2)        sd  Intercept patient                  0       
        source
          user
  (vectorized)
@@ -5054,7 +5159,7 @@ y | trials(10) ~ x
 > cleanEx()
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  3.534 0.159 3.703 0 0 
+Time elapsed:  3.842 0.189 4.032 0 0 
 > grDevices::dev.off()
 null device 
           1 

@@ -26,6 +26,16 @@ Type 'q()' to quit R.
 +     Sys.unsetenv("R_TESTS")
 +     on.exit(Sys.setenv(R_TESTS = R_TESTS), add = TRUE)
 +   }
++   # Force tar to internal to avoid xattr errors on macOS when building and
++   # installing our test packages. The default macOS tar binary produces
++   # AppleDouble archives.
++   TAR <- Sys.getenv("TAR", unset = NA)
++   Sys.setenv(TAR = "internal")
++   if (!is.na(TAR)) {
++     on.exit(Sys.setenv(TAR = TAR), add = TRUE)
++   } else {
++     on.exit(Sys.unsetenv("TAR"), add = TRUE)
++   }
 + 
 +   dir <- tempdir()
 +   owd <- setwd(dir)
@@ -59,7 +69,12 @@ Type 'q()' to quit R.
 +   packrat::repos_upload(file.path(dir, "sashimi"), "sushi")
 + 
 +   # Try building and uploading a tarball
-+   system(paste("R --vanilla CMD build", file.path(dir, "sashimi")))
++   system2(file.path(R.home("bin"), "R"),
++           c("--vanilla",
++             "CMD",
++             "build",
++             file.path(dir, "sashimi")),
++           env = c(COPYFILE_DISABLE = "1"))
 +   tarball <- list.files(dir, pattern = "\\.tar\\.gz$")[[1]]
 +   packrat::repos_upload(file.path(dir, tarball), "sushi")
 + 
@@ -77,14 +92,14 @@ Type 'q()' to quit R.
 + 
 + })()
 Local CRAN repository 'sushi' created at: 
-- '/tmp/RtmpHDS9ck/sushi'
+- '/tmp/RtmpNHeb50/sushi'
 
 Building sashimi:
 
 '/usr/local/lib/R/bin/R' --vanilla CMD build  \
-  '/tmp/RtmpHDS9ck/sashimi-f6o0nljasSdQ4Ujp' --no-manual --no-resave-data 
+  '/tmp/RtmpNHeb50/sashimi-XMZQQxp7ypHbBeqe' --no-manual --no-resave-data 
 
-* checking for file ‘/tmp/RtmpHDS9ck/sashimi-f6o0nljasSdQ4Ujp/DESCRIPTION’ ... OK
+* checking for file ‘/tmp/RtmpNHeb50/sashimi-XMZQQxp7ypHbBeqe/DESCRIPTION’ ... OK
 * preparing ‘sashimi’:
 * checking DESCRIPTION meta-information ... OK
 * checking for LF line-endings in source and make files and shell scripts
@@ -92,13 +107,7 @@ Building sashimi:
 * building ‘sashimi_1.0.tar.gz’
 
 Package 'sashimi_1.0.tar.gz' successfully uploaded.
-* checking for file ‘/tmp/RtmpHDS9ck/sashimi/DESCRIPTION’ ... OK
-* preparing ‘sashimi’:
-* checking DESCRIPTION meta-information ... OK
-* checking for LF line-endings in source and make files and shell scripts
-* checking for empty or unneeded directories
-* building ‘sashimi_1.0.tar.gz’
-
+sh: 1: 1: not found
 Package 'sashimi_1.0.tar.gz' successfully uploaded.
 * installing *source* package ‘sashimi’ ...
 ** this is package ‘sashimi’ version ‘1.0’
@@ -113,4 +122,7 @@ No man pages found in package  ‘sashimi’
 ** testing if installed package can be loaded from final location
 ** testing if installed package keeps a record of temporary installation path
 * DONE (sashimi)
+Warning message:
+In system2(file.path(R.home("bin"), "R"), c("--vanilla", "CMD",  :
+  error in running command
 > 
