@@ -275,31 +275,31 @@ x + 1
 > as_mapper(1)
 function (x, ...) 
 pluck_raw(x, list(1), .default = NULL)
-<environment: 0x55c1d8501880>
+<environment: 0x562cdf576900>
 > 
 > as_mapper(c("a", "b", "c"))
 function (x, ...) 
 pluck_raw(x, list("a", "b", "c"), .default = NULL)
-<environment: 0x55c1d8472d60>
+<environment: 0x562cdf57b080>
 > # Equivalent to function(x) x[["a"]][["b"]][["c"]]
 > 
 > as_mapper(list(1, "a", 2))
 function (x, ...) 
 pluck_raw(x, list(1, "a", 2), .default = NULL)
-<environment: 0x55c1d8434948>
+<environment: 0x562cdf5837f0>
 > # Equivalent to function(x) x[[1]][["a"]][[2]]
 > 
 > as_mapper(list(1, attr_getter("a")))
 function (x, ...) 
 pluck_raw(x, list(1, function (x) 
 attr(x, attr, exact = TRUE)), .default = NULL)
-<environment: 0x55c1d83acc40>
+<environment: 0x562cdf58a238>
 > # Equivalent to function(x) attr(x[[1]], "a")
 > 
 > as_mapper(c("a", "b", "c"), .default = NA)
 function (x, ...) 
 pluck_raw(x, list("a", "b", "c"), .default = NA)
-<environment: 0x55c1d83a2330>
+<environment: 0x562cdf5917b8>
 > 
 > 
 > 
@@ -481,7 +481,7 @@ Error in chuck(x, 3) :
 > 
 > ### Name: cross
 > ### Title: Produce all combinations of list elements
-> ### Aliases: cross cross2 cross3 cross_df cross_n cross_d
+> ### Aliases: cross cross2 cross3 cross_df
 > ### Keywords: internal
 > 
 > ### ** Examples
@@ -738,8 +738,7 @@ List of 10
 [1] 8
 > 
 > 
-> # Since `.f` is passed to as_mapper(), you can supply a
-> # lambda-formula or a pluck object:
+> # Since `.f` is passed to as_mapper(), you can supply a pluck object:
 > x <- list(
 +   list(1, foo = FALSE),
 +   list(2, foo = TRUE),
@@ -944,6 +943,53 @@ vs: 0
 am: 0
 gear: 4
 carb: 2
+> 
+> 
+> 
+> cleanEx()
+> nameEx("in_parallel")
+> ### * in_parallel
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: in_parallel
+> ### Title: Parallelization in purrr
+> ### Aliases: in_parallel parallelization
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (interactive() && rlang::is_installed("mirai") && rlang::is_installed("carrier")) withAutoprint({ # examplesIf
++ ## End(Don't show)
++ # Run in interactive sessions only as spawns additional processes
++ 
++ default_param <- 0.5
++ 
++ delay <- function(secs = default_param) {
++   Sys.sleep(secs)
++ }
++ 
++ slow_lm <- function(formula, data) {
++   delay()
++   lm(formula, data)
++ }
++ 
++ # Example of a 'crate' returned by in_parallel(). The object print method
++ # shows the size of the crate and any objects contained within:
++ crate <- in_parallel(
++   \(df) slow_lm(mpg ~ disp, data = df),
++   slow_lm = slow_lm,
++   delay = delay,
++   default_param = default_param
++ )
++ crate
++ 
++ # Use mirai::mirai() to test that a crate is self-contained
++ # by running it in a daemon and collecting its return value:
++ mirai::mirai(crate(mtcars), crate = crate) |> mirai::collect_mirai()
++ ## Don't show: 
++ }) # examplesIf
+> ## End(Don't show)
 > 
 > 
 > 
@@ -1171,7 +1217,7 @@ $m2
 [1] 8 9 7 6 2
 
 > 
-> # Or use a formula
+> # Or use shorthand form
 > rep(10, 10) |>
 +   map(sample, 5) |>
 +   keep(\(x) mean(x) > 6)
@@ -1310,10 +1356,10 @@ $d
       10       15        5 
 > 
 > # Can also use a function
-> x |> keep_at(~ nchar(.x) == 3)
+> x |> keep_at(\(x) nchar(x) == 3)
 cat dog 
  10  15 
-> x |> discard_at(~ nchar(.x) == 3)
+> x |> discard_at(\(x) nchar(x) == 3)
        a        b elephant        e 
        1        2        5       10 
 > 
@@ -1590,6 +1636,38 @@ List of 3
 > x |> list_flatten(name_spec = "{inner}") |> names()
 [1] "a" "b" "c" "d"
 > 
+> # Set `is_node = is.list` to also flatten richer objects built on lists like
+> # data frames and linear models
+> df <- data.frame(x = 1:3, y = 4:6)
+> x <- list(
++   a_string = "something",
++   a_list = list(1:3, "else"),
++   a_df = df
++ )
+> x |> list_flatten(is_node = is.list)
+$a_string
+[1] "something"
+
+$a_list_1
+[1] 1 2 3
+
+$a_list_2
+[1] "else"
+
+$a_df_x
+[1] 1 2 3
+
+$a_df_y
+[1] 4 5 6
+
+> 
+> # Note that objects that are already "flat" retain their classes
+> list_flatten(df, is_node = is.list)
+  x y
+1 1 4
+2 2 5
+3 3 6
+> 
 > 
 > 
 > cleanEx()
@@ -1660,7 +1738,7 @@ List of 3
   ..$ result: NULL
   ..$ error :List of 2
   .. ..$ message: chr "non-numeric argument to mathematical function"
-  .. ..$ call   : language .Primitive("log")(x, base)
+  .. ..$ call   : language .f(...)
   .. ..- attr(*, "class")= chr [1:3] "simpleError" "error" "condition"
  $ :List of 2
   ..$ result: num 0
@@ -1678,7 +1756,7 @@ List of 2
  $ error :List of 3
   ..$ :List of 2
   .. ..$ message: chr "non-numeric argument to mathematical function"
-  .. ..$ call   : language .Primitive("log")(x, base)
+  .. ..$ call   : language .f(...)
   .. ..- attr(*, "class")= chr [1:3] "simpleError" "error" "condition"
   ..$ : NULL
   ..$ : NULL
@@ -1689,7 +1767,7 @@ List of 2
  $ error :List of 3
   ..$ :List of 2
   .. ..$ message: chr "non-numeric argument to mathematical function"
-  .. ..$ call   : language .Primitive("log")(x, base)
+  .. ..$ call   : language .f(...)
   .. ..- attr(*, "class")= chr [1:3] "simpleError" "error" "condition"
   ..$ : NULL
   ..$ : NULL
@@ -2050,6 +2128,41 @@ NULL
 +   map_dbl("r.squared")
         4         6         8 
 0.5086326 0.4645102 0.4229655 
+> 
+> ## Don't show: 
+> if (interactive() && rlang::is_installed("mirai") && rlang::is_installed("carrier")) withAutoprint({ # examplesIf
++ ## End(Don't show)
++ # Run in interactive sessions only as spawns additional processes
++ 
++ # To use parallelized map:
++ # 1. Set daemons (number of parallel processes) first:
++ mirai::daemons(2)
++ 
++ # 2. Wrap .f with in_parallel():
++ mtcars |> map_dbl(in_parallel(\(x) mean(x)))
++ 
++ # Note that functions from packages should be fully qualified with `pkg::`
++ # or call `library(pkg)` within the function
++ 1:10 |>
++   map(in_parallel(\(x) vctrs::vec_init(integer(), x))) |>
++   map_int(in_parallel(\(x) { library(vctrs); vec_size(x) }))
++ 
++ # A locally-defined function (or any required variables)
++ # should be passed via ... of in_parallel():
++ slow_lm <- function(formula, data) {
++   Sys.sleep(0.5)
++   lm(formula, data)
++ }
++ 
++ mtcars |>
++   split(mtcars$cyl) |>
++   map(in_parallel(\(df) slow_lm(mpg ~ disp, data = df), slow_lm = slow_lm))
++ 
++ # Tear down daemons when no longer in use:
++ mirai::daemons(0)
++ ## Don't show: 
++ }) # examplesIf
+> ## End(Don't show)
 > 
 > 
 > 
@@ -3700,7 +3813,7 @@ $result
 NULL
 
 $error
-<simpleError in .Primitive("log")(x, base): non-numeric argument to mathematical function>
+<simpleError in .f(...): non-numeric argument to mathematical function>
 
 > 
 > list("a", 10, 100) |>
@@ -3719,7 +3832,7 @@ $result[[3]]
 
 $error
 $error[[1]]
-<simpleError in .Primitive("log")(x, base): non-numeric argument to mathematical function>
+<simpleError in .f(...): non-numeric argument to mathematical function>
 
 $error[[2]]
 NULL
@@ -3741,7 +3854,7 @@ $result
 
 $error
 $error[[1]]
-<simpleError in .Primitive("log")(x, base): non-numeric argument to mathematical function>
+<simpleError in .f(...): non-numeric argument to mathematical function>
 
 $error[[2]]
 NULL
@@ -3875,7 +3988,7 @@ List of 2
  $ error :List of 3
   ..$ :List of 2
   .. ..$ message: chr "non-numeric argument to mathematical function"
-  .. ..$ call   : language .Primitive("log")(x, base)
+  .. ..$ call   : language .f(...)
   .. ..- attr(*, "class")= chr [1:3] "simpleError" "error" "condition"
   ..$ : NULL
   ..$ : NULL
@@ -3889,7 +4002,7 @@ List of 2
  $ error :List of 3
   ..$ :List of 2
   .. ..$ message: chr "non-numeric argument to mathematical function"
-  .. ..$ call   : language .Primitive("log")(x, base)
+  .. ..$ call   : language .f(...)
   .. ..- attr(*, "class")= chr [1:3] "simpleError" "error" "condition"
   ..$ : NULL
   ..$ : NULL
@@ -4039,7 +4152,7 @@ Warning: `when()` was deprecated in purrr 1.0.0.
 > cleanEx()
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  1.289 0.04 5.076 0 0 
+Time elapsed:  1.419 0.046 5.212 0 0 
 > grDevices::dev.off()
 null device 
           1 
