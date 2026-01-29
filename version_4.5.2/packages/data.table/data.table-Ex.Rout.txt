@@ -38,8 +38,8 @@ Type 'q()' to quit R.
 > ###   as.POSIXct.IDate as.POSIXct.ITime as.POSIXlt.ITime c.IDate c.ITime
 > ###   format.ITime IDateTime.default mean.IDate mean.ITime print.ITime
 > ###   rep.IDate rep.ITime round.IDate round.ITime trunc.ITime seq.IDate
-> ###   seq.ITime second minute hour yday wday mday week isoweek month
-> ###   quarter year yearmon yearqtr IDate-class ITime-class
+> ###   seq.ITime second minute hour yday wday mday week isoweek isoyear
+> ###   month quarter year yearmon yearqtr IDate-class ITime-class
 > ### Keywords: utilities
 > 
 > ### ** Examples
@@ -66,6 +66,14 @@ Type 'q()' to quit R.
 > 
 > (t <- as.ITime("10:45:04", format = "%H:%M:%S"))
 [1] "10:45:04"
+> 
+> # "24:00:00" is parsed as "00:00:00"
+> as.ITime("24:00:00")
+[1] "00:00:00"
+> 
+> # Workaround for end-of-day: add 1 second to "23:59:59"
+> as.ITime("23:59:59") + 1L
+[1] "24:00:00"
 > 
 > as.POSIXct("2001-01-01") + as.ITime("10:45")
 [1] "2001-01-01 10:45:00 UTC"
@@ -153,11 +161,11 @@ Key: <a, idate, itime>
  [7] "2001-01-01 15:00:00 UTC" "2001-01-02 01:00:00 UTC"
  [9] "2001-01-02 11:00:00 UTC" "2001-01-02 21:00:00 UTC"
 > as.POSIXct(af$itime) # uses today's date
- [1] "2025-11-19 00:00:00 UTC" "2025-11-19 10:00:00 UTC"
- [3] "2025-11-19 20:00:00 UTC" "2025-11-19 06:00:00 UTC"
- [5] "2025-11-19 16:00:00 UTC" "2025-11-19 05:00:00 UTC"
- [7] "2025-11-19 15:00:00 UTC" "2025-11-19 01:00:00 UTC"
- [9] "2025-11-19 11:00:00 UTC" "2025-11-19 21:00:00 UTC"
+ [1] "2026-01-29 00:00:00 UTC" "2026-01-29 10:00:00 UTC"
+ [3] "2026-01-29 20:00:00 UTC" "2026-01-29 06:00:00 UTC"
+ [5] "2026-01-29 16:00:00 UTC" "2026-01-29 05:00:00 UTC"
+ [7] "2026-01-29 15:00:00 UTC" "2026-01-29 01:00:00 UTC"
+ [9] "2026-01-29 11:00:00 UTC" "2026-01-29 21:00:00 UTC"
 > 
 > (seqdates <- seq(as.IDate("2001-01-01"), as.IDate("2001-08-03"), by = "3 weeks"))
  [1] "2001-01-01" "2001-01-22" "2001-02-12" "2001-03-05" "2001-03-26"
@@ -264,6 +272,23 @@ Key: <a, idate, itime>
 [169] "07:00:00" "07:00:00" "07:00:00" "07:00:00" "07:00:00" "07:00:00"
 [175] "07:00:00" "07:00:00" "07:00:00" "07:00:00" "07:00:00" "07:00:00"
 [181] "08:00:00"
+> 
+> # Examples for isoyear() and isoweek()
+> d1 = as.IDate("2019-12-30")
+> year(d1)
+[1] 2019
+> isoweek(d1)
+[1] 1
+> isoyear(d1)
+[1] 2020
+> 
+> d2 = as.IDate("2016-01-01")
+> year(d2)
+[1] 2016
+> isoweek(d2)
+[1] 53
+> isoyear(d2)
+[1] 2015
 > 
 > 
 > 
@@ -392,7 +417,7 @@ Key: <x, y>
 > 
 > x=1
 > address(x)
-[1] "0x557ea81f95d8"
+[1] "0x561e7ef0f2c0"
 > 
 > 
 > 
@@ -775,24 +800,24 @@ j 10 20
 + }
             date quantity value
           <Date>    <int> <int>
-   1: 2023-02-24       13   757
-   2: 2023-02-25       48   370
-   3: 2023-02-26       10   422
-   4: 2023-02-27       43   374
-   5: 2023-02-28       32   922
+   1: 2023-05-06       13   757
+   2: 2023-05-07       48   370
+   3: 2023-05-08       10   422
+   4: 2023-05-09       43   374
+   5: 2023-05-10       32   922
   ---                          
- 996: 2025-11-15       40   767
- 997: 2025-11-16       22   267
- 998: 2025-11-17       50   919
- 999: 2025-11-18       12   557
-1000: 2025-11-19       20   332
+ 996: 2026-01-25       40   767
+ 997: 2026-01-26       22   267
+ 998: 2026-01-27       50   919
+ 999: 2026-01-28       12   557
+1000: 2026-01-29       20   332
            quantity value
-2023-02-24       13   757
-2023-02-25       48   370
-2023-02-26       10   422
-2023-02-27       43   374
-2023-02-28       32   922
-2023-03-01       23   903
+2023-05-06       13   757
+2023-05-07       48   370
+2023-05-08       10   422
+2023-05-09       43   374
+2023-05-10       32   922
+2023-05-11       23   903
 > 
 > 
 > 
@@ -910,7 +935,7 @@ j 10 20
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: between
-> ### Title: Convenience functions for range subsets.
+> ### Title: Convenience functions for range subsets
 > ### Aliases: between %between% inrange %inrange%
 > ### Keywords: data
 > 
@@ -975,6 +1000,42 @@ j 10 20
 > 
 > 
 > cleanEx()
+> nameEx("cbindlist")
+> ### * cbindlist
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: cbindlist
+> ### Title: Column bind multiple data.tables
+> ### Aliases: cbindlist setcbindlist cbind cbind.data.table
+> ### Keywords: data
+> 
+> ### ** Examples
+> 
+> d1 = data.table(x=1:3, v1=1L, key="x")
+> d2 = data.table(y=3:1, v2=2L, key="y")
+> d3 = data.table(z=2:4, v3=3L)
+> cbindlist(list(d1, d2, d3))
+Key: <x>
+       x    v1     y    v2     z    v3
+   <int> <int> <int> <int> <int> <int>
+1:     1     1     1     2     2     3
+2:     2     1     2     2     3     3
+3:     3     1     3     2     4     3
+> cbindlist(list(d1, d1))
+       x    v1     x    v1
+   <int> <int> <int> <int>
+1:     1     1     1     1
+2:     2     1     2     1
+3:     3     1     3     1
+> d4 = setcbindlist(list(d1))
+> d4[, v1:=2L]
+> identical(d4, d1)
+[1] TRUE
+> 
+> 
+> 
+> cleanEx()
 > nameEx("chmatch")
 > ### * chmatch
 > 
@@ -1001,19 +1062,19 @@ j 10 20
 >                                            #  With N=1e8 ...
 > system.time(a <- match(x,y))               #  4.6s
    user  system elapsed 
-  0.002   0.001   0.004 
+  0.002   0.001   0.003 
 > system.time(b <- chmatch(x,y))             #  1.8s
    user  system elapsed 
-  0.002   0.000   0.001 
+  0.002   0.000   0.002 
 > identical(a,b)
 [1] TRUE
 > 
 > system.time(a <- x %in% y)               #  4.5s
    user  system elapsed 
-  0.002   0.000   0.003 
+  0.002   0.000   0.002 
 > system.time(b <- x %chin% y)             #  1.7s
    user  system elapsed 
-  0.001   0.000   0.001 
+  0.002   0.000   0.002 
 > identical(a,b)
 [1] TRUE
 > 
@@ -1026,7 +1087,7 @@ j 10 20
   0.003   0.000   0.003 
 > system.time(b <- chmatch(x,y))             # 16s
    user  system elapsed 
-  0.001   0.000   0.001 
+  0.001   0.002   0.003 
 > identical(a,b)
 [1] TRUE
 > 
@@ -1054,6 +1115,11 @@ j 10 20
 [1] 11 12 13 14 15 NA
 > fcoalesce(x, list(y,z))  # same
 [1] 11 12 13 14 15 NA
+> x_num = c(NaN, NA_real_, 3.0)
+> fcoalesce(x_num, 1)           # default: NaN treated as missing -> c(1, 1, 3)
+[1] 1 1 3
+> fcoalesce(x_num, 1, nan=NaN)  # preserve NaN -> c(NaN, 1, 3)
+[1] NaN   1   3
 > 
 > 
 > 
@@ -1108,6 +1174,32 @@ j 10 20
 > ## Used in a slot
 > setClass('Something', representation(x='character', dt='data.table'))
 > x <- new("Something", x='check', dt=data.table(a=1:10, b=11:20))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("data.table-condition-classes")
+> ### * data.table-condition-classes
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: data.table-condition-classes
+> ### Title: Condition Handling with Classed Conditions
+> ### Aliases: data.table-condition-classes
+> 
+> ### ** Examples
+> 
+>     
+> # Handle missing column errors specifically
+> DT <- data.table(a = 1:3, b = 4:6)
+> tryCatch({
++   setkey(DT, nonexistent_col)
++ }, dt_missing_column_error = function(e) {
++   cat("Missing column detected:", conditionMessage(e), "\n")
++ }, error = function(e) {
++   cat("Other error:", conditionMessage(e), "\n")
++ })
+Missing column detected: some columns are not in the data.table: [nonexistent_col] 
 > 
 > 
 > 
@@ -1367,12 +1459,14 @@ Key: <x>
 1:      a     1     4
 2:      a     3     5
 3:      a     6     6
+>                                #   NB: requires DT to be keyed!
 > DT["a", on=.(x)]               # same, for convenience, no need to quote every column
         x     y     v
    <char> <num> <int>
 1:      a     1     4
 2:      a     3     5
 3:      a     6     6
+>                                #   NB: works regardless of whether or not DT is keyed!
 > DT[.("a"), on="x"]             # same
         x     y     v
    <char> <num> <int>
@@ -1957,6 +2051,15 @@ Index: <x>
 5:      c     1     3     1     2
 6:      c     0     2     2     2
 > 
+> # programmatic query with env=
+> DT[, .(funvar = fun(var)), by=grp_var,
++    env = list(fun="sum", var="a", funvar="sum_a_by_x", grp_var="x")]
+        x sum_a_by_x
+   <char>      <int>
+1:      b          6
+2:      a         15
+3:      c         24
+> 
 > DT[, .(a = .(a), b = .(b)), by=x]     # list columns
         x      a      b
    <char> <list> <list>
@@ -2079,7 +2182,7 @@ pdf
 > ##D set.seed(1L)
 > ##D DT = lapply(1:20, function(x) sample(c(-100:100), 5e6L, TRUE))
 > ##D setDT(DT)[, id := sample(1e5, 5e6, TRUE)]
-> ##D print(object.size(DT), units="Mb") # 400MB, not huge, but will do
+> ##D print(object.size(DT), units="MiB") # 400MiB, not huge, but will do
 > ##D 
 > ##D # 'order' optimisation
 > ##D options(datatable.optimize = 1L) # optimisation 'on'
@@ -2646,6 +2749,32 @@ Levels: a b c
 > 
 > 
 > cleanEx()
+> nameEx("fctr")
+> ### * fctr
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: fctr
+> ### Title: Create a factor retaining original ordering
+> ### Aliases: fctr factor
+> ### Keywords: data
+> 
+> ### ** Examples
+> 
+> levels(factor(c("b","a","c")))
+[1] "a" "b" "c"
+> levels(fctr(c("b","a","c")))
+[1] "b" "a" "c"
+> levels(fctr(c("b","a","c"), rev=TRUE))
+[1] "c" "a" "b"
+> levels(fctr(c("b","a","c"), sort=TRUE))
+[1] "a" "b" "c"
+> levels(fctr(c("b","a","c"), sort=TRUE, rev=TRUE))
+[1] "c" "b" "a"
+> 
+> 
+> 
+> cleanEx()
 > nameEx("fdroplevels")
 > ### * fdroplevels
 > 
@@ -3096,8 +3225,8 @@ Levels: a b c
 > ##D DT[3,e:=-Inf]
 > ##D 
 > ##D write.table(DT,"test.csv",sep=",",row.names=FALSE,quote=FALSE)
-> ##D cat("File size (MB):", round(file.info("test.csv")$size/1024^2),"\n")
-> ##D # 50 MB (1e6 rows x 6 columns)
+> ##D cat("File size (MiB):", round(file.info("test.csv")$size/1024^2),"\n")
+> ##D # 50 MiB (1e6 rows x 6 columns)
 > ##D 
 > ##D system.time(DF1 <-read.csv("test.csv",stringsAsFactors=FALSE))
 > ##D # 5.4 sec (first time in fresh R session)
@@ -3122,13 +3251,15 @@ Levels: a b c
 > ##D for (i in 1:10) l[[i]] = DT
 > ##D DTbig = rbindlist(l)
 > ##D tables()
-> ##D write.table(DTbig,"testbig.csv",sep=",",row.names=FALSE,quote=FALSE)
-> ##D # 500MB csv (10 million rows x 6 columns)
+> ##D write.table(DTbig, "testbig.csv", sep=",", row.names=FALSE, quote=FALSE)
+> ##D # ~500MiB csv (10 million rows x 6 columns)
 > ##D 
-> ##D system.time(DF <- read.table("testbig.csv",header=TRUE,sep=",",
-> ##D     quote="",stringsAsFactors=FALSE,comment.char="",nrows=1e7,
-> ##D     colClasses=c("integer","integer","numeric",
-> ##D                  "character","numeric","integer")))
+> ##D system.time({
+> ##D   DF <- read.table("testbig.csv", header=TRUE, sep=",",
+> ##D     quote="", stringsAsFactors=FALSE, comment.char="", nrows=1e7,
+> ##D     colClasses=c("integer", "integer", "numeric",
+> ##D                  "character", "numeric", "integer"))
+> ##D })
 > ##D # 17.0 sec (varies)
 > ##D 
 > ##D system.time(DT <- fread("testbig.csv"))
@@ -3149,18 +3280,56 @@ Levels: a b c
 > 
 > 
 > cleanEx()
+> nameEx("frev")
+> ### * frev
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: frev
+> ### Title: Fast reverse
+> ### Aliases: frev rev
+> ### Keywords: data
+> 
+> ### ** Examples
+> 
+> # on vectors
+> x = setNames(1:10, letters[1:10])
+> frev(x)
+ j  i  h  g  f  e  d  c  b  a 
+10  9  8  7  6  5  4  3  2  1 
+> 
+> # list
+> frev(list(1, "a", TRUE))
+[[1]]
+[1] TRUE
+
+[[2]]
+[1] "a"
+
+[[3]]
+[1] 1
+
+> 
+> 
+> 
+> cleanEx()
 > nameEx("froll")
 > ### * froll
 > 
 > flush(stderr()); flush(stdout())
 > 
-> ### Name: roll
+> ### Name: froll
 > ### Title: Rolling functions
-> ### Aliases: roll froll rolling sliding moving rollmean frollmean rollsum
-> ###   frollsum rollapply frollapply
+> ### Aliases: rolling sliding moving running froll frollmean frollsum
+> ###   frollmax frollmin frollprod frollmedian frollvar frollsd roll
+> ###   rollmean rollsum rollmax rollmin rollprod rollmedian rollvar rollsd
 > ### Keywords: data
 > 
 > ### ** Examples
+> 
+> # single vector and single window
+> frollmean(1:6, 3)
+[1] NA NA  2  3  4  5
 > 
 > d = as.data.table(list(1:6/2, 3:8/4))
 > # rollmean of single vector and single window
@@ -3198,18 +3367,7 @@ Levels: a b c
 
 > ## three calls above will use multiple cores when available
 > 
-> # partial window using adaptive rolling function
-> an = function(n, len) c(seq.int(n), rep(n, len-n))
-> n = an(3, nrow(d))
-> frollmean(d, n, adaptive=TRUE)
-[[1]]
-[1] 0.50 0.75 1.00 1.50 2.00 2.50
-
-[[2]]
-[1] 0.750 0.875 1.000 1.250 1.500 1.750
-
-> 
-> # frollsum
+> # other functions
 > frollsum(d, 3:4)
 [[1]]
 [1]  NA  NA 3.0 4.5 6.0 7.5
@@ -3223,35 +3381,137 @@ Levels: a b c
 [[4]]
 [1]  NA  NA  NA 4.5 5.5 6.5
 
+> frollmax(d, 3:4)
+[[1]]
+[1]  NA  NA 1.5 2.0 2.5 3.0
+
+[[2]]
+[1]  NA  NA  NA 2.0 2.5 3.0
+
+[[3]]
+[1]   NA   NA 1.25 1.50 1.75 2.00
+
+[[4]]
+[1]   NA   NA   NA 1.50 1.75 2.00
+
+> frollmin(d, 3:4)
+[[1]]
+[1]  NA  NA 0.5 1.0 1.5 2.0
+
+[[2]]
+[1]  NA  NA  NA 0.5 1.0 1.5
+
+[[3]]
+[1]   NA   NA 0.75 1.00 1.25 1.50
+
+[[4]]
+[1]   NA   NA   NA 0.75 1.00 1.25
+
+> frollprod(d, 3:4)
+[[1]]
+[1]    NA    NA  0.75  3.00  7.50 15.00
+
+[[2]]
+[1]   NA   NA   NA  1.5  7.5 22.5
+
+[[3]]
+[1]      NA      NA 0.93750 1.87500 3.28125 5.25000
+
+[[4]]
+[1]      NA      NA      NA 1.40625 3.28125 6.56250
+
+> frollmedian(d, 3:4)
+[[1]]
+[1]  NA  NA 1.0 1.5 2.0 2.5
+
+[[2]]
+[1]   NA   NA   NA 1.25 1.75 2.25
+
+[[3]]
+[1]   NA   NA 1.00 1.25 1.50 1.75
+
+[[4]]
+[1]    NA    NA    NA 1.125 1.375 1.625
+
+> frollvar(d, 3:4)
+[[1]]
+[1]   NA   NA 0.25 0.25 0.25 0.25
+
+[[2]]
+[1]        NA        NA        NA 0.4166667 0.4166667 0.4166667
+
+[[3]]
+[1]     NA     NA 0.0625 0.0625 0.0625 0.0625
+
+[[4]]
+[1]        NA        NA        NA 0.1041667 0.1041667 0.1041667
+
+> frollsd(d, 3:4)
+[[1]]
+[1]  NA  NA 0.5 0.5 0.5 0.5
+
+[[2]]
+[1]        NA        NA        NA 0.6454972 0.6454972 0.6454972
+
+[[3]]
+[1]   NA   NA 0.25 0.25 0.25 0.25
+
+[[4]]
+[1]        NA        NA        NA 0.3227486 0.3227486 0.3227486
+
 > 
-> # frollapply
-> frollapply(d, 3:4, sum)
-[[1]]
-[1]  NA  NA 3.0 4.5 6.0 7.5
+> # partial=TRUE
+> x = 1:6/2
+> n = 3
+> ans1 = frollmean(x, n, partial=TRUE)
+> # same using adaptive=TRUE
+> an = function(n, len) c(seq.int(n), rep.int(n, len-n))
+> ans2 = frollmean(x, an(n, length(x)), adaptive=TRUE)
+> all.equal(ans1, ans2)
+[1] TRUE
+> # speed up by using partial only for incomplete observations
+> ans3 = frollmean(x, n)
+> ans3[seq.int(n-1L)] = frollmean(x[seq.int(n-1L)], n, partial=TRUE)
+> all.equal(ans1, ans3)
+[1] TRUE
+> 
+> # give.names
+> frollsum(list(x=1:5, y=5:1), c(tiny=2, big=4), give.names=TRUE)
+$x_tiny
+[1] NA  3  5  7  9
 
-[[2]]
-[1] NA NA NA  5  7  9
+$x_big
+[1] NA NA NA 10 14
 
-[[3]]
-[1]   NA   NA 3.00 3.75 4.50 5.25
+$y_tiny
+[1] NA  9  7  5  3
 
-[[4]]
-[1]  NA  NA  NA 4.5 5.5 6.5
+$y_big
+[1] NA NA NA 14 10
 
-> f = function(x, ...) if (sum(x, ...)>5) min(x, ...) else max(x, ...)
-> frollapply(d, 3:4, f, na.rm=TRUE)
-[[1]]
-[1]  NA  NA 1.5 2.0 1.5 2.0
-
-[[2]]
-[1]  NA  NA  NA 2.0 1.0 1.5
-
-[[3]]
-[1]   NA   NA 1.25 1.50 1.75 1.50
-
-[[4]]
-[1]   NA   NA   NA 1.50 1.00 1.25
-
+> 
+> # has.nf=FALSE should be used with care
+> frollmax(c(1,2,NA,4,5), 2)
+[1] NA  2 NA NA  5
+> frollmax(c(1,2,NA,4,5), 2, has.nf=FALSE)
+[1] NA  2  2  4  5
+> 
+> # use verbose=TRUE for extra insight
+> .op = options(datatable.verbose = TRUE)
+> frollsd(c(1:5,NA,7:8), 4)
+frollfunR: allocating memory for results 1x1
+frollfunR: computing 1 column(s) and 1 window(s) sequentially as there is only single rolling computation
+frollfunR: 1:
+frollsdFast: calling sqrt(frollvarFast(...))
+frollvarFast: running for input length 8, window 4, hasnf 0, narm 0
+frollvarFast: non-finite values are present in input, re-running with extra care for NFs
+frollvarFast: non-finite values are present in input, redirecting to frollvarExact using has.nf=TRUE
+frollvarExact: running in parallel for input length 8, window 4, hasnf 1, narm 0
+frollvarExact: non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run
+frollfun: processing fun 7 algo 0 took 0.000s
+frollfunR: processing of 1 column(s) and 1 window(s) took 0.000s
+[1]       NA       NA       NA 1.290994 1.290994       NA       NA       NA
+> options(.op)
 > 
 > # performance vs exactness
 > set.seed(108)
@@ -3271,19 +3531,19 @@ Levels: a b c
 + }
 > system.time(ans1<-ma(x, n))
    user  system elapsed 
-  0.009   0.000   0.009 
+  0.008   0.000   0.008 
 > system.time(ans2<-fastma(x, n))
    user  system elapsed 
-      0       0       0 
+  0.000   0.000   0.001 
 > system.time(ans3<-frollmean(x, n))
    user  system elapsed 
       0       0       0 
 > system.time(ans4<-frollmean(x, n, algo="exact"))
    user  system elapsed 
-      0       0       0 
+  0.001   0.000   0.000 
 > system.time(ans5<-frollapply(x, n, mean))
    user  system elapsed 
-  0.003   0.000   0.003 
+  0.008   0.000   0.008 
 > anserr = list(
 +   fastma = ans2-ans1,
 +   froll_fast = ans3-ans1,
@@ -3295,96 +3555,192 @@ Levels: a b c
             fastma         froll_fast        froll_exact         frollapply 
    "0.00001287466" "0.00000001833541"                "0"                "0" 
 > 
-> # frollapply corner cases
-> f = function(x) head(x, 2)     ## FUN returns non length 1
-> try(frollapply(1:5, 3, f))
-Error in frollapply(1:5, 3, f) : 
-  frollapply: results from provided FUN are not length 1
-> f = function(x) {              ## FUN sometimes returns non length 1
-+   n = length(x)
-+   # length 1 will be returned only for first iteration where we check length
-+   if (n==x[n]) x[1L] else range(x) # range(x)[2L] is silently ignored!
+> 
+> 
+> cleanEx()
+> nameEx("frolladapt")
+> ### * frolladapt
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: frolladapt
+> ### Title: Adapt rolling window to irregularly spaced time series
+> ### Aliases: frolladapt
+> ### Keywords: data
+> 
+> ### ** Examples
+> 
+> idx = as.Date("2022-10-23") + c(0,1,4,5,6,7,9,10,14)
+> dt = data.table(index=idx, value=seq_along(idx))
+> dt
+        index value
+       <Date> <int>
+1: 2022-10-23     1
+2: 2022-10-24     2
+3: 2022-10-27     3
+4: 2022-10-28     4
+5: 2022-10-29     5
+6: 2022-10-30     6
+7: 2022-11-01     7
+8: 2022-11-02     8
+9: 2022-11-06     9
+> dt[, n3 := frolladapt(index, n=3L)]
+> dt
+        index value    n3
+       <Date> <int> <int>
+1: 2022-10-23     1     3
+2: 2022-10-24     2     3
+3: 2022-10-27     3     1
+4: 2022-10-28     4     2
+5: 2022-10-29     5     3
+6: 2022-10-30     6     3
+7: 2022-11-01     7     2
+8: 2022-11-02     8     2
+9: 2022-11-06     9     1
+> dt[, rollmean3 := frollmean(value, n3, adaptive=TRUE)]
+> dt
+        index value    n3 rollmean3
+       <Date> <int> <int>     <num>
+1: 2022-10-23     1     3        NA
+2: 2022-10-24     2     3        NA
+3: 2022-10-27     3     1       3.0
+4: 2022-10-28     4     2       3.5
+5: 2022-10-29     5     3       4.0
+6: 2022-10-30     6     3       5.0
+7: 2022-11-01     7     2       6.5
+8: 2022-11-02     8     2       7.5
+9: 2022-11-06     9     1       9.0
+> dt[, n3p := frolladapt(index, n=3L, partial=TRUE)]
+> dt[, rollmean3p := frollmean(value, n3p, adaptive=TRUE)]
+> dt
+        index value    n3 rollmean3   n3p rollmean3p
+       <Date> <int> <int>     <num> <int>      <num>
+1: 2022-10-23     1     3        NA     1        1.0
+2: 2022-10-24     2     3        NA     2        1.5
+3: 2022-10-27     3     1       3.0     1        3.0
+4: 2022-10-28     4     2       3.5     2        3.5
+5: 2022-10-29     5     3       4.0     3        4.0
+6: 2022-10-30     6     3       5.0     3        5.0
+7: 2022-11-01     7     2       6.5     2        6.5
+8: 2022-11-02     8     2       7.5     2        7.5
+9: 2022-11-06     9     1       9.0     1        9.0
+> 
+> n34 = frolladapt(idx, c(small=3, big=4), give.names=TRUE)
+> n34
+$small
+[1] 3 3 1 2 3 3 2 2 1
+
+$big
+[1] 4 4 2 2 3 4 3 3 1
+
+> dt[, frollmean(value, n34, adaptive=TRUE, give.names=TRUE)]
+   small   big
+   <num> <num>
+1:    NA    NA
+2:    NA    NA
+3:   3.0   2.5
+4:   3.5   3.5
+5:   4.0   4.0
+6:   5.0   4.5
+7:   6.5   6.0
+8:   7.5   7.0
+9:   9.0   9.0
+> 
+> 
+> 
+> cleanEx()
+> nameEx("frollapply")
+> ### * frollapply
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: frollapply
+> ### Title: Rolling user-defined function
+> ### Aliases: frollapply rollapply
+> ### Keywords: data
+> 
+> ### ** Examples
+> 
+> frollapply(1:16, 4, median)
+ [1]   NA   NA   NA  2.5  3.5  4.5  5.5  6.5  7.5  8.5  9.5 10.5 11.5 12.5 13.5
+[16] 14.5
+> frollapply(1:9, 3, toString)
+[1] NA        NA        "1, 2, 3" "2, 3, 4" "3, 4, 5" "4, 5, 6" "5, 6, 7"
+[8] "6, 7, 8" "7, 8, 9"
+> 
+> ## vectorized input
+> x = list(1:10, 10:1)
+> n = c(3, 4)
+> frollapply(x, n, sum)
+[[1]]
+ [1] NA NA  6  9 12 15 18 21 24 27
+
+[[2]]
+ [1] NA NA NA 10 14 18 22 26 30 34
+
+[[3]]
+ [1] NA NA 27 24 21 18 15 12  9  6
+
+[[4]]
+ [1] NA NA NA 34 30 26 22 18 14 10
+
+> ## give names
+> x = list(data1 = 1:10, data2 = 10:1)
+> n = c(small = 3, big = 4)
+> frollapply(x, n, sum, give.names=TRUE)
+$data1_small
+ [1] NA NA  6  9 12 15 18 21 24 27
+
+$data1_big
+ [1] NA NA NA 10 14 18 22 26 30 34
+
+$data2_small
+ [1] NA NA 27 24 21 18 15 12  9  6
+
+$data2_big
+ [1] NA NA NA 34 30 26 22 18 14 10
+
+> 
+> ## by.column=FALSE
+> x = as.data.table(iris)
+> flow = function(x) {
++   v1 = x[[1L]]
++   v2 = x[[2L]]
++   (v1[2L] - v1[1L] * (1+v2[2L])) / v1[1L]
 + }
-> frollapply(1:5, 3, f)
-[1] NA NA  1  2  3
-> options(datatable.verbose=TRUE)
-> x = c(1,2,1,1,1,2,3,2)
-> frollapply(x, 3, uniqueN)     ## FUN returns integer
-frollapplyR: allocating memory for results 1x1
-forderReuseSorting: opt not possible: is.data.table(DT)=0, sortGroups=1, all1(ascArg)=1
-forder.c received 3 rows and 1 columns
-forderReuseSorting: opt=0, took 0.000s
-frollapply: results from provided FUN are not of type double, coercion from integer or logical will be applied on each iteration
-forderReuseSorting: opt not possible: is.data.table(DT)=0, sortGroups=1, all1(ascArg)=1
-forder.c received 3 rows and 1 columns
-forderReuseSorting: opt=0, took 0.000s
-forderReuseSorting: opt not possible: is.data.table(DT)=0, sortGroups=1, all1(ascArg)=1
-forder.c received 3 rows and 1 columns
-forderReuseSorting: opt=0, took 0.000s
-forderReuseSorting: opt not possible: is.data.table(DT)=0, sortGroups=1, all1(ascArg)=1
-forder.c received 3 rows and 1 columns
-forderReuseSorting: opt=0, took 0.000s
-forderReuseSorting: opt not possible: is.data.table(DT)=0, sortGroups=1, all1(ascArg)=1
-forder.c received 3 rows and 1 columns
-forderReuseSorting: opt=0, took 0.000s
-forderReuseSorting: opt not possible: is.data.table(DT)=0, sortGroups=1, all1(ascArg)=1
-forder.c received 3 rows and 1 columns
-forderReuseSorting: opt=0, took 0.000s
-frollapply: took 0.000s
-frollapplyR: processing of 1 column(s) and 1 window(s) took 0.000s
-[1] NA NA  2  2  1  2  3  2
-> numUniqueN = function(x) as.numeric(uniqueN(x))
-> frollapply(x, 3, numUniqueN)
-frollapplyR: allocating memory for results 1x1
-forderReuseSorting: opt not possible: is.data.table(DT)=0, sortGroups=1, all1(ascArg)=1
-forder.c received 3 rows and 1 columns
-forderReuseSorting: opt=0, took 0.000s
-forderReuseSorting: opt not possible: is.data.table(DT)=0, sortGroups=1, all1(ascArg)=1
-forder.c received 3 rows and 1 columns
-forderReuseSorting: opt=0, took 0.000s
-forderReuseSorting: opt not possible: is.data.table(DT)=0, sortGroups=1, all1(ascArg)=1
-forder.c received 3 rows and 1 columns
-forderReuseSorting: opt=0, took 0.000s
-forderReuseSorting: opt not possible: is.data.table(DT)=0, sortGroups=1, all1(ascArg)=1
-forder.c received 3 rows and 1 columns
-forderReuseSorting: opt=0, took 0.000s
-forderReuseSorting: opt not possible: is.data.table(DT)=0, sortGroups=1, all1(ascArg)=1
-forder.c received 3 rows and 1 columns
-forderReuseSorting: opt=0, took 0.000s
-forderReuseSorting: opt not possible: is.data.table(DT)=0, sortGroups=1, all1(ascArg)=1
-forder.c received 3 rows and 1 columns
-forderReuseSorting: opt=0, took 0.000s
-frollapply: took 0.001s
-frollapplyR: processing of 1 column(s) and 1 window(s) took 0.001s
-[1] NA NA  2  2  1  2  3  2
-> x = c(1,2,1,1,NA,2,NA,2)
-> frollapply(x, 3, anyNA)       ## FUN returns logical
-frollapplyR: allocating memory for results 1x1
-frollapply: results from provided FUN are not of type double, coercion from integer or logical will be applied on each iteration
-frollapply: took 0.000s
-frollapplyR: processing of 1 column(s) and 1 window(s) took 0.000s
-[1] NA NA  0  0  1  1  1  1
-> as.logical(frollapply(x, 3, anyNA))
-frollapplyR: allocating memory for results 1x1
-frollapply: results from provided FUN are not of type double, coercion from integer or logical will be applied on each iteration
-frollapply: took 0.000s
-frollapplyR: processing of 1 column(s) and 1 window(s) took 0.000s
-[1]    NA    NA FALSE FALSE  TRUE  TRUE  TRUE  TRUE
-> options(datatable.verbose=FALSE)
-> f = function(x) {             ## FUN returns character
-+   if (sum(x)>5) "big" else "small"
-+ }
-> try(frollapply(1:5, 3, f))
-Error in frollapply(1:5, 3, f) : 
-  frollapply: results from provided FUN are not of type double
-> f = function(x) {             ## FUN is not type-stable
-+   n = length(x)
-+   # double type will be returned only for first iteration where we check type
-+   if (n==x[n]) 1 else NA # NA logical turns into garbage without coercion to double
-+ }
-> try(frollapply(1:5, 3, f))
-Error in frollapply(1:5, 3, f) : 
-  REAL() can only be applied to a 'numeric', not a 'logical'
+> x[, "flow" := frollapply(.(Sepal.Length, Sepal.Width), 2L, flow, by.column=FALSE),
++   by = Species][]
+     Sepal.Length Sepal.Width Petal.Length Petal.Width   Species      flow
+            <num>       <num>        <num>       <num>    <fctr>     <num>
+  1:          5.1         3.5          1.4         0.2    setosa        NA
+  2:          4.9         3.0          1.4         0.2    setosa -3.039216
+  3:          4.7         3.2          1.3         0.2    setosa -3.240816
+  4:          4.6         3.1          1.5         0.2    setosa -3.121277
+  5:          5.0         3.6          1.4         0.2    setosa -3.513043
+ ---                                                                      
+146:          6.7         3.0          5.2         2.3 virginica -3.000000
+147:          6.3         2.5          5.0         1.9 virginica -2.559701
+148:          6.5         3.0          5.2         2.0 virginica -2.968254
+149:          6.2         3.4          5.4         2.3 virginica -3.446154
+150:          5.9         3.0          5.1         1.8 virginica -3.048387
+> 
+> ## rolling regression: by.column=FALSE
+> f = function(x) coef(lm(v2 ~ v1, data=x))
+> x = data.table(v1=rnorm(120), v2=rnorm(120))
+> frollapply(x, 4, f, by.column=FALSE)
+     (Intercept)          v1
+           <num>       <num>
+  1:          NA          NA
+  2:          NA          NA
+  3:          NA          NA
+  4:  0.10157743  0.11562783
+  5:  0.22964085 -0.05487985
+ ---                        
+116: -0.03607615 -0.46070994
+117: -0.19100426 -1.10603337
+118: -0.73267009 -1.79033575
+119:  0.28069489  1.50649057
+120:  0.23417753  1.66844219
 > 
 > 
 > 
@@ -3406,7 +3762,7 @@ Error in frollapply(1:5, 3, f) :
   0.106   0.003   0.109 
 > system.time(ans2 <- fsort(x))
    user  system elapsed 
-  0.031   0.003   0.017 
+  0.031   0.000   0.016 
 > identical(ans1, ans2)
 [1] TRUE
 > 
@@ -3477,7 +3833,7 @@ A|B
 > ##D 
 > ##D set.seed(1)
 > ##D DT = as.data.table( lapply(1:10, sample,
-> ##D          x=as.numeric(1:5e7), size=5e6))                            #     382MB
+> ##D          x=as.numeric(1:5e7), size=5e6))                            #    382MiB
 > ##D system.time(fwrite(DT, "/dev/shm/tmp1.csv"))                        #      0.8s
 > ##D system.time(write.csv(DT, "/dev/shm/tmp2.csv",                      #     60.6s
 > ##D                       quote=FALSE, row.names=FALSE))
@@ -3497,7 +3853,7 @@ A|B
 > ##D   str6=sample(c("M","F"),N,TRUE),
 > ##D   int1=sample(ceiling(rexp(1e6)), N, replace=TRUE),
 > ##D   int2=sample(N,N,replace=TRUE)-N/2
-> ##D )                                                                   #     774MB
+> ##D )                                                                   #    775MiB
 > ##D system.time(fwrite(DT,"/dev/shm/tmp1.csv"))                         #      1.1s
 > ##D system.time(write.csv(DT,"/dev/shm/tmp2.csv",                       #     63.2s
 > ##D                       row.names=FALSE, quote=FALSE))
@@ -3527,11 +3883,11 @@ A|B
 > n = 24L
 > set.seed(25)
 > DT <- data.table(
-+     color = sample(c("green","yellow","red"), n, TRUE),
-+     year = as.Date(sample(paste0(2011:2015,"-01-01"), n, TRUE)),
-+     status = as.factor(sample(c("removed","active","inactive","archived"), n, TRUE)),
-+     amount = sample(1:5, n, TRUE),
-+     value = sample(c(3, 3.5, 2.5, 2), n, TRUE)
++   color = sample(c("green","yellow","red"), n, TRUE),
++   year = as.Date(sample(paste0(2011:2015,"-01-01"), n, TRUE)),
++   status = as.factor(sample(c("removed","active","inactive","archived"), n, TRUE)),
++   amount = sample(1:5, n, TRUE),
++   value = sample(c(3, 3.5, 2.5, 2), n, TRUE)
 + )
 > 
 > # rollup
@@ -3575,6 +3931,7 @@ A|B
 34: yellow       <NA>     <NA>   9.0
 35:   <NA>       <NA>     <NA>  64.0
      color       year   status    V1
+    <char>     <Date>   <fctr> <num>
 > rollup(DT, j=sum(value), by=by_vars, id=TRUE)
     grouping  color       year   status    V1
        <int> <char>     <Date>   <fctr> <num>
@@ -3614,6 +3971,7 @@ A|B
 34:        3 yellow       <NA>     <NA>   9.0
 35:        7   <NA>       <NA>     <NA>  64.0
     grouping  color       year   status    V1
+       <int> <char>     <Date>   <fctr> <num>
 > rollup(DT, j=lapply(.SD, sum), by=by_vars, id=TRUE, .SDcols="value")
     grouping  color       year   status value
        <int> <char>     <Date>   <fctr> <num>
@@ -3653,6 +4011,7 @@ A|B
 34:        3 yellow       <NA>     <NA>   9.0
 35:        7   <NA>       <NA>     <NA>  64.0
     grouping  color       year   status value
+       <int> <char>     <Date>   <fctr> <num>
 > rollup(DT, j=c(list(count=.N), lapply(.SD, sum)), by=by_vars, id=TRUE)
     grouping  color       year   status count amount value
        <int> <char>     <Date>   <fctr> <int>  <int> <num>
@@ -3692,6 +4051,7 @@ A|B
 34:        3 yellow       <NA>     <NA>     4     10   9.0
 35:        7   <NA>       <NA>     <NA>    24     72  64.0
     grouping  color       year   status count amount value
+       <int> <char>     <Date>   <fctr> <int>  <int> <num>
 > rollup(DT, j=sum(value), by=by_vars,
 +        # specify label by variable name
 +        label=list(color="total", year=as.Date("3000-01-01"), status=factor("total")))
@@ -3733,6 +4093,7 @@ A|B
 34: yellow 3000-01-01    total   9.0
 35:  total 3000-01-01    total  64.0
      color       year   status    V1
+    <char>     <Date>   <fctr> <num>
 > rollup(DT, j=sum(value), by=by_vars,
 +        # specify label by variable name and first element of class
 +        label=list(color="total", Date=as.Date("3000-01-01"), factor=factor("total")))
@@ -3774,6 +4135,7 @@ A|B
 34: yellow 3000-01-01    total   9.0
 35:  total 3000-01-01    total  64.0
      color       year   status    V1
+    <char>     <Date>   <fctr> <num>
 > # label is character scalar so applies to color only
 > rollup(DT, j=sum(value), by=by_vars, label="total")
      color       year   status    V1
@@ -3814,6 +4176,7 @@ A|B
 34: yellow       <NA>     <NA>   9.0
 35:  total       <NA>     <NA>  64.0
      color       year   status    V1
+    <char>     <Date>   <fctr> <num>
 > rollup(DT, j=.N, by=c("color", "year", "status", "value"),
 +        # label can be explicitly specified as NA or NaN
 +        label = list(color=NA_character_, year=as.Date(NA), status=factor(NA), value=NaN))
@@ -3878,6 +4241,7 @@ A|B
 57: yellow       <NA>     <NA>   NaN     4
 58:   <NA>       <NA>     <NA>   NaN    24
      color       year   status value     N
+    <char>     <Date>   <fctr> <num> <int>
 > 
 > # cube
 > cube(DT, j = sum(value), by = c("color","year","status"), id=TRUE)
@@ -3952,6 +4316,7 @@ A|B
 67:        6   <NA>       <NA>  removed  11.5
 68:        7   <NA>       <NA>     <NA>  64.0
     grouping  color       year   status    V1
+       <int> <char>     <Date>   <fctr> <num>
 > cube(DT, j = lapply(.SD, sum), by = c("color","year","status"), id=TRUE, .SDcols="value")
     grouping  color       year   status value
        <int> <char>     <Date>   <fctr> <num>
@@ -4024,6 +4389,7 @@ A|B
 67:        6   <NA>       <NA>  removed  11.5
 68:        7   <NA>       <NA>     <NA>  64.0
     grouping  color       year   status value
+       <int> <char>     <Date>   <fctr> <num>
 > cube(DT, j = c(list(count=.N), lapply(.SD, sum)), by = c("color","year","status"), id=TRUE)
     grouping  color       year   status count amount value
        <int> <char>     <Date>   <fctr> <int>  <int> <num>
@@ -4096,6 +4462,7 @@ A|B
 67:        6   <NA>       <NA>  removed     4     13  11.5
 68:        7   <NA>       <NA>     <NA>    24     72  64.0
     grouping  color       year   status count amount value
+       <int> <char>     <Date>   <fctr> <int>  <int> <num>
 > 
 > # groupingsets
 > groupingsets(DT, j = c(list(count=.N), lapply(.SD, sum)), by = c("color","year","status"),
@@ -4187,7 +4554,7 @@ A|B
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: like
-> ### Title: Convenience function for calling grep.
+> ### Title: Convenience function for calling grep
 > ### Aliases: like %like% %ilike% %flike% %plike%
 > ### Keywords: data
 > 
@@ -4321,7 +4688,7 @@ A|B
 > print(melt(who, measure.vars = measure(
 +   diagnosis, gender, ages,
 +   ymin=as.numeric,
-+   ymax=function(y)ifelse(y=="", Inf, as.numeric(y)),
++   ymax=function(y)ifelse(nzchar(y), as.numeric(y), Inf),
 +   pattern="new_?(.*)_(.)(([0-9]{2})([0-9]{0,2}))"
 + )), class=TRUE)
       id diagnosis gender   ages  ymin  ymax value
@@ -4521,6 +4888,21 @@ A|B
 > # melt "f_1,f_2" and "d_1,d_2" simultaneously, retain 'factor' attribute
 > # convenient way using internal function patterns()
 > melt(DT, id.vars=1:2, measure.vars=patterns("^f_", "^d_"), value.factor=TRUE)
+      i_1   n_1 variable value1     value2
+    <int> <num>   <fctr>  <ord>     <Date>
+ 1:     1    NA        1      a 2013-09-02
+ 2:     2     6        1      c 2013-09-03
+ 3:     3     7        1      b 2013-09-04
+ 4:     4     8        1   <NA>       <NA>
+ 5:     5     9        1      c 2013-09-05
+ 6:    NA    10        1      b 2013-09-06
+ 7:     1    NA        2      z 2012-01-07
+ 8:     2     6        2      a 2012-01-06
+ 9:     3     7        2      x 2012-01-05
+10:     4     8        2      c 2012-01-04
+11:     5     9        2      x 2012-01-03
+12:    NA    10        2      x 2012-01-02
+> melt(DT, id.vars=patterns("[in]"), measure.vars=patterns("^f_", "^d_"), value.factor=TRUE)
       i_1   n_1 variable value1     value2
     <int> <num>   <fctr>  <ord>     <Date>
  1:     1    NA        1      a 2013-09-02
@@ -5049,6 +5431,109 @@ Key: <a>
 > 
 > 
 > cleanEx()
+> nameEx("mergelist")
+> ### * mergelist
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: mergelist
+> ### Title: Merge multiple data.tables
+> ### Aliases: mergelist setmergelist
+> ### Keywords: data
+> 
+> ### ** Examples
+> 
+> l = list(
++   data.table(id1=c(1:4, 2:5), v1=1:8),
++   data.table(id1=2:3, v2=1:2),
++   data.table(id1=3:5, v3=1:3)
++ )
+> mergelist(l, on="id1")
+     id1    v1    v2    v3
+   <int> <int> <int> <int>
+1:     1     1    NA    NA
+2:     2     2     1    NA
+3:     3     3     2     1
+4:     4     4    NA     2
+5:     2     5     1    NA
+6:     3     6     2     1
+7:     4     7    NA     2
+8:     5     8    NA     3
+> 
+> ## using keys
+> l = list(
++   data.table(id1=c(1:4, 2:5), v1=1:8),
++   data.table(id1=3:5, id2=1:3, v2=1:3, key="id1"),
++   data.table(id2=1:4, v3=4:1, key="id2")
++ )
+> mergelist(l)
+     id2   id1    v1    v2    v3
+   <int> <int> <int> <int> <int>
+1:    NA     1     1    NA    NA
+2:    NA     2     2    NA    NA
+3:     1     3     3     1     4
+4:     2     4     4     2     3
+5:    NA     2     5    NA    NA
+6:     1     3     6     1     4
+7:     2     4     7     2     3
+8:     3     5     8     3     2
+> 
+> ## select columns
+> l = list(
++   data.table(id1=c(1:4, 2:5), v1=1:8, v2=8:1),
++   data.table(id1=3:5, v3=1:3, v4=3:1, v5=1L, key="id1")
++ )
+> mergelist(l, cols=list(NULL, c("v3", "v5")))
+     id1    v1    v2    v3    v5
+   <int> <int> <int> <int> <int>
+1:     1     1     8    NA    NA
+2:     2     2     7    NA    NA
+3:     3     3     6     1     1
+4:     4     4     5     2     1
+5:     2     5     4    NA    NA
+6:     3     6     3     1     1
+7:     4     7     2     2     1
+8:     5     8     1     3     1
+> 
+> ## different arguments for each merge pair
+> l = list(
++   data.table(id1=1:4, id2=4:1),
++   data.table(id1=c(1:3, 1:2), v2=c(1L, 1L, 1:2, 2L)),
++   data.table(id2=4:5)
++ )
+> mergelist(l,
++   on = list("id1", "id2"),     ## first merge on id1, second on id2
++   how = list("inner", "anti"), ## first inner join, second anti join
++   mult = list("last", NULL))   ## use default 'mult' in second join
+     id1   id2    v2
+   <int> <int> <int>
+1:     2     3     2
+2:     3     2     1
+> 
+> ## detecting duplicates matches
+> l = list(
++   data.table(id1=c(1:4, 2:5), v1=1:8), ## dups in LHS are fine
++   data.table(id1=c(2:3, 2L), v2=1:3),  ## dups in RHS
++   data.table(id1=3:5, v3=1:3)
++ )
+> lapply(l[-1L], `[`, j = if (.N>1L) .SD, by = "id1") ## duplicated rows
+[[1]]
+     id1    v2
+   <int> <int>
+1:     2     1
+2:     2     3
+
+[[2]]
+Empty data.table (0 rows and 1 cols): id1
+
+> try(mergelist(l, on="id1"))
+Error in bmerge(i, x, icols, xcols, roll = 0, rollends = c(FALSE, TRUE),  : 
+  mult='error' and multiple matches during merge
+> 
+> 
+> 
+> 
+> cleanEx()
 > nameEx("na.omit.data.table")
 > ### * na.omit.data.table
 > 
@@ -5110,32 +5595,41 @@ Key: <a>
 > nafill(x, "locf")
  [1] NA NA  3  4  4  4  7  8  8  8
 > 
+> x = c(1, NA, NaN, 3, NaN, NA, 4)
+> nafill(x, "locf")
+[1] 1 1 1 3 3 3 4
+> nafill(x, "locf", nan=NaN)
+[1]   1   1 NaN   3 NaN NaN   4
+> 
+> # fill= applies to any leftover NA
+> nafill(c(NA, x), "locf")
+[1] NA  1  1  1  3  3  3  4
+> nafill(c(NA, x), "locf", fill=0)
+[1] 0 1 1 1 3 3 3 4
+> 
 > dt = data.table(v1=x, v2=shift(x)/2, v3=shift(x, -1L)/2)
 > nafill(dt, "nocb")
 $v1
- [1]  3  3  3  4  7  7  7  8 NA NA
+[1] 1 3 3 3 4 4 4
 
 $v2
- [1] 1.5 1.5 1.5 1.5 2.0 3.5 3.5 3.5 4.0  NA
+[1] 0.5 0.5 1.5 1.5 1.5  NA  NA
 
 $v3
- [1] 1.5 1.5 2.0 3.5 3.5 3.5 4.0  NA  NA  NA
+[1] 1.5 1.5 1.5 2.0 2.0 2.0  NA
 
 > 
 > setnafill(dt, "locf", cols=c("v2","v3"))
 > dt
-       v1    v2    v3
-    <int> <num> <num>
- 1:    NA    NA    NA
- 2:    NA    NA   1.5
- 3:     3    NA   2.0
- 4:     4   1.5   2.0
- 5:    NA   2.0   2.0
- 6:    NA   2.0   3.5
- 7:     7   2.0   4.0
- 8:     8   3.5   4.0
- 9:    NA   4.0   4.0
-10:    NA   4.0   4.0
+      v1    v2    v3
+   <num> <num> <num>
+1:     1    NA    NA
+2:    NA   0.5    NA
+3:   NaN   0.5   1.5
+4:     3   0.5   1.5
+5:   NaN   1.5   1.5
+6:    NA   1.5   2.0
+7:     4   1.5   2.0
 > 
 > 
 > 
@@ -5369,8 +5863,6 @@ Indices: <a__b>, <a>
 >   print(DT)
 Key: <grp1, grp2>
 Index: <grp1__grp3>
-Warning in rbind(abbs, toprint) :
-  number of columns of result is not a multiple of vector length (arg 1)
       grp1  grp2  grp3 index:grp1__grp3
      <int> <int> <int>            <int>
   1:     1     9    11                2
@@ -5598,6 +6090,44 @@ Key: <x>
 > 
 > 
 > cleanEx()
+> nameEx("selfref.ok")
+> ### * selfref.ok
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: .selfref.ok
+> ### Title: Tests self reference of a data.table
+> ### Aliases: .selfref.ok
+> ### Keywords: data
+> 
+> ### ** Examples
+> 
+> d1 = structure(list(V1=1L), class=c("data.table","data.frame"))
+> .selfref.ok(d1)
+[1] FALSE
+> setDT(d1)
+> .selfref.ok(d1)
+[1] TRUE
+> 
+> saveRDS(d1, f<-tempfile())
+> d2 = readRDS(f)
+> .selfref.ok(d2)
+[1] FALSE
+> invisible(file.remove(f))
+> setDT(d2)
+> .selfref.ok(d2)
+[1] TRUE
+> 
+> d3 = unserialize(serialize(d2, NULL))
+> .selfref.ok(d3)
+[1] FALSE
+> setDT(d3)
+> .selfref.ok(d3)
+[1] TRUE
+> 
+> 
+> 
+> cleanEx()
 > nameEx("setDF")
 > ### * setDF
 > 
@@ -5687,6 +6217,21 @@ Key: <a>
 4:     4     9
 5:     5    10
 > 
+> # Example demonstrating setDT after loading from RDS
+> rds_file = tempfile(fileext = ".rds")
+> X = data.table(a = 1:5, b = letters[1:5])
+> saveRDS(X, rds_file)
+> X_loaded = readRDS(rds_file)
+> setDT(X_loaded)  # restore internal data.table attributes
+> print(X_loaded)
+       a      b
+   <int> <char>
+1:     1      a
+2:     2      b
+3:     3      c
+4:     4      d
+5:     5      e
+> unlink(rds_file)
 > 
 > 
 > 
@@ -5781,14 +6326,14 @@ Key: <a>
 > DF = data.frame(a=1:2,b=3:4)       # base data.frame to demo copies and syntax
 > if (capabilities()["profmem"])     # usually memory profiling is available but just in case
 +   tracemem(DF)
-[1] "<0x557ead53cec8>"
+[1] "<0x561e82407e18>"
 > colnames(DF)[1] <- "A"             # 4 shallow copies (R >= 3.1, was 4 deep copies before)
-tracemem[0x557ead53cec8 -> 0x557ead53cc48]: 
-tracemem[0x557ead53cc48 -> 0x557ead53cbc8]: colnames<- 
+tracemem[0x561e82407e18 -> 0x561e82408098]: 
+tracemem[0x561e82408098 -> 0x561e82408118]: colnames<- 
 > names(DF)[1] <- "A"                # 3 shallow copies
 > names(DF) <- c("A", "b")           # 1 shallow copy
 > `names<-`(DF,c("A","b"))           # 1 shallow copy
-tracemem[0x557ead53cbc8 -> 0x557ead53cac8]: 
+tracemem[0x561e82408118 -> 0x561e82408218]: 
   A b
 1 1 3
 2 2 4
@@ -5796,7 +6341,7 @@ tracemem[0x557ead53cbc8 -> 0x557ead53cac8]:
 > DT = data.table(a=1:2,b=3:4,c=5:6) # compare to data.table
 > if (capabilities()["profmem"])
 +   tracemem(DT)                     # by reference, no deep or shallow copies
-[1] "<0x557eadbdbb00>"
+[1] "<0x561e8221e460>"
 > setnames(DT,"b","B")               # by name, no match() needed (warning if "b" is missing)
 > setnames(DT,3,"C")                 # by position with warning if 3 > ncol(DT)
 > setnames(DT,2:3,c("D","E"))        # multiple
@@ -5936,10 +6481,8 @@ Total: 0MB using type_size
 > setindexv(DT, list(c("A", "B"), c("B", "C")))
 > print(DT, show.indices=TRUE)
 Indices: <A__B>, <B__C>
-Warning in rbind(abbs, toprint) :
-  number of columns of result is not a multiple of vector length (arg 1)
        A      B     C index1:A__B index2:B__C
-   <int> <char> <int>       <int>      <char>
+   <int> <char> <int>       <int>       <int>
 1:     5      e    10           5           5
 2:     4      d     9           4           4
 3:     3      c     8           3           3
@@ -6043,7 +6586,7 @@ Key: <id>
 > 
 > ### Name: setorder
 > ### Title: Fast row reordering of a data.table by reference
-> ### Aliases: setorder setorderv order fastorder forder forderv
+> ### Aliases: setorder setorderv order fastorder forder forderv sort_by
 > ### Keywords: data
 > 
 > ### ** Examples
@@ -6724,7 +7267,7 @@ First 1 of 1 (type 'logical'):
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: test.data.table
-> ### Title: Runs a set of tests.
+> ### Title: Runs a set of tests
 > ### Aliases: test.data.table
 > ### Keywords: data
 > 
@@ -6753,7 +7296,7 @@ First 1 of 1 (type 'logical'):
 > started.at=proc.time()
 > Sys.sleep(1)
 > cat("Finished in",timetaken(started.at),"\n")
-Finished in 1.002s elapsed (0.000s cpu) 
+Finished in 1.001s elapsed (0.000s cpu) 
 > 
 > 
 > 
@@ -6788,7 +7331,7 @@ Finished in 1.002s elapsed (0.000s cpu)
 > identical(DT,DT2)
 [1] TRUE
 > 
-> DT$d = ave(DT$b, DT$c, FUN=max)               # copies entire DT, even if it is 10GB in RAM
+> DT$d = ave(DT$b, DT$c, FUN=max)               # copies entire DT, even if it is 10GiB in RAM
 > DT = DT[, transform(.SD, d=max(b)), by="c"]   # same, but even worse as .SD is copied for each group
 > DT[, d:=max(b), by="c"]                       # same result, but much faster, shorter and scales
 > 
@@ -7127,7 +7670,7 @@ $C
 > cleanEx()
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  1.901 0.084 2.724 0 0 
+Time elapsed:  1.749 0.101 2.573 0 0 
 > grDevices::dev.off()
 null device 
           1 

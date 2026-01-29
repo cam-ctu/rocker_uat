@@ -65,20 +65,20 @@ No default user configured
 1 alphabet.txt    new   TRUE
 > 
 > git_commit("Start alphabet file")
-[1] "d226141e137091f61f97feec372ead14c7ea030b"
+[1] "eb792983e6ce86f8faa3b5349177b3fdd1043b94"
 > git_status()
 [1] file   status staged
 <0 rows> (or 0-length row.names)
 > 
 > git_ls()
           path filesize            modified             created
-1 alphabet.txt       12 2025-11-19 10:15:10 2025-11-19 10:15:10
+1 alphabet.txt       12 2026-01-29 09:50:18 2026-01-29 09:50:18
 > 
 > git_log()
                                     commit                  author
-1 d226141e137091f61f97feec372ead14c7ea030b Jerry <jerry@gmail.com>
+1 eb792983e6ce86f8faa3b5349177b3fdd1043b94 Jerry <jerry@gmail.com>
                  time files merge               message
-1 2025-11-19 10:15:10     1 FALSE Start alphabet file\n
+1 2026-01-29 09:50:18     1 FALSE Start alphabet file\n
 > 
 > cat(letters[7:9], file = "alphabet.txt", sep = "\n", append = TRUE)
 > git_status()
@@ -86,7 +86,7 @@ No default user configured
 1 alphabet.txt modified  FALSE
 > 
 > git_commit_all("Add more letters")
-[1] "ce15c00a42bada2d05df7c0e9d016daeb58638ff"
+[1] "236c39d45e35a6732b282dcce347b757e423b795"
 > 
 > # cleanup
 > setwd(oldwd)
@@ -208,12 +208,12 @@ character(0)
 > git_init(r)
 > r_ptr <- git_open(r)
 > r_ptr
-<git repository>: /tmp/Rtmp0vnbD1/gert13a1f2517ee8e[@NA]
+<git repository>: /tmp/RtmpmyclpG/gert13d4b122b7ff5[@NA]
 > git_open(r_ptr)
-<git repository>: /tmp/Rtmp0vnbD1/gert13a1f2517ee8e[@NA]
+<git repository>: /tmp/RtmpmyclpG/gert13d4b122b7ff5[@NA]
 > git_info(r)
 $path
-[1] "/tmp/Rtmp0vnbD1/gert13a1f2517ee8e/"
+[1] "/tmp/RtmpmyclpG/gert13d4b122b7ff5/"
 
 $bare
 [1] FALSE
@@ -258,13 +258,13 @@ character(0)
 > r <- tempfile(pattern = "gert")
 > git_init(r)
 > git_find(r)
-[1] "/tmp/Rtmp0vnbD1/gert13a1f5f2e149f"
+[1] "/tmp/RtmpmyclpG/gert13d4b71c5aeac"
 > 
 > # create a child directory, then a grandchild, then search
 > r_grandchild_dir <- file.path(r, "aaa", "bbb")
 > dir.create(r_grandchild_dir, recursive = TRUE)
 > git_find(r_grandchild_dir)
-[1] "/tmp/Rtmp0vnbD1/gert13a1f5f2e149f"
+[1] "/tmp/RtmpmyclpG/gert13d4b71c5aeac"
 > 
 > # cleanup
 > unlink(r, recursive = TRUE)
@@ -274,7 +274,7 @@ character(0)
 > dir.create(r)
 > git_init(r)
 > git_find(r)
-[1] "/tmp/Rtmp0vnbD1/gert13a1f4844e893"
+[1] "/tmp/RtmpmyclpG/gert13d4b53d7b005"
 > 
 > # cleanup
 > unlink(r, recursive = TRUE)
@@ -302,13 +302,13 @@ Error in libgit2::git_signature_default :
 > git_signature("Some committer", "sarah@gmail.com")
 [git signature]
 Author: Some committer <sarah@gmail.com>
-Date: Wed Nov 19 10:15:11 2025 +0000
+Date: Thu Jan 29 09:50:19 2026 +0000
 > 
 > # Create signature for an hour ago
 > (sig <- git_signature("Han", "han@company.com", Sys.time() - 3600))
 [git signature]
 Author: Han <han@company.com>
-Date: Wed Nov 19 09:15:11 2025 +0000
+Date: Thu Jan 29 08:50:19 2026 +0000
 > 
 > # Parse a signature
 > git_signature_parse(sig)
@@ -319,7 +319,7 @@ $email
 [1] "han@company.com"
 
 $time
-[1] "2025-11-19 09:15:11 UTC"
+[1] "2026-01-29 08:50:19 UTC"
 
 $offset
 [1] 0
@@ -332,11 +332,70 @@ $email
 [1] "emma@mu.edu"
 
 $time
-[1] "2025-11-19 10:15:11 UTC"
+[1] "2026-01-29 09:50:19 UTC"
 
 $offset
 [1] 0
 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("git_worktree")
+> ### * git_worktree
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: git_worktree
+> ### Title: Git Worktrees
+> ### Aliases: git_worktree git_worktree_list git_worktree_exists
+> ###   git_worktree_path git_worktree_add git_worktree_remove
+> ###   git_worktree_prune git_worktree_is_prunable git_worktree_lock
+> ###   git_worktree_unlock git_worktree_is_locked git_worktree_is_valid
+> 
+> ### ** Examples
+> 
+> repo <- git_init(tempfile("gert-examples-repo"))
+> 
+> writeLines("hello", file.path(repo, 'hello.txt'))
+> git_add('hello.txt', repo = repo)
+       file status staged
+1 hello.txt    new   TRUE
+> git_commit("First commit", author = "jeroen <jeroen@blabla.nl>", repo = repo)
+[1] "9a5157471d08a20a7a2dae8c0bcf78dad8440892"
+> 
+> # Create a branch that is going to be used for the worktree,
+> # but don't check it out!
+> git_branch_create(branch = "branch", checkout = FALSE, repo = repo)
+> 
+> path <- tempfile("gert-examples-worktree")
+> 
+> # Add a worktree for this branch
+> git_worktree_add(
++   name = "worktree",
++   path = path,
++   branch = "branch",
++   repo = repo
++ )
+> 
+> # Worktree info
+> git_worktree_list(repo = repo)
+      name                                                path valid locked
+1 worktree /tmp/RtmpmyclpG/gert-examples-worktree13d4b303c781d  TRUE  FALSE
+> 
+> # Note how the files are checked out here
+> dir(path, all.files = TRUE)
+[1] "."         ".."        ".git"      "hello.txt"
+> 
+> # And the branch that we are on at `path` is `"branch"`
+> git_branch(repo = path)
+[1] "branch"
+> 
+> # Cleanup worktree, and the folder at `path`
+> git_worktree_remove("worktree", repo = repo)
+> 
+> # Cleanup repo
+> unlink(repo, recursive = TRUE)
 > 
 > 
 > 
@@ -399,7 +458,7 @@ $config.home
 > cleanEx()
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  0.16 0.081 0.68 0.004 0.008 
+Time elapsed:  0.17 0.083 0.608 0.007 0.005 
 > grDevices::dev.off()
 null device 
           1 

@@ -220,7 +220,7 @@ Type 'q()' to quit R.
 [5] Burr12(3, 1, 1)   Burr12(0.5, 2, 1)
 > 
 > ## Don't show: 
-> if (requireNamespace("actuar", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (requireNamespace("actuar", quietly = TRUE)) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + mean(dist)
 + variance(dist)
@@ -311,7 +311,7 @@ Type 'q()' to quit R.
 [1] -0.6931472 -2.3025851
 > 
 > # The outcomes aren't ordered, so many statistics are not applicable.
-> cdf(dist, 4)
+> cdf(dist, 0.6)
 [1] NA NA
 > quantile(dist, 0.7)
 [1] NA NA
@@ -324,6 +324,17 @@ Type 'q()' to quit R.
 > kurtosis(dist)
 [1] NA NA
 > 
+> # Some of these statistics are meaningful for ordered outcomes
+> dist <- dist_categorical(list(rpois(26, 3)), list(ordered(letters)))
+> dist
+<distribution[1]>
+[1] Categorical[26]
+> cdf(dist, "m")
+[1] 0.4487179
+> quantile(dist, 0.5)
+[1] n
+26 Levels: a < b < c < d < e < f < g < h < i < j < k < l < m < n < o < ... < z
+> 
 > dist <- dist_categorical(
 +   prob = list(c(0.05, 0.5, 0.15, 0.2, 0.1), c(0.3, 0.1, 0.6)),
 +   outcomes = list(letters[1:5], letters[24:26])
@@ -331,10 +342,10 @@ Type 'q()' to quit R.
 > 
 > generate(dist, 10)
 [[1]]
- [1] "e" "b" "d" "b" "b" "b" "b" "b" "e" "b"
+ [1] "b" "b" "c" "d" "b" "e" "b" "b" "b" "b"
 
 [[2]]
- [1] "z" "z" "z" "z" "x" "x" "x" "z" "x" "z"
+ [1] "z" "z" "x" "z" "y" "z" "z" "z" "x" "z"
 
 > 
 > density(dist, "a")
@@ -481,8 +492,46 @@ Type 'q()' to quit R.
 > 
 > ### ** Examples
 > 
-> dist_degenerate(x = 1:5)
+> dist <- dist_degenerate(x = 1:5)
+> 
+> dist
 <distribution[5]>
+[1] 1 2 3 4 5
+> mean(dist)
+[1] 1 2 3 4 5
+> variance(dist)
+[1] 0 0 0 0 0
+> skewness(dist)
+[1] NA NA NA NA NA
+> kurtosis(dist)
+[1] NA NA NA NA NA
+> 
+> generate(dist, 10)
+[[1]]
+ [1] 1 1 1 1 1 1 1 1 1 1
+
+[[2]]
+ [1] 2 2 2 2 2 2 2 2 2 2
+
+[[3]]
+ [1] 3 3 3 3 3 3 3 3 3 3
+
+[[4]]
+ [1] 4 4 4 4 4 4 4 4 4 4
+
+[[5]]
+ [1] 5 5 5 5 5 5 5 5 5 5
+
+> 
+> density(dist, 2)
+[1] 0 1 0 0 0
+> density(dist, 2, log = TRUE)
+[1] -Inf    0 -Inf -Inf -Inf
+> 
+> cdf(dist, 4)
+[1] 1 1 1 1 0
+> 
+> quantile(dist, 0.7)
 [1] 1 2 3 4 5
 > 
 > 
@@ -737,7 +786,59 @@ Type 'q()' to quit R.
 > 
 > ### ** Examples
 > 
-> dist <- dist_gev(location = 0, scale = 1, shape = 0)
+> # Create GEV distributions with different shape parameters
+> 
+> # Gumbel distribution (shape = 0)
+> gumbel <- dist_gev(location = 0, scale = 1, shape = 0)
+> 
+> # Frechet distribution (shape > 0, heavy-tailed)
+> frechet <- dist_gev(location = 0, scale = 1, shape = 0.3)
+> 
+> # Reverse Weibull distribution (shape < 0, bounded above)
+> weibull <- dist_gev(location = 0, scale = 1, shape = -0.2)
+> 
+> dist <- c(gumbel, frechet, weibull)
+> dist
+<distribution[3]>
+[1] GEV(0, 1, 0)    GEV(0, 1, 0.3)  GEV(0, 1, -0.2)
+> 
+> # Statistical properties
+> mean(dist)
+[1] 0.5772157 0.9935178 0.4091563
+> median(dist)
+[1] 0.3665129 0.3874219 0.3534020
+> variance(dist)
+[1] 1.644934 5.924577 1.105749
+> 
+> # Generate random samples
+> generate(dist, 10)
+[[1]]
+ [1]  0.28079672 -0.16690566  1.92615940  1.96757634  0.82995565 -1.06297424
+ [7] -0.20665805  0.61677365  0.04440393  1.91700988
+
+[[2]]
+ [1] -0.31403924  0.28315567 -0.20650325 -1.19961963 -0.05268683 -0.03445776
+ [7] -0.57335005  0.45158717  1.28638499  0.57470932
+
+[[3]]
+ [1] -0.939069785  0.424248018  1.085511421  0.538173779  1.807795788
+ [6]  2.156949738  0.518095778 -1.583936468 -0.162412630  0.003191115
+
+> 
+> # Evaluate density
+> density(dist, 2)
+[1] 0.1182050 0.1058831 0.1199042
+> density(dist, 2, log = TRUE)
+[1] -2.135335 -2.245420 -2.121062
+> 
+> # Evaluate cumulative distribution
+> cdf(dist, 4)
+[1] 0.9818511 0.9303365 0.9996801
+> 
+> # Calculate quantiles
+> quantile(dist, 0.95)
+[1] 2.970195 4.792363 2.239536
+> 
 > 
 > 
 > 
@@ -759,7 +860,7 @@ Type 'q()' to quit R.
 [1] gh(A = 0, B = 1, g = 0, h = 0.5)
 > 
 > ## Don't show: 
-> if (requireNamespace("gk", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (requireNamespace("gk", quietly = TRUE)) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + mean(dist)
 + variance(dist)
@@ -816,7 +917,7 @@ Type 'q()' to quit R.
 [1] gk(A = 0, B = 1, g = 0, k = 0.5)
 > 
 > ## Don't show: 
-> if (requireNamespace("gk", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (requireNamespace("gk", quietly = TRUE)) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + mean(dist)
 + variance(dist)
@@ -869,6 +970,31 @@ Type 'q()' to quit R.
 > 
 > dist <- dist_gpd(location = 0, scale = 1, shape = 0)
 > 
+> dist
+<distribution[1]>
+[1] GPD(0, 1, 0)
+> mean(dist)
+[1] 1
+> variance(dist)
+[1] 1
+> 
+> generate(dist, 10)
+[[1]]
+ [1] 0.7551818 1.1816428 0.1457067 0.1397953 0.4360686 2.8949685 1.2295621
+ [8] 0.5396828 0.9565675 0.1470460
+
+> 
+> density(dist, 2)
+[1] 0.1353353
+> density(dist, 2, log = TRUE)
+[1] -2
+> 
+> cdf(dist, 4)
+[1] 0.9816844
+> 
+> quantile(dist, 0.7)
+[1] 1.203973
+> 
 > 
 > 
 > cleanEx()
@@ -889,7 +1015,7 @@ Type 'q()' to quit R.
 [1] Gumbel(0.5, 2) Gumbel(1, 2)   Gumbel(1.5, 3) Gumbel(3, 4)  
 > 
 > ## Don't show: 
-> if (requireNamespace("actuar", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (requireNamespace("actuar", quietly = TRUE)) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + mean(dist)
 + variance(dist)
@@ -1003,6 +1129,48 @@ Warning in n * K * (N - K) * (N - n) : NAs produced by integer overflow
 > 
 > 
 > cleanEx()
+> nameEx("dist_inflated")
+> ### * dist_inflated
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: dist_inflated
+> ### Title: Inflate a value of a probability distribution
+> ### Aliases: dist_inflated
+> 
+> ### ** Examples
+> 
+> # Zero-inflated Poisson
+> dist <- dist_inflated(dist_poisson(lambda = 2), prob = 0.3, x = 0)
+> 
+> dist
+<distribution[1]>
+[1] 0+Pois(2)
+> mean(dist)
+[1] 1.4
+> variance(dist)
+[1] 2.24
+> 
+> generate(dist, 10)
+[[1]]
+ [1] 0 1 1 3 0 1 3 2 3 0
+
+> 
+> density(dist, 0)
+[1] 0.3947347
+> density(dist, 1)
+[1] 0.1894694
+> 
+> cdf(dist, 2)
+[1] 0.7736735
+> 
+> quantile(dist, 0.5)
+[1] 1
+> 
+> 
+> 
+> 
+> cleanEx()
 > nameEx("dist_inverse_exponential")
 > ### * dist_inverse_exponential
 > 
@@ -1020,7 +1188,7 @@ Warning in n * K * (N - K) * (N - n) : NAs produced by integer overflow
 [1] InvExp(1) InvExp(2) InvExp(3) InvExp(4) InvExp(5)
 > 
 > ## Don't show: 
-> if (requireNamespace("actuar", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (requireNamespace("actuar", quietly = TRUE)) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + mean(dist)
 + variance(dist)
@@ -1093,7 +1261,7 @@ Warning in n * K * (N - K) * (N - n) : NAs produced by integer overflow
 [1] InvGamma(1, 1)   InvGamma(2, 1)   InvGamma(3, 1)   InvGamma(3, 0.5)
 > 
 > ## Don't show: 
-> if (requireNamespace("actuar", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (requireNamespace("actuar", quietly = TRUE)) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + mean(dist)
 + variance(dist)
@@ -1162,7 +1330,7 @@ Warning in n * K * (N - K) * (N - n) : NAs produced by integer overflow
 [1] IG(1, 0.2) IG(1, 1)   IG(1, 3)   IG(3, 0.2) IG(3, 1)  
 > 
 > ## Don't show: 
-> if (requireNamespace("actuar", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (requireNamespace("actuar", quietly = TRUE)) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + mean(dist)
 + variance(dist)
@@ -1218,6 +1386,60 @@ Warning in n * K * (N - K) * (N - n) : NAs produced by integer overflow
 > 
 > 
 > cleanEx()
+> nameEx("dist_laplace")
+> ### * dist_laplace
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: dist_laplace
+> ### Title: The Laplace distribution
+> ### Aliases: dist_laplace
+> 
+> ### ** Examples
+> 
+> dist <- dist_laplace(mu = c(0, 2, -1), sigma = c(1, 2, 0.5))
+> 
+> dist
+<distribution[3]>
+[1] Laplace(0, 1)    Laplace(2, 2)    Laplace(-1, 0.5)
+> mean(dist)
+[1]  0  2 -1
+> variance(dist)
+[1] 2.0 8.0 0.5
+> skewness(dist)
+[1] 0 0 0
+> kurtosis(dist)
+[1] 3 3 3
+> 
+> generate(dist, 10)
+[[1]]
+ [1] -0.6329606 -0.2953812  0.1574807  1.6950807 -0.9079162  1.5934630
+ [7]  2.2013881  0.3880117  0.2987135 -2.0909269
+
+[[2]]
+ [1]  0.22628928 -0.08193146  2.93695581  1.47260903  3.55167910  1.99077573
+ [7]  3.14269827 10.24699354  1.45131145  3.61886966
+
+[[3]]
+ [1]  0.01784809 -1.42867489 -0.81926570 -1.69093171 -1.31326665 -1.12923760
+ [7] -2.81003753 -1.13408621 -0.32765082 -1.19231827
+
+> 
+> density(dist, 0)
+[1] 0.50000000 0.09196986 0.13533528
+> density(dist, 0, log = TRUE)
+[1] -0.6931472 -2.3862944 -2.0000000
+> 
+> cdf(dist, 1)
+[1] 0.8160603 0.3032653 0.9908422
+> 
+> quantile(dist, 0.7)
+[1]  0.5108256  3.0216512 -0.7445872
+> 
+> 
+> 
+> 
+> cleanEx()
 > nameEx("dist_logarithmic")
 > ### * dist_logarithmic
 > 
@@ -1235,7 +1457,7 @@ Warning in n * K * (N - K) * (N - n) : NAs produced by integer overflow
 [1] Logarithmic(0.33) Logarithmic(0.66) Logarithmic(0.99)
 > 
 > ## Don't show: 
-> if (requireNamespace("actuar", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (requireNamespace("actuar", quietly = TRUE)) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + mean(dist)
 + variance(dist)
@@ -1467,9 +1689,29 @@ Warning in n * K * (N - K) * (N - n) : NAs produced by integer overflow
 > 
 > ### ** Examples
 > 
-> dist_mixture(dist_normal(0, 1), dist_normal(5, 2), weights = c(0.3, 0.7))
+> # Univariate mixture of two normal distributions
+> dist <- dist_mixture(dist_normal(0, 1), dist_normal(5, 2), weights = c(0.3, 0.7))
+> dist
 <distribution[1]>
 [1] mixture(0.3*N(0, 1), 0.7*N(5, 4))
+> 
+> mean(dist)
+[1] 3.5
+> variance(dist)
+[1] 8.35
+> 
+> density(dist, 2)
+[1] 0.06152845
+> cdf(dist, 2)
+[1] 0.33994
+> quantile(dist, 0.5)
+[1] 3.868233
+> 
+> generate(dist, 10)
+[[1]]
+ [1] 0.8212212 6.5642726 0.5939013 5.1491300 1.0212966 6.2396515 4.8877425
+ [8] 4.6884090 2.0584952 0.9189774
+
 > 
 > 
 > 
@@ -1528,9 +1770,17 @@ Warning in n * K * (N - K) * (N - n) : NAs produced by integer overflow
 [10,]    0    2    1
 
 > 
-> # TODO: Needs fixing to support multiple inputs
-> # density(dist, 2)
-> # density(dist, 2, log = TRUE)
+> density(dist, list(d = rbind(cbind(1,2,1), cbind(0,2,1))))
+     d
+1 0.18
+2 0.30
+> density(dist, list(d = rbind(cbind(1,2,1), cbind(0,2,1))), log = TRUE)
+          d
+1 -1.714798
+2 -1.203973
+> 
+> cdf(dist, cbind(1,2,1))
+[1] 0.180 0.495
 > 
 > 
 > 
@@ -1554,7 +1804,7 @@ Warning in n * K * (N - K) * (N - n) : NAs produced by integer overflow
 [1] MVN[2]
 > 
 > ## Don't show: 
-> if (requireNamespace("mvtnorm", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (requireNamespace("mvtnorm", quietly = TRUE)) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + mean(dist)
 + variance(dist)
@@ -1566,8 +1816,8 @@ Warning in n * K * (N - K) * (N - n) : NAs produced by integer overflow
 + 
 + cdf(dist, 4)
 + 
-+ quantile(dist, 0.7)
-+ quantile(dist, 0.7, type = "marginal")
++ quantile(dist, 0.7, kind = "equicoordinate")
++ quantile(dist, 0.7, kind = "marginal")
 + ## Don't show: 
 + }) # examplesIf
 > mean(dist)
@@ -1599,12 +1849,90 @@ Warning in n * K * (N - K) * (N - n) : NAs produced by integer overflow
 [1] -3.565098
 > cdf(dist, 4)
 [1] 0.8412602
+> quantile(dist, 0.7, kind = "equicoordinate")
+            x        y
+[1,] 3.188512 3.188512
+> quantile(dist, 0.7, kind = "marginal")
+            x        y
+[1,] 2.048801 2.908288
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("dist_multivariate_t")
+> ### * dist_multivariate_t
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: dist_multivariate_t
+> ### Title: The multivariate t-distribution
+> ### Aliases: dist_multivariate_t
+> 
+> ### ** Examples
+> 
+> dist <- dist_multivariate_t(
++   df = 5,
++   mu = list(c(1, 2)),
++   sigma = list(matrix(c(4, 2, 2, 3), ncol = 2))
++ )
+> dimnames(dist) <- c("x", "y")
+> dist
+<distribution[1]>
+[1] MVT[2](5)
+> 
+> ## Don't show: 
+> if (requireNamespace("mvtnorm", quietly = TRUE)) withAutoprint({ # examplesIf
++ ## End(Don't show)
++ mean(dist)
++ variance(dist)
++ support(dist)
++ generate(dist, 10)
++ 
++ density(dist, cbind(2, 1))
++ density(dist, cbind(2, 1), log = TRUE)
++ 
++ cdf(dist, 4)
++ 
++ quantile(dist, 0.7)
++ quantile(dist, 0.7, kind = "marginal")
++ ## Don't show: 
++ }) # examplesIf
+> mean(dist)
+     x y
+[1,] 1 2
+> variance(dist)
+            x y
+[1,] 6.666667 5
+> support(dist)
+<support_region[1]>
+[1] R^2
+> generate(dist, 10)
+[[1]]
+                x           y
+ [1,]  0.92028017 -0.61279687
+ [2,] -1.22195989  0.85380131
+ [3,]  2.98357242  7.82348161
+ [4,]  2.36760707  0.81632658
+ [5,] -1.88514256  0.63469895
+ [6,]  0.06529679  1.02267349
+ [7,]  0.97489058  0.08514232
+ [8,]  1.30618961 -1.88377581
+ [9,]  0.81932108  2.40739411
+[10,]  1.93330992  3.83553962
+
+> density(dist, cbind(2, 1))
+[1] 0.02404305
+> density(dist, cbind(2, 1), log = TRUE)
+[1] -3.727909
+> cdf(dist, 4)
+[1] 0.7618459
 > quantile(dist, 0.7)
             x        y
-[1,] 2.048801 2.908288
-> quantile(dist, 0.7, type = "marginal")
+[1,] 3.543945 3.543945
+> quantile(dist, 0.7, kind = "marginal")
             x        y
-[1,] 2.048801 2.908288
+[1,] 2.118859 2.968961
 > ## End(Don't show)
 > 
 > 
@@ -1633,7 +1961,7 @@ Warning in n * K * (N - K) * (N - n) : NAs produced by integer overflow
 > skewness(dist)
 [1] 0.6708204
 > kurtosis(dist)
-[1] 0.6125
+[1] 0.65
 > support(dist)
 <support_region[1]>
 [1] N0
@@ -1726,7 +2054,7 @@ Warning in n * K * (N - K) * (N - n) : NAs produced by integer overflow
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: dist_pareto
-> ### Title: The Pareto distribution
+> ### Title: The Pareto Distribution
 > ### Aliases: dist_pareto
 > 
 > ### ** Examples
@@ -1737,7 +2065,7 @@ Warning in n * K * (N - K) * (N - n) : NAs produced by integer overflow
 [1] Pareto(10, 1) Pareto(3, 1)  Pareto(2, 1)  Pareto(1, 1) 
 > 
 > ## Don't show: 
-> if (requireNamespace("actuar", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (requireNamespace("actuar", quietly = TRUE)) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + mean(dist)
 + variance(dist)
@@ -1879,7 +2207,7 @@ Warning in n * K * (N - K) * (N - n) : NAs produced by integer overflow
 [1] PIG(0.1, 0.4) PIG(0.1, 0.8) PIG(0.1, 1)  
 > 
 > ## Don't show: 
-> if (requireNamespace("actuar", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (requireNamespace("actuar", quietly = TRUE)) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + mean(dist)
 + variance(dist)
@@ -2230,9 +2558,9 @@ detaching ‘package:ggplot2’
 > variance(dist)
 [1] 20.00000000  1.00000000  0.37569028  0.04422998
 > skewness(dist)
-[1]   5.0737409   0.0000000  -0.7764597 -38.1055455
+[1]  6.6187612  2.0000000  1.0719866 -0.2541096
 > kurtosis(dist)
-[1]  87.48382  14.00000  12.28013 660.88795
+[1] 84.7200000  6.0000000  1.3904036 -0.1197099
 > 
 > generate(dist, 10)
 [[1]]
@@ -2351,6 +2679,33 @@ detaching ‘package:actuar’
 +   )
 > family(dist)
 [1] "normal"      "normal"      "poisson"     "multinomial" "multinomial"
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("has_symmetry")
+> ### * has_symmetry
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: has_symmetry
+> ### Title: Check if a distribution is symmetric
+> ### Aliases: has_symmetry
+> 
+> ### ** Examples
+> 
+> # Normal distribution is symmetric
+> has_symmetry(dist_normal(mu = 0, sigma = 1))
+[1] TRUE
+> has_symmetry(dist_normal(mu = 5, sigma = 2))
+[1] TRUE
+> 
+> # Beta distribution symmetry depends on parameters
+> has_symmetry(dist_beta(shape1 = 2, shape2 = 2))  # symmetric
+[1] TRUE
+> has_symmetry(dist_beta(shape1 = 2, shape2 = 5))  # not symmetric
+[1] FALSE
 > 
 > 
 > 
@@ -2478,7 +2833,7 @@ detaching ‘package:actuar’
 > cleanEx()
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  2.953 0.08 3.036 0 0 
+Time elapsed:  2.572 0.088 2.659 0 0 
 > grDevices::dev.off()
 null device 
           1 

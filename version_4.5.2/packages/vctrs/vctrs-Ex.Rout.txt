@@ -152,6 +152,123 @@ Type 'q()' to quit R.
 > 
 > 
 > cleanEx()
+> nameEx("list-of-attributes")
+> ### * list-of-attributes
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: list-of-attributes
+> ### Title: 'list_of' attributes
+> ### Aliases: list-of-attributes list_of_ptype list_of_size
+> 
+> ### ** Examples
+> 
+> x <- list_of(1, 2)
+> list_of_ptype(x)
+numeric(0)
+> list_of_size(x)
+NULL
+> 
+> x <- list_of(.ptype = integer(), .size = 5)
+> list_of_ptype(x)
+integer(0)
+> list_of_size(x)
+[1] 5
+> 
+> 
+> 
+> cleanEx()
+> nameEx("list_combine")
+> ### * list_combine
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: list_combine
+> ### Title: Combine a list of vectors
+> ### Aliases: list_combine
+> 
+> ### ** Examples
+> 
+> # Combine a list of vectors using
+> # a list of `indices`
+> x <- list(
++   1:3,
++   4:6,
++   7:8
++ )
+> indices <- list(
++   c(1, 3, 7),
++   c(8, 6, 5),
++   c(2, 4)
++ )
+> list_combine(x, indices = indices, size = 8)
+[1] 1 7 2 8 6 5 3 4
+> 
+> # Overlapping `indices` are allowed.
+> # The last match "wins" by default.
+> x <- list(
++   1:3,
++   4:6
++ )
+> indices <- list(
++   c(1, 2, 3),
++   c(1, 2, 6)
++ )
+> list_combine(x, indices = indices, size = 6)
+[1]  4  5  3 NA NA  6
+> 
+> # Use `multiple` to force the first match to win.
+> # This is similar to how `dplyr::case_when()` works.
+> list_combine(x, indices = indices, size = 6, multiple = "first")
+[1]  1  2  3 NA NA  6
+> 
+> # Works with data frames as well.
+> # Now how index 2 is not assigned to.
+> x <- list(
++   data.frame(x = 1:2, y = c("a", "b")),
++   data.frame(x = 3:4, y = c("c", "d"))
++ )
+> indices <- list(
++   c(4, 1),
++   c(3, NA)
++ )
+> list_combine(x, indices = indices, size = 4)
+   x    y
+1  2    b
+2 NA <NA>
+3  3    c
+4  1    a
+> 
+> # You can use `size` to combine into a larger object than you have values for
+> list_combine(list(1:2, 4:5), indices = list(1:2, 4:5), size = 8)
+[1]  1  2 NA  4  5 NA NA NA
+> 
+> # Additionally specifying `default` allows you to control the value used in
+> # unfilled locations
+> list_combine(
++   list(1:2, 4:5),
++   indices = list(1:2, 4:5),
++   size = 8,
++   default = 0L
++ )
+[1] 1 2 0 4 5 0 0 0
+> 
+> # Alternatively, if you'd like to assert that you've covered all output
+> # locations through `indices`, set `unmatched = "error"`.
+> # Here, we've set the size to 5 but missed location 3:
+> try(list_combine(
++   list(1:2, 4:5),
++   indices = list(1:2, 4:5),
++   size = 5,
++   unmatched = "error"
++ ))
+Error in list_combine(list(1:2, 4:5), indices = list(1:2, 4:5), size = 5,  : 
+  Each location must be matched.
+✖ Location 3 is unmatched.
+> 
+> 
+> 
+> cleanEx()
 > nameEx("list_drop_empty")
 > ### * list_drop_empty
 > 
@@ -181,14 +298,28 @@ Type 'q()' to quit R.
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: list_of
-> ### Title: 'list_of' S3 class for homogenous lists
+> ### Title: Construct a list of homogenous vectors
 > ### Aliases: list_of as_list_of is_list_of vec_ptype2.vctrs_list_of
 > ###   vec_cast.vctrs_list_of
 > 
 > ### ** Examples
 > 
+> # Restrict the type, but not the size
 > x <- list_of(1:3, 5:6, 10:15)
+> x
+<list_of<integer>[3]>
+[[1]]
+[1] 1 2 3
+
+[[2]]
+[1] 5 6
+
+[[3]]
+[1] 10 11 12 13 14 15
+
+> 
 > if (requireNamespace("tibble", quietly = TRUE)) {
++   # As a column in a tibble
 +   tibble::tibble(x = x)
 + }
 # A tibble: 3 × 1
@@ -198,8 +329,73 @@ Type 'q()' to quit R.
 2         [2]
 3         [6]
 > 
-> vec_c(list_of(1, 2), list_of(FALSE, TRUE))
-<list_of<double>[4]>
+> # Coercion happens during assignment
+> x[1] <- list(4)
+> typeof(x[[1]])
+[1] "integer"
+> 
+> try(x[1] <- list(4.5))
+Error in lapply(.x, .f, ...) : 
+  Can't convert from `X[[i]]` <double> to <integer> due to loss of precision.
+• Locations: 1
+> 
+> # Restrict the size, but not the type
+> x <- list_of(1, 2:3, .ptype = rlang::zap(), .size = 2)
+> x
+<list_of<any[2]>[2]>
+[[1]]
+[1] 1 1
+
+[[2]]
+[1] 2 3
+
+> 
+> # Recycling happens during assignment
+> x[1] <- list(4)
+> x
+<list_of<any[2]>[2]>
+[[1]]
+[1] 4 4
+
+[[2]]
+[1] 2 3
+
+> 
+> try(x[1] <- list(3:6))
+Error in lapply(.x, .f, ...) : Can't recycle input of size 4 to size 2.
+> 
+> # Restricting both size and type
+> x <- list_of(1L, 2:3, .ptype = integer(), .size = 2)
+> x
+<list_of<integer[2]>[2]>
+[[1]]
+[1] 1 1
+
+[[2]]
+[1] 2 3
+
+> 
+> # Setting an element to `NULL`
+> x[2] <- list(NULL)
+> x
+<list_of<integer[2]>[2]>
+[[1]]
+[1] 1 1
+
+[[2]]
+NULL
+
+> 
+> # Note that using `NULL` shortens the list, like a base R list
+> x[2] <- NULL
+> x
+<list_of<integer[2]>[1]>
+[[1]]
+[1] 1 1
+
+> 
+> # Combining a list_of with a list results in a list
+> vec_c(list_of(1), list(2, "x"))
 [[1]]
 [1] 1
 
@@ -207,10 +403,291 @@ Type 'q()' to quit R.
 [1] 2
 
 [[3]]
-[1] 0
+[1] "x"
+
+> 
+> # Combining a list_of with another list_of tries to find a common element
+> # type and common element size, but will remove the constraint if that
+> # fails
+> x <- list_of(1, .ptype = double())
+> y <- list_of(c("a", "b"), .ptype = character(), .size = 2)
+> z <- list_of(c("c", "d", "e"), .ptype = character(), .size = 3)
+> 
+> # Falls back to a list
+> vec_c(x, y)
+[[1]]
+[1] 1
+
+[[2]]
+[1] "a" "b"
+
+> 
+> # Falls back to a `list_of<character>` with no size restriction
+> vec_c(y, z)
+<list_of<character>[2]>
+[[1]]
+[1] "a" "b"
+
+[[2]]
+[1] "c" "d" "e"
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("list_of_transpose")
+> ### * list_of_transpose
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: list_of_transpose
+> ### Title: Transpose a list of homogenous vectors
+> ### Aliases: list_of_transpose
+> 
+> ### ** Examples
+> 
+> # A form of `list_of()` that infers both ptype and size
+> list_of2 <- function(...) {
++   list_of(..., .ptype = NULL, .size = NULL)
++ }
+> 
+> # I: list_of<integer[2]>[3]
+> # O: list_of<integer[3]>[2]
+> list_of_transpose(list_of2(1:2, 3:4, 5:6))
+<list_of<integer[3]>[2]>
+[[1]]
+[1] 1 3 5
+
+[[2]]
+[1] 2 4 6
+
+> 
+> # With data frames
+> x <- data_frame(a = 1:2, b = letters[1:2])
+> y <- data_frame(a = 3:4, b = letters[3:4])
+> list_of_transpose(list_of2(x, y))
+<list_of<
+  data.frame<
+    a: integer
+    b: character
+  >[2]
+>[2]>
+[[1]]
+  a b
+1 1 a
+2 3 c
+
+[[2]]
+  a b
+1 2 b
+2 4 d
+
+> 
+> # Size 1 elements are recycled
+> list_of_transpose(list_of2(1, 2:3, 4))
+<list_of<double[3]>[2]>
+[[1]]
+[1] 1 2 4
+
+[[2]]
+[1] 1 3 4
+
+> 
+> # ---------------------------------------------------------------------------
+> # `NULL` handling
+> 
+> # `NULL` values aren't allowed in `list_of_transpose()`
+> x <- list_of2(1:3, NULL, 5:7, NULL)
+> try(list_of_transpose(x))
+Error in list_of_transpose(x) : `x` can't contain `NULL` values.
+> 
+> # Either drop them entirely or replace them up front before transposing
+> 
+> x_dropped <- vec_slice(x, !vec_detect_missing(x))
+> x_dropped
+<list_of<integer[3]>[2]>
+[[1]]
+[1] 1 2 3
+
+[[2]]
+[1] 5 6 7
+
+> 
+> list_of_transpose(x_dropped)
+<list_of<integer[2]>[3]>
+[[1]]
+[1] 1 5
+
+[[2]]
+[1] 2 6
+
+[[3]]
+[1] 3 7
+
+> 
+> x_replaced <- vec_assign(x, vec_detect_missing(x), list(NA))
+> x_replaced
+<list_of<integer[3]>[4]>
+[[1]]
+[1] 1 2 3
+
+[[2]]
+[1] NA NA NA
+
+[[3]]
+[1] 5 6 7
 
 [[4]]
-[1] 1
+[1] NA NA NA
+
+> 
+> list_of_transpose(x_replaced)
+<list_of<integer[4]>[3]>
+[[1]]
+[1]  1 NA  5 NA
+
+[[2]]
+[1]  2 NA  6 NA
+
+[[3]]
+[1]  3 NA  7 NA
+
+> 
+> # ---------------------------------------------------------------------------
+> # Reversibility
+> 
+> # Because `list_of_transpose()` takes and returns fully specified list-ofs,
+> # it is fully reversible, even in the edge cases.
+> x <- list_of2(integer(), integer())
+> 
+> # This returns a list of size 0
+> # I: list_of<integer[0]>[2]
+> # O: list_of<integer[2]>[0]
+> out <- list_of_transpose(x)
+> out
+<list_of<integer[2]>[0]>
+> 
+> # Even though there are no elements, we know the element size and type,
+> # so we can transpose a second time to recover `x`. This would not be
+> # possible if this function returned a bare `list()`, which would result
+> # in lost information.
+> # I: list_of<integer[2]>[0]
+> # O: list_of<integer[0]>[2]
+> list_of_transpose(out)
+<list_of<integer[0]>[2]>
+[[1]]
+integer(0)
+
+[[2]]
+integer(0)
+
+> 
+> # ---------------------------------------------------------------------------
+> # Padding
+> 
+> # If you'd like to pad with a missing value rather than erroring,
+> # you might do something like this, which left-pads before conversion
+> # to list-of.
+> x <- list(1, 2:5, 6:7)
+> 
+> sizes <- list_sizes(x)
+> size <- max(sizes)
+> index <- which(sizes != size)
+> 
+> x[index] <- lapply(
++   index,
++   function(i) vec_c(rep(NA, times = size - sizes[[i]]), x[[i]])
++ )
+> x
+[[1]]
+[1] NA NA NA  1
+
+[[2]]
+[1] 2 3 4 5
+
+[[3]]
+[1] NA NA  6  7
+
+> 
+> x <- as_list_of(x, .ptype = NULL, .size = NULL)
+> 
+> list_of_transpose(x)
+<list_of<double[3]>[4]>
+[[1]]
+[1] NA  2 NA
+
+[[2]]
+[1] NA  3 NA
+
+[[3]]
+[1] NA  4  6
+
+[[4]]
+[1] 1 5 7
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("list_unchop")
+> ### * list_unchop
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: list_unchop
+> ### Title: Combine a list of vectors
+> ### Aliases: list_unchop
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> # If `indices` selects every value in `x` exactly once,
+> # in any order, then `list_unchop()` inverts `vec_chop()`
+> x <- c("a", "b", "c", "d")
+> indices <- list(2, c(3, 1), 4)
+> vec_chop(x, indices = indices)
+[[1]]
+[1] "b"
+
+[[2]]
+[1] "c" "a"
+
+[[3]]
+[1] "d"
+
+> list_unchop(vec_chop(x, indices = indices), indices = indices)
+[1] "a" "b" "c" "d"
+> 
+> # When unchopping, size 1 elements of `x` are recycled
+> # to the size of the corresponding index
+> list_unchop(list(1, 2:3), indices = list(c(1, 3, 5), c(2, 4)))
+[1] 1 2 1 3 1
+> 
+> # Names are retained, and outer names can be combined with inner
+> # names through the use of a `name_spec`
+> lst <- list(x = c(a = 1, b = 2), y = 1)
+> list_unchop(lst, indices = list(c(3, 2), c(1, 4)), name_spec = "{outer}_{inner}")
+y_1 x_b x_a y_2 
+  1   2   1   1 
+> 
+> # If you have a list of homogeneous vectors, sometimes it can be useful to
+> # unchop, apply a function to the flattened vector, and then rechop according
+> # to the original indices. This can be done efficiently with `list_sizes()`.
+> x <- list(c(1, 2, 1), c(3, 1), 5, double())
+> x_flat <- list_unchop(x)
+> x_flat <- x_flat + max(x_flat)
+> vec_chop(x_flat, sizes = list_sizes(x))
+[[1]]
+[1] 6 7 6
+
+[[2]]
+[1] 8 6
+
+[[3]]
+[1] 10
+
+[[4]]
+numeric(0)
 
 > 
 > 
@@ -299,6 +776,22 @@ Please supply a `.name_spec` specification.
  name1  name2  name3 other1 other2 
      1      2      3      4      5 
 > 
+> # Or the string `"inner"` to only use inner names
+> vec_c(name = 1:3, outer = 4:5, .name_spec = "inner")
+[1] 1 2 3 4 5
+> vec_c(name = c(a = 1, b = 2, c = 3), outer = 4:5, .name_spec = "inner")
+a b c     
+1 2 3 4 5 
+> # This can be useful when you want outer names mentioned in error messages,
+> # but you don't want them interfering with the result
+> try(vec_c(x = c(a = 1), y = c(b = "2"), .name_spec = "inner"))
+Error in vec_c(x = c(a = 1), y = c(b = "2"), .name_spec = "inner") : 
+  Can't combine `x` <double> and `y` <character>.
+> 
+> # Or `rlang::zap()` to ignore both outer and inner names entirely
+> vec_c(name = c(a = 1, b = 2), outer = c(c = 3), .name_spec = rlang::zap())
+[1] 1 2 3
+> 
 > 
 > 
 > cleanEx()
@@ -363,6 +856,7 @@ Time difference of 1 hours
 > ### Title: List checks
 > ### Aliases: obj_is_list obj_check_list list_all_vectors
 > ###   list_check_all_vectors list_all_size list_check_all_size
+> ###   list_all_recyclable list_check_all_recyclable
 > 
 > ### ** Examples
 > 
@@ -383,10 +877,37 @@ Time difference of 1 hours
 > list_all_size(list(1:2, 2:4), 2)
 [1] FALSE
 > 
+> list_all_recyclable(list(1, 2:3), 2)
+[1] TRUE
+> list_all_recyclable(list(1, 2:4), 2)
+[1] FALSE
+> 
 > # `list_`-prefixed functions assume a list:
 > try(list_all_vectors(environment()))
 Error in list_all_vectors(environment()) : 
   `x` must be a list, not an environment.
+> 
+> # `NULL` elements are not considered vectors and generally have a size of 0
+> try(list_check_all_vectors(list(1, NULL, 2)))
+Error : `list(1, NULL, 2)[[2]]` must be a vector, not `NULL`.
+ℹ Read our FAQ about scalar types (`?vctrs::faq_error_scalar_type`) to learn more.
+> try(list_check_all_size(list(1, NULL, 2), size = 1))
+Error : `list(1, NULL, 2)[[2]]` must have size 1, not size 0.
+> 
+> # However, it is often useful to perform upfront vector/size checks on a
+> # list, excluding `NULL`s, and then filter them out later on
+> list_check_all_vectors(list(1, NULL, 2), allow_null = TRUE)
+> list_check_all_size(list(1, NULL, 2), size = 1, allow_null = TRUE)
+> 
+> # Performing the checks before removing `NULL`s from the list ensures that
+> # any errors report the correct index. Note how the index is incorrect from a
+> # user's point of view if we filter out `NULL` too soon.
+> xs <- list(1, NULL, 2:3)
+> try(list_check_all_size(xs, size = 1, allow_null = TRUE))
+Error : `xs[[3]]` must have size 1, not size 2.
+> xs <- vec_slice(xs, !vec_detect_missing(xs))
+> try(list_check_all_size(xs, size = 1))
+Error : `xs[[2]]` must have size 1, not size 2.
 > 
 > 
 > 
@@ -459,58 +980,79 @@ Error in list_all_vectors(environment()) :
 > 
 > 
 > cleanEx()
-> nameEx("partial_factor")
-> ### * partial_factor
+> nameEx("parallel-operators")
+> ### * parallel-operators
 > 
 > flush(stderr()); flush(stdout())
 > 
-> ### Name: partial_factor
-> ### Title: Partially specify a factor
-> ### Aliases: partial_factor
-> ### Keywords: internal
+> ### Name: parallel-operators
+> ### Title: Parallel 'any()' and 'all()'
+> ### Aliases: parallel-operators vec_pany vec_pall
 > 
 > ### ** Examples
 > 
-> pf <- partial_factor(levels = c("x", "y"))
-> pf
-partial_factor<
-  5ec15 {partial}
->
+> a <- c(TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, NA, NA, NA)
+> b <- c(TRUE, FALSE, NA, TRUE, FALSE, NA, TRUE, FALSE, NA)
 > 
-> vec_ptype_common(factor("v"), factor("w"), .ptype = pf)
-factor()
-Levels: v w x y
+> # Default behavior treats missings like `|` does
+> vec_pany(a, b)
+[1]  TRUE  TRUE  TRUE  TRUE FALSE    NA  TRUE    NA    NA
+> a | b
+[1]  TRUE  TRUE  TRUE  TRUE FALSE    NA  TRUE    NA    NA
 > 
+> # Default behavior treats missings like `&` does
+> vec_pall(a, b)
+[1]  TRUE FALSE    NA FALSE FALSE FALSE    NA FALSE    NA
+> a & b
+[1]  TRUE FALSE    NA FALSE FALSE FALSE    NA FALSE    NA
 > 
+> # Remove missings from the computation, like `na_rm = TRUE`
+> vec_pany(a, b, .missing = FALSE)
+[1]  TRUE  TRUE  TRUE  TRUE FALSE FALSE  TRUE FALSE FALSE
+> (a & !is.na(a)) | (b & !is.na(b))
+[1]  TRUE  TRUE  TRUE  TRUE FALSE FALSE  TRUE FALSE FALSE
 > 
+> vec_pall(a, b, .missing = TRUE)
+[1]  TRUE FALSE  TRUE FALSE FALSE FALSE  TRUE FALSE  TRUE
+> (a | is.na(a)) & (b | is.na(b))
+[1]  TRUE FALSE  TRUE FALSE FALSE FALSE  TRUE FALSE  TRUE
 > 
-> cleanEx()
-> nameEx("partial_frame")
-> ### * partial_frame
+> # `vec_pall()` can be used to implement a `dplyr::filter()` style API
+> df <- data_frame(id = seq_along(a), a = a, b = b)
 > 
-> flush(stderr()); flush(stdout())
+> keep_rows <- function(x, ...) {
++   vec_slice(x, vec_pall(..., .missing = FALSE))
++ }
+> drop_rows <- function(x, ...) {
++   vec_slice(x, !vec_pall(..., .missing = FALSE))
++ }
 > 
-> ### Name: partial_frame
-> ### Title: Partially specify columns of a data frame
-> ### Aliases: partial_frame
-> ### Keywords: internal
+> # "Keep / Drop the rows when both a and b are TRUE"
+> # These form complements of one another, even with `NA`s.
+> keep_rows(df, a, b)
+  id    a    b
+1  1 TRUE TRUE
+> drop_rows(df, a, b)
+  id     a     b
+1  2  TRUE FALSE
+2  3  TRUE    NA
+3  4 FALSE  TRUE
+4  5 FALSE FALSE
+5  6 FALSE    NA
+6  7    NA  TRUE
+7  8    NA FALSE
+8  9    NA    NA
 > 
-> ### ** Examples
+> # Same empty behavior as `any()` and `all()`
+> vec_pany(.size = 1)
+[1] FALSE
+> any()
+[1] FALSE
 > 
-> pf <- partial_frame(x = double())
-> pf
-partial_frame<
-  x: double {partial}
->
-> 
-> vec_rbind(
-+   data.frame(x = 1L, y = "a"),
-+   data.frame(x = FALSE, z = 10),
-+   .ptype = partial_frame(x = double(), a = character())
-+ )
-  x    y  z    a
-1 1    a NA <NA>
-2 0 <NA> 10 <NA>
+> vec_pall(.size = 1)
+[1] TRUE
+> all()
+[1] TRUE
 > 
 > 
 > 
@@ -591,44 +1133,6 @@ attr(,"n")
 > 
 > 
 > cleanEx()
-> nameEx("unspecified")
-> ### * unspecified
-> 
-> flush(stderr()); flush(stdout())
-> 
-> ### Name: unspecified
-> ### Title: A 1d vector of unspecified type
-> ### Aliases: unspecified
-> ### Keywords: internal
-> 
-> ### ** Examples
-> 
-> vec_ptype_show()
-Prototype: NULL
-> vec_ptype_show(NA)
-Prototype: logical
-> 
-> vec_c(NA, factor("x"))
-[1] <NA> x   
-Levels: x
-> vec_c(NA, Sys.Date())
-[1] NA           "2025-11-19"
-> vec_c(NA, Sys.time())
-[1] NA                        "2025-11-19 11:23:39 UTC"
-> vec_c(NA, list(1:3, 4:5))
-[[1]]
-NULL
-
-[[2]]
-[1] 1 2 3
-
-[[3]]
-[1] 4 5
-
-> 
-> 
-> 
-> cleanEx()
 > nameEx("vctrs-conditions")
 > ### * vctrs-conditions
 > 
@@ -683,6 +1187,346 @@ Error : Can't convert from <logical> to <character> due to loss of precision.
 > 
 > 
 > cleanEx()
+> nameEx("vctrs-unspecified")
+> ### * vctrs-unspecified
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: vctrs-unspecified
+> ### Title: Unspecified vectors and prototype finalisation
+> ### Aliases: vctrs-unspecified unspecified vec_ptype_finalise
+> ### Keywords: internal
+> 
+> ### ** Examples
+> 
+> # Returns `unspecified()`
+> vec_ptype(NA)
+<unspecified> [0]
+> vec_ptype(c(NA, NA))
+<unspecified> [0]
+> 
+> # We've chosen to make this return `logical()`, but this is admittedly
+> # ambiguous, as it could be seen as "an empty vector of `NA`s" that could
+> # also be treated as unspecified.
+> vec_ptype(logical())
+logical(0)
+> 
+> # These return `unspecified()`
+> vec_ptype2(NA, NA)
+<unspecified> [0]
+> vec_ptype2(NA, NULL)
+<unspecified> [0]
+> vec_ptype2(NULL, NA)
+<unspecified> [0]
+> 
+> # An unspecified vector can combine with any other type
+> vec_ptype2(NA, "x")
+character(0)
+> vec_ptype2("x", NA)
+character(0)
+> 
+> # Same as using `unspecified()` directly
+> vec_ptype2(unspecified(1), "x")
+character(0)
+> vec_ptype2("x", unspecified(1))
+character(0)
+> 
+> # Finalising a ptype turns unspecified back to logical
+> vec_ptype(NA)
+<unspecified> [0]
+> vec_ptype_finalise(vec_ptype(NA))
+logical(0)
+> 
+> # This works recursively over data frames
+> df <- data_frame(x = NA, y = data_frame(z = NA))
+> vec_ptype_show(vec_ptype(df))
+Prototype: data.frame<
+  x: vctrs_unspecified
+  y: data.frame<z:vctrs_unspecified>
+>
+> vec_ptype_show(vec_ptype_finalise(vec_ptype(df)))
+Prototype: data.frame<
+  x: logical
+  y: data.frame<z:logical>
+>
+> 
+> # `vec_ptype_common()` finalises automatically rather than returning an
+> # unspecified type
+> vec_ptype_common(NA)
+logical(0)
+> vec_ptype_common(NA, NA)
+logical(0)
+> vec_ptype_show(vec_ptype_common(df))
+Prototype: data.frame<
+  x: logical
+  y: data.frame<z:logical>
+>
+> 
+> # `vec_ptype_common()` lets you opt out of finalisation using `.finalise`
+> vec_ptype_common(NA, .finalise = FALSE)
+<unspecified> [0]
+> vec_ptype_show(vec_ptype_common(df, .finalise = FALSE))
+Prototype: data.frame<
+  x: vctrs_unspecified
+  y: data.frame<z:vctrs_unspecified>
+>
+> 
+> 
+> 
+> cleanEx()
+> nameEx("vec-case-and-replace")
+> ### * vec-case-and-replace
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: vec-case-and-replace
+> ### Title: Recode and replace using logical conditions
+> ### Aliases: vec-case-and-replace vec_case_when vec_replace_when
+> 
+> ### ** Examples
+> 
+> # Note how the first `TRUE` is used in the output.
+> # Also note how the `NA` falls through to `default`.
+> x <- seq(-2L, 2L, by = 1L)
+> x <- c(x, NA)
+> conditions <- list(
++   x < 0,
++   x < 1
++ )
+> values <- list(
++   "<0",
++   "<1"
++ )
+> vec_case_when(
++   conditions,
++   values,
++   default = "other"
++ )
+[1] "<0"    "<0"    "<1"    "other" "other" "other"
+> 
+> # Missing values need to be handled with their own case
+> # if you want them to have a special value
+> conditions <- list(
++   x < 0,
++   x < 1,
++   is.na(x)
++ )
+> values <- list(
++   "<0",
++   "<1",
++   NA
++ )
+> vec_case_when(
++   conditions,
++   values,
++   default = "other"
++ )
+[1] "<0"    "<0"    "<1"    "other" "other" NA     
+> 
+> # Both `values` and `default` are vectorized
+> values <- list(
++   x * 5,
++   x * 10,
++   NA
++ )
+> vec_case_when(
++   conditions,
++   values,
++   default = x * 100
++ )
+[1] -10  -5   0 100 200  NA
+> 
+> # Use `vec_replace_when()` if you need to update `x`, retaining
+> # all previous values in locations that you don't match
+> conditions <- list(
++   x < 0,
++   x < 1
++ )
+> values <- list(
++   0,
++   1
++ )
+> out <- vec_replace_when(
++   x,
++   conditions,
++   values
++ )
+> out
+[1]  0  0  1  1  2 NA
+> 
+> # Note how `vec_replace_when()` is type stable on `x`, we retain the
+> # integer type here even though `values` contained doubles
+> typeof(out)
+[1] "integer"
+> 
+> # `vec_case_when()` creates a new vector, so names come from `values`
+> # and `default`. `vec_replace_when()` modifies an existing vector, so
+> # names come from `x` no matter what, just like `[<-` and `base::replace()`
+> x <- c(a = 1, b = 2, c = 3)
+> conditions <- list(x == 1, x == 2)
+> values <- list(c(x = 0), c(y = -1))
+> vec_case_when(conditions, values)
+ x  y    
+ 0 -1 NA 
+> vec_replace_when(x, conditions, values)
+ a  b  c 
+ 0 -1  3 
+> 
+> # If you want to enforce that you've covered all of the locations in your
+> # `conditions`, use `unmatched = "error"` rather than providing a `default`
+> x <- c(0, 1, 2)
+> conditions <- list(x == 1, x == 2)
+> values <- list("a", "b")
+> try(vec_case_when(conditions, values, unmatched = "error"))
+Error in vec_case_when(conditions, values, unmatched = "error") : 
+  Each location must be matched.
+✖ Location 1 is unmatched.
+> 
+> 
+> 
+> cleanEx()
+> nameEx("vec-recode-and-replace")
+> ### * vec-recode-and-replace
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: vec-recode-and-replace
+> ### Title: Recode and replace values
+> ### Aliases: vec-recode-and-replace vec_recode_values vec_replace_values
+> 
+> ### ** Examples
+> 
+> x <- c(1, 2, 3, 1, 2, 4, NA, 5)
+> 
+> # Imagine you have a pre-existing lookup table
+> likert <- data.frame(
++   from = c(1, 2, 3, 4, 5),
++   to = c(
++     "Strongly disagree",
++     "Disagree",
++     "Neutral",
++     "Agree",
++     "Strongly agree"
++   )
++ )
+> vec_recode_values(x, from = likert$from, to = likert$to)
+[1] "Strongly disagree" "Disagree"          "Neutral"          
+[4] "Strongly disagree" "Disagree"          "Agree"            
+[7] NA                  "Strongly agree"   
+> 
+> # If you don't map all of the values, a `default` is used
+> x <- c(1, 2, 3, 1, 2, 4, NA, 5, 6, 7)
+> vec_recode_values(x, from = likert$from, to = likert$to)
+ [1] "Strongly disagree" "Disagree"          "Neutral"          
+ [4] "Strongly disagree" "Disagree"          "Agree"            
+ [7] NA                  "Strongly agree"    NA                 
+[10] NA                 
+> vec_recode_values(x, from = likert$from, to = likert$to, default = "Unknown")
+ [1] "Strongly disagree" "Disagree"          "Neutral"          
+ [4] "Strongly disagree" "Disagree"          "Agree"            
+ [7] "Unknown"           "Strongly agree"    "Unknown"          
+[10] "Unknown"          
+> 
+> # If you want existing `NA`s to pass through, include a mapping for `NA` in
+> # your lookup table
+> likert <- data.frame(
++   from = c(1, 2, 3, 4, 5, NA),
++   to = c(
++     "Strongly disagree",
++     "Disagree",
++     "Neutral",
++     "Agree",
++     "Strongly agree",
++     NA
++   )
++ )
+> vec_recode_values(x, from = likert$from, to = likert$to, default = "Unknown")
+ [1] "Strongly disagree" "Disagree"          "Neutral"          
+ [4] "Strongly disagree" "Disagree"          "Agree"            
+ [7] NA                  "Strongly agree"    "Unknown"          
+[10] "Unknown"          
+> 
+> # If you believe you've captured all of the cases, you can assert this with
+> # `unmatched = "error"`, which will error if you've missed any cases
+> # (including `NA`, which must be explicitly handled)
+> try(vec_recode_values(
++   x,
++   from = likert$from,
++   to = likert$to,
++   unmatched = "error"
++ ))
+Error in vec_recode_values(x, from = likert$from, to = likert$to, unmatched = "error") : 
+  Each location must be matched.
+✖ Locations 9 and 10 are unmatched.
+> 
+> if (require("tibble")) {
++   # If you want to partially update `x`, retaining the type of `x` and
++   # leaving values not covered by `from` alone, use `vec_replace_values()`
++   universities <- c(
++     "Duke",
++     "Fake U",
++     "Duke U",
++     NA,
++     "Chapel Hill",
++     "UNC",
++     NA,
++     "Duke"
++   )
++ 
++   standardize <- tibble::tribble(
++     ~from, ~to,
++     "Duke", "Duke University",
++     "Duke U", "Duke University",
++     "UNC", "UNC Chapel Hill",
++     "Chapel Hill", "UNC Chapel Hill",
++   )
++   vec_replace_values(
++     universities,
++     from = standardize$from,
++     to = standardize$to
++   )
++ 
++   # In this case, you can use a more powerful feature of
++   # `vec_replace_values()`, `from_as_list_of_vectors`, which allows you to
++   # provide a list of `from` vectors that each match multiple `from` values
++   # to a single `to` value. `tribble()` can help you create these!
++   standardize <- tibble::tribble(
++     ~from, ~to,
++     c("Duke", "Duke U"), "Duke University",
++     c("UNC", "Chapel Hill"), "UNC Chapel Hill",
++   )
++ 
++   # Note how `from` is a list column
++   standardize
++ 
++   vec_replace_values(
++     universities,
++     from = standardize$from,
++     to = standardize$to,
++     from_as_list_of_vectors = TRUE
++   )
++ 
++   # `vec_replace_values()` is also a useful way to map from or to `NA`
++   vec_replace_values(universities, from = NA, to = "Unknown")
++   vec_replace_values(universities, from = "Fake U", to = NA)
++ }
+Loading required package: tibble
+
+Attaching package: ‘tibble’
+
+The following object is masked from ‘package:vctrs’:
+
+    data_frame
+
+[1] "Duke"        NA            "Duke U"      NA            "Chapel Hill"
+[6] "UNC"         NA            "Duke"       
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:tibble’
+
 > nameEx("vec-rep")
 > ### * vec-rep
 > 
@@ -1153,14 +1997,14 @@ New names:
 > 
 > # Date/times --------------------------
 > c(Sys.Date(), Sys.time())
-[1] "2025-11-19" "2025-11-19"
+[1] "2026-01-29" "2026-01-29"
 > c(Sys.time(), Sys.Date())
-[1] "2025-11-19 11:23:39 UTC" "2025-11-19 00:00:00 UTC"
+[1] "2026-01-29 11:02:06 UTC" "2026-01-29 00:00:00 UTC"
 > 
 > vec_c(Sys.Date(), Sys.time())
-[1] "2025-11-19 00:00:00 UTC" "2025-11-19 11:23:39 UTC"
+[1] "2026-01-29 00:00:00 UTC" "2026-01-29 11:02:06 UTC"
 > vec_c(Sys.time(), Sys.Date())
-[1] "2025-11-19 11:23:39 UTC" "2025-11-19 00:00:00 UTC"
+[1] "2026-01-29 11:02:06 UTC" "2026-01-29 00:00:00 UTC"
 > 
 > # Factors -----------------------------
 > c(factor("a"), factor("b"))
@@ -1255,7 +2099,7 @@ Levels: a b
 > 
 > ### Name: vec_chop
 > ### Title: Chopping
-> ### Aliases: vec_chop list_unchop
+> ### Aliases: vec_chop
 > 
 > ### ** Examples
 > 
@@ -1307,62 +2151,6 @@ Hornet Sportabout 18.7   8  360 175 3.15 3.440 17.02  0  0    3    2
 Valiant           18.1   6  225 105 2.76 3.460 20.22  1  0    3    1
 
 > 
-> # If `indices` selects every value in `x` exactly once,
-> # in any order, then `list_unchop()` inverts `vec_chop()`
-> x <- c("a", "b", "c", "d")
-> indices <- list(2, c(3, 1), 4)
-> vec_chop(x, indices = indices)
-[[1]]
-[1] "b"
-
-[[2]]
-[1] "c" "a"
-
-[[3]]
-[1] "d"
-
-> list_unchop(vec_chop(x, indices = indices), indices = indices)
-[1] "a" "b" "c" "d"
-> 
-> # When unchopping, size 1 elements of `x` are recycled
-> # to the size of the corresponding index
-> list_unchop(list(1, 2:3), indices = list(c(1, 3, 5), c(2, 4)))
-[1] 1 2 1 3 1
-> 
-> # Names are retained, and outer names can be combined with inner
-> # names through the use of a `name_spec`
-> lst <- list(x = c(a = 1, b = 2), y = 1)
-> list_unchop(lst, indices = list(c(3, 2), c(1, 4)), name_spec = "{outer}_{inner}")
-y_1 x_b x_a y_2 
-  1   2   1   1 
-> 
-> # An alternative implementation of `ave()` can be constructed using
-> # `vec_chop()` and `list_unchop()` in combination with `vec_group_loc()`
-> ave2 <- function(.x, .by, .f, ...) {
-+   indices <- vec_group_loc(.by)$loc
-+   chopped <- vec_chop(.x, indices = indices)
-+   out <- lapply(chopped, .f, ...)
-+   list_unchop(out, indices = indices)
-+ }
-> 
-> breaks <- warpbreaks$breaks
-> wool <- warpbreaks$wool
-> 
-> ave2(breaks, wool, mean)
- [1] 31.03704 31.03704 31.03704 31.03704 31.03704 31.03704 31.03704 31.03704
- [9] 31.03704 31.03704 31.03704 31.03704 31.03704 31.03704 31.03704 31.03704
-[17] 31.03704 31.03704 31.03704 31.03704 31.03704 31.03704 31.03704 31.03704
-[25] 31.03704 31.03704 31.03704 25.25926 25.25926 25.25926 25.25926 25.25926
-[33] 25.25926 25.25926 25.25926 25.25926 25.25926 25.25926 25.25926 25.25926
-[41] 25.25926 25.25926 25.25926 25.25926 25.25926 25.25926 25.25926 25.25926
-[49] 25.25926 25.25926 25.25926 25.25926 25.25926 25.25926
-> 
-> identical(
-+   ave2(breaks, wool, mean),
-+   ave(breaks, wool, FUN = mean)
-+ )
-[1] TRUE
-> 
 > # If you know your input is sorted and you'd like to split on the groups,
 > # `vec_run_sizes()` can be efficiently combined with `sizes`
 > df <- data_frame(
@@ -1397,10 +2185,10 @@ y_1 x_b x_a y_2
 
 > 
 > # If you have a list of homogeneous vectors, sometimes it can be useful to
-> # unchop, apply a function to the flattened vector, and then rechop according
+> # combine, apply a function to the flattened vector, and chop according
 > # to the original indices. This can be done efficiently with `list_sizes()`.
 > x <- list(c(1, 2, 1), c(3, 1), 5, double())
-> x_flat <- list_unchop(x)
+> x_flat <- vec_c(!!!x)
 > x_flat <- x_flat + max(x_flat)
 > vec_chop(x_flat, sizes = list_sizes(x))
 [[1]]
@@ -1535,18 +2323,18 @@ numeric(0)
 > # or not at all
 > vec_count(x, sort = "none")
    key count
-1    d    12
-2    b     3
-3    f    15
-4    a     1
-5    g    15
-6    m     1
-7    i     9
-8    e    20
-9    h    14
-10   j     2
-11   c     7
-12   k     1
+1    j     2
+2    i     9
+3    g    15
+4    h    14
+5    f    15
+6    e    20
+7    m     1
+8    c     7
+9    a     1
+10   k     1
+11   d    12
+12   b     3
 > 
 > 
 > 
@@ -1841,6 +2629,48 @@ The following object is masked from ‘package:vctrs’:
 
 detaching ‘package:tibble’
 
+> nameEx("vec_if_else")
+> ### * vec_if_else
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: vec_if_else
+> ### Title: Vectorized if-else
+> ### Aliases: vec_if_else
+> 
+> ### ** Examples
+> 
+> x <- c(-5:5, NA)
+> vec_if_else(x < 0, NA, x)
+ [1] NA NA NA NA NA  0  1  2  3  4  5 NA
+> 
+> # Explicitly handle `NA` values in the `condition` with `missing`
+> vec_if_else(x < 0, "negative", "positive", missing = "missing")
+ [1] "negative" "negative" "negative" "negative" "negative" "positive"
+ [7] "positive" "positive" "positive" "positive" "positive" "missing" 
+> 
+> # Unlike `ifelse()`, `vec_if_else()` preserves types
+> x <- factor(sample(letters[1:5], 10, replace = TRUE))
+> ifelse(x %in% c("a", "b", "c"), x, NA)
+ [1]  1 NA  1  2 NA  3  2  3  3  1
+> vec_if_else(x %in% c("a", "b", "c"), x, NA)
+ [1] a    <NA> a    b    <NA> c    b    c    c    a   
+Levels: a b c d e
+> 
+> # `vec_if_else()` also works with data frames
+> condition <- c(TRUE, FALSE, NA, TRUE)
+> true <- data_frame(x = 1:4, y = 5:8)
+> false <- data_frame(x = 9:12, y = 13:16)
+> vec_if_else(condition, true, false)
+   x  y
+1  1  5
+2 10 14
+3 NA NA
+4  4  8
+> 
+> 
+> 
+> cleanEx()
 > nameEx("vec_init")
 > ### * vec_init
 > 
@@ -1856,10 +2686,24 @@ detaching ‘package:tibble’
 [1] NA NA NA
 > vec_init(Sys.Date(), 5)
 [1] NA NA NA NA NA
+> 
+> # The "missing" value for a data frame is a row that is entirely missing
 > vec_init(mtcars, 2)
      mpg cyl disp hp drat wt qsec vs am gear carb
 ...1  NA  NA   NA NA   NA NA   NA NA NA   NA   NA
 ...2  NA  NA   NA NA   NA NA   NA NA NA   NA   NA
+> 
+> # The "missing" value for a list is `NULL`
+> vec_init(list(), 3)
+[[1]]
+NULL
+
+[[2]]
+NULL
+
+[[3]]
+NULL
+
 > 
 > 
 > 
@@ -1893,6 +2737,14 @@ detaching ‘package:tibble’
 2 3 c
 3 2 b
 4 4 d
+> 
+> # `.size` can be used to recycle size 1 elements before interleaving
+> vec_interleave(1, 2, .size = 3)
+[1] 1 2 1 2 1 2
+> 
+> # `.ptype` can be used to enforce a particular type
+> typeof(vec_interleave(1, 2, .ptype = integer()))
+[1] "integer"
 > 
 > 
 > 
@@ -2432,8 +3284,6 @@ Error in vec_proxy_compare(x = x) :
 > # Unknown types ------------------------------------------
 > vec_ptype_show()
 Prototype: NULL
-> vec_ptype_show(NA)
-Prototype: logical
 > vec_ptype_show(NULL)
 Prototype: NULL
 > 
@@ -2495,6 +3345,37 @@ Prototype: <data.frame<
    │   y: double                                         │     y: double            
    │ >>                                                  │     z: character         
    └                                                     ┘   >>                     
+> 
+> # Finalisation -------------------------------------------
+> 
+> # `vec_ptype()` and `vec_ptype2()` return unfinalised ptypes so that they
+> # can be coerced to any other type
+> vec_ptype(NA)
+<unspecified> [0]
+> vec_ptype2(NA, NA)
+<unspecified> [0]
+> 
+> # By default `vec_ptype_common()` finalises so that you can use its result
+> # directly in other vctrs functions
+> vec_ptype_common(NA, NA)
+logical(0)
+> 
+> # You can opt out of finalisation to make it work like `vec_ptype()` and
+> # `vec_ptype2()` with `.finalise = FALSE`, but don't forget that you must
+> # call `vec_ptype_finalise()` manually if you do so!
+> vec_ptype_common(NA, NA, .finalise = FALSE)
+<unspecified> [0]
+> vec_ptype_finalise(vec_ptype_common(NA, NA, .finalise = FALSE))
+logical(0)
+> 
+> # This can be useful in rare scenarios, like including a separate `default`
+> # argument in the ptype computation
+> xs <- list(NA, NA)
+> default <- "a"
+> try(vec_ptype2(vec_ptype_common(!!!xs), default))
+Error : Can't combine `vec_ptype_common(!!!xs)` <logical> and `default` <character>.
+> vec_ptype2(vec_ptype_common(!!!xs, .finalise = FALSE), default)
+character(0)
 > 
 > 
 > 
@@ -2798,6 +3679,33 @@ Error in `vec_slice<-`(`*tmp*`, 2, value = 1.5) :
   Can't convert from `1.5` <double> to <integer> due to loss of precision.
 • Locations: 1
 > 
+> # Slicing `value` -------------------------------------------------
+> 
+> # Sometimes both `x` and `value` start from objects that are the same length,
+> # and you need to slice `value` by `i` before assigning it to `x`. This comes
+> # up when thinking about how `base::ifelse()` and `dplyr::case_when()` work.
+> condition <- c(TRUE, FALSE, TRUE, FALSE)
+> yes <- 1:4
+> no <- 5:8
+> 
+> # Create an output container and fill it
+> out <- vec_init(integer(), 4)
+> out <- vec_assign(out, condition, vec_slice(yes, condition))
+> out <- vec_assign(out, !condition, vec_slice(no, !condition))
+> out
+[1] 1 6 3 8
+> 
+> # This is wasteful because you have to materialize the slices of `yes` and
+> # `no` before they can be assigned, and you also have to validate `condition`
+> # multiple times. Using `slice_value` internally performs
+> # `vec_slice(yes, condition)` and `vec_slice(no, !condition)` for you,
+> # but does so in a way that avoids the materialization.
+> out <- vec_init(integer(), 4)
+> out <- vec_assign(out, condition, yes, slice_value = TRUE)
+> out <- vec_assign(out, !condition, no, slice_value = TRUE)
+> out
+[1] 1 6 3 8
+> 
 > 
 > 
 > cleanEx()
@@ -2900,6 +3808,7 @@ detaching ‘package:tibble’
 > ### Name: vector-checks
 > ### Title: Vector checks
 > ### Aliases: vector-checks obj_is_vector obj_check_vector vec_check_size
+> ###   vec_check_recyclable
 > 
 > ### ** Examples
 > 
@@ -2934,12 +3843,22 @@ detaching ‘package:tibble’
 > # isn't a vector
 > try(obj_check_vector(y))
 Error : `y` must be a vector, not a <my_list> object.
+✖ Detected incompatible scalar S3 list. To be treated as a vector, the object must explicitly inherit from <list> or should implement a `vec_proxy()` method. Class: <my_list>.
+ℹ If this object comes from a package, please report this error to the package author.
+ℹ Read our FAQ about creating vector types (`?vctrs::howto_faq_fix_scalar_type_error`) to learn more.
 > 
 > # `vec_check_size()` throws an informative error if the size of the
 > # input doesn't match `size`
 > vec_check_size(1:5, size = 5)
 > try(vec_check_size(1:5, size = 4))
 Error : `1:5` must have size 4, not size 5.
+> 
+> # `vec_check_recyclable()` throws an informative error if the input can't
+> # recycle to size `size`
+> vec_check_recyclable(1:5, size = 5)
+> vec_check_recyclable(1, size = 5)
+> try(vec_check_recyclable(1:2, size = 5))
+Error : Can't recycle `1:2` (size 2) to size 5.
 > 
 > 
 > 
@@ -2948,7 +3867,7 @@ Error : `1:5` must have size 4, not size 5.
 > cleanEx()
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  0.911 0.049 0.961 0 0 
+Time elapsed:  1.021 0.044 1.065 0 0 
 > grDevices::dev.off()
 null device 
           1 

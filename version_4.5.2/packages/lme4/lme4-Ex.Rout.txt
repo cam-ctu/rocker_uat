@@ -97,7 +97,7 @@ and extra(:= not in R_LIBS) .libPaths():
 > 
 >  structure(Sys.info()[c(4,5,1:3)], class="simple.list") #-> 'nodename' ..
          _                                                  
-nodename 97ffb2959763                                       
+nodename 38bf771bf2e4                                       
 machine  x86_64                                             
 sysname  Linux                                              
 release  6.11.0-1018-azure                                  
@@ -126,13 +126,13 @@ attached base packages:
 [1] stats     graphics  grDevices utils     datasets  methods   base     
 
 other attached packages:
-[1] lme4_1.1-37  Matrix_1.7-4
+[1] lme4_1.1-38  Matrix_1.7-4
 
 loaded via a namespace (and not attached):
- [1] minqa_1.2.8      MASS_7.3-65      compiler_4.5.2   reformulas_0.4.2
- [5] tools_4.5.2      Rcpp_1.1.0       splines_4.5.2    nlme_3.1-168    
- [9] grid_4.5.2       rbibutils_2.4    nloptr_2.2.1     boot_1.3-32     
-[13] Rdpack_2.6.4     lattice_0.22-7  
+ [1] lattice_0.22-7     splines_4.5.2      Rdpack_2.6.5       cli_3.6.5         
+ [5] nloptr_2.2.1       grid_4.5.2         reformulas_0.4.3.1 compiler_4.5.2    
+ [9] boot_1.3-32        rbibutils_2.4.1    tools_4.5.2        nlme_3.1-168      
+[13] minqa_1.2.8        Rcpp_1.1.1         rlang_1.1.7        MASS_7.3-65       
 >  searchpaths()
  [1] ".GlobalEnv"                         "/usr/local/lib/R/site-library/lme4"
  [3] "/usr/local/lib/R/library/Matrix"    "CheckExEnv"                        
@@ -152,20 +152,20 @@ loaded via a namespace (and not attached):
 +                  dirname(dirname(attr(pd, "file")))))
 +  }
 >  pkgI("Matrix")
-Matrix -- built: R 4.5.2; x86_64-pc-linux-gnu; 2025-11-18 08:46:02 UTC; unix
+Matrix -- built: R 4.5.2; x86_64-pc-linux-gnu; 2026-01-28 09:08:33 UTC; unix
        -- dir  : /usr/local/lib/R/library/Matrix
 >  pkgI("Rcpp")
-Rcpp -- built: R 4.5.0; x86_64-pc-linux-gnu; 2025-07-03 07:24:20 UTC; unix
+Rcpp -- built: R 4.5.0; x86_64-pc-linux-gnu; 2026-01-11 07:33:45 UTC; unix
      -- dir  : /usr/local/lib/R/site-library/Rcpp
 >  ## 2012-03-12{MM}: fails with --as-cran
 >  pkgI("RcppEigen")
-RcppEigen -- built: R 4.5.0; x86_64-pc-linux-gnu; 2025-07-03 07:25:33 UTC; unix
+RcppEigen -- built: R 4.5.0; x86_64-pc-linux-gnu; 2026-01-11 07:36:01 UTC; unix
           -- dir  : /usr/local/lib/R/site-library/RcppEigen
 >  pkgI("minqa")
-minqa -- built: R 4.5.0; x86_64-pc-linux-gnu; 2025-07-03 07:39:16 UTC; unix
+minqa -- built: R 4.5.0; x86_64-pc-linux-gnu; 2026-01-11 07:54:56 UTC; unix
       -- dir  : /usr/local/lib/R/site-library/minqa
 >  pkgI("lme4")
-lme4 -- built: R 4.5.0; x86_64-pc-linux-gnu; 2025-08-29 04:39:29 UTC; unix
+lme4 -- built: R 4.5.0; x86_64-pc-linux-gnu; 2026-01-11 08:01:19 UTC; unix
      -- dir  : /usr/local/lib/R/site-library/lme4
 > ## End(Don't show)
 > require(lattice)
@@ -1064,7 +1064,8 @@ detaching ‘package:lattice’
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: allFit
-> ### Title: Refit a fitted model with all available optimizers
+> ### Title: Refit a fitted model with all available optimizers to check
+> ###   convergence
 > ### Aliases: allFit
 > ### Keywords: models
 > 
@@ -1324,6 +1325,34 @@ Fixed Effects:
 > 
 > 
 > cleanEx()
+> nameEx("cbpp2")
+> ### * cbpp2
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: cbpp2
+> ### Title: Contagious bovine pleuropneumonia (extended version)
+> ### Aliases: cbpp2
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> ## Fitting the model 
+> gm1 <- glmer(incidence/size ~ period + treatment + avg_size + (1 | herd),
++              family = binomial,
++              data = cbpp2, weights = size,
++              control = glmerControl(optimizer="bobyqa"))
+> ## Adding an observation-level random effect
+> cbpp2 <- transform(cbpp2,obs=factor(seq(nrow(cbpp2))))
+> ## Herd and observation-level REs (below causes singular fit issues)
+> gm2 <- update(gm1,.~.+(1|obs)) 
+boundary (singular) fit: see help('isSingular')
+> ## observation-level REs only (no singular fit issue)
+> gm3 <- update(gm1,.~.-(1|herd)+(1|obs)) 
+> 
+> 
+> 
+> cleanEx()
 > nameEx("confint.merMod")
 > ### * confint.merMod
 > 
@@ -1349,10 +1378,10 @@ Fixed Effects:
 + ## End(Don't show)
 + if (lme4_testlevel() >= 3) {
 +   system.time(fm1P <- confint(fm1, method="profile", ## <- default
-+                               oldNames = FALSE))
++                               signames = FALSE))
 +   ## --> ~ 2.2 seconds (2022)
 +   set.seed(123) # (reproducibility when using bootstrap)
-+   system.time(fm1B <- confint(fm1, method="boot", oldNames=FALSE,
++   system.time(fm1B <- confint(fm1, method="boot", signames=FALSE,
 +                               .progress="txt", PBargs= list(style=3)))
 +   ## --> ~ 6.2 seconds (2022) and warning, messages
 + } else {
@@ -1429,6 +1458,100 @@ Fixed Effects:
 +   ss$ which.OK            ## which fits worked
 + 
 + } 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("culcitalogreg")
+> ### * culcitalogreg
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: culcitalogreg
+> ### Title: Coral-eating seastar Culcita novaeguineae data (binary predation
+> ###   version)
+> ### Aliases: culcitalogreg
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> cul_mod <- glmer(predation ~ ttt2 + (1|block), data=culcitalogreg,
++                      family = binomial(link = "logit"))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("culcitalvolume")
+> ### * culcitalvolume
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: culcitalvolume
+> ### Title: Coral-eating seastar Culcita novaeguineae data (volume loss
+> ###   version)
+> ### Aliases: culcitalvolume
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> ## Modifying to create a new response variable
+> vdata <- transform(culcitalvolume, 
++                    propeaten = predvolume/volume,
++                    tvol = log(predvolume))
+> ## One-way analysis
+> (cvm1 <- lmer(tvol ~ ttt2 + (1|block), data = vdata))
+Linear mixed model fit by REML ['lmerMod']
+Formula: tvol ~ ttt2 + (1 | block)
+   Data: vdata
+REML criterion at convergence: 76.182
+Random effects:
+ Groups   Name        Std.Dev.
+ block    (Intercept) 0.4043  
+ Residual             0.4263  
+Number of obs: 50, groups:  block, 10
+Fixed Effects:
+(Intercept)         ttt2  
+     7.0908      -0.3024  
+> (cvm2 <- lmer(propeaten ~ ttt2 + (1|block), data = vdata))
+Linear mixed model fit by REML ['lmerMod']
+Formula: propeaten ~ ttt2 + (1 | block)
+   Data: vdata
+REML criterion at convergence: -51.557
+Random effects:
+ Groups   Name        Std.Dev.
+ block    (Intercept) 0.1342  
+ Residual             0.1083  
+Number of obs: 50, groups:  block, 10
+Fixed Effects:
+(Intercept)         ttt2  
+    0.42136     -0.09591  
+> ## Two-way analysis 
+> (cvm3 <- lmer(tvol ~ crab*shrimp + (1|block), data = vdata))
+Linear mixed model fit by REML ['lmerMod']
+Formula: tvol ~ crab * shrimp + (1 | block)
+   Data: vdata
+REML criterion at convergence: 42.2635
+Random effects:
+ Groups   Name        Std.Dev.
+ block    (Intercept) 0.4650  
+ Residual             0.2687  
+Number of obs: 50, groups:  block, 10
+Fixed Effects:
+  (Intercept)          craby        shrimpy  craby:shrimpy  
+      6.71636       -0.09575       -0.37645       -0.82619  
+> (cvm4 <- lmer(propeaten ~ crab*shrimp + (1|block), data = vdata))
+Linear mixed model fit by REML ['lmerMod']
+Formula: propeaten ~ crab * shrimp + (1 | block)
+   Data: vdata
+REML criterion at convergence: -46.6655
+Random effects:
+ Groups   Name        Std.Dev.
+ block    (Intercept) 0.1342  
+ Residual             0.1081  
+Number of obs: 50, groups:  block, 10
+Fixed Effects:
+  (Intercept)          craby        shrimpy  craby:shrimpy  
+      0.32225       -0.15098       -0.10358       -0.05804  
 > 
 > 
 > 
@@ -1570,97 +1693,6 @@ Number of obs: 108, groups:  Subject, 27
 Fixed Effects:
 (Intercept)          age  
     16.8643       0.6602  
-> 
-> 
-> 
-> cleanEx()
-> nameEx("expandDoubleVerts")
-> ### * expandDoubleVerts
-> 
-> flush(stderr()); flush(stdout())
-> 
-> ### Name: expandDoubleVerts
-> ### Title: Expand terms with "||" notation into separate "|" terms
-> ### Aliases: expandDoubleVerts ||
-> ### Keywords: models utilities
-> 
-> ### ** Examples
-> 
->   m <- ~ x + (x || g)
->   expandDoubleVerts(m)
-~x + ((1 | g) + (0 + x | g))
->   set.seed(101)
->   dd <- expand.grid(f=factor(letters[1:3]),g=factor(1:200),rep=1:3)
->   dd$y <- simulate(~f + (1|g) + (0+dummy(f,"b")|g) + (0+dummy(f,"c")|g),
-+           newdata=dd,
-+           newparams=list(beta=rep(0,3),
-+                          theta=c(1,2,1),
-+                          sigma=1),
-+           family=gaussian)[[1]]
->   m1 <- lmer(y~f+(f|g),data=dd)
->   VarCorr(m1)
- Groups   Name        Std.Dev. Corr         
- g        (Intercept) 0.95687               
-          fb          1.97293   0.106       
-          fc          0.96425   0.109 -0.086
- Residual             1.02172               
->   m2 <- lmer(y~f+(1|g) + (0+dummy(f,"b")|g) + (0+dummy(f,"c")|g),
-+                data=dd)
->   VarCorr(m2)
- Groups   Name          Std.Dev.
- g        (Intercept)   0.98657 
- g.1      dummy(f, "b") 2.00636 
- g.2      dummy(f, "c") 0.99616 
- Residual               1.01771 
-> 
-> 
-> 
-> cleanEx()
-> nameEx("findbars")
-> ### * findbars
-> 
-> flush(stderr()); flush(stdout())
-> 
-> ### Name: findbars
-> ### Title: Determine random-effects expressions from a formula
-> ### Aliases: findbars
-> ### Keywords: models utilities
-> 
-> ### ** Examples
-> 
-> findbars(f1 <- Reaction ~ Days + (Days | Subject))
-[[1]]
-Days | Subject
-
-> ## => list( Days | Subject )
-> ## These two are equivalent:% tests in ../inst/tests/test-doubleVertNotation.R
-> findbars(y ~ Days + (1 | Subject) + (0 + Days | Subject))
-[[1]]
-1 | Subject
-
-[[2]]
-0 + Days | Subject
-
-> findbars(y ~ Days + (Days || Subject))
-[[1]]
-1 | Subject
-
-[[2]]
-0 + Days | Subject
-
-> ## => list of length 2:  list ( 1 | Subject ,  0 + Days | Subject)
-> findbars(~ 1 + (1 | batch / cask))
-[[1]]
-1 | cask:batch
-
-[[2]]
-1 | batch
-
-> ## => list of length 2:  list ( 1 | cask:batch ,  1 | batch)
-> ## Don't show: 
-> stopifnot(identical(findbars(f1),
-+                     list(quote(Days | Subject))))
-> ## End(Don't show)
 > 
 > 
 > 
@@ -2095,11 +2127,40 @@ Class "refObject", by class "envRefClass", distance 3
 > golden(lower= -100, upper= 1e100)
 Reference class object of class "golden"
 Field "Ptr":
-<pointer: 0x560c31919cf0>
+<pointer: 0x5585f9bbea50>
 Field "lowerbd":
 [1] -100
 Field "upperbd":
 [1] 1e+100
+> 
+> 
+> 
+> cleanEx()
+> nameEx("gopherdat2")
+> ### * gopherdat2
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: gopherdat2
+> ### Title: Gopher tortoises shell remains
+> ### Aliases: gopherdat2
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> ## Simple model gives a singular fit:
+> gopher_glmer <- glmer(shells ~ factor(year) + prev + offset(log(Area))
++                    + (1|Site), data = gopherdat2, family = "poisson")
+boundary (singular) fit: see help('isSingular')
+> ## The site-level variance for this model is indeed zero:
+> VarCorr(gopher_glmer)
+ Groups Name        Std.Dev.
+ Site   (Intercept) 0       
+> ## So a Poisson GLM gives the same answer here:
+> gopher_glm <- glm(shells ~ factor(year) + prev + offset(log(Area)),
++                   data = gopherdat2, family = "poisson")
+> all.equal(fixef(gopher_glmer), coef(gopher_glm))
+[1] TRUE
 > 
 > 
 > 
@@ -2250,25 +2311,6 @@ Field "upperbd":
 +     dfbetas(inf_gm1)
 +   }
 +  } 
-> 
-> 
-> 
-> cleanEx()
-> nameEx("isNested")
-> ### * isNested
-> 
-> flush(stderr()); flush(stdout())
-> 
-> ### Name: isNested
-> ### Title: Is f1 nested within f2?
-> ### Aliases: isNested
-> 
-> ### ** Examples
-> 
-> with(Pastes, isNested(cask, batch))   ## => FALSE
-[1] FALSE
-> with(Pastes, isNested(sample, batch))  ## => TRUE
-[1] TRUE
 > 
 > 
 > 
@@ -2584,7 +2626,7 @@ Number of obs: 180, groups:  Subject, 18
 Fixed Effects:
 (Intercept)         Days  
      251.41        10.47  
-> summary(fm1)# (with its own print method; see class?merMod % ./merMod-class.Rd
+> summary(fm1) # (with its own print method; see class?merMod % ./merMod-class.Rd
 Linear mixed model fit by REML ['lmerMod']
 Formula: Reaction ~ Days + (Days | Subject)
    Data: sleepstudy
@@ -2610,6 +2652,7 @@ Days          10.467      1.546   6.771
 Correlation of Fixed Effects:
      (Intr)
 Days -0.138
+> plot(fm1) # plotting the model diagnostics; see ?plot.merMod
 > 
 > str(terms(fm1))
 Classes 'terms', 'formula'  language Reaction ~ Days
@@ -2845,9 +2888,10 @@ List of 8
  $ optimizer      : chr "nloptwrap"
  $ restart_edge   : logi TRUE
  $ boundary.tol   : num 1e-05
- $ calc.derivs    : logi TRUE
+ $ calc.derivs    : NULL
  $ use.last.params: logi FALSE
- $ checkControl   :List of 8
+ $ checkControl   :List of 9
+  ..$ autoscale          : NULL
   ..$ check.nobs.vs.rankZ: chr "ignore"
   ..$ check.nobs.vs.nlev : chr "stop"
   ..$ check.nlev.gtreq.5 : chr "ignore"
@@ -2856,7 +2900,9 @@ List of 8
   ..$ check.rankX        : chr "message+drop.cols"
   ..$ check.scaleX       : chr "warning"
   ..$ check.formula.LHS  : chr "stop"
- $ checkConv      :List of 3
+ $ checkConv      :List of 5
+  ..$ check.conv.nobsmax : num 10000
+  ..$ check.conv.nparmax : num 10
   ..$ check.conv.grad    :List of 3
   .. ..$ action: chr "warning"
   .. ..$ tol   : num 0.002
@@ -2874,9 +2920,10 @@ List of 11
  $ optimizer      : chr [1:2] "bobyqa" "Nelder_Mead"
  $ restart_edge   : logi FALSE
  $ boundary.tol   : num 1e-05
- $ calc.derivs    : logi TRUE
+ $ calc.derivs    : NULL
  $ use.last.params: logi FALSE
- $ checkControl   :List of 9
+ $ checkControl   :List of 10
+  ..$ autoscale               : NULL
   ..$ check.nobs.vs.rankZ     : chr "ignore"
   ..$ check.nobs.vs.nlev      : chr "stop"
   ..$ check.nlev.gtreq.5      : chr "ignore"
@@ -2886,7 +2933,9 @@ List of 11
   ..$ check.scaleX            : chr "warning"
   ..$ check.formula.LHS       : chr "stop"
   ..$ check.response.not.const: chr "stop"
- $ checkConv      :List of 3
+ $ checkConv      :List of 5
+  ..$ check.conv.nobsmax : num 10000
+  ..$ check.conv.nparmax : num 20
   ..$ check.conv.grad    :List of 3
   .. ..$ action: chr "warning"
   .. ..$ tol   : num 0.002
@@ -2971,10 +3020,8 @@ detaching ‘package:nloptr’, ‘package:optimx’
 > ###   df.residual.merMod extractAIC.merMod family.merMod fitted.merMod
 > ###   formula.merMod glmerMod-class lmerMod-class logLik.merMod merMod
 > ###   merMod-class model.frame.merMod model.matrix.merMod ngrps.merMod
-> ###   nobs.merMod nobs nlmerMod-class print.merMod print.summary.merMod
-> ###   show,merMod-method show.merMod show.summary.merMod summary.merMod
-> ###   summary.summary.merMod terms.merMod update.merMod weights.merMod
-> ###   REMLcrit
+> ###   nobs.merMod nobs nlmerMod-class print.merMod show,merMod-method
+> ###   show.merMod terms.merMod update.merMod weights.merMod REMLcrit
 > ### Keywords: classes
 > 
 > ### ** Examples
@@ -3132,35 +3179,24 @@ Reference class 'merPredD' [package "lme4"] with 18 fields
 > 
 > 
 > cleanEx()
-> nameEx("mkReTrms")
-> ### * mkReTrms
+> nameEx("mkNewReTrms")
+> ### * mkNewReTrms
 > 
 > flush(stderr()); flush(stdout())
 > 
-> ### Name: mkReTrms
-> ### Title: Make Random Effect Terms: Create Z, Lambda, Lind, etc.
-> ### Aliases: mkReTrms mkNewReTrms
+> ### Name: mkNewReTrms
+> ### Title: Make new random effect terms for prediction
+> ### Aliases: mkNewReTrms
 > ### Keywords: utilities
 > 
 > ### ** Examples
 > 
-> data("Pixel", package="nlme")
-> mform <- pixel ~ day + I(day^2) + (day | Dog) + (1 | Side/Dog)
-> (bar.f <- findbars(mform)) # list with 3 terms
-[[1]]
-day | Dog
-
-[[2]]
-1 | Dog:Side
-
-[[3]]
-1 | Side
-
-> mf <- model.frame(subbars(mform),data=Pixel)
-> rt <- mkReTrms(bar.f,mf)
-> names(rt)
- [1] "Zt"      "theta"   "Lind"    "Gp"      "lower"   "Lambdat" "flist"  
- [8] "cnms"    "Ztlist"  "nl"     
+> fm1 <- lmer(Reaction ~ Days + (Days | Subject), sleepstudy)
+> nd <- data.frame(Days = 5, Subject = "new")
+> try(mkNewReTrms(fm1, newdata = nd))
+Error in levelfun(r, n, allow.new.levels = allow.new.levels) : 
+  new levels detected in newdata: new
+> t1 <- mkNewReTrms(fm1, newdata = nd, allow.new.levels = TRUE)
 > 
 > 
 > 
@@ -3188,7 +3224,7 @@ day | Dog
 > (devfun <- do.call(mkLmerDevfun, lmod))
 function (theta) 
 .Call(lmer_Deviance, pp$ptr(), resp$ptr(), as.double(theta))
-<environment: 0x560c3ac0ae08>
+<environment: 0x5586091fdb70>
 > ls(environment(devfun)) # the environment of 'devfun' contains objects
 [1] "lmer_Deviance" "lower"         "pp"            "resp"         
 >                         # required for its evaluation
@@ -3246,7 +3282,7 @@ Fixed Effects:
 List of 6
  $ fr     :'data.frame':	56 obs. of  3 variables:
  $ X      : num [1:56, 1:4] 1 1 1 1 1 1 1 1 1 1 ...
- $ reTrms :List of 10
+ $ reTrms :List of 11
  $ family :List of 13
  $ formula:Class 'formula'  language cbind(incidence, size - incidence) ~ period + (1 | herd)
  $ wmsgs  : chr(0) 
@@ -3261,7 +3297,7 @@ function (theta)
     resp$updateWts()
     p
 }
-<environment: 0x560c3bd4ab80>
+<environment: 0x5586046d6e18>
 > ls(environment(devfun)) # the environment of devfun contains lots of info
 [1] "compDev"     "lower"       "lp0"         "maxit"       "pp"         
 [6] "pwrssUpdate" "resp"        "tolPwrss"    "verbose"    
@@ -3287,7 +3323,7 @@ function (pars)
     resp$updateWts()
     p
 }
-<environment: 0x560c3bd4ab80>
+<environment: 0x5586046d6e18>
 > ## 5.  Optimize over theta and beta:
 > opt <- optimizeGlmer(devfun, stage=2)
 > str(opt, max=1) # seeing what we'got
@@ -3517,24 +3553,6 @@ Likelihood difference (typically zero):   0
 
 detaching ‘package:optimx’
 
-> nameEx("nobars")
-> ### * nobars
-> 
-> flush(stderr()); flush(stdout())
-> 
-> ### Name: nobars
-> ### Title: Omit terms separated by vertical bars in a formula
-> ### Aliases: nobars
-> ### Keywords: models utilities
-> 
-> ### ** Examples
-> 
-> nobars(Reaction ~ Days + (Days|Subject)) ## => Reaction ~ Days
-Reaction ~ Days
-> 
-> 
-> 
-> cleanEx()
 > nameEx("plot.merMod")
 > ### * plot.merMod
 > 
@@ -3542,7 +3560,8 @@ Reaction ~ Days
 > 
 > ### Name: plot.merMod
 > ### Title: Diagnostic Plots for 'merMod' Fits
-> ### Aliases: plot.merMod qqmath.merMod
+> ### Aliases: plot.merMod qqmath.merMod diagnostics diagnostic.plots
+> ###   diagnosticPlots diagnostic_plots qqplot
 > 
 > ### ** Examples
 > 
@@ -3705,12 +3724,12 @@ boundary (singular) fit: see help('isSingular')
 +   tpr  <- profile(fm01ML, optimizer="Nelder_Mead", which="beta_")
 + )## fast; as only *one* beta parameter is profiled over -> 0.09s (2022)
    user  system elapsed 
-  0.097   0.000   0.097 
+  0.097   0.000   0.098 
 > 
 > ## full profiling (default which means 'all') needs longer:
 > system.time( tpr  <- profile(fm01ML, signames=FALSE))
    user  system elapsed 
-  0.250   0.000   0.249 
+  0.251   0.000   0.250 
 > ## ~ 0.26s (2022) + possible warning about convergence
 > (confint(tpr) -> CIpr)
                           2.5 %     97.5 %
@@ -3992,6 +4011,48 @@ boundary (singular) fit: see help('isSingular')
 > 
 > 
 > cleanEx()
+> nameEx("salamander")
+> ### * salamander
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: salamander
+> ### Title: Mountain dusky salamander mating
+> ### Aliases: salamander
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> ## Making sure Male, Female, and CRoss are treated as factors
+> salamander$Male <- factor(salamander$Male)
+> salamander$Female <- factor(salamander$Female)
+> salamander$Cross <- factor(salamander$Cross)
+> ## Fitting the model described in 14.5.3 from McCullagh and Nelder
+> sal_mod <- glmer(Mate ~ (1|Female) + (1 | Male) + Cross, data = salamander,
++                  family = binomial(link = "logit"))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("schizophrenia")
+> ### * schizophrenia
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: schizophrenia
+> ### Title: National Institute of Mental Health Schizophrenia Collaborative
+> ###   Study
+> ### Aliases: schizophrenia
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> schmod <- glmer(imps79 ~ TxDrug * Week + (1 | id),
++                 data = schizophrenia, family = Gamma(link = "log"))
+> 
+> 
+> 
+> cleanEx()
 > nameEx("sigma")
 > ### * sigma
 > 
@@ -4230,20 +4291,50 @@ Fixed Effects:
 
 detaching ‘package:lattice’
 
-> nameEx("subbars")
-> ### * subbars
+> nameEx("summary.merMod")
+> ### * summary.merMod
 > 
 > flush(stderr()); flush(stdout())
 > 
-> ### Name: subbars
-> ### Title: "Sub[stitute] Bars"
-> ### Aliases: subbars
-> ### Keywords: models utilities
+> ### Name: summary
+> ### Title: Summary for a [ng]lmer Fit
+> ### Aliases: summary summary.merMod show.summary.merMod
+> ###   print.summary.merMod
 > 
 > ### ** Examples
 > 
-> subbars(Reaction ~ Days + (Days|Subject)) ## => Reaction ~ Days + (Days + Subject)
-Reaction ~ Days + (Days + Subject)
+> fm1 <- lmer(Reaction ~ Days + (Days | Subject), sleepstudy)
+> smry <- summary(fm1)
+> # Obtaining the variance-covariance matrix of the fixed effects
+> smry$vcov
+2 x 2 Matrix of class "dpoMatrix"
+            (Intercept)      Days
+(Intercept)   46.575120 -1.451088
+Days          -1.451088  2.389466
+> # Obtaining the correlation matrix of fixed effects
+> smry$vcov@factors$correlation
+2 x 2 Matrix of class "corMatrix"
+            (Intercept)       Days
+(Intercept)   1.0000000 -0.1375519
+Days         -0.1375519  1.0000000
+> 
+> 
+> 
+> cleanEx()
+> nameEx("toenail")
+> ### * toenail
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: toenail
+> ### Title: Toenail onychomycosis data from dermatophyte infections
+> ### Aliases: toenail
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> toemod <- glmer(outcome ~ time*treatment + (1 | patientID), 
++                 data = toenail, family = binomial(link = "logit"))
 > 
 > 
 > 
@@ -4477,7 +4568,7 @@ and from RX differ by >1e-04: consider 'use.hessian=TRUE'
 > cleanEx()
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  8.344 0.548 8.454 0 0 
+Time elapsed:  10.57 0.545 10.677 0 0 
 > grDevices::dev.off()
 null device 
           1 

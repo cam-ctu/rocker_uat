@@ -234,7 +234,7 @@ Reaction ~ -1 + (1 | Subject)
 ANOVA-like table for random-effects: Single term deletions
 
 Model:
-Reaction ~ (1 | Subject) - 1
+Reaction ~ -1 + (1 | Subject)
               npar   logLik    AIC    LRT Df Pr(>Chisq)    
 <none>           2  -992.84 1989.7                         
 (1 | Subject)    1 -1284.32 2570.7 582.97  1  < 2.2e-16 ***
@@ -650,7 +650,7 @@ Coloursaturation ~ TVset + Picture + (1 | Assessor:TVset) + TVset:Picture
 ANOVA-like table for random-effects: Single term deletions
 
 Model:
-Coloursaturation ~ TVset + Picture + (1 | Assessor:TVset) + (1 | Assessor) + TVset:Picture
+Coloursaturation ~ TVset * Picture + (1 | Assessor:TVset) + (1 | Assessor)
                      npar  logLik    AIC    LRT Df Pr(>Chisq)    
 <none>                 15 -280.22 590.44                         
 (1 | Assessor:TVset)   14 -302.61 633.22 44.777  1  2.208e-11 ***
@@ -684,7 +684,7 @@ Coloursaturation ~ TVset + Picture + (1 | TVset:Assessor) + TVset:Picture
 ANOVA-like table for random-effects: Single term deletions
 
 Model:
-Coloursaturation ~ TVset + Picture + (1 | TVset:Assessor) + (1 | Assessor) + TVset:Picture
+Coloursaturation ~ TVset * Picture + (1 | TVset:Assessor) + (1 | Assessor)
                      npar  logLik    AIC    LRT Df Pr(>Chisq)    
 <none>                 15 -280.22 590.44                         
 (1 | TVset:Assessor)   14 -302.61 633.22 44.777  1  2.208e-11 ***
@@ -757,6 +757,73 @@ boundary (singular) fit: see help('isSingular')
 +   all(c("Sum Sq", "Mean Sq", "NumDF", "DenDF", "F value", "Pr(>F)") %in%
 +         colnames(step_res$fixed))
 + )
+> 
+> ###########################
+> # Evaluation in function without the formula:
+> # Reported by Uwe Ligges 2025-01-16.
+> f <- function(data) {
++   lmer(Petal.Length ~ Sepal.Length + (1|Species), data=data)
++ }
+> 
+> res <- f(iris)
+> ranova(res) # used to fail - now it works
+ANOVA-like table for random-effects: Single term deletions
+
+Model:
+Petal.Length ~ Sepal.Length + (1 | Species)
+              npar  logLik    AIC    LRT Df Pr(>Chisq)    
+<none>           4  -34.66  77.32                         
+(1 | Species)    3 -193.84 393.68 318.36  1  < 2.2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> 
+> data <- iris
+> ranova(res) # now it works
+ANOVA-like table for random-effects: Single term deletions
+
+Model:
+Petal.Length ~ Sepal.Length + (1 | Species)
+              npar  logLik    AIC    LRT Df Pr(>Chisq)    
+<none>           4  -34.66  77.32                         
+(1 | Species)    3 -193.84 393.68 318.36  1  < 2.2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> ###########################
+> # Evaluation in function without the formula(2):
+> # A model with ||-notation:
+> f2 <- function(data) {
++   lmer(Reaction ~ Days + (Days||Subject), data)
++ }
+> res <- f2(sleepstudy)
+> ranova(res)
+ANOVA-like table for random-effects: Single term deletions
+
+Model:
+Reaction ~ Days + (1 | Subject) + (0 + Days | Subject)
+                             npar  logLik    AIC    LRT Df Pr(>Chisq)    
+<none>                          5 -871.83 1753.7                         
+(1 | Subject)                   4 -883.26 1774.5 22.856  1  1.746e-06 ***
+Days in (0 + Days | Subject)    4 -893.23 1794.5 42.796  1  6.076e-11 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> 
+> # A model with multiple RE terms:
+> f3 <- function(data) {
++   lmer(Coloursaturation ~ TVset*Picture + (1|Assessor:TVset) + (1|Assessor), data)
++ }
+> res <- f3(TVbo)
+> ranova(res)
+ANOVA-like table for random-effects: Single term deletions
+
+Model:
+Coloursaturation ~ TVset * Picture + (1 | Assessor:TVset) + (1 | Assessor)
+                     npar  logLik    AIC    LRT Df Pr(>Chisq)    
+<none>                 15 -280.22 590.44                         
+(1 | Assessor:TVset)   14 -302.61 633.22 44.777  1  2.208e-11 ***
+(1 | Assessor)         14 -280.27 588.53  0.090  1     0.7643    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> ###########################
 > 
 > # Check that step works when form is a character vector
 > m <- lmer(form, data=ham)
@@ -855,10 +922,12 @@ Warning messages:
   unable to evaluate scaled gradient
 2: In checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv,  :
   Model failed to converge: degenerate  Hessian with 1 negative eigenvalues
+  See ?lme4::convergence and ?lme4::troubleshooting.
 3: In checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv,  :
   unable to evaluate scaled gradient
 4: In checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv,  :
   Model failed to converge: degenerate  Hessian with 1 negative eigenvalues
+  See ?lme4::convergence and ?lme4::troubleshooting.
 5: Model failed to converge with 1 negative eigenvalue: -2.7e-04 
 > stopifnot(
 +   nrow(ranova(model)) == 3L,
@@ -869,6 +938,7 @@ Warning messages:
   unable to evaluate scaled gradient
 2: In checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv,  :
   Model failed to converge: degenerate  Hessian with 1 negative eigenvalues
+  See ?lme4::convergence and ?lme4::troubleshooting.
 > 
 > # Model of the form (-1 + f2 | gr):
 > model <- lmer(Preference ~ sens2 + Homesize + Gender +
@@ -991,6 +1061,7 @@ Preference ~ sens2 + (poly(sens2, 2) | Consumer)
 Warning message:
 In checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv,  :
   Model failed to converge with max|grad| = 0.099278 (tol = 0.002, component 1)
+  See ?lme4::convergence and ?lme4::troubleshooting.
 > (an2 <- ranova(model))
 boundary (singular) fit: see help('isSingular')
 ANOVA-like table for random-effects: Single term deletions

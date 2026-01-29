@@ -75,7 +75,7 @@ Error : `spec` must have `.name` and `.value` columns.
 > df <- tibble(x = c(1, 1, 1, 2, 2, 3), y = 1:6, z = 6:1)
 > # Note that we get one row of output for each unique combination of
 > # non-chopped variables
-> df %>% chop(c(y, z))
+> df |> chop(c(y, z))
 # A tibble: 3 × 3
       x           y           z
   <dbl> <list<int>> <list<int>>
@@ -83,7 +83,7 @@ Error : `spec` must have `.name` and `.value` columns.
 2     2         [2]         [2]
 3     3         [1]         [1]
 > # cf nest
-> df %>% nest(data = c(y, z))
+> df |> nest(data = c(y, z))
 # A tibble: 3 × 2
       x data            
   <dbl> <list>          
@@ -93,7 +93,7 @@ Error : `spec` must have `.name` and `.value` columns.
 > 
 > # Unchop --------------------------------------------------------------------
 > df <- tibble(x = 1:4, y = list(integer(), 1L, 1:2, 1:3))
-> df %>% unchop(y)
+> df |> unchop(y)
 # A tibble: 6 × 2
       x     y
   <int> <int>
@@ -103,7 +103,7 @@ Error : `spec` must have `.name` and `.value` columns.
 4     4     1
 5     4     2
 6     4     3
-> df %>% unchop(y, keep_empty = TRUE)
+> df |> unchop(y, keep_empty = TRUE)
 # A tibble: 7 × 2
       x     y
   <int> <int>
@@ -117,21 +117,21 @@ Error : `spec` must have `.name` and `.value` columns.
 > 
 > # unchop will error if the types are not compatible:
 > df <- tibble(x = 1:2, y = list("1", 1:3))
-> try(df %>% unchop(y))
-Error in list_unchop(col, ptype = col_ptype) : 
-  Can't combine `x[[1]]` <character> and `x[[2]]` <integer>.
+> try(df |> unchop(y))
+Error in unchop(df, y) : 
+  Can't combine `y[[1]]` <character> and `y[[2]]` <integer>.
 > 
 > # Unchopping a list-col of data frames must generate a df-col because
 > # unchop leaves the column names unchanged
 > df <- tibble(x = 1:3, y = list(NULL, tibble(x = 1), tibble(y = 1:2)))
-> df %>% unchop(y)
+> df |> unchop(y)
 # A tibble: 3 × 2
       x   y$x    $y
   <int> <dbl> <int>
 1     2     1    NA
 2     3    NA     1
 3     3    NA     2
-> df %>% unchop(y, keep_empty = TRUE)
+> df |> unchop(y, keep_empty = TRUE)
 # A tibble: 4 × 2
       x   y$x    $y
   <int> <dbl> <int>
@@ -155,7 +155,7 @@ Error in list_unchop(col, ptype = col_ptype) :
 > 
 > ### ** Examples
 > 
-> cms_patient_experience %>%
+> cms_patient_experience |>
 +   dplyr::distinct(measure_cd, measure_title)
 # A tibble: 6 × 2
   measure_cd   measure_title                                                    
@@ -167,7 +167,7 @@ Error in list_unchop(col, ptype = col_ptype) :
 5 CAHPS_GRP_8  CAHPS for MIPS SSM: Courteous and Helpful Office Staff           
 6 CAHPS_GRP_12 CAHPS for MIPS SSM: Stewardship of Patient Resources             
 > 
-> cms_patient_experience %>%
+> cms_patient_experience |>
 +   pivot_wider(
 +     id_cols = starts_with("org"),
 +     names_from = measure_cd,
@@ -189,7 +189,7 @@ Error in list_unchop(col, ptype = col_ptype) :
 # ℹ 85 more rows
 # ℹ 1 more variable: CAHPS_GRP_12 <dbl>
 > 
-> cms_patient_care %>%
+> cms_patient_care |>
 +   pivot_wider(
 +     names_from = type,
 +     values_from = score
@@ -209,7 +209,7 @@ Error in list_unchop(col, ptype = col_ptype) :
 10 011501 SOUTHERNCARE NEW BEACON N. BIRMINGH… beliefs_add…         525    100  
 # ℹ 116 more rows
 > 
-> cms_patient_care %>%
+> cms_patient_care |>
 +   pivot_wider(
 +     names_from = measure_abbr,
 +     values_from = score
@@ -232,7 +232,7 @@ Error in list_unchop(col, ptype = col_ptype) :
 #   opioid_bowel <dbl>, pain_assessment <dbl>, pain_screening <dbl>,
 #   treat_pref <dbl>, visits_imminent <dbl>
 > 
-> cms_patient_care %>%
+> cms_patient_care |>
 +   pivot_wider(
 +     names_from = c(measure_abbr, type),
 +     values_from = score
@@ -295,7 +295,7 @@ Error in list_unchop(col, ptype = col_ptype) :
 > # Combinations --------------------------------------------------------------
 > # Generate all possible combinations of `group`, `item_id`, and `item_name`
 > # (whether or not they appear in the data)
-> df %>% complete(group, item_id, item_name)
+> df |> complete(group, item_id, item_name)
 # A tibble: 12 × 5
    group item_id item_name value1 value2
    <dbl>   <dbl> <chr>      <dbl>  <int>
@@ -314,7 +314,7 @@ Error in list_unchop(col, ptype = col_ptype) :
 > 
 > # Cross all possible `group` values with the unique pairs of
 > # `(item_id, item_name)` that already exist in the data
-> df %>% complete(group, nesting(item_id, item_name))
+> df |> complete(group, nesting(item_id, item_name))
 # A tibble: 8 × 5
   group item_id item_name value1 value2
   <dbl>   <dbl> <chr>      <dbl>  <int>
@@ -329,8 +329,8 @@ Error in list_unchop(col, ptype = col_ptype) :
 > 
 > # Within each `group`, generate all possible combinations of
 > # `item_id` and `item_name` that occur in that group
-> df %>%
-+   dplyr::group_by(group) %>%
+> df |>
++   dplyr::group_by(group) |>
 +   complete(item_id, item_name)
 # A tibble: 8 × 5
 # Groups:   group [2]
@@ -348,7 +348,7 @@ Error in list_unchop(col, ptype = col_ptype) :
 > # Supplying values for new rows ---------------------------------------------
 > # Use `fill` to replace NAs with some value. By default, affects both new
 > # (implicit) and pre-existing (explicit) missing values.
-> df %>%
+> df |>
 +   complete(
 +     group,
 +     nesting(item_id, item_name),
@@ -368,7 +368,7 @@ Error in list_unchop(col, ptype = col_ptype) :
 > 
 > # Limit the fill to only the newly created (i.e. previously implicit)
 > # missing values with `explicit = FALSE`
-> df %>%
+> df |>
 +   complete(
 +     group,
 +     nesting(item_id, item_name),
@@ -402,12 +402,12 @@ Error in list_unchop(col, ptype = col_ptype) :
 > ### ** Examples
 > 
 > df <- tibble(x = c(1, 2, NA), y = c("a", NA, "b"))
-> df %>% drop_na()
+> df |> drop_na()
 # A tibble: 1 × 2
       x y    
   <dbl> <chr>
 1     1 a    
-> df %>% drop_na(x)
+> df |> drop_na(x)
 # A tibble: 2 × 2
       x y    
   <dbl> <chr>
@@ -415,7 +415,7 @@ Error in list_unchop(col, ptype = col_ptype) :
 2     2 <NA> 
 > 
 > vars <- "y"
-> df %>% drop_na(x, any_of(vars))
+> df |> drop_na(x, any_of(vars))
 # A tibble: 1 × 2
       x y    
   <dbl> <chr>
@@ -447,13 +447,13 @@ Error in list_unchop(col, ptype = col_ptype) :
 + )
 > 
 > # All combinations, including factor levels that are not used
-> fruits %>% expand(type)
+> fruits |> expand(type)
 # A tibble: 2 × 1
   type  
   <chr> 
 1 apple 
 2 orange
-> fruits %>% expand(size)
+> fruits |> expand(size)
 # A tibble: 4 × 1
   size 
   <fct>
@@ -461,7 +461,7 @@ Error in list_unchop(col, ptype = col_ptype) :
 2 S    
 3 M    
 4 L    
-> fruits %>% expand(type, size)
+> fruits |> expand(type, size)
 # A tibble: 8 × 2
   type   size 
   <chr>  <fct>
@@ -473,7 +473,7 @@ Error in list_unchop(col, ptype = col_ptype) :
 6 orange S    
 7 orange M    
 8 orange L    
-> fruits %>% expand(type, size, year)
+> fruits |> expand(type, size, year)
 # A tibble: 24 × 3
    type  size   year
    <chr> <fct> <dbl>
@@ -490,20 +490,20 @@ Error in list_unchop(col, ptype = col_ptype) :
 # ℹ 14 more rows
 > 
 > # Only combinations that already appear in the data
-> fruits %>% expand(nesting(type))
+> fruits |> expand(nesting(type))
 # A tibble: 2 × 1
   type  
   <chr> 
 1 apple 
 2 orange
-> fruits %>% expand(nesting(size))
+> fruits |> expand(nesting(size))
 # A tibble: 3 × 1
   size 
   <fct>
 1 XS   
 2 S    
 3 M    
-> fruits %>% expand(nesting(type, size))
+> fruits |> expand(nesting(type, size))
 # A tibble: 4 × 2
   type   size 
   <chr>  <fct>
@@ -511,7 +511,7 @@ Error in list_unchop(col, ptype = col_ptype) :
 2 apple  M    
 3 orange S    
 4 orange M    
-> fruits %>% expand(nesting(type, size, year))
+> fruits |> expand(nesting(type, size, year))
 # A tibble: 5 × 3
   type   size   year
   <chr>  <fct> <dbl>
@@ -523,7 +523,7 @@ Error in list_unchop(col, ptype = col_ptype) :
 > 
 > # Other uses ----------------------------------------------------------------
 > # Use with `full_seq()` to fill in values of continuous variables
-> fruits %>% expand(type, size, full_seq(year, 1))
+> fruits |> expand(type, size, full_seq(year, 1))
 # A tibble: 24 × 3
    type  size  `full_seq(year, 1)`
    <chr> <fct>               <dbl>
@@ -538,7 +538,7 @@ Error in list_unchop(col, ptype = col_ptype) :
  9 apple M                    2012
 10 apple L                    2010
 # ℹ 14 more rows
-> fruits %>% expand(type, size, 2010:2013)
+> fruits |> expand(type, size, 2010:2013)
 # A tibble: 32 × 3
    type  size  `2010:2013`
    <chr> <fct>       <int>
@@ -555,7 +555,7 @@ Error in list_unchop(col, ptype = col_ptype) :
 # ℹ 22 more rows
 > 
 > # Use `anti_join()` to determine which observations are missing
-> all <- fruits %>% expand(type, size, year)
+> all <- fruits |> expand(type, size, year)
 > all
 # A tibble: 24 × 3
    type  size   year
@@ -571,7 +571,7 @@ Error in list_unchop(col, ptype = col_ptype) :
  9 apple M      2012
 10 apple L      2010
 # ℹ 14 more rows
-> all %>% dplyr::anti_join(fruits)
+> all |> dplyr::anti_join(fruits)
 Joining with `by = join_by(type, size, year)`
 # A tibble: 19 × 3
    type   size   year
@@ -597,7 +597,7 @@ Joining with `by = join_by(type, size, year)`
 19 orange L      2012
 > 
 > # Use with `right_join()` to fill in missing rows (like `complete()`)
-> fruits %>% dplyr::right_join(all)
+> fruits |> dplyr::right_join(all)
 Joining with `by = join_by(type, year, size)`
 # A tibble: 25 × 4
    type    year size  weights
@@ -615,8 +615,8 @@ Joining with `by = join_by(type, year, size)`
 # ℹ 15 more rows
 > 
 > # Use with `group_by()` to expand within each group
-> fruits %>%
-+   dplyr::group_by(type) %>%
+> fruits |>
++   dplyr::group_by(type) |>
 +   expand(year, size)
 # A tibble: 20 × 3
 # Groups:   type [2]
@@ -657,6 +657,7 @@ Joining with `by = join_by(type, year, size)`
 > 
 > ### ** Examples
 > 
+> # Default behavior varies the first column "slowest"
 > expand_grid(x = 1:3, y = 1:2)
 # A tibble: 6 × 2
       x     y
@@ -667,21 +668,18 @@ Joining with `by = join_by(type, year, size)`
 4     2     2
 5     3     1
 6     3     2
-> expand_grid(l1 = letters, l2 = LETTERS)
-# A tibble: 676 × 2
-   l1    l2   
-   <chr> <chr>
- 1 a     A    
- 2 a     B    
- 3 a     C    
- 4 a     D    
- 5 a     E    
- 6 a     F    
- 7 a     G    
- 8 a     H    
- 9 a     I    
-10 a     J    
-# ℹ 666 more rows
+> 
+> # Vary the first column "fastest", like `expand.grid()`
+> expand_grid(x = 1:3, y = 1:2, .vary = "fastest")
+# A tibble: 6 × 2
+      x     y
+  <int> <int>
+1     1     1
+2     2     1
+3     3     1
+4     1     2
+5     2     2
+6     3     2
 > 
 > # Can also expand data frames
 > expand_grid(df = tibble(x = 1:2, y = c(2, 1)), z = 1:3)
@@ -694,6 +692,7 @@ Joining with `by = join_by(type, year, size)`
 4     2     1     1
 5     2     1     2
 6     2     1     3
+> 
 > # And matrices
 > expand_grid(x1 = matrix(1:4, nrow = 2), x2 = matrix(5:8, nrow = 2))
 # A tibble: 4 × 2
@@ -720,7 +719,7 @@ Joining with `by = join_by(type, year, size)`
 > ### ** Examples
 > 
 > df <- tibble(x = c(NA, "a-b", "a-d", "b-c", "d-e"))
-> df %>% extract(x, "A")
+> df |> extract(x, "A")
 # A tibble: 5 × 1
   A    
   <chr>
@@ -729,7 +728,7 @@ Joining with `by = join_by(type, year, size)`
 3 a    
 4 b    
 5 d    
-> df %>% extract(x, c("A", "B"), "([[:alnum:]]+)-([[:alnum:]]+)")
+> df |> extract(x, c("A", "B"), "([[:alnum:]]+)-([[:alnum:]]+)")
 # A tibble: 5 × 2
   A     B    
   <chr> <chr>
@@ -740,7 +739,7 @@ Joining with `by = join_by(type, year, size)`
 5 d     e    
 > 
 > # Now recommended
-> df %>%
+> df |>
 +   separate_wider_regex(
 +     x,
 +     patterns = c(A = "[[:alnum:]]+", "-", B = "[[:alnum:]]+")
@@ -755,7 +754,7 @@ Joining with `by = join_by(type, year, size)`
 5 d     e    
 > 
 > # If no match, NA:
-> df %>% extract(x, c("A", "B"), "([a-d]+)-([a-d]+)")
+> df |> extract(x, c("A", "B"), "([a-d]+)-([a-d]+)")
 # A tibble: 5 × 2
   A     B    
   <chr> <chr>
@@ -801,7 +800,7 @@ Joining with `by = join_by(type, year, size)`
 +   "Q4",      NA,    49094
 + )
 > # `fill()` defaults to replacing missing data from top to bottom
-> sales %>% fill(year)
+> sales |> fill(year)
 # A tibble: 16 × 3
    quarter  year sales
    <chr>   <dbl> <dbl>
@@ -841,7 +840,7 @@ Joining with `by = join_by(type, year, size)`
 + )
 > 
 > # For values that are missing above you can use `.direction = "up"`
-> tidy_pets %>%
+> tidy_pets |>
 +   fill(pet_type, .direction = "up")
 # A tibble: 12 × 3
     rank pet_type breed                
@@ -877,12 +876,11 @@ Joining with `by = join_by(type, year, size)`
 +   3, "Danielle",    "Observer",   NA
 + )
 > 
-> # The values are inconsistently missing by position within the group
-> # Use .direction = "downup" to fill missing values in both directions
-> squirrels %>%
-+   dplyr::group_by(group) %>%
-+   fill(n_squirrels, .direction = "downup") %>%
-+   dplyr::ungroup()
+> # The values are inconsistently missing by position within the `group`.
+> # Use `.direction = "downup"` to fill missing values in both directions
+> # and `.by = group` to apply the fill per group.
+> squirrels |>
++   fill(n_squirrels, .direction = "downup", .by = group)
 # A tibble: 12 × 4
    group name     role        n_squirrels
    <dbl> <chr>    <chr>             <dbl>
@@ -899,7 +897,27 @@ Joining with `by = join_by(type, year, size)`
 11     3 Emily    Observer              9
 12     3 Danielle Observer              9
 > 
-> # Using `.direction = "updown"` accomplishes the same goal in this example
+> # If you want, you can also supply a data frame grouped with `group_by()`,
+> # but don't forget to `ungroup()`!
+> squirrels |>
++   dplyr::group_by(group) |>
++   fill(n_squirrels, .direction = "downup") |>
++   dplyr::ungroup()
+# A tibble: 12 × 4
+   group name     role        n_squirrels
+   <dbl> <chr>    <chr>             <dbl>
+ 1     1 Sam      Observer              8
+ 2     1 Mara     Scorekeeper           8
+ 3     1 Jesse    Observer              8
+ 4     1 Tom      Observer              8
+ 5     2 Mike     Observer             14
+ 6     2 Rachael  Observer             14
+ 7     2 Sydekea  Scorekeeper          14
+ 8     2 Gabriela Observer             14
+ 9     3 Derrick  Observer              9
+10     3 Kara     Scorekeeper           9
+11     3 Emily    Observer              9
+12     3 Danielle Observer              9
 > 
 > 
 > 
@@ -955,7 +973,7 @@ Joining with `by = join_by(type, year, size)`
  9 2009-01-09 X      0.576
 10 2009-01-10 X     -0.305
 # ℹ 20 more rows
-> stocks %>% gather("stock", "price", -time)
+> stocks |> gather("stock", "price", -time)
 # A tibble: 30 × 3
    time       stock  price
    <date>     <chr>  <dbl>
@@ -1046,7 +1064,7 @@ Joining with `by = join_by(type, year, size)`
 2 Dory      <named list [3]>
 > 
 > # Extract only specified components
-> df %>% hoist(metadata,
+> df |> hoist(metadata,
 +   "species",
 +   first_film = list("films", 1L),
 +   third_film = list("films", 3L)
@@ -1076,7 +1094,7 @@ Joining with `by = join_by(type, year, size)`
 > # Specify variables to nest using name-variable pairs.
 > # Note that we get one row of output for each unique combination of
 > # non-nested variables.
-> df %>% nest(data = c(y, z))
+> df |> nest(data = c(y, z))
 # A tibble: 3 × 2
       x data            
   <dbl> <list>          
@@ -1085,7 +1103,7 @@ Joining with `by = join_by(type, year, size)`
 3     3 <tibble [1 × 2]>
 > 
 > # Specify variables to nest by (rather than variables to nest) using `.by`
-> df %>% nest(.by = x)
+> df |> nest(.by = x)
 # A tibble: 3 × 2
       x data            
   <dbl> <list>          
@@ -1095,7 +1113,7 @@ Joining with `by = join_by(type, year, size)`
 > 
 > # In this case, since `...` isn't used you can specify the resulting column
 > # name with `.key`
-> df %>% nest(.by = x, .key = "cols")
+> df |> nest(.by = x, .key = "cols")
 # A tibble: 3 × 2
       x cols            
   <dbl> <list>          
@@ -1104,7 +1122,7 @@ Joining with `by = join_by(type, year, size)`
 3     3 <tibble [1 × 2]>
 > 
 > # Use tidyselect syntax and helpers, just like in `dplyr::select()`
-> df %>% nest(data = any_of(c("y", "z")))
+> df |> nest(data = any_of(c("y", "z")))
 # A tibble: 3 × 2
       x data            
   <dbl> <list>          
@@ -1115,7 +1133,7 @@ Joining with `by = join_by(type, year, size)`
 > # `...` and `.by` can be used together to drop columns you no longer need,
 > # or to include the columns you are nesting by in the inner data frame too.
 > # This drops `z`:
-> df %>% nest(data = y, .by = x)
+> df |> nest(data = y, .by = x)
 # A tibble: 3 × 2
       x data            
   <dbl> <list>          
@@ -1123,7 +1141,7 @@ Joining with `by = join_by(type, year, size)`
 2     2 <tibble [2 × 1]>
 3     3 <tibble [1 × 1]>
 > # This includes `x` in the inner data frame:
-> df %>% nest(data = everything(), .by = x)
+> df |> nest(data = everything(), .by = x)
 # A tibble: 3 × 2
       x data            
   <dbl> <list>          
@@ -1132,7 +1150,7 @@ Joining with `by = join_by(type, year, size)`
 3     3 <tibble [1 × 3]>
 > 
 > # Multiple nesting structures can be specified at once
-> iris %>%
+> iris |>
 +   nest(petal = starts_with("Petal"), sepal = starts_with("Sepal"))
 # A tibble: 3 × 3
   Species    petal             sepal            
@@ -1140,7 +1158,7 @@ Joining with `by = join_by(type, year, size)`
 1 setosa     <tibble [50 × 2]> <tibble [50 × 2]>
 2 versicolor <tibble [50 × 2]> <tibble [50 × 2]>
 3 virginica  <tibble [50 × 2]> <tibble [50 × 2]>
-> iris %>%
+> iris |>
 +   nest(width = contains("Width"), length = contains("Length"))
 # A tibble: 3 × 3
   Species    width             length           
@@ -1150,8 +1168,8 @@ Joining with `by = join_by(type, year, size)`
 3 virginica  <tibble [50 × 2]> <tibble [50 × 2]>
 > 
 > # Nesting a grouped data frame nests all variables apart from the group vars
-> fish_encounters %>%
-+   dplyr::group_by(fish) %>%
+> fish_encounters |>
++   dplyr::group_by(fish) |>
 +   nest()
 # A tibble: 19 × 2
 # Groups:   fish [19]
@@ -1178,7 +1196,7 @@ Joining with `by = join_by(type, year, size)`
 19 4865  <tibble [3 × 2]> 
 > 
 > # That is similar to `nest(.by = )`, except here the result isn't grouped
-> fish_encounters %>%
+> fish_encounters |>
 +   nest(.by = fish)
 # A tibble: 19 × 2
    fish  data             
@@ -1204,8 +1222,8 @@ Joining with `by = join_by(type, year, size)`
 19 4865  <tibble [3 × 2]> 
 > 
 > # Nesting is often useful for creating per group models
-> mtcars %>%
-+   nest(.by = cyl) %>%
+> mtcars |>
++   nest(.by = cyl) |>
 +   dplyr::mutate(models = lapply(data, function(df) lm(mpg ~ wt, data = df)))
 # A tibble: 3 × 3
     cyl data               models
@@ -1230,13 +1248,13 @@ Joining with `by = join_by(type, year, size)`
 > 
 > # Nest and unnest are inverses
 > df <- tibble(x = c(1, 1, 2), y = 3:1)
-> df %>% nest_legacy(y)
+> df |> nest_legacy(y)
 # A tibble: 2 × 2
       x data            
   <dbl> <list>          
 1     1 <tibble [2 × 1]>
 2     2 <tibble [1 × 1]>
-> df %>% nest_legacy(y) %>% unnest_legacy()
+> df |> nest_legacy(y) |> unnest_legacy()
 # A tibble: 3 × 2
       x     y
   <dbl> <int>
@@ -1245,14 +1263,14 @@ Joining with `by = join_by(type, year, size)`
 3     2     1
 > 
 > # nesting -------------------------------------------------------------------
-> as_tibble(iris) %>% nest_legacy(!Species)
+> as_tibble(iris) |> nest_legacy(!Species)
 # A tibble: 3 × 2
   Species    data             
   <fct>      <list>           
 1 setosa     <tibble [50 × 4]>
 2 versicolor <tibble [50 × 4]>
 3 virginica  <tibble [50 × 4]>
-> as_tibble(chickwts) %>% nest_legacy(weight)
+> as_tibble(chickwts) |> nest_legacy(weight)
 # A tibble: 6 × 2
   feed      data             
   <fct>     <list>           
@@ -1271,7 +1289,7 @@ Joining with `by = join_by(type, year, size)`
 +     tibble(z = 3:4)
 +   )
 + )
-> df %>% unnest_legacy(y)
+> df |> unnest_legacy(y)
 # A tibble: 3 × 2
       x     z
   <int> <dbl>
@@ -1285,7 +1303,7 @@ Joining with `by = join_by(type, year, size)`
 +   b = list(1:2, 3),
 +   c = c(11, 22)
 + )
-> df %>% unnest_legacy(a, b)
+> df |> unnest_legacy(a, b)
 # A tibble: 3 × 3
       c a         b
   <dbl> <chr> <dbl>
@@ -1293,7 +1311,7 @@ Joining with `by = join_by(type, year, size)`
 2    11 b         2
 3    22 c         3
 > # If you omit the column names, it'll unnest all list-cols
-> df %>% unnest_legacy()
+> df |> unnest_legacy()
 # A tibble: 3 × 3
       c a         b
   <dbl> <chr> <dbl>
@@ -1326,14 +1344,14 @@ Joining with `by = join_by(type, year, size)`
 1     1     4     7     1
 2     2     5     8     2
 3     3     6     9     3
-> df %>% pack(x = starts_with("x"))
+> df |> pack(x = starts_with("x"))
 # A tibble: 3 × 2
       y  x$x1   $x2   $x3
   <int> <int> <int> <int>
 1     1     1     4     7
 2     2     2     5     8
 3     3     3     6     9
-> df %>% pack(x = c(x1, x2, x3), y = y)
+> df |> pack(x = c(x1, x2, x3), y = y)
 # A tibble: 3 × 2
    x$x1   $x2   $x3   y$y
   <int> <int> <int> <int>
@@ -1343,8 +1361,8 @@ Joining with `by = join_by(type, year, size)`
 > 
 > # .names_sep allows you to strip off common prefixes; this
 > # acts as a natural inverse to name_sep in unpack()
-> iris %>%
-+   as_tibble() %>%
+> iris |>
++   as_tibble() |>
 +   pack(
 +     Sepal = starts_with("Sepal"),
 +     Petal = starts_with("Petal"),
@@ -1378,21 +1396,21 @@ Joining with `by = join_by(type, year, size)`
 1     1     1     3 a     0.266 TRUE 
 2     2     2     2 b     0.372 FALSE
 3     3     3     1 c     0.573 NA   
-> df %>% unpack(y)
+> df |> unpack(y)
 # A tibble: 3 × 4
       x     a     b z$X      $Y $Z   
   <int> <int> <int> <chr> <dbl> <lgl>
 1     1     1     3 a     0.266 TRUE 
 2     2     2     2 b     0.372 FALSE
 3     3     3     1 c     0.573 NA   
-> df %>% unpack(c(y, z))
+> df |> unpack(c(y, z))
 # A tibble: 3 × 6
       x     a     b X         Y Z    
   <int> <int> <int> <chr> <dbl> <lgl>
 1     1     1     3 a     0.266 TRUE 
 2     2     2     2 b     0.372 FALSE
 3     3     3     1 c     0.573 NA   
-> df %>% unpack(c(y, z), names_sep = "_")
+> df |> unpack(c(y, z), names_sep = "_")
 # A tibble: 3 × 6
       x   y_a   y_b z_X     z_Y z_Z  
   <int> <int> <int> <chr> <dbl> <lgl>
@@ -1441,7 +1459,7 @@ Joining with `by = join_by(type, year, size)`
 18 Unaffil…     217       299       374       365       341       528        407
 # ℹ 3 more variables: `$100-150k` <dbl>, `>150k` <dbl>,
 #   `Don't know/refused` <dbl>
-> relig_income %>%
+> relig_income |>
 +   pivot_longer(!religion, names_to = "income", values_to = "count")
 # A tibble: 180 × 3
    religion income             count
@@ -1481,7 +1499,7 @@ Joining with `by = join_by(type, year, size)`
 #   wk25 <dbl>, wk26 <dbl>, wk27 <dbl>, wk28 <dbl>, wk29 <dbl>, wk30 <dbl>,
 #   wk31 <dbl>, wk32 <dbl>, wk33 <dbl>, wk34 <dbl>, wk35 <dbl>, wk36 <dbl>,
 #   wk37 <dbl>, wk38 <dbl>, wk39 <dbl>, wk40 <dbl>, wk41 <dbl>, wk42 <dbl>, …
-> billboard %>%
+> billboard |>
 +   pivot_longer(
 +     cols = starts_with("wk"),
 +     names_to = "week",
@@ -1505,7 +1523,7 @@ Joining with `by = join_by(type, year, size)`
 # ℹ 5,297 more rows
 > 
 > # Multiple variables stored in column names
-> who %>% pivot_longer(
+> who |> pivot_longer(
 +   cols = new_sp_m014:newrel_f65,
 +   names_to = c("diagnosis", "gender", "age"),
 +   names_pattern = "new_?(.*)_(.)(.*)",
@@ -1542,7 +1560,7 @@ Joining with `by = join_by(type, year, size)`
 9  12 12 12  8 10.84 9.13  8.15  5.56
 10  7  7  7  8  4.82 7.26  6.42  7.91
 11  5  5  5  8  5.68 4.74  5.73  6.89
-> anscombe %>%
+> anscombe |>
 +   pivot_longer(
 +     everything(),
 +     cols_vary = "slowest",
@@ -1583,7 +1601,7 @@ Joining with `by = join_by(type, year, size)`
 > 
 > # Use `build_longer_spec()` to build `spec` using similar syntax to `pivot_longer()`
 > # and run `pivot_longer_spec()` based on `spec`.
-> spec <- relig_income %>% build_longer_spec(
+> spec <- relig_income |> build_longer_spec(
 +   cols = !religion,
 +   names_to = "income",
 +   values_to = "count"
@@ -1620,7 +1638,7 @@ Joining with `by = join_by(type, year, size)`
 # ℹ 170 more rows
 > 
 > # Is equivalent to:
-> relig_income %>% pivot_longer(
+> relig_income |> pivot_longer(
 +   cols = !religion,
 +   names_to = "income",
 +   values_to = "count"
@@ -1671,7 +1689,7 @@ Joining with `by = join_by(type, year, size)`
  9 4842  BCW2        1
 10 4842  MAE         1
 # ℹ 104 more rows
-> fish_encounters %>%
+> fish_encounters |>
 +   pivot_wider(names_from = station, values_from = seen)
 # A tibble: 19 × 12
    fish  Release I80_1 Lisbon  Rstr Base_TD   BCE   BCW  BCE2  BCW2   MAE   MAW
@@ -1696,7 +1714,7 @@ Joining with `by = join_by(type, year, size)`
 18 4864        1     1     NA    NA      NA    NA    NA    NA    NA    NA    NA
 19 4865        1     1      1    NA      NA    NA    NA    NA    NA    NA    NA
 > # Fill in missing values
-> fish_encounters %>%
+> fish_encounters |>
 +   pivot_wider(names_from = station, values_from = seen, values_fill = 0)
 # A tibble: 19 × 12
    fish  Release I80_1 Lisbon  Rstr Base_TD   BCE   BCW  BCE2  BCW2   MAE   MAW
@@ -1737,7 +1755,7 @@ Joining with `by = join_by(type, year, size)`
  9 06    California income      29454   109
 10 06    California rent         1358     3
 # ℹ 94 more rows
-> us_rent_income %>%
+> us_rent_income |>
 +   pivot_wider(
 +     names_from = variable,
 +     values_from = c(estimate, moe)
@@ -1759,7 +1777,7 @@ Joining with `by = join_by(type, year, size)`
 > 
 > # You can control whether `names_from` values vary fastest or slowest
 > # relative to the `values_from` column names using `names_vary`.
-> us_rent_income %>%
+> us_rent_income |>
 +   pivot_wider(
 +     names_from = variable,
 +     values_from = c(estimate, moe),
@@ -1782,7 +1800,7 @@ Joining with `by = join_by(type, year, size)`
 > 
 > # When there are multiple `names_from` or `values_from`, you can use
 > # use `names_sep` or `names_glue` to control the output variable names
-> us_rent_income %>%
+> us_rent_income |>
 +   pivot_wider(
 +     names_from = variable,
 +     names_sep = ".",
@@ -1802,7 +1820,7 @@ Joining with `by = join_by(type, year, size)`
  9 11    District of Columbia           43198          1424        681       17
 10 12    Florida                        25952          1077         70        3
 # ℹ 42 more rows
-> us_rent_income %>%
+> us_rent_income |>
 +   pivot_wider(
 +     names_from = variable,
 +     names_glue = "{variable}_{.value}",
@@ -1840,7 +1858,7 @@ Joining with `by = join_by(type, year, size)`
  9 A     L           67
 10 A     M           18
 # ℹ 44 more rows
-> warpbreaks %>%
+> warpbreaks |>
 +   pivot_wider(
 +     names_from = wool,
 +     values_from = breaks,
@@ -1856,7 +1874,7 @@ Joining with `by = join_by(type, year, size)`
 > # Can pass an anonymous function to `values_fn` when you
 > # need to supply additional arguments
 > warpbreaks$breaks[1] <- NA
-> warpbreaks %>%
+> warpbreaks |>
 +   pivot_wider(
 +     names_from = wool,
 +     values_from = breaks,
@@ -1901,7 +1919,7 @@ Joining with `by = join_by(type, year, size)`
  9 06    California income      29454   109
 10 06    California rent         1358     3
 # ℹ 94 more rows
-> spec1 <- us_rent_income %>%
+> spec1 <- us_rent_income |>
 +   build_wider_spec(names_from = variable, values_from = c(estimate, moe))
 > spec1
 # A tibble: 4 × 3
@@ -1912,7 +1930,7 @@ Joining with `by = join_by(type, year, size)`
 3 moe_income      moe      income  
 4 moe_rent        moe      rent    
 > 
-> us_rent_income %>%
+> us_rent_income |>
 +   pivot_wider_spec(spec1)
 # A tibble: 52 × 6
    GEOID NAME                 estimate_income estimate_rent moe_income moe_rent
@@ -1930,7 +1948,7 @@ Joining with `by = join_by(type, year, size)`
 # ℹ 42 more rows
 > 
 > # Is equivalent to
-> us_rent_income %>%
+> us_rent_income |>
 +   pivot_wider(names_from = variable, values_from = c(estimate, moe))
 # A tibble: 52 × 6
    GEOID NAME                 estimate_income estimate_rent moe_income moe_rent
@@ -1956,7 +1974,7 @@ Joining with `by = join_by(type, year, size)`
 +   variable = c("income", "rent", "income", "rent")
 + )
 > 
-> us_rent_income %>%
+> us_rent_income |>
 +   pivot_wider_spec(spec2)
 # A tibble: 52 × 6
    GEOID NAME                 income  rent income_moe rent_moe
@@ -1989,7 +2007,7 @@ Joining with `by = join_by(type, year, size)`
 > 
 > # Replace NAs in a data frame
 > df <- tibble(x = c(1, 2, NA), y = c("a", NA, "b"))
-> df %>% replace_na(list(x = 0, y = "unknown"))
+> df |> replace_na(list(x = 0, y = "unknown"))
 # A tibble: 3 × 2
       x y      
   <dbl> <chr>  
@@ -1998,7 +2016,7 @@ Joining with `by = join_by(type, year, size)`
 3     0 b      
 > 
 > # Replace NAs in a vector
-> df %>% dplyr::mutate(x = replace_na(x, 0))
+> df |> dplyr::mutate(x = replace_na(x, 0))
 # A tibble: 3 × 2
       x y    
   <dbl> <chr>
@@ -2006,14 +2024,14 @@ Joining with `by = join_by(type, year, size)`
 2     2 <NA> 
 3     0 b    
 > # OR
-> df$x %>% replace_na(0)
+> df$x |> replace_na(0)
 [1] 1 2 0
-> df$y %>% replace_na("unknown")
+> df$y |> replace_na("unknown")
 [1] "a"       "unknown" "b"      
 > 
 > # Replace NULLs in a list: NULLs are the list-col equivalent of NAs
 > df_list <- tibble(z = list(1:5, NULL, 10:20))
-> df_list %>% replace_na(list(z = list(5)))
+> df_list |> replace_na(list(z = list(5)))
 # A tibble: 3 × 1
   z         
   <list>    
@@ -2038,7 +2056,7 @@ Joining with `by = join_by(type, year, size)`
 > 
 > # If you want to split by any non-alphanumeric value (the default):
 > df <- tibble(x = c(NA, "x.y", "x.z", "y.z"))
-> df %>% separate(x, c("A", "B"))
+> df |> separate(x, c("A", "B"))
 # A tibble: 4 × 2
   A     B    
   <chr> <chr>
@@ -2048,7 +2066,7 @@ Joining with `by = join_by(type, year, size)`
 4 y     z    
 > 
 > # If you just want the second variable:
-> df %>% separate(x, c(NA, "B"))
+> df |> separate(x, c(NA, "B"))
 # A tibble: 4 × 1
   B    
   <chr>
@@ -2058,7 +2076,7 @@ Joining with `by = join_by(type, year, size)`
 4 z    
 > 
 > # We now recommend separate_wider_delim() instead:
-> df %>% separate_wider_delim(x, ".", names = c("A", "B"))
+> df |> separate_wider_delim(x, ".", names = c("A", "B"))
 # A tibble: 4 × 2
   A     B    
   <chr> <chr>
@@ -2066,7 +2084,7 @@ Joining with `by = join_by(type, year, size)`
 2 x     y    
 3 x     z    
 4 y     z    
-> df %>% separate_wider_delim(x, ".", names = c(NA, "B"))
+> df |> separate_wider_delim(x, ".", names = c(NA, "B"))
 # A tibble: 4 × 1
   B    
   <chr>
@@ -2079,7 +2097,7 @@ Joining with `by = join_by(type, year, size)`
 > # If every row doesn't split into the same number of pieces, use
 > # the extra and fill arguments to control what happens:
 > df <- tibble(x = c("x", "x y", "x y z", NA))
-> df %>% separate(x, c("a", "b"))
+> df |> separate(x, c("a", "b"))
 Warning: Expected 2 pieces. Additional pieces discarded in 1 rows [3].
 Warning: Expected 2 pieces. Missing pieces filled with `NA` in 1 rows [1].
 # A tibble: 4 × 2
@@ -2090,7 +2108,7 @@ Warning: Expected 2 pieces. Missing pieces filled with `NA` in 1 rows [1].
 3 x     y    
 4 <NA>  <NA> 
 > # The same behaviour as previous, but drops the c without warnings:
-> df %>% separate(x, c("a", "b"), extra = "drop", fill = "right")
+> df |> separate(x, c("a", "b"), extra = "drop", fill = "right")
 # A tibble: 4 × 2
   a     b    
   <chr> <chr>
@@ -2099,7 +2117,7 @@ Warning: Expected 2 pieces. Missing pieces filled with `NA` in 1 rows [1].
 3 x     y    
 4 <NA>  <NA> 
 > # Opposite of previous, keeping the c and filling left:
-> df %>% separate(x, c("a", "b"), extra = "merge", fill = "left")
+> df |> separate(x, c("a", "b"), extra = "merge", fill = "left")
 # A tibble: 4 × 2
   a     b    
   <chr> <chr>
@@ -2108,7 +2126,7 @@ Warning: Expected 2 pieces. Missing pieces filled with `NA` in 1 rows [1].
 3 x     y z  
 4 <NA>  <NA> 
 > # Or you can keep all three:
-> df %>% separate(x, c("a", "b", "c"))
+> df |> separate(x, c("a", "b", "c"))
 Warning: Expected 3 pieces. Missing pieces filled with `NA` in 2 rows [1, 2].
 # A tibble: 4 × 3
   a     b     c    
@@ -2120,7 +2138,7 @@ Warning: Expected 3 pieces. Missing pieces filled with `NA` in 2 rows [1, 2].
 > 
 > # To only split a specified number of times use extra = "merge":
 > df <- tibble(x = c("x: 123", "y: error: 7"))
-> df %>% separate(x, c("key", "value"), ": ", extra = "merge")
+> df |> separate(x, c("key", "value"), ": ", extra = "merge")
 # A tibble: 2 × 2
   key   value   
   <chr> <chr>   
@@ -2130,12 +2148,12 @@ Warning: Expected 3 pieces. Missing pieces filled with `NA` in 2 rows [1, 2].
 > # Controlling column types --------------------------------------------------
 > # convert = TRUE detects column classes:
 > df <- tibble(x = c("x:1", "x:2", "y:4", "z", NA))
-> df %>% separate(x, c("key", "value"), ":") %>% str()
+> df |> separate(x, c("key", "value"), ":") |> str()
 Warning: Expected 2 pieces. Missing pieces filled with `NA` in 1 rows [4].
 tibble [5 × 2] (S3: tbl_df/tbl/data.frame)
  $ key  : chr [1:5] "x" "x" "y" "z" ...
  $ value: chr [1:5] "1" "2" "4" NA ...
-> df %>% separate(x, c("key", "value"), ":", convert = TRUE) %>% str()
+> df |> separate(x, c("key", "value"), ":", convert = TRUE) |> str()
 Warning: Expected 2 pieces. Missing pieces filled with `NA` in 1 rows [4].
 tibble [5 × 2] (S3: tbl_df/tbl/data.frame)
  $ key  : chr [1:5] "x" "x" "y" "z" ...
@@ -2156,7 +2174,7 @@ tibble [5 × 2] (S3: tbl_df/tbl/data.frame)
 > ### ** Examples
 > 
 > df <- tibble(id = 1:4, x = c("x", "x y", "x y z", NA))
-> df %>% separate_longer_delim(x, delim = " ")
+> df |> separate_longer_delim(x, delim = " ")
 # A tibble: 7 × 2
      id x    
   <int> <chr>
@@ -2170,7 +2188,7 @@ tibble [5 × 2] (S3: tbl_df/tbl/data.frame)
 > 
 > # You can separate multiple columns at once if they have the same structure
 > df <- tibble(id = 1:3, x = c("x", "x y", "x y z"), y = c("a", "a b", "a b c"))
-> df %>% separate_longer_delim(c(x, y), delim = " ")
+> df |> separate_longer_delim(c(x, y), delim = " ")
 # A tibble: 6 × 3
      id x     y    
   <int> <chr> <chr>
@@ -2183,7 +2201,7 @@ tibble [5 × 2] (S3: tbl_df/tbl/data.frame)
 > 
 > # Or instead split by a fixed length
 > df <- tibble(id = 1:3, x = c("ab", "def", ""))
-> df %>% separate_longer_position(x, 1)
+> df |> separate_longer_position(x, 1)
 # A tibble: 5 × 2
      id x    
   <int> <chr>
@@ -2192,14 +2210,14 @@ tibble [5 × 2] (S3: tbl_df/tbl/data.frame)
 3     2 d    
 4     2 e    
 5     2 f    
-> df %>% separate_longer_position(x, 2)
+> df |> separate_longer_position(x, 2)
 # A tibble: 3 × 2
      id x    
   <int> <chr>
 1     1 ab   
 2     2 de   
 3     2 f    
-> df %>% separate_longer_position(x, 2, keep_empty = TRUE)
+> df |> separate_longer_position(x, 2, keep_empty = TRUE)
 # A tibble: 4 × 2
      id x    
   <int> <chr>
@@ -2239,7 +2257,7 @@ tibble [5 × 2] (S3: tbl_df/tbl/data.frame)
 6     3 h         6
 > 
 > # Now recommended
-> df %>%
+> df |>
 +   separate_longer_delim(c(y, z), delim = ",")
 # A tibble: 6 × 3
       x y     z    
@@ -2269,7 +2287,7 @@ tibble [5 × 2] (S3: tbl_df/tbl/data.frame)
 > df <- tibble(id = 1:3, x = c("m-123", "f-455", "f-123"))
 > # There are three basic ways to split up a string into pieces:
 > # 1. with a delimiter
-> df %>% separate_wider_delim(x, delim = "-", names = c("gender", "unit"))
+> df |> separate_wider_delim(x, delim = "-", names = c("gender", "unit"))
 # A tibble: 3 × 3
      id gender unit 
   <int> <chr>  <chr>
@@ -2277,7 +2295,7 @@ tibble [5 × 2] (S3: tbl_df/tbl/data.frame)
 2     2 f      455  
 3     3 f      123  
 > # 2. by length
-> df %>% separate_wider_position(x, c(gender = 1, 1, unit = 3))
+> df |> separate_wider_position(x, c(gender = 1, 1, unit = 3))
 # A tibble: 3 × 3
      id gender unit 
   <int> <chr>  <chr>
@@ -2285,7 +2303,7 @@ tibble [5 × 2] (S3: tbl_df/tbl/data.frame)
 2     2 f      455  
 3     3 f      123  
 > # 3. defining each component with a regular expression
-> df %>% separate_wider_regex(x, c(gender = ".", ".", unit = "\\d+"))
+> df |> separate_wider_regex(x, c(gender = ".", ".", unit = "\\d+"))
 # A tibble: 3 × 3
      id gender unit 
   <int> <chr>  <chr>
@@ -2296,13 +2314,13 @@ tibble [5 × 2] (S3: tbl_df/tbl/data.frame)
 > # Sometimes you split on the "last" delimiter
 > df <- tibble(var = c("race_1", "race_2", "age_bucket_1", "age_bucket_2"))
 > # _delim won't help because it always splits on the first delimiter
-> try(df %>% separate_wider_delim(var, "_", names = c("var1", "var2")))
-Error in separate_wider_delim(., var, "_", names = c("var1", "var2")) : 
+> try(df |> separate_wider_delim(var, "_", names = c("var1", "var2")))
+Error in separate_wider_delim(df, var, "_", names = c("var1", "var2")) : 
   Expected 2 pieces in each element of `var`.
 ! 2 values were too long.
 ℹ Use `too_many = "debug"` to diagnose the problem.
 ℹ Use `too_many = "drop"/"merge"` to silence this message.
-> df %>% separate_wider_delim(var, "_", names = c("var1", "var2"), too_many = "merge")
+> df |> separate_wider_delim(var, "_", names = c("var1", "var2"), too_many = "merge")
 # A tibble: 4 × 2
   var1  var2    
   <chr> <chr>   
@@ -2311,7 +2329,7 @@ Error in separate_wider_delim(., var, "_", names = c("var1", "var2")) :
 3 age   bucket_1
 4 age   bucket_2
 > # Instead, you can use _regex
-> df %>% separate_wider_regex(var, c(var1 = ".*", "_", var2 = ".*"))
+> df |> separate_wider_regex(var, c(var1 = ".*", "_", var2 = ".*"))
 # A tibble: 4 × 2
   var1       var2 
   <chr>      <chr>
@@ -2320,7 +2338,7 @@ Error in separate_wider_delim(., var, "_", names = c("var1", "var2")) :
 3 age_bucket 1    
 4 age_bucket 2    
 > # this works because * is greedy; you can mimic the _delim behaviour with .*?
-> df %>% separate_wider_regex(var, c(var1 = ".*?", "_", var2 = ".*"))
+> df |> separate_wider_regex(var, c(var1 = ".*?", "_", var2 = ".*"))
 # A tibble: 4 × 2
   var1  var2    
   <chr> <chr>   
@@ -2331,7 +2349,7 @@ Error in separate_wider_delim(., var, "_", names = c("var1", "var2")) :
 > 
 > # If the number of components varies, it's most natural to split into rows
 > df <- tibble(id = 1:4, x = c("x", "x y", "x y z", NA))
-> df %>% separate_longer_delim(x, delim = " ")
+> df |> separate_longer_delim(x, delim = " ")
 # A tibble: 7 × 2
      id x    
   <int> <chr>
@@ -2344,8 +2362,8 @@ Error in separate_wider_delim(., var, "_", names = c("var1", "var2")) :
 7     4 <NA> 
 > # But separate_wider_delim() provides some tools to deal with the problem
 > # The default behaviour tells you that there's a problem
-> try(df %>% separate_wider_delim(x, delim = " ", names = c("a", "b")))
-Error in separate_wider_delim(., x, delim = " ", names = c("a", "b")) : 
+> try(df |> separate_wider_delim(x, delim = " ", names = c("a", "b")))
+Error in separate_wider_delim(df, x, delim = " ", names = c("a", "b")) : 
   Expected 2 pieces in each element of `x`.
 ! 1 value was too short.
 ℹ Use `too_few = "debug"` to diagnose the problem.
@@ -2354,7 +2372,7 @@ Error in separate_wider_delim(., x, delim = " ", names = c("a", "b")) :
 ℹ Use `too_many = "debug"` to diagnose the problem.
 ℹ Use `too_many = "drop"/"merge"` to silence this message.
 > # You can get additional insight by using the debug options
-> df %>%
+> df |>
 +   separate_wider_delim(
 +     x,
 +     delim = " ",
@@ -2372,7 +2390,7 @@ Warning: Debug mode activated: adding variables `x_ok`, `x_pieces`, and `x_remai
 4     4 <NA>  <NA>  <NA>  TRUE        NA <NA>       
 > 
 > # But you can suppress the warnings
-> df %>%
+> df |>
 +   separate_wider_delim(
 +     x,
 +     delim = " ",
@@ -2389,7 +2407,7 @@ Warning: Debug mode activated: adding variables `x_ok`, `x_pieces`, and `x_remai
 4     4 <NA>  <NA> 
 > 
 > # Or choose to automatically name the columns, producing as many as needed
-> df %>% separate_wider_delim(x, delim = " ", names_sep = "", too_few = "align_start")
+> df |> separate_wider_delim(x, delim = " ", names_sep = "", too_few = "align_start")
 # A tibble: 4 × 4
      id x1    x2    x3   
   <int> <chr> <chr> <chr>
@@ -2418,8 +2436,8 @@ Warning: Debug mode activated: adding variables `x_ok`, `x_pieces`, and `x_remai
 +   Y = rnorm(10, 0, 2),
 +   Z = rnorm(10, 0, 4)
 + )
-> stocksm <- stocks %>% gather(stock, price, -time)
-> stocksm %>% spread(stock, price)
+> stocksm <- stocks |> gather(stock, price, -time)
+> stocksm |> spread(stock, price)
 # A tibble: 10 × 4
    time            X       Y      Z
    <date>      <dbl>   <dbl>  <dbl>
@@ -2433,7 +2451,7 @@ Warning: Debug mode activated: adding variables `x_ok`, `x_pieces`, and `x_remai
  8 2009-01-08  0.738  1.89   -5.88 
  9 2009-01-09  0.576  1.64   -1.91 
 10 2009-01-10 -0.305  1.19    1.67 
-> stocksm %>% spread(time, price)
+> stocksm |> spread(time, price)
 # A tibble: 3 × 11
   stock `2009-01-01` `2009-01-02` `2009-01-03` `2009-01-04` `2009-01-05`
   <chr>        <dbl>        <dbl>        <dbl>        <dbl>        <dbl>
@@ -2445,8 +2463,8 @@ Warning: Debug mode activated: adding variables `x_ok`, `x_pieces`, and `x_remai
 > 
 > # Spread and gather are complements
 > df <- tibble(x = c("a", "b"), y = c(3, 4), z = c(5, 6))
-> df %>%
-+   spread(x, y) %>%
+> df |>
++   spread(x, y) |>
 +   gather("x", "y", a:b, na.rm = TRUE)
 # A tibble: 2 × 3
       z x         y
@@ -2460,13 +2478,13 @@ Warning: Debug mode activated: adding variables `x_ok`, `x_pieces`, and `x_remai
 +   var = rep(c("Sepal.Length", "Species", "Species_num"), 2),
 +   value = c(5.1, "setosa", 1, 7.0, "versicolor", 2)
 + )
-> df %>% spread(var, value) %>% str()
+> df |> spread(var, value) |> str()
 tibble [2 × 4] (S3: tbl_df/tbl/data.frame)
  $ row         : num [1:2] 1 51
  $ Sepal.Length: chr [1:2] "5.1" "7"
  $ Species     : chr [1:2] "setosa" "versicolor"
  $ Species_num : chr [1:2] "1" "2"
-> df %>% spread(var, value, convert = TRUE) %>% str()
+> df |> spread(var, value, convert = TRUE) |> str()
 tibble [2 × 4] (S3: tbl_df/tbl/data.frame)
  $ row         : num [1:2] 1 51
  $ Sepal.Length: num [1:2] 5.1 7
@@ -2598,7 +2616,7 @@ New names:
 3 <NA>  b    
 4 <NA>  <NA> 
 > 
-> df %>% unite("z", x:y, remove = FALSE)
+> df |> unite("z", x:y, remove = FALSE)
 # A tibble: 4 × 3
   z     x     y    
   <chr> <chr> <chr>
@@ -2607,7 +2625,7 @@ New names:
 3 NA_b  <NA>  b    
 4 NA_NA <NA>  <NA> 
 > # To remove missing values:
-> df %>% unite("z", x:y, na.rm = TRUE, remove = FALSE)
+> df |> unite("z", x:y, na.rm = TRUE, remove = FALSE)
 # A tibble: 4 × 3
   z     x     y    
   <chr> <chr> <chr>
@@ -2617,8 +2635,8 @@ New names:
 4 ""    <NA>  <NA> 
 > 
 > # Separate is almost the complement of unite
-> df %>%
-+   unite("xy", x:y) %>%
+> df |>
++   unite("xy", x:y) |>
 +   separate(xy, c("x", "y"))
 # A tibble: 4 × 2
   x     y    
@@ -2654,7 +2672,7 @@ New names:
 + )
 > # unnest() recycles input rows for each row of the list-column
 > # and adds a column for each column
-> df %>% unnest(y)
+> df |> unnest(y)
 # A tibble: 4 × 4
       x     a     b     c
   <int> <dbl> <dbl> <dbl>
@@ -2665,7 +2683,7 @@ New names:
 > 
 > # input rows with 0 rows in the list-column will usually disappear,
 > # but you can keep them (generating NAs) with keep_empty = TRUE:
-> df %>% unnest(y, keep_empty = TRUE)
+> df |> unnest(y, keep_empty = TRUE)
 # A tibble: 5 × 4
       x     a     b     c
   <int> <dbl> <dbl> <dbl>
@@ -2688,7 +2706,7 @@ New names:
 +     tibble(c = 3:4, d = 5:6)
 +   )
 + )
-> df %>% unnest(c(y, z))
+> df |> unnest(c(y, z))
 # A tibble: 3 × 5
       x     a     b     c     d
   <int> <dbl> <dbl> <dbl> <dbl>
@@ -2698,8 +2716,8 @@ New names:
 > 
 > # Compare with unnesting one column at a time, which generates
 > # the Cartesian product
-> df %>%
-+   unnest(y) %>%
+> df |>
++   unnest(y) |>
 +   unnest(z)
 # A tibble: 5 × 5
       x     a     b     c     d
@@ -2730,7 +2748,7 @@ New names:
 +   x = 1:4,
 +   y = list(NULL, 1:3, 4:5, integer())
 + )
-> df %>% unnest_longer(y)
+> df |> unnest_longer(y)
 # A tibble: 5 × 2
       x     y
   <int> <int>
@@ -2742,7 +2760,7 @@ New names:
 > 
 > # Note that empty values like `NULL` and `integer()` are dropped by
 > # default. If you'd like to keep them, set `keep_empty = TRUE`.
-> df %>% unnest_longer(y, keep_empty = TRUE)
+> df |> unnest_longer(y, keep_empty = TRUE)
 # A tibble: 7 × 2
       x     y
   <int> <int>
@@ -2759,15 +2777,15 @@ New names:
 +   x = 1:2,
 +   y = list(c(a = 1, b = 2), c(a = 10, b = 11, c = 12))
 + )
-> df %>% unnest_longer(y)
+> df |> unnest_longer(y)
 # A tibble: 5 × 3
-      x     y y_id 
-  <int> <dbl> <chr>
-1     1     1 a    
-2     1     2 b    
-3     2    10 a    
-4     2    11 b    
-5     2    12 c    
+      x y_id      y
+  <int> <chr> <dbl>
+1     1 a         1
+2     1 b         2
+3     2 a        10
+4     2 b        11
+5     2 c        12
 > 
 > # Multiple columns ----------------------------------------------------------
 > # If columns are aligned, you can unnest simultaneously
@@ -2776,7 +2794,7 @@ New names:
 +   y = list(1:2, 3:4),
 +   z = list(5:6, 7:8)
 + )
-> df %>%
+> df |>
 +   unnest_longer(c(y, z))
 # A tibble: 4 × 3
       x     y     z
@@ -2788,8 +2806,8 @@ New names:
 > 
 > # This is important because sequential unnesting would generate the
 > # Cartesian product of the rows
-> df %>%
-+   unnest_longer(y) %>%
+> df |>
++   unnest_longer(y) |>
 +   unnest_longer(z)
 # A tibble: 8 × 3
       x     y     z
@@ -2844,7 +2862,7 @@ New names:
 2 Dory      <named list [3]>
 > 
 > # Turn all components of metadata into columns
-> df %>% unnest_wider(metadata)
+> df |> unnest_wider(metadata)
 # A tibble: 2 × 4
   character species   color films    
   <chr>     <chr>     <chr> <list>   
@@ -2852,13 +2870,13 @@ New names:
 2 Dory      blue tang blue  <chr [2]>
 > 
 > # Choose not to simplify list-cols of length-1 elements
-> df %>% unnest_wider(metadata, simplify = FALSE)
+> df |> unnest_wider(metadata, simplify = FALSE)
 # A tibble: 2 × 4
   character species   color     films    
   <chr>     <list>    <list>    <list>   
 1 Toothless <chr [1]> <chr [1]> <chr [3]>
 2 Dory      <chr [1]> <chr [1]> <chr [2]>
-> df %>% unnest_wider(metadata, simplify = list(color = FALSE))
+> df |> unnest_wider(metadata, simplify = list(color = FALSE))
 # A tibble: 2 × 4
   character species   color     films    
   <chr>     <chr>     <list>    <list>   
@@ -2871,7 +2889,7 @@ New names:
 +   y = list(NULL, 1:3, 4:5)
 + )
 > # but you must supply `names_sep` to do so, which generates automatic names:
-> df %>% unnest_wider(y, names_sep = "_")
+> df |> unnest_wider(y, names_sep = "_")
 # A tibble: 3 × 4
       x   y_1   y_2   y_3
   <int> <int> <int> <int>
@@ -2888,7 +2906,7 @@ New names:
 + )
 > 
 > df <- tibble(json = json)
-> df %>%
+> df |>
 +   unnest_wider(json)
 # A tibble: 3 × 2
   x         y        
@@ -2898,7 +2916,7 @@ New names:
 3 <int [1]> <NULL>   
 > 
 > # To instead enforce strict vctrs typing rules, use `strict`
-> df %>%
+> df |>
 +   unnest_wider(json, strict = TRUE)
 # A tibble: 3 × 2
   x          y         
@@ -2914,7 +2932,7 @@ New names:
 > cleanEx()
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  2.711 0.058 2.77 0 0 
+Time elapsed:  2.624 0.046 2.671 0 0 
 > grDevices::dev.off()
 null device 
           1 
