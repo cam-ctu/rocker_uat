@@ -1,0 +1,432 @@
+
+R version 4.5.3 (2026-03-11) -- "Reassured Reassurer"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> # test_re_covar_structure.R
+> library(lmerTest)
+Loading required package: lme4
+Loading required package: Matrix
+
+Attaching package: ‘lmerTest’
+
+The following object is masked from ‘package:lme4’:
+
+    lmer
+
+The following object is masked from ‘package:stats’:
+
+    step
+
+> 
+> # WRE says "using if(requireNamespace("pkgname")) is preferred, if possible."
+> # even in tests:
+> assertError <- function(expr, ...)
++   if(requireNamespace("tools")) tools::assertError(expr, ...) else invisible()
+> assertWarning <- function(expr, ...)
++   if(requireNamespace("tools")) tools::assertWarning(expr, ...) else invisible()
+> 
+> # Kenward-Roger only available with pbkrtest and only then validated in R >= 3.3.3
+> # (faulty results for R < 3.3.3 may be due to unstated dependencies in pbkrtest)
+> has_pbkrtest <- requireNamespace("pbkrtest", quietly = TRUE) && getRversion() >= "3.3.3"
+> 
+> data("sleepstudy", package="lme4")
+> TOL <- 1e-4
+> 
+> ####################################
+> ## Test that lmerMod objects can be coerced to lmerModLmerTest and 
+> ## that the deviance function can be evaluated with expected results
+> ####################################
+> 
+> 
+> ####################################
+> ## Basic tests of new (lme4 >= 2.0.0) covariance structure
+> ##  - simple sleepstudy data (random coefficient)
+> ####################################
+> 
+> has_pkgs <- requireNamespace("utils", quietly = TRUE) && 
++   requireNamespace("lme4", quietly = TRUE) && 
++   requireNamespace("pbkrtest", quietly = TRUE) && 
++   getRversion() >= "3.3.3"
+> is_lme4_2_0_0 <- utils::packageVersion("lme4") >= "2.0.0"
+> 
+> if(has_pkgs && is_lme4_2_0_0) {
++   
++   ## From the examples of ?`Covariance-class`:
++   ## Unstructured
++   fm1.us <- lmer(Reaction ~ Days + us(Days | Subject), sleepstudy)
++   ## Diagional
++   fm1.diag <- lmer(Reaction ~ Days + diag(Days | Subject), sleepstudy)
++   fm1.diag.hom <- lmer(Reaction ~ Days + diag(Days | Subject, hom = TRUE), 
++                        sleepstudy)
++   ## Compound symmetry
++   fm1.cs <- lmer(Reaction ~ Days + cs(1 + Days | Subject), sleepstudy)
++   fm1.cs.hom <- lmer(Reaction ~ Days + cs(1 + Days | Subject, hom = TRUE), 
++                      sleepstudy)
++   ## Auto-regressive order 1
++   sleepstudy$Daysf <- factor(sleepstudy$Days, ordered = TRUE)
++   fm1.ar1 <- lmer(Reaction ~ Daysf + ar1(0 + Daysf | Subject, hom = TRUE), 
++                   sleepstudy, REML = TRUE)
++   
++   ## Also adding a double-vertical-bar model (though not from 
++   ## 'Covariance-class' examples):
++   fm1.bv <- lmer(Reaction ~ Days + (Days || Subject), sleepstudy)
++   
++   
++   ltmodels <- namedList(fm1.us,
++                         fm1.diag, 
++                         fm1.diag.hom,
++                         fm1.cs, 
++                         fm1.cs.hom, 
++                         fm1.ar1,
++                         fm1.bv)
++   ## Run various methods on all models:
++   for(model in ltmodels) {
++     # model <- ltmodels[[5]]
++     print(model)
++     print(summary(model))
++     # model
++     # summary(model)
++     L <- diag(c(0, rep(1, length(fixef(model)) -1)))
++     contest(model, L, joint = TRUE)
++     contest(model, L[2, ], joint = FALSE)
++     (an <- anova(model)) ## ddf is Satterthwaite
++     anova(model, ddf = "Ken")
++     anova(model, ddf="lme4")
++     anova(model, type="I")
++     anova(model, type="II")
++     anova(model, type="III")
++     show_tests(an)
++     drop1(model)
++     ranova(model)
++     ranova(model, reduce.terms = FALSE)
++     step(model)
++     (lsm <- ls_means(model))
++     show_tests(lsm)
++     (dlsm <- difflsmeans(model))
++     show_tests(dlsm)
++   }
++ }
+Linear mixed model fit by REML ['lmerModLmerTest']
+Formula: Reaction ~ Days + us(Days | Subject)
+   Data: sleepstudy
+REML criterion at convergence: 1743.628
+Random effects:
+ Groups   Name        Std.Dev. Corr 
+ Subject  (Intercept) 24.741        
+          Days         5.922   0.07 
+ Residual             25.592        
+Number of obs: 180, groups:  Subject, 18
+Fixed Effects:
+(Intercept)         Days  
+     251.41        10.47  
+Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: Reaction ~ Days + us(Days | Subject)
+   Data: sleepstudy
+
+REML criterion at convergence: 1743.6
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-3.9536 -0.4634  0.0231  0.4634  5.1793 
+
+Random effects:
+ Groups   Name        Variance Std.Dev. Corr 
+ Subject  (Intercept) 612.10   24.741        
+          Days         35.07    5.922   0.07 
+ Residual             654.94   25.592        
+Number of obs: 180, groups:  Subject, 18
+
+Fixed effects:
+            Estimate Std. Error      df t value Pr(>|t|)    
+(Intercept)  251.405      6.825  17.000  36.838  < 2e-16 ***
+Days          10.467      1.546  17.000   6.771 3.26e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Correlation of Fixed Effects:
+     (Intr)
+Days -0.138
+Linear mixed model fit by REML ['lmerModLmerTest']
+Formula: Reaction ~ Days + diag(Days | Subject)
+   Data: sleepstudy
+REML criterion at convergence: 1743.669
+Random effects:
+ Groups   Name        Std.Dev.
+ Subject  (Intercept) 25.051  
+          Days         5.988  
+ Residual             25.565  
+Number of obs: 180, groups:  Subject, 18
+Fixed Effects:
+(Intercept)         Days  
+     251.41        10.47  
+Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: Reaction ~ Days + diag(Days | Subject)
+   Data: sleepstudy
+
+REML criterion at convergence: 1743.7
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-3.9626 -0.4625  0.0204  0.4653  5.1860 
+
+Random effects:
+ Groups   Name        Variance Std.Dev.
+ Subject  (Intercept) 627.57   25.051  
+          Days         35.86    5.988  
+ Residual             653.58   25.565  
+Number of obs: 180, groups:  Subject, 18
+
+Fixed effects:
+            Estimate Std. Error      df t value Pr(>|t|)    
+(Intercept)  251.405      6.885  18.156  36.513  < 2e-16 ***
+Days          10.467      1.560  18.156   6.712 2.59e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Correlation of Fixed Effects:
+     (Intr)
+Days -0.184
+Linear mixed model fit by REML ['lmerModLmerTest']
+Formula: Reaction ~ Days + diag(Days | Subject, hom = TRUE)
+   Data: sleepstudy
+REML criterion at convergence: 1759.15
+Random effects:
+ Groups   Name        Std.Dev.
+ Subject  (Intercept)  8.899  
+          Days         8.899  
+ Residual             27.374  
+Number of obs: 180, groups:  Subject, 18
+Fixed Effects:
+(Intercept)         Days  
+     251.41        10.47  
+Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: Reaction ~ Days + diag(Days | Subject, hom = TRUE)
+   Data: sleepstudy
+
+REML criterion at convergence: 1759.1
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-3.7768 -0.5468  0.0384  0.5737  4.8639 
+
+Random effects:
+ Groups   Name        Variance Std.Dev.
+ Subject  (Intercept)  79.19    8.899  
+          Days         79.19    8.899  
+ Residual             749.36   27.374  
+Number of obs: 180, groups:  Subject, 18
+
+Fixed effects:
+            Estimate Std. Error      df t value Pr(>|t|)    
+(Intercept)  251.405      4.334 127.443  58.012  < 2e-16 ***
+Days          10.467      2.214   9.925   4.727 0.000825 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Correlation of Fixed Effects:
+     (Intr)
+Days -0.237
+Linear mixed model fit by REML ['lmerModLmerTest']
+Formula: Reaction ~ Days + cs(1 + Days | Subject)
+   Data: sleepstudy
+REML criterion at convergence: 1743.628
+Random effects:
+ Groups   Name        Std.Dev. Corr     
+ Subject  (Intercept) 24.742   0.07 (cs)
+          Days         5.922            
+ Residual             25.592            
+Number of obs: 180, groups:  Subject, 18
+Fixed Effects:
+(Intercept)         Days  
+     251.41        10.47  
+Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: Reaction ~ Days + cs(1 + Days | Subject)
+   Data: sleepstudy
+
+REML criterion at convergence: 1743.6
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-3.9536 -0.4634  0.0231  0.4634  5.1793 
+
+Random effects:
+ Groups   Name        Variance Std.Dev. Corr     
+ Subject  (Intercept) 612.16   24.742   0.07 (cs)
+          Days         35.07    5.922            
+ Residual             654.94   25.592            
+Number of obs: 180, groups:  Subject, 18
+
+Fixed effects:
+            Estimate Std. Error      df t value Pr(>|t|)    
+(Intercept)  251.405      6.825  16.998  36.837  < 2e-16 ***
+Days          10.467      1.546  17.000   6.772 3.26e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Correlation of Fixed Effects:
+     (Intr)
+Days -0.137
+Linear mixed model fit by REML ['lmerModLmerTest']
+Formula: Reaction ~ Days + cs(1 + Days | Subject, hom = TRUE)
+   Data: sleepstudy
+REML criterion at convergence: 1757.774
+Random effects:
+ Groups   Name        Std.Dev. Corr     
+ Subject  (Intercept)  7.228   0.59 (cs)
+ Residual             27.835            
+Number of obs: 180, groups:  Subject, 18
+Fixed Effects:
+(Intercept)         Days  
+     251.41        10.47  
+Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: Reaction ~ Days + cs(1 + Days | Subject, hom = TRUE)
+   Data: sleepstudy
+
+REML criterion at convergence: 1757.8
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-3.6540 -0.5650  0.0661  0.5825  4.7771 
+
+Random effects:
+ Groups   Name        Variance Std.Dev. Corr     
+ Subject  (Intercept)  52.24    7.228   0.59 (cs)
+ Residual             774.77   27.835            
+Number of obs: 180, groups:  Subject, 18
+
+Fixed effects:
+            Estimate Std. Error      df t value Pr(>|t|)    
+(Intercept)  251.405      4.216 153.198  59.636  < 2e-16 ***
+Days          10.467      1.850   8.278   5.657 0.000422 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Correlation of Fixed Effects:
+     (Intr)
+Days -0.081
+Linear mixed model fit by REML ['lmerModLmerTest']
+Formula: Reaction ~ Daysf + ar1(0 + Daysf | Subject, hom = TRUE)
+   Data: sleepstudy
+REML criterion at convergence: 1681.023
+Random effects:
+ Groups   Name   Std.Dev. Corr      
+ Subject  Daysf0 47.46    0.88 (ar1)
+ Residual        14.99              
+Number of obs: 180, groups:  Subject, 18
+Fixed Effects:
+(Intercept)      Daysf.L      Daysf.Q      Daysf.C      Daysf^4      Daysf^5  
+    298.508       95.074        7.744       -0.705        5.889        1.754  
+    Daysf^6      Daysf^7      Daysf^8      Daysf^9  
+     -6.036       -1.695       -4.161        6.435  
+Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: Reaction ~ Daysf + ar1(0 + Daysf | Subject, hom = TRUE)
+   Data: sleepstudy
+
+REML criterion at convergence: 1681
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-2.8665 -0.2340  0.0262  0.2562  3.2912 
+
+Random effects:
+ Groups   Name   Variance Std.Dev. Corr      
+ Subject  Daysf0 2252.2   47.46    0.88 (ar1)
+ Residual         224.8   14.99              
+Number of obs: 180, groups:  Subject, 18
+
+Fixed effects:
+            Estimate Std. Error      df t value Pr(>|t|)    
+(Intercept)  298.508      9.328  18.291  32.003  < 2e-16 ***
+Daysf.L       95.074     14.502  49.313   6.556 3.15e-08 ***
+Daysf.Q        7.744      9.257  46.695   0.837    0.407    
+Daysf.C       -0.705      7.119  70.663  -0.099    0.921    
+Daysf^4        5.889      6.066 113.728   0.971    0.334    
+Daysf^5        1.754      5.472 138.533   0.320    0.749    
+Daysf^6       -6.036      5.105 122.251  -1.182    0.239    
+Daysf^7       -1.695      4.863  96.231  -0.349    0.728    
+Daysf^8       -4.161      4.695  76.663  -0.886    0.378    
+Daysf^9        6.435      4.574  63.650   1.407    0.164    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Correlation of Fixed Effects:
+        (Intr) Dysf.L Dysf.Q Dysf.C Dysf^4 Dysf^5 Dysf^6 Dysf^7 Dysf^8
+Daysf.L  0.000                                                        
+Daysf.Q -0.231  0.000                                                 
+Daysf.C  0.000 -0.279  0.000                                          
+Daysf^4 -0.003  0.000 -0.252  0.000                                   
+Daysf^5  0.000 -0.001  0.000 -0.201  0.000                            
+Daysf^6  0.000  0.000 -0.001  0.000 -0.148  0.000                     
+Daysf^7  0.000  0.000  0.000  0.000  0.000 -0.101  0.000              
+Daysf^8  0.000  0.000  0.000  0.000  0.000  0.000 -0.063  0.000       
+Daysf^9  0.000  0.000  0.000  0.000  0.000  0.000  0.000 -0.032  0.000
+Linear mixed model fit by REML ['lmerModLmerTest']
+Formula: Reaction ~ Days + (Days || Subject)
+   Data: sleepstudy
+REML criterion at convergence: 1743.669
+Random effects:
+ Groups    Name        Std.Dev.
+ Subject   (Intercept) 25.051  
+ Subject.1 Days         5.988  
+ Residual              25.565  
+Number of obs: 180, groups:  Subject, 18
+Fixed Effects:
+(Intercept)         Days  
+     251.41        10.47  
+Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: Reaction ~ Days + (Days || Subject)
+   Data: sleepstudy
+
+REML criterion at convergence: 1743.7
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-3.9626 -0.4625  0.0204  0.4653  5.1860 
+
+Random effects:
+ Groups    Name        Variance Std.Dev.
+ Subject   (Intercept) 627.57   25.051  
+ Subject.1 Days         35.86    5.988  
+ Residual              653.58   25.565  
+Number of obs: 180, groups:  Subject, 18
+
+Fixed effects:
+            Estimate Std. Error      df t value Pr(>|t|)    
+(Intercept)  251.405      6.885  18.156  36.513  < 2e-16 ***
+Days          10.467      1.560  18.156   6.712 2.59e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Correlation of Fixed Effects:
+     (Intr)
+Days -0.184
+> 
+> ####################################
+> ## Basic tests of new (lme4 >= 2.0.0) covariance structure
+> ##  - Unbalanced categorical dataset with multiple RE terms
+> ####################################
+> 
+> 
+> 
+> 
+> 
