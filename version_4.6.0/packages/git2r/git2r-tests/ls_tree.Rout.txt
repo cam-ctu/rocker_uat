@@ -1,0 +1,139 @@
+
+R version 4.6.0 (2026-04-24) -- "Because it was There"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> ## git2r, R bindings to the libgit2 library.
+> ## Copyright (C) 2013-2023 The git2r contributors
+> ##
+> ## This program is free software; you can redistribute it and/or modify
+> ## it under the terms of the GNU General Public License, version 2,
+> ## as published by the Free Software Foundation.
+> ##
+> ## git2r is distributed in the hope that it will be useful,
+> ## but WITHOUT ANY WARRANTY; without even the implied warranty of
+> ## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> ## GNU General Public License for more details.
+> ##
+> ## You should have received a copy of the GNU General Public License along
+> ## with this program; if not, write to the Free Software Foundation, Inc.,
+> ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+> 
+> library("git2r")
+> 
+> ## For debugging
+> sessionInfo()
+R version 4.6.0 (2026-04-24)
+Platform: x86_64-pc-linux-gnu
+Running under: Ubuntu 24.04.4 LTS
+
+Matrix products: default
+BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
+LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so;  LAPACK version 3.12.0
+
+locale:
+ [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              
+ [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    
+ [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   
+ [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 
+ [9] LC_ADDRESS=C               LC_TELEPHONE=C            
+[11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
+
+time zone: Etc/UTC
+tzcode source: system (glibc)
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] git2r_0.36.2
+
+loaded via a namespace (and not attached):
+[1] compiler_4.6.0
+> libgit2_version()
+$major
+[1] 1
+
+$minor
+[1] 7
+
+$rev
+[1] 2
+
+> libgit2_features()
+$threads
+[1] TRUE
+
+$https
+[1] TRUE
+
+$ssh
+[1] TRUE
+
+> 
+> 
+> ## Initialize a temporary repository
+> path <- tempfile(pattern = "git2r-")
+> dir.create(path)
+> dir.create(file.path(path, "subfolder"))
+> repo <- init(path)
+> 
+> ## Create a user
+> config(repo, user.name = "Alice", user.email = "alice@example.org")
+> 
+> ## Create three files and commit
+> writeLines("First file",  file.path(path, "example-1.txt"))
+> writeLines("Second file", file.path(path, "subfolder/example-2.txt"))
+> writeLines("Third file",  file.path(path, "example-3.txt"))
+> add(repo, c("example-1.txt", "subfolder/example-2.txt", "example-3.txt"))
+> commit(repo, "Commit message")
+[5c3349b] 2026-05-15: Commit message
+> 
+> ## Traverse tree entries and its subtrees.
+> ## Various approaches that give identical result.
+> stopifnot(identical(ls_tree(tree = tree(last_commit(path))),
++                     ls_tree(tree = tree(last_commit(repo)))))
+> stopifnot(identical(ls_tree(repo = path), ls_tree(repo = repo)))
+> 
+> ## ls_tree(repo = repo) should match `git ls-tree -lr HEAD`
+> ls_tree_result <- ls_tree(repo = repo)
+> stopifnot(identical(ls_tree_result$name,
++                     c("example-1.txt", "example-3.txt", "example-2.txt")))
+> 
+> # Argument `tree` can be a  'character that identifies a tree in the repository'
+> ls_tree(tree = tree(last_commit(path))$sha, repo = repo)
+    mode type                                      sha       path          name
+1 100644 blob 4c5fd919d52e3c1b08f7924cfa05d6de100912fd            example-1.txt
+2 100644 blob f89598da398eb016c504a5e272cb3eb1a31e2687            example-3.txt
+3 100644 blob 20d5b672a347112783818b3fc8cc7cd66ade3008 subfolder/ example-2.txt
+  len
+1  11
+2  11
+3  12
+> 
+> ## Skip content in subfolder
+> ls_tree_toplevel <- ls_tree(repo = repo, recursive = FALSE)
+> stopifnot(nrow(ls_tree_toplevel) == 3)
+> stopifnot(identical(ls_tree_toplevel$name,
++                     c("example-1.txt", "example-3.txt", "subfolder")))
+> 
+> ## Start in subfolder
+> ls_tree_subfolder <- ls_tree(tree = "HEAD:subfolder", repo = repo)
+> stopifnot(nrow(ls_tree_subfolder) == 1)
+> stopifnot(identical(ls_tree_subfolder$name, "example-2.txt"))
+> 
+> ## Cleanup
+> unlink(path, recursive = TRUE)
+> 

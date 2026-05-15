@@ -1,0 +1,158 @@
+
+R version 4.6.0 (2026-04-24) -- "Because it was There"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> ## git2r, R bindings to the libgit2 library.
+> ## Copyright (C) 2013-2023 The git2r contributors
+> ##
+> ## This program is free software; you can redistribute it and/or modify
+> ## it under the terms of the GNU General Public License, version 2,
+> ## as published by the Free Software Foundation.
+> ##
+> ## git2r is distributed in the hope that it will be useful,
+> ## but WITHOUT ANY WARRANTY; without even the implied warranty of
+> ## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> ## GNU General Public License for more details.
+> ##
+> ## You should have received a copy of the GNU General Public License along
+> ## with this program; if not, write to the Free Software Foundation, Inc.,
+> ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+> 
+> library(git2r)
+> 
+> ## For debugging
+> sessionInfo()
+R version 4.6.0 (2026-04-24)
+Platform: x86_64-pc-linux-gnu
+Running under: Ubuntu 24.04.4 LTS
+
+Matrix products: default
+BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
+LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so;  LAPACK version 3.12.0
+
+locale:
+ [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              
+ [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    
+ [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   
+ [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 
+ [9] LC_ADDRESS=C               LC_TELEPHONE=C            
+[11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
+
+time zone: Etc/UTC
+tzcode source: system (glibc)
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] git2r_0.36.2
+
+loaded via a namespace (and not attached):
+[1] compiler_4.6.0
+> libgit2_version()
+$major
+[1] 1
+
+$minor
+[1] 7
+
+$rev
+[1] 2
+
+> libgit2_features()
+$threads
+[1] TRUE
+
+$https
+[1] TRUE
+
+$ssh
+[1] TRUE
+
+> 
+> 
+> ## Create directories for repositories in tempdir
+> path_bare <- tempfile(pattern = "git2r-")
+> path_repo_1 <- tempfile(pattern = "git2r-")
+> path_repo_2 <- tempfile(pattern = "git2r-")
+> 
+> dir.create(path_bare)
+> dir.create(path_repo_1)
+> dir.create(path_repo_2)
+> 
+> ## Create bare repository
+> bare_repo <- init(path_bare, bare = TRUE)
+> 
+> ## Clone to repo 1
+> repo_1 <- clone(path_bare, path_repo_1)
+cloning into '/tmp/RtmpYJycLj/git2r-1530522d17e5a'...
+> config(repo_1, user.name = "Alice", user.email = "alice@example.org")
+> 
+> ## Add changes to repo 1 and push to bare
+> writeLines(
++     "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
++     con = file.path(path_repo_1, "test.txt"))
+> add(repo_1, "test.txt")
+> commit(repo_1, "First commit message")
+[7922f97] 2026-05-15: First commit message
+> branch_name <- branches(repo_1)[[1]]$name
+> push(repo_1, "origin", paste0("refs/heads/", branch_name))
+> 
+> ## Test checkout branch argument
+> tools::assertError(checkout(repo_1))
+> tools::assertError(checkout(repo_1, c("master", "master")))
+> tools::assertError(checkout(repo_1, "dev"))
+> 
+> ## Create and checkout dev branch in repo 1
+> checkout(repo_1, "dev", create = TRUE)
+> 
+> ## Add changes to dev branch in repo 1 and push to bare
+> writeLines(
++     c("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
++       "eiusmod tempor incididunt ut labore et dolore magna aliqua."),
++     con = file.path(path_repo_1, "test.txt"))
+> add(repo_1, "test.txt")
+> commit(repo_1, "Second commit message")
+[001f269] 2026-05-15: Second commit message
+> push(repo_1, "origin", "refs/heads/dev")
+> 
+> ## Clone to repo 2
+> repo_2 <- clone(path_bare, path_repo_2)
+cloning into '/tmp/RtmpYJycLj/git2r-1530536de393d'...
+> config(repo_2, user.name = "Bob", user.email = "bob@example.org")
+> 
+> stopifnot(identical(
++     "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
++     readLines(file.path(path_repo_2, "test.txt"))))
+> 
+> ## Checkout dev branch
+> checkout(repo_2, "dev")
+> 
+> ## Check content of file
+> stopifnot(identical(
++     c("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
++       "eiusmod tempor incididunt ut labore et dolore magna aliqua."),
++     readLines(file.path(path_repo_2, "test.txt"))))
+> 
+> ## Checkout previous branch
+> checkout(repo_2, "-")
+> stopifnot(identical(repository_head(repo_2)$name, branch_name))
+> 
+> ## Cleanup
+> unlink(path_bare, recursive = TRUE)
+> unlink(path_repo_1, recursive = TRUE)
+> unlink(path_repo_2, recursive = TRUE)
+> 

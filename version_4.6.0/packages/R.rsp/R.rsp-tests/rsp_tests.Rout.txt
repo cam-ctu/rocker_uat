@@ -1,0 +1,150 @@
+
+R version 4.6.0 (2026-04-24) -- "Because it was There"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library("R.rsp")
+R.rsp v0.46.0 (2024-02-17 18:30:02 UTC) successfully loaded. See ?R.rsp for help.
+> library("R.utils") # Arguments
+Loading required package: R.oo
+Loading required package: R.methodsS3
+R.methodsS3 v1.8.2 (2022-06-13 22:00:14 UTC) successfully loaded. See ?R.methodsS3 for help.
+R.oo v1.27.1 (2025-05-02 21:00:05 UTC) successfully loaded. See ?R.oo for help.
+
+Attaching package: ‘R.oo’
+
+The following object is masked from ‘package:R.methodsS3’:
+
+    throw
+
+The following objects are masked from ‘package:methods’:
+
+    getClasses, getMethods
+
+The following objects are masked from ‘package:base’:
+
+    attach, detach, load, save
+
+R.utils v2.13.0 (2025-02-24 21:20:02 UTC) successfully loaded. See ?R.utils for help.
+
+Attaching package: ‘R.utils’
+
+The following object is masked from ‘package:utils’:
+
+    timestamp
+
+The following objects are masked from ‘package:base’:
+
+    cat, commandArgs, getOption, isOpen, nullfile, parse, use, warnings
+
+> 
+> verbose <- Arguments$getVerbose(TRUE)
+> 
+> # Change option (used in one or more of the tests)
+> oopts <- options(papersize="letter")
+> 
+> path <- system.file(package="R.rsp")
+> path <- file.path(path, "rsp_tests")
+> 
+> # Find all RSP files with matching "truth" files
+> pathnames <- list.files(path=path, pattern="[.]rsp$", full.names=TRUE)
+> pathnames <- pathnames[file_test("-f", pathnames)]
+> 
+> # Reference ("truth") files
+> pathnamesR <- gsub("[.]rsp$", "", pathnames)
+> keep <- file_test("-f", pathnamesR)
+> pathnames <- pathnames[keep]
+> pathnamesR <- pathnamesR[keep]
+> 
+> for (kk in seq_along(pathnames)) {
++   pathname <- pathnames[kk]
++   pathnameR <- pathnamesR[kk]
++   verbose && enter(verbose, sprintf("RSP file #%d ('%s') of %d", kk, pathname, length(pathnames)))
++ 
++   rc <- rcode(file=pathname)
++ 
++   rs <- rstring(file=pathname)
++   s <- as.character(rs)
++   sR <- readChar(pathnameR, nchars=1e6)
++   if (length(sR) == 0L) sR <- ""
++   sR <- gsub("\r\n", "\n", sR, fixed=TRUE)
++   # If there is a '<EOF>' string, drop it and everything beyond
++   sR <- sub("<EOF>.*", "", sR)
++ 
++   # Compare
++   res <- all.equal(s, sR, check.attributes=FALSE)
++   discrepancy <- !isTRUE(res)
++   if (discrepancy) {
++     if (verbose) {
++       enter(verbose, "Detected discrepancy of output and expected output")
++       cat(verbose, "Output:")
++       printf(verbose, ">>>%s<<<\n", gsub("\n", "\\n", s, fixed=TRUE))
++       ruler(verbose)
++       cat(verbose, "Expected output:")
++       printf(verbose, ">>>%s<<<\n", gsub("\n", "\\n", sR, fixed=TRUE))
++       ruler(verbose)
++       cat(verbose, "Difference:")
++       fs <- tempfile("s")
++       fsR <- tempfile("sR")
++       cat(s, file=fs)
++       cat(sR, file=fsR)
++       res <- system2("diff", args=c("-bw", shQuote(fs), shQuote(fsR)),
++                                              stdout=TRUE, stderr=TRUE)
++       cat(verbose, res)
++       file.remove(c(fs, fsR))
++       ruler(verbose)
++       cat(verbose, "Reason for not being equal:")
++       print(verbose, res)
++       ruler(verbose)
++       exit(verbose)
++     }
++   }
++ 
++   verbose && exit(verbose)
++ }
+RSP file #1 ('/usr/local/lib/R/site-library/R.rsp/rsp_tests/birth.txt.rsp') of 13...
+RSP file #1 ('/usr/local/lib/R/site-library/R.rsp/rsp_tests/birth.txt.rsp') of 13...done
+RSP file #2 ('/usr/local/lib/R/site-library/R.rsp/rsp_tests/comments.txt.rsp') of 13...
+RSP file #2 ('/usr/local/lib/R/site-library/R.rsp/rsp_tests/comments.txt.rsp') of 13...done
+RSP file #3 ('/usr/local/lib/R/site-library/R.rsp/rsp_tests/directives,ifeq.txt.rsp') of 13...
+RSP file #3 ('/usr/local/lib/R/site-library/R.rsp/rsp_tests/directives,ifeq.txt.rsp') of 13...done
+RSP file #4 ('/usr/local/lib/R/site-library/R.rsp/rsp_tests/example.md.rsp') of 13...
+RSP file #4 ('/usr/local/lib/R/site-library/R.rsp/rsp_tests/example.md.rsp') of 13...done
+RSP file #5 ('/usr/local/lib/R/site-library/R.rsp/rsp_tests/ifdef.R.rsp') of 13...
+RSP file #5 ('/usr/local/lib/R/site-library/R.rsp/rsp_tests/ifdef.R.rsp') of 13...done
+RSP file #6 ('/usr/local/lib/R/site-library/R.rsp/rsp_tests/includes.txt.rsp') of 13...
+RSP file #6 ('/usr/local/lib/R/site-library/R.rsp/rsp_tests/includes.txt.rsp') of 13...done
+RSP file #7 ('/usr/local/lib/R/site-library/R.rsp/rsp_tests/nested-if-else.txt.rsp') of 13...
+RSP file #7 ('/usr/local/lib/R/site-library/R.rsp/rsp_tests/nested-if-else.txt.rsp') of 13...done
+RSP file #8 ('/usr/local/lib/R/site-library/R.rsp/rsp_tests/numerics.txt.rsp') of 13...
+RSP file #8 ('/usr/local/lib/R/site-library/R.rsp/rsp_tests/numerics.txt.rsp') of 13...done
+RSP file #9 ('/usr/local/lib/R/site-library/R.rsp/rsp_tests/R-vignette.tex.rsp') of 13...
+RSP file #9 ('/usr/local/lib/R/site-library/R.rsp/rsp_tests/R-vignette.tex.rsp') of 13...done
+RSP file #10 ('/usr/local/lib/R/site-library/R.rsp/rsp_tests/strings.txt.rsp') of 13...
+RSP file #10 ('/usr/local/lib/R/site-library/R.rsp/rsp_tests/strings.txt.rsp') of 13...done
+RSP file #11 ('/usr/local/lib/R/site-library/R.rsp/rsp_tests/trimming-1.txt.rsp') of 13...
+RSP file #11 ('/usr/local/lib/R/site-library/R.rsp/rsp_tests/trimming-1.txt.rsp') of 13...done
+RSP file #12 ('/usr/local/lib/R/site-library/R.rsp/rsp_tests/trimming-2.txt.rsp') of 13...
+RSP file #12 ('/usr/local/lib/R/site-library/R.rsp/rsp_tests/trimming-2.txt.rsp') of 13...done
+RSP file #13 ('/usr/local/lib/R/site-library/R.rsp/rsp_tests/trimming-3.txt.rsp') of 13...
+RSP file #13 ('/usr/local/lib/R/site-library/R.rsp/rsp_tests/trimming-3.txt.rsp') of 13...done
+> 
+> # Restore options
+> options(oopts)
+> 
+> if (discrepancy) {
++   stop("Detected a discrepancy above.")
++ }
+> 

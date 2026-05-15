@@ -1,0 +1,732 @@
+
+R version 4.6.0 (2026-04-24) -- "Because it was There"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "webfakes"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('webfakes')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("git_app")
+> ### * git_app
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: git_app
+> ### Title: Web app that acts as a git http server
+> ### Aliases: git_app
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (FALSE) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ dir.create(tmp <- tempfile())
++ setwd(tmp)
++ system("git clone --bare https://github.com/cran/crayon")
++ system("git clone --bare https://github.com/cran/glue")
++ app <- git_app(tmp)
++ git <- new_app_process(app)
++ system(paste("git ls-remote", git$url("/crayon")))
++ ## Don't show: 
++ }) # examplesIf
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("httpbin_app")
+> ### * httpbin_app
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: httpbin_app
+> ### Title: Generic web app for testing HTTP clients
+> ### Aliases: httpbin_app
+> 
+> ### ** Examples
+> 
+> app <- httpbin_app()
+> proc <- new_app_process(app)
+> url <- proc$url("/get")
+> resp <- curl::curl_fetch_memory(url)
+> curl::parse_headers_list(resp$headers)
+$connection
+[1] "close"
+
+$date
+[1] "Fri, 15 May 2026 10:13:05 GMT"
+
+$`content-type`
+[1] "application/json"
+
+$`content-length`
+[1] "287"
+
+$etag
+[1] "\"761f2b46\""
+
+> cat(rawToChar(resp$content))
+{
+  "args": {},
+  "headers": {
+    "Host": "127.0.0.1:33049",
+    "User-Agent": "R (4.6.0 x86_64-pc-linux-gnu x86_64 linux-gnu)",
+    "Accept": "*/*",
+    "Accept-Encoding": "deflate, gzip, br, zstd"
+  },
+  "origin": "127.0.0.1",
+  "path": "/get",
+  "url": "http://127.0.0.1:33049/get"
+}> proc$stop()
+> 
+> 
+> 
+> cleanEx()
+> nameEx("mw_cgi")
+> ### * mw_cgi
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: mw_cgi
+> ### Title: Middleware that calls a CGI script
+> ### Aliases: mw_cgi
+> 
+> ### ** Examples
+> 
+> app <- new_app()
+> app$use(mw_cgi("echo", "Status: 200\n\nHello"))
+> app
+<webfakes_app>
+routes:
+  use *
+fields and methods:
+  all(path, ...)         # add route for *all* HTTP methods
+  delete(path, ...)      # add route for DELETE
+  engine(ext, engine)    # add template engine for file extension
+  head(path, ...)        # add route for HEAD
+  listen(port)           # start web app on port
+  patch(path, ...)       # add route for PATCH
+  post(path, ...)        # add route for POST
+  put(path, ...)         # add route for PUT
+  use(...)               # add middleware
+  locals                 # app-wide shared data
+# see ?webfakes_app for all methods
+> 
+> app2 <- new_app()
+> app2$get("/greet", mw_cgi("echo", "Status: 200\n\nHello"))
+> app2
+<webfakes_app>
+routes:
+  get /greet
+fields and methods:
+  all(path, ...)         # add route for *all* HTTP methods
+  delete(path, ...)      # add route for DELETE
+  engine(ext, engine)    # add template engine for file extension
+  head(path, ...)        # add route for HEAD
+  listen(port)           # start web app on port
+  patch(path, ...)       # add route for PATCH
+  post(path, ...)        # add route for POST
+  put(path, ...)         # add route for PUT
+  use(...)               # add middleware
+  locals                 # app-wide shared data
+# see ?webfakes_app for all methods
+> 
+> # Using `mw_cgi()` in a handler, you can pass extra environment variables
+> app3 <- new_app()
+> cgi <- mw_cgi("echo", "Status: 200\n\nHello")
+> app2$get("/greet", function(req, res) {
++   cgi(req, res, env = c("EXTRA_VAR" = "EXTRA_VALUE"))
++ })
+> app3
+<webfakes_app>
+routes:
+fields and methods:
+  all(path, ...)         # add route for *all* HTTP methods
+  delete(path, ...)      # add route for DELETE
+  engine(ext, engine)    # add template engine for file extension
+  head(path, ...)        # add route for HEAD
+  listen(port)           # start web app on port
+  patch(path, ...)       # add route for PATCH
+  post(path, ...)        # add route for POST
+  put(path, ...)         # add route for PUT
+  use(...)               # add middleware
+  locals                 # app-wide shared data
+# see ?webfakes_app for all methods
+> 
+> 
+> 
+> cleanEx()
+> nameEx("mw_etag")
+> ### * mw_etag
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: mw_etag
+> ### Title: Middleware that add an 'ETag' header to the response
+> ### Aliases: mw_etag
+> 
+> ### ** Examples
+> 
+> app <- new_app()
+> app$use(mw_etag())
+> app
+<webfakes_app>
+routes:
+  use *
+fields and methods:
+  all(path, ...)         # add route for *all* HTTP methods
+  delete(path, ...)      # add route for DELETE
+  engine(ext, engine)    # add template engine for file extension
+  head(path, ...)        # add route for HEAD
+  listen(port)           # start web app on port
+  patch(path, ...)       # add route for PATCH
+  post(path, ...)        # add route for POST
+  put(path, ...)         # add route for PUT
+  use(...)               # add middleware
+  locals                 # app-wide shared data
+# see ?webfakes_app for all methods
+> 
+> 
+> 
+> cleanEx()
+> nameEx("mw_json")
+> ### * mw_json
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: mw_json
+> ### Title: Middleware to parse a JSON body
+> ### Aliases: mw_json
+> 
+> ### ** Examples
+> 
+> app <- new_app()
+> app$use(mw_json())
+> app
+<webfakes_app>
+routes:
+  use *
+fields and methods:
+  all(path, ...)         # add route for *all* HTTP methods
+  delete(path, ...)      # add route for DELETE
+  engine(ext, engine)    # add template engine for file extension
+  head(path, ...)        # add route for HEAD
+  listen(port)           # start web app on port
+  patch(path, ...)       # add route for PATCH
+  post(path, ...)        # add route for POST
+  put(path, ...)         # add route for PUT
+  use(...)               # add middleware
+  locals                 # app-wide shared data
+# see ?webfakes_app for all methods
+> 
+> 
+> 
+> cleanEx()
+> nameEx("mw_log")
+> ### * mw_log
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: mw_log
+> ### Title: Log requests to the standard output or other connection
+> ### Aliases: mw_log
+> 
+> ### ** Examples
+> 
+> app <- new_app()
+> app$use(mw_log())
+> app
+<webfakes_app>
+routes:
+  use *
+fields and methods:
+  all(path, ...)         # add route for *all* HTTP methods
+  delete(path, ...)      # add route for DELETE
+  engine(ext, engine)    # add template engine for file extension
+  head(path, ...)        # add route for HEAD
+  listen(port)           # start web app on port
+  patch(path, ...)       # add route for PATCH
+  post(path, ...)        # add route for POST
+  put(path, ...)         # add route for PUT
+  use(...)               # add middleware
+  locals                 # app-wide shared data
+# see ?webfakes_app for all methods
+> 
+> 
+> 
+> cleanEx()
+> nameEx("mw_multipart")
+> ### * mw_multipart
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: mw_multipart
+> ### Title: Parse a multipart HTTP request body
+> ### Aliases: mw_multipart
+> 
+> ### ** Examples
+> 
+> app <- new_app()
+> app$use(mw_multipart())
+> app
+<webfakes_app>
+routes:
+  use *
+fields and methods:
+  all(path, ...)         # add route for *all* HTTP methods
+  delete(path, ...)      # add route for DELETE
+  engine(ext, engine)    # add template engine for file extension
+  head(path, ...)        # add route for HEAD
+  listen(port)           # start web app on port
+  patch(path, ...)       # add route for PATCH
+  post(path, ...)        # add route for POST
+  put(path, ...)         # add route for PUT
+  use(...)               # add middleware
+  locals                 # app-wide shared data
+# see ?webfakes_app for all methods
+> 
+> 
+> 
+> cleanEx()
+> nameEx("mw_raw")
+> ### * mw_raw
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: mw_raw
+> ### Title: Middleware to read the raw body of a request
+> ### Aliases: mw_raw
+> 
+> ### ** Examples
+> 
+> app <- new_app()
+> app$use(mw_raw())
+> app
+<webfakes_app>
+routes:
+  use *
+fields and methods:
+  all(path, ...)         # add route for *all* HTTP methods
+  delete(path, ...)      # add route for DELETE
+  engine(ext, engine)    # add template engine for file extension
+  head(path, ...)        # add route for HEAD
+  listen(port)           # start web app on port
+  patch(path, ...)       # add route for PATCH
+  post(path, ...)        # add route for POST
+  put(path, ...)         # add route for PUT
+  use(...)               # add middleware
+  locals                 # app-wide shared data
+# see ?webfakes_app for all methods
+> 
+> 
+> 
+> cleanEx()
+> nameEx("mw_static")
+> ### * mw_static
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: mw_static
+> ### Title: Middleware function to serve static files
+> ### Aliases: mw_static
+> 
+> ### ** Examples
+> 
+> root <- system.file(package = "webfakes", "examples", "static", "public")
+> app <- new_app()
+> app$use(mw_static(root = root))
+> app
+<webfakes_app>
+routes:
+  use *
+fields and methods:
+  all(path, ...)         # add route for *all* HTTP methods
+  delete(path, ...)      # add route for DELETE
+  engine(ext, engine)    # add template engine for file extension
+  head(path, ...)        # add route for HEAD
+  listen(port)           # start web app on port
+  patch(path, ...)       # add route for PATCH
+  post(path, ...)        # add route for POST
+  put(path, ...)         # add route for PUT
+  use(...)               # add middleware
+  locals                 # app-wide shared data
+# see ?webfakes_app for all methods
+> 
+> 
+> 
+> cleanEx()
+> nameEx("mw_text")
+> ### * mw_text
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: mw_text
+> ### Title: Middleware to parse a plain text body
+> ### Aliases: mw_text
+> 
+> ### ** Examples
+> 
+> app <- new_app()
+> app$use(mw_text())
+> app
+<webfakes_app>
+routes:
+  use *
+fields and methods:
+  all(path, ...)         # add route for *all* HTTP methods
+  delete(path, ...)      # add route for DELETE
+  engine(ext, engine)    # add template engine for file extension
+  head(path, ...)        # add route for HEAD
+  listen(port)           # start web app on port
+  patch(path, ...)       # add route for PATCH
+  post(path, ...)        # add route for POST
+  put(path, ...)         # add route for PUT
+  use(...)               # add middleware
+  locals                 # app-wide shared data
+# see ?webfakes_app for all methods
+> 
+> 
+> 
+> cleanEx()
+> nameEx("mw_urlencoded")
+> ### * mw_urlencoded
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: mw_urlencoded
+> ### Title: Middleware to parse an url-encoded request body
+> ### Aliases: mw_urlencoded
+> 
+> ### ** Examples
+> 
+> app <- new_app()
+> app$use(mw_urlencoded())
+> app
+<webfakes_app>
+routes:
+  use *
+fields and methods:
+  all(path, ...)         # add route for *all* HTTP methods
+  delete(path, ...)      # add route for DELETE
+  engine(ext, engine)    # add template engine for file extension
+  head(path, ...)        # add route for HEAD
+  listen(port)           # start web app on port
+  patch(path, ...)       # add route for PATCH
+  post(path, ...)        # add route for POST
+  put(path, ...)         # add route for PUT
+  use(...)               # add middleware
+  locals                 # app-wide shared data
+# see ?webfakes_app for all methods
+> 
+> 
+> 
+> cleanEx()
+> nameEx("new_app")
+> ### * new_app
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: new_app
+> ### Title: Create a new web application
+> ### Aliases: new_app webfakes_app
+> 
+> ### ** Examples
+> 
+> # see example web apps in the `/examples` directory in
+> system.file(package = "webfakes", "examples")
+[1] "/usr/local/lib/R/site-library/webfakes/examples"
+> 
+> app <- new_app()
+> app$use(mw_log())
+> 
+> app$get("/hello", function(req, res) {
++   res$send("Hello there!")
++ })
+> 
+> app$get(new_regexp("^/hi(/.*)?$"), function(req, res) {
++   res$send("Hi indeed!")
++ })
+> 
+> app$post("/hello", function(req, res) {
++   res$send("Got it, thanks!")
++ })
+> 
+> app
+<webfakes_app>
+routes:
+  use *
+  get /hello
+  get <webfakes_regexp> "^/hi(/.*)?$"
+  post /hello
+fields and methods:
+  all(path, ...)         # add route for *all* HTTP methods
+  delete(path, ...)      # add route for DELETE
+  engine(ext, engine)    # add template engine for file extension
+  head(path, ...)        # add route for HEAD
+  listen(port)           # start web app on port
+  patch(path, ...)       # add route for PATCH
+  post(path, ...)        # add route for POST
+  put(path, ...)         # add route for PUT
+  use(...)               # add middleware
+  locals                 # app-wide shared data
+# see ?webfakes_app for all methods
+> 
+> # Start the app with: app$listen()
+> # Or start it in another R session: new_app_process(app)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("new_app_process")
+> ### * new_app_process
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: new_app_process
+> ### Title: Run a webfakes app in another process
+> ### Aliases: new_app_process webfakes_app_process
+> 
+> ### ** Examples
+> 
+> app <- new_app()
+> app$get("/foo", function(req, res) {
++   res$send("Hello world!")
++ })
+> 
+> proc <- new_app_process(app)
+> url <- proc$url("/foo")
+> resp <- curl::curl_fetch_memory(url)
+> cat(rawToChar(resp$content))
+Hello world!> 
+> proc$stop()
+> 
+> 
+> 
+> cleanEx()
+> nameEx("new_regexp")
+> ### * new_regexp
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: new_regexp
+> ### Title: Create a new regular expression to use in webfakes routes
+> ### Aliases: new_regexp webfakes_regexp
+> 
+> ### ** Examples
+> 
+> new_regexp("^/api/match/(?<pattern>.*)$")
+<webfakes_regexp> "^/api/match/(?<pattern>.*)$"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("server_opts")
+> ### * server_opts
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: server_opts
+> ### Title: Webfakes web server options
+> ### Aliases: server_opts
+> 
+> ### ** Examples
+> 
+> # See the defaults
+> server_opts()
+$remote
+[1] FALSE
+
+$port
+NULL
+
+$num_threads
+[1] 1
+
+$interfaces
+[1] "127.0.0.1"
+
+$enable_keep_alive
+[1] FALSE
+
+$access_log_file
+[1] NA
+
+$error_log_file
+[1] "/tmp/RtmplXLGFb/webfakes/error.log"
+
+$tcp_nodelay
+[1] FALSE
+
+$throttle
+[1] Inf
+
+$decode_url
+[1] TRUE
+
+$ssl_certificate
+[1] "/usr/local/lib/R/site-library/webfakes/cert/localhost/server.pem"
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("tmpl_glue")
+> ### * tmpl_glue
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: tmpl_glue
+> ### Title: glue based template engine
+> ### Aliases: tmpl_glue
+> 
+> ### ** Examples
+> 
+> # See th 'hello' app at
+> hello_root <- system.file(package = "webfakes", "examples", "hello")
+> hello_root
+[1] "/usr/local/lib/R/site-library/webfakes/examples/hello"
+> 
+> app <- new_app()
+> app$engine("txt", tmpl_glue())
+> app$use(mw_log())
+> 
+> 
+> app$get("/view", function(req, res) {
++   txt <- res$render("test")
++   res$
++     set_type("text/plain")$
++     send(txt)
++ })
+> 
+> # Switch to the app's root: setwd(hello_root)
+> # Now start the app with: app$listen(3000L)
+> # Or start it in another process: new_process(app)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("webfakes_request")
+> ### * webfakes_request
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: webfakes_request
+> ### Title: A webfakes request object
+> ### Aliases: webfakes_request
+> 
+> ### ** Examples
+> 
+> # This is how you can see the request and response objects:
+> app <- new_app()
+> app$get("/", function(req, res) {
++   browser()
++   res$send("done")
++ })
+> app
+<webfakes_app>
+routes:
+  get /
+fields and methods:
+  all(path, ...)         # add route for *all* HTTP methods
+  delete(path, ...)      # add route for DELETE
+  engine(ext, engine)    # add template engine for file extension
+  head(path, ...)        # add route for HEAD
+  listen(port)           # start web app on port
+  patch(path, ...)       # add route for PATCH
+  post(path, ...)        # add route for POST
+  put(path, ...)         # add route for PUT
+  use(...)               # add middleware
+  locals                 # app-wide shared data
+# see ?webfakes_app for all methods
+> 
+> # Now start this app on a port:
+> # app$listen(3000)
+> # and connect to it from a web browser: http://127.0.0.1:3000
+> # You can also use another R session to connect:
+> # httr::GET("http://127.0.0.1:3000")
+> # or the command line curl tool:
+> # curl -v http://127.0.0.1:3000
+> # The app will stop while processing the request.
+> 
+> 
+> 
+> cleanEx()
+> nameEx("webfakes_response")
+> ### * webfakes_response
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: webfakes_response
+> ### Title: A webfakes response object
+> ### Aliases: webfakes_response
+> 
+> ### ** Examples
+> 
+> # This is how you can see the request and response objects:
+> app <- new_app()
+> app$get("/", function(req, res) {
++   browser()
++   res$send("done")
++ })
+> app
+<webfakes_app>
+routes:
+  get /
+fields and methods:
+  all(path, ...)         # add route for *all* HTTP methods
+  delete(path, ...)      # add route for DELETE
+  engine(ext, engine)    # add template engine for file extension
+  head(path, ...)        # add route for HEAD
+  listen(port)           # start web app on port
+  patch(path, ...)       # add route for PATCH
+  post(path, ...)        # add route for POST
+  put(path, ...)         # add route for PUT
+  use(...)               # add middleware
+  locals                 # app-wide shared data
+# see ?webfakes_app for all methods
+> 
+> # Now start this app on a port:
+> # app$listen(3000)
+> # and connect to it from a web browser: http://127.0.0.1:3000
+> # You can also use another R session to connect:
+> # httr::GET("http://127.0.0.1:3000")
+> # or the command line curl tool:
+> # curl -v http://127.0.0.1:3000
+> # The app will stop while processing the request.
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  0.19 0.038 0.682 0.402 0.677 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

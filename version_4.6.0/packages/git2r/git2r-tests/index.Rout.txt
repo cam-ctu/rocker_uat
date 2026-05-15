@@ -1,0 +1,182 @@
+
+R version 4.6.0 (2026-04-24) -- "Because it was There"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> ## git2r, R bindings to the libgit2 library.
+> ## Copyright (C) 2013-2023 The git2r contributors
+> ##
+> ## This program is free software; you can redistribute it and/or modify
+> ## it under the terms of the GNU General Public License, version 2,
+> ## as published by the Free Software Foundation.
+> ##
+> ## git2r is distributed in the hope that it will be useful,
+> ## but WITHOUT ANY WARRANTY; without even the implied warranty of
+> ## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> ## GNU General Public License for more details.
+> ##
+> ## You should have received a copy of the GNU General Public License along
+> ## with this program; if not, write to the Free Software Foundation, Inc.,
+> ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+> 
+> library(git2r)
+> source("util/check.R")
+> 
+> ## For debugging
+> sessionInfo()
+R version 4.6.0 (2026-04-24)
+Platform: x86_64-pc-linux-gnu
+Running under: Ubuntu 24.04.4 LTS
+
+Matrix products: default
+BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
+LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so;  LAPACK version 3.12.0
+
+locale:
+ [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              
+ [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    
+ [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   
+ [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 
+ [9] LC_ADDRESS=C               LC_TELEPHONE=C            
+[11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
+
+time zone: Etc/UTC
+tzcode source: system (glibc)
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] git2r_0.36.2
+
+loaded via a namespace (and not attached):
+[1] compiler_4.6.0
+> libgit2_version()
+$major
+[1] 1
+
+$minor
+[1] 7
+
+$rev
+[1] 2
+
+> libgit2_features()
+$threads
+[1] TRUE
+
+$https
+[1] TRUE
+
+$ssh
+[1] TRUE
+
+> 
+> 
+> ## Create a directory in tempdir
+> path <- tempfile(pattern = "git2r-")
+> dir.create(path)
+> 
+> ## Initialize a repository
+> repo <- init(path)
+> config(repo, user.name = "Alice", user.email = "alice@example.org")
+> 
+> ## Create directories
+> dir.create(file.path(path, "sub-folder"));
+> dir.create(file.path(path, "sub-folder", "sub-sub-folder"));
+> 
+> ## Create files
+> writeLines("Hello world!",
++            file.path(path, "file-1.txt"))
+> writeLines("Hello world!",
++            file.path(path, "sub-folder", "file-2.txt"))
+> writeLines("Hello world!",
++            file.path(path, "sub-folder", "file-3.txt"))
+> writeLines("Hello world!",
++            file.path(path, "sub-folder", "sub-sub-folder", "file-4.txt"))
+> writeLines("Hello world!",
++            file.path(path, "sub-folder", "sub-sub-folder", "file-5.txt"))
+> 
+> ## Add
+> add(repo, "file-1.txt")
+> status_exp <- structure(list(staged = list(new = "file-1.txt"),
++                              unstaged = empty_named_list(),
++                              untracked = list(untracked = "sub-folder/")),
++                         class = "git_status")
+> status_obs <- status(repo)
+> stopifnot(identical(status_obs, status_exp))
+> 
+> ## Index remove by path
+> index_remove_bypath(repo, "file-1.txt")
+> status_exp <- structure(list(staged = empty_named_list(),
++                              unstaged = empty_named_list(),
++                              untracked = list(untracked = "file-1.txt",
++                                               untracked = "sub-folder/")),
++                         class = "git_status")
+> status_obs <- status(repo)
+> stopifnot(identical(status_obs, status_exp))
+> 
+> ## Add
+> add(repo, "sub-folder")
+> status_exp <- structure(list(staged = list(
++                                  new = "sub-folder/file-2.txt",
++                                  new = "sub-folder/file-3.txt",
++                                  new = "sub-folder/sub-sub-folder/file-4.txt",
++                                  new = "sub-folder/sub-sub-folder/file-5.txt"),
++                              unstaged = empty_named_list(),
++                              untracked = list(untracked = "file-1.txt")),
++                         class = "git_status")
+> status_obs <- status(repo)
+> stopifnot(identical(status_obs, status_exp))
+> 
+> ## Commit
+> commit(repo, "First commit message")
+[f7142fb] 2026-05-15: First commit message
+> 
+> ## It should fail to remove non-existing, untracked and ignored files
+> tools::assertError(rm_file(repo, c("file-1.txt", "file-2.txt")))
+> tools::assertError(rm_file(repo, c("file-1.txt", "")))
+> tools::assertError(rm_file(repo, c("file-1.txt")))
+> writeLines("/file-1.txt", file.path(path, ".gitignore"))
+> tools::assertError(rm_file(repo, "file-1.txt"))
+> 
+> ## It should fail to remove files with staged changes
+> file.remove(file.path(path, ".gitignore"))
+[1] TRUE
+> add(repo, "file-1.txt")
+> tools::assertError(rm_file(repo, "file-1.txt"))
+> 
+> ## It should fail to remove files with unstaged changes
+> commit(repo, "Second commit message")
+[3de83ca] 2026-05-15: Second commit message
+> writeLines(c("Hello world!", "Hello world!"),
++            file.path(path, "file-1.txt"))
+> tools::assertError(rm_file(repo, "file-1.txt"))
+> 
+> ## Remove file
+> add(repo, "file-1.txt")
+> commit(repo, "Third commit message")
+[ff1fd7e] 2026-05-15: Third commit message
+> rm_file(repo, "file-1.txt")
+> status_exp <- structure(list(staged = list(deleted = "file-1.txt"),
++                              unstaged = empty_named_list(),
++                              untracked = empty_named_list()),
++                         class = "git_status")
+> status_obs <- status(repo)
+> stopifnot(identical(status_obs, status_exp))
+> 
+> ## Cleanup
+> unlink(path, recursive = TRUE)
+> 

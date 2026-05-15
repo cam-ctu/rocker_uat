@@ -1,0 +1,131 @@
+
+R version 4.6.0 (2026-04-24) -- "Because it was There"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> ## git2r, R bindings to the libgit2 library.
+> ## Copyright (C) 2013-2023 The git2r contributors
+> ##
+> ## This program is free software; you can redistribute it and/or modify
+> ## it under the terms of the GNU General Public License, version 2,
+> ## as published by the Free Software Foundation.
+> ##
+> ## git2r is distributed in the hope that it will be useful,
+> ## but WITHOUT ANY WARRANTY; without even the implied warranty of
+> ## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> ## GNU General Public License for more details.
+> ##
+> ## You should have received a copy of the GNU General Public License along
+> ## with this program; if not, write to the Free Software Foundation, Inc.,
+> ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+> 
+> library("git2r")
+> 
+> ## For debugging
+> sessionInfo()
+R version 4.6.0 (2026-04-24)
+Platform: x86_64-pc-linux-gnu
+Running under: Ubuntu 24.04.4 LTS
+
+Matrix products: default
+BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
+LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so;  LAPACK version 3.12.0
+
+locale:
+ [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              
+ [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    
+ [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   
+ [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 
+ [9] LC_ADDRESS=C               LC_TELEPHONE=C            
+[11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
+
+time zone: Etc/UTC
+tzcode source: system (glibc)
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] git2r_0.36.2
+
+loaded via a namespace (and not attached):
+[1] compiler_4.6.0
+> libgit2_version()
+$major
+[1] 1
+
+$minor
+[1] 7
+
+$rev
+[1] 2
+
+> libgit2_features()
+$threads
+[1] TRUE
+
+$https
+[1] TRUE
+
+$ssh
+[1] TRUE
+
+> 
+> 
+> ## Create 2 directories in tempdir
+> path_src <- tempfile(pattern = "git2r-")
+> path_tgt <- tempfile(pattern = "git2r-")
+> dir.create(path_tgt)
+> dir.create(path_src)
+> 
+> ## Initialize a repository
+> repo_src <- init(path_src)
+> config(repo_src, user.name = "Alice", user.email = "alice@example.org")
+> 
+> ## Add commit to repo
+> filename <- "test.txt"
+> writeLines("Hello world", con = file.path(path_src, filename))
+> add(repo_src, "test.txt")
+> commit_src <- commit(repo_src, "Commit message")
+> 
+> ## Check checkout argument
+> tools::assertError(clone(path_src, path_tgt, checkout = c(FALSE, TRUE)))
+> tools::assertError(clone(path_src, path_tgt, checkout = 1))
+> tools::assertError(clone(path_src, path_tgt, checkout = 1L))
+> tools::assertError(clone(path_src, path_tgt, checkout = "test"))
+> 
+> ## Clone source to target repository without checking out any files
+> repo_tgt <- clone(path_src, path_tgt, checkout = FALSE)
+cloning into '/tmp/RtmpldsYeA/git2r-1535d52e5583f'...
+> 
+> ## List files in the repositores
+> stopifnot(identical(list.files(path_src), filename))
+> stopifnot(identical(list.files(path_tgt), character(0)))
+> 
+> ## Compare commits
+> stopifnot(identical(length(commits(repo_tgt)), 1L))
+> commit_tgt <- last_commit(repo_tgt)
+> stopifnot(identical(sha(last_commit(path_tgt)), sha(commit_tgt)))
+> stopifnot(identical(sha(commit_src), sha(commit_tgt)))
+> stopifnot(identical(commit_src$author, commit_tgt$author))
+> stopifnot(identical(commit_src$committer, commit_tgt$committer))
+> stopifnot(identical(commit_src$summary, commit_tgt$summary))
+> stopifnot(identical(commit_src$message, commit_tgt$message))
+> stopifnot(!identical(commit_src$repo, commit_tgt$repo))
+> 
+> ## Cleanup
+> unlink(path_tgt, recursive = TRUE)
+> unlink(path_src, recursive = TRUE)
+> 

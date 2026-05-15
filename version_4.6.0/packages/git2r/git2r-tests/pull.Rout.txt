@@ -1,0 +1,224 @@
+
+R version 4.6.0 (2026-04-24) -- "Because it was There"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> ## git2r, R bindings to the libgit2 library.
+> ## Copyright (C) 2013-2023 The git2r contributors
+> ##
+> ## This program is free software; you can redistribute it and/or modify
+> ## it under the terms of the GNU General Public License, version 2,
+> ## as published by the Free Software Foundation.
+> ##
+> ## git2r is distributed in the hope that it will be useful,
+> ## but WITHOUT ANY WARRANTY; without even the implied warranty of
+> ## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> ## GNU General Public License for more details.
+> ##
+> ## You should have received a copy of the GNU General Public License along
+> ## with this program; if not, write to the Free Software Foundation, Inc.,
+> ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+> 
+> library(git2r)
+> 
+> ## For debugging
+> sessionInfo()
+R version 4.6.0 (2026-04-24)
+Platform: x86_64-pc-linux-gnu
+Running under: Ubuntu 24.04.4 LTS
+
+Matrix products: default
+BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
+LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so;  LAPACK version 3.12.0
+
+locale:
+ [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              
+ [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    
+ [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   
+ [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 
+ [9] LC_ADDRESS=C               LC_TELEPHONE=C            
+[11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
+
+time zone: Etc/UTC
+tzcode source: system (glibc)
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] git2r_0.36.2
+
+loaded via a namespace (and not attached):
+[1] compiler_4.6.0
+> libgit2_version()
+$major
+[1] 1
+
+$minor
+[1] 7
+
+$rev
+[1] 2
+
+> libgit2_features()
+$threads
+[1] TRUE
+
+$https
+[1] TRUE
+
+$ssh
+[1] TRUE
+
+> 
+> 
+> ## Create directories for repositories in tempdir
+> path_bare <- tempfile(pattern = "git2r-")
+> path_repo_1 <- tempfile(pattern = "git2r-")
+> path_repo_2 <- tempfile(pattern = "git2r-")
+> 
+> dir.create(path_bare)
+> dir.create(path_repo_1)
+> dir.create(path_repo_2)
+> 
+> ## Create bare repository
+> bare_repo <- init(path_bare, bare = TRUE)
+> 
+> ## Clone to repo 1
+> repo_1 <- clone(path_bare, path_repo_1)
+cloning into '/tmp/RtmpXigziE/git2r-154e919cd2eb3'...
+> config(repo_1, user.name = "Alice", user.email = "alice@example.org")
+> 
+> ## Add changes to repo 1 and push to bare
+> writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
++            con = file.path(path_repo_1, "test-1.txt"))
+> add(repo_1, "test-1.txt")
+> commit_1 <- commit(repo_1, "First commit message")
+> branch_name <- branches(repo_1)[[1]]$name
+> push(repo_1, "origin", paste0("refs/heads/", branch_name))
+> 
+> ## Clone to repo 2
+> repo_2 <- clone(path_bare, path_repo_2)
+cloning into '/tmp/RtmpXigziE/git2r-154e9271e0284'...
+> config(repo_2, user.name = "Bob", user.email = "bob@example.org")
+> 
+> ## Add more changes to repo 1 and push to bare
+> writeLines(c("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
++              "eiusmod tempor incididunt ut labore et dolore magna aliqua."),
++            con = file.path(path_repo_1, "test-1.txt"))
+> add(repo_1, "test-1.txt")
+> commit_2 <- commit(repo_1, "Second commit message")
+> push(repo_1, "origin", paste0("refs/heads/", branch_name))
+> 
+> ## Pull changes to repo_2
+> pull(repo_2)
+[updated] 416b9c8174..6bf48587e0 refs/remotes/origin/master
+Merge: Fast-forward
+> stopifnot(identical(length(commits(repo_2)), 2L))
+> 
+> ## Check remote url of repo_2
+> stopifnot(identical(
++     branch_remote_url(branch_get_upstream(repository_head(repo_2))),
++     path_bare))
+> 
+> ## Unset remote remote tracking branch
+> branch_set_upstream(repository_head(repo_2), NULL)
+> stopifnot(is.null(branch_get_upstream(repository_head(repo_2))))
+> tools::assertError(pull(repo_2))
+> tools::assertError(branch_set_upstream(repository_head(repo_2), NULL))
+> 
+> ## Add more changes to repo 1 and push to bare
+> writeLines(
++     c("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
++       "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad",
++       "minim veniam, quis nostrud exercitation ullamco laboris nisi ut"),
++     con = file.path(path_repo_1, "test-1.txt"))
+> add(repo_1, "test-1.txt")
+> commit_3 <- commit(repo_1, "Third commit message")
+> push(repo_1)
+> 
+> ## Set remote tracking branch
+> branch_set_upstream(repository_head(repo_2),
++                     paste0("origin/", branch_name))
+> stopifnot(identical(
++     branch_remote_url(branch_get_upstream(repository_head(repo_2))),
++     path_bare))
+> 
+> ## Pull changes to repo_2
+> pull(repo_2)
+[updated] 6bf48587e0..12bf12ae02 refs/remotes/origin/master
+Merge: Fast-forward
+> stopifnot(identical(length(commits(repo_2)), 3L))
+> 
+> ## Check references in repo_1 and repo_2. Must clear the repo item
+> ## since the repositories have different paths.
+> stopifnot(identical(length(references(repo_1)), 2L))
+> 
+> ref_1 <- references(repo_1)
+> lapply(seq_len(length(ref_1)), function(i) {
++     ref_1[[i]]$repo <<- NULL
++ })
+[[1]]
+NULL
+
+[[2]]
+NULL
+
+> 
+> ref_2 <- references(repo_2)
+> lapply(seq_len(length(ref_2)), function(i) {
++     ref_2[[i]]$repo <<- NULL
++ })
+[[1]]
+NULL
+
+[[2]]
+NULL
+
+[[3]]
+NULL
+
+> 
+> name <- paste0("refs/heads/", branch_name)
+> stopifnot(identical(ref_1[[name]], ref_2[[name]]))
+> 
+> name <- paste0("refs/remotes/", branch_name)
+> stopifnot(identical(ref_1[[name]], ref_2[[name]]))
+> 
+> ref_1 <- references(repo_1)[[paste0("refs/heads/", branch_name)]]
+> stopifnot(identical(ref_1$name, paste0("refs/heads/", branch_name)))
+> stopifnot(identical(ref_1$type, 1L))
+> stopifnot(identical(sha(ref_1), sha(commit_3)))
+> stopifnot(identical(ref_1$target, NA_character_))
+> stopifnot(identical(ref_1$shorthand, branch_name))
+> 
+> ref_2 <- references(repo_1)[[paste0("refs/remotes/origin/", branch_name)]]
+> stopifnot(identical(ref_2$name, paste0("refs/remotes/origin/", branch_name)))
+> stopifnot(identical(ref_2$type, 1L))
+> stopifnot(identical(sha(ref_2), sha(commit_3)))
+> stopifnot(identical(ref_2$target, NA_character_))
+> stopifnot(identical(ref_2$shorthand, paste0("origin/", branch_name)))
+> 
+> ## Check references with missing repo argument
+> wd <- setwd(path_repo_1)
+> stopifnot(identical(length(references()), 2L))
+> if (!is.null(wd))
++     setwd(wd)
+> 
+> ## Cleanup
+> unlink(path_bare, recursive = TRUE)
+> unlink(path_repo_1, recursive = TRUE)
+> unlink(path_repo_2, recursive = TRUE)
+> 
