@@ -1,0 +1,280 @@
+
+R version 4.5.3 (2026-03-11) -- "Reassured Reassurer"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> ## git2r, R bindings to the libgit2 library.
+> ## Copyright (C) 2013-2023 The git2r contributors
+> ##
+> ## This program is free software; you can redistribute it and/or modify
+> ## it under the terms of the GNU General Public License, version 2,
+> ## as published by the Free Software Foundation.
+> ##
+> ## git2r is distributed in the hope that it will be useful,
+> ## but WITHOUT ANY WARRANTY; without even the implied warranty of
+> ## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> ## GNU General Public License for more details.
+> ##
+> ## You should have received a copy of the GNU General Public License along
+> ## with this program; if not, write to the Free Software Foundation, Inc.,
+> ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+> 
+> library(git2r)
+> 
+> ## For debugging
+> sessionInfo()
+R version 4.5.3 (2026-03-11)
+Platform: x86_64-pc-linux-gnu
+Running under: Ubuntu 24.04.4 LTS
+
+Matrix products: default
+BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
+LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so;  LAPACK version 3.12.0
+
+locale:
+ [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              
+ [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    
+ [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   
+ [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 
+ [9] LC_ADDRESS=C               LC_TELEPHONE=C            
+[11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
+
+time zone: Etc/UTC
+tzcode source: system (glibc)
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] git2r_0.36.2
+
+loaded via a namespace (and not attached):
+[1] compiler_4.5.3
+> libgit2_version()
+$major
+[1] 1
+
+$minor
+[1] 7
+
+$rev
+[1] 2
+
+> libgit2_features()
+$threads
+[1] TRUE
+
+$https
+[1] TRUE
+
+$ssh
+[1] TRUE
+
+> 
+> 
+> ## Create 2 directories in tempdir
+> path_bare <- tempfile(pattern = "git2r-")
+> path_repo_1 <- tempfile(pattern = "git2r-")
+> path_repo_2 <- tempfile(pattern = "git2r-")
+> 
+> dir.create(path_bare)
+> dir.create(path_repo_1)
+> dir.create(path_repo_2)
+> 
+> ## Create repositories
+> bare_repo <- init(path_bare, bare = TRUE)
+> repo_1 <- clone(path_bare, path_repo_1)
+cloning into '/tmp/RtmpPCliPk/git2r-153134f38af26'...
+> repo_2 <- clone(path_bare, path_repo_2)
+cloning into '/tmp/RtmpPCliPk/git2r-153136d4fea1'...
+> 
+> ## Config repositories
+> config(repo_1, user.name = "Alice", user.email = "alice@example.org")
+> config(repo_2, user.name = "Bob", user.email = "bob@example.org")
+> 
+> ## Add changes to repo 1
+> writeLines("Hello world", con = file.path(path_repo_1, "test.txt"))
+> add(repo_1, "test.txt")
+> commit_1 <- commit(repo_1, "Commit message")
+> branch_name <- branches(repo_1)[[1]]$name
+> 
+> ## Push changes from repo 1 to origin
+> push(repo_1, "origin", paste0("refs/heads/", branch_name))
+> 
+> ## Check result in bare repository
+> stopifnot(identical(length(commits(bare_repo)), 1L))
+> bare_commit_1 <- commits(bare_repo)[[1]]
+> stopifnot(identical(sha(commit_1), sha(bare_commit_1)))
+> stopifnot(identical(commit_1$author, bare_commit_1$author))
+> stopifnot(identical(commit_1$committer, bare_commit_1$committer))
+> stopifnot(identical(commit_1$summary, bare_commit_1$summary))
+> stopifnot(identical(commit_1$message, bare_commit_1$message))
+> stopifnot(!identical(commit_1$repo, bare_commit_1$repo))
+> 
+> ## Fetch
+> fetch(repo_2, "origin")
+[new]     f13bc4f00e351f509faa refs/remotes/origin/master
+> fh <- fetch_heads(repo_2)[[1]]
+> stopifnot(identical(sha(fh), fh$sha))
+> 
+> ## Test show method of non-empty repository where head is null
+> show(repo_2)
+Local:    /tmp/RtmpPCliPk/git2r-153136d4fea1
+Head:     nothing commited (yet)
+> 
+> if (identical(Sys.getenv("NOT_CRAN"), "true")) {
++   ## Only do proxy parameter tests when networking is allowed (not on CRAN).
++ 
++   message("Testing fetch() with proxy=TRUE (auto-detect)")
++   tryCatch({
++     fetch(repo_2, "origin", proxy = TRUE)
++     ## If no error, the parameter was accepted.
++     ## (We won't see new commits unless there's an actual update, but
++     ## the call at least shouldn’t fail purely because of the proxy parameter.)
++   }, error = function(e) {
++     message(
++             "fetch() with proxy=TRUE failed (likely no real proxy or other net issues): ", 
++             e$message)
++   })
++ 
++ }
+> 
+> ## Check that 'git2r_arg_check_proxy' raise error
+> res <- tools::assertError(
++   .Call(
++     git2r:::git2r_remote_fetch,
++     repo_1,
++     "origin",
++     NULL,      # credentials (valid or NULL)
++     "fetch",   # msg
++     FALSE,     # verbose
++     NULL,      # refspec
++     1L         # <-- invalid proxy argument (should be NULL, TRUE, or a string)
++   )
++ )
+> stopifnot(
++   length(grep("'proxy_val' must be either 1) NULL, or 2) TRUE or 3) a character vector", res[[1]]$message)) > 0
++ )
+> 
+> ## Another invalid case: vector of length 2
+> res <- tools::assertError(
++   .Call(
++     git2r:::git2r_remote_fetch,
++     repo_1,
++     "origin",
++     NULL,
++     "fetch",
++     FALSE,
++     NULL,
++     c("http://example", "http://example2") # invalid, more than one string
++   )
++ )
+> stopifnot(
++   length(grep("'proxy_val' must be either 1) NULL, or 2) TRUE or 3) a character vector", res[[1]]$message)) > 0
++ )
+> 
+> ## Check that 'git2r_arg_check_credentials' raise error
+> res <- tools::assertError(
++                   .Call(git2r:::git2r_remote_fetch, repo_1, "origin",
++                         3, "fetch", FALSE, NULL, NULL))
+> stopifnot(length(grep("'credentials' must be an S3 class with credentials",
++                       res[[1]]$message)) > 0)
+> 
+> res <- tools::assertError(
++     .Call(git2r:::git2r_remote_fetch, repo_1, "origin", repo_1,
++           "fetch", FALSE, NULL, NULL))
+> stopifnot(length(grep("'credentials' must be an S3 class with credentials",
++                       res[[1]]$message)) > 0)
+> 
+> credentials <- cred_env(c("username", "username"), "password")
+> res <- tools::assertError(
++     .Call(git2r:::git2r_remote_fetch, repo_1, "origin", credentials,
++           "fetch", FALSE, NULL, NULL))
+> stopifnot(length(grep("'credentials' must be an S3 class with credentials",
++                       res[[1]]$message)) > 0)
+> 
+> credentials <- cred_env("username", c("password", "passowrd"))
+> res <- tools::assertError(
++     .Call(git2r:::git2r_remote_fetch, repo_1, "origin", credentials,
++           "fetch", FALSE, NULL, NULL))
+> stopifnot(length(grep("'credentials' must be an S3 class with credentials",
++                       res[[1]]$message)) > 0)
+> 
+> credentials <- cred_user_pass(c("username", "username"), "password")
+> res <- tools::assertError(
++     .Call(git2r:::git2r_remote_fetch, repo_1, "origin", credentials,
++           "fetch", FALSE, NULL, NULL))
+> stopifnot(length(grep("'credentials' must be an S3 class with credentials",
++                       res[[1]]$message)) > 0)
+> 
+> credentials <- cred_user_pass("username", c("password", "passowrd"))
+> res <- tools::assertError(
++     .Call(git2r:::git2r_remote_fetch, repo_1, "origin", credentials,
++           "fetch", FALSE, NULL, NULL))
+> stopifnot(length(grep("'credentials' must be an S3 class with credentials",
++                       res[[1]]$message)) > 0)
+> 
+> credentials <- cred_token(c("GITHUB_PAT", "GITHUB_PAT"))
+> res <- tools::assertError(
++     .Call(git2r:::git2r_remote_fetch, repo_1, "origin", credentials,
++           "fetch", FALSE, NULL, NULL))
+> stopifnot(length(grep("'credentials' must be an S3 class with credentials",
++                       res[[1]]$message)) > 0)
+> 
+> credentials <- structure(list(publickey  = c("id_rsa.pub", "id_rsa.pub"),
++                               privatekey = "id_rsa",
++                               passphrase = character(0)),
++                          class = "cred_ssh_key")
+> res <- tools::assertError(
++     .Call(git2r:::git2r_remote_fetch, repo_1, "origin", credentials,
++           "fetch", FALSE, NULL, NULL))
+> stopifnot(length(grep("'credentials' must be an S3 class with credentials",
++                       res[[1]]$message)) > 0)
+> 
+> credentials <- structure(list(publickey  = "id_rsa.pub",
++                               privatekey = c("id_rsa", "id_rsa"),
++                               passphrase = character(0)),
++                          class = "cred_ssh_key")
+> res <- tools::assertError(
++     .Call(git2r:::git2r_remote_fetch, repo_1, "origin", credentials,
++           "fetch", FALSE, NULL, NULL))
+> stopifnot(length(grep("'credentials' must be an S3 class with credentials",
++                       res[[1]]$message)) > 0)
+> 
+> credentials <- structure(list(publickey  = "id_rsa.pub",
++                               privatekey = "id_rsa",
++                               passphrase = NA_character_),
++                          class = "cred_ssh_key")
+> res <- tools::assertError(
++     .Call(git2r:::git2r_remote_fetch, repo_1, "origin", credentials,
++           "fetch", FALSE, NULL, NULL))
+> stopifnot(length(grep("'credentials' must be an S3 class with credentials",
++                       res[[1]]$message)) > 0)
+> 
+> credentials <- structure(list(publickey  = "id_rsa.pub",
++                               privatekey = "id_rsa",
++                               passphrase = c("passphrase", "passphrase")),
++                          class = "cred_ssh_key")
+> res <- tools::assertError(
++     .Call(git2r:::git2r_remote_fetch, repo_1, "origin", credentials,
++           "fetch", FALSE, NULL, NULL))
+> stopifnot(length(grep("'credentials' must be an S3 class with credentials",
++                       res[[1]]$message)) > 0)
+> 
+> ## Cleanup
+> unlink(path_bare, recursive = TRUE)
+> unlink(path_repo_1, recursive = TRUE)
+> unlink(path_repo_2, recursive = TRUE)
+> 

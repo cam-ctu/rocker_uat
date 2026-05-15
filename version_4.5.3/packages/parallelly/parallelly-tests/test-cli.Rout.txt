@@ -120,12 +120,14 @@ List of 5
 > print(parallelly::availableCores, call = FALSE)
 function (constraints = NULL, methods = getOption2("parallelly.availableCores.methods", 
     c("system", "/proc/self/status", "cgroups.cpuset", "cgroups.cpuquota", 
+        "cgroups2.cpuset.cpus", "cgroups2.cpuset.cpus.effective", 
         "cgroups2.cpu.max", "nproc", "mc.cores", "BiocParallel", 
         "_R_CHECK_LIMIT_CORES_", "Bioconductor", "LSF", "PJM", 
         "PBS", "SGE", "Slurm", "fallback", "custom")), na.rm = TRUE, 
     logical = getOption2("parallelly.availableCores.logical", 
         TRUE), default = c(current = 1L), which = c("min", "max", 
-        "all"), omit = getOption2("parallelly.availableCores.omit", 
+        "all"), fraction = getOption2("parallelly.availableCores.fraction", 
+        1), omit = getOption2("parallelly.availableCores.omit", 
         0L), max = getOption2("parallelly.availableCores.max", 
         Inf)) 
 {
@@ -139,6 +141,8 @@ function (constraints = NULL, methods = getOption2("parallelly.availableCores.me
     which <- match.arg(which, choices = c("min", "max", "all"))
     stop_if_not(length(default) == 1, is.finite(default), default >= 
         1L)
+    stop_if_not(length(fraction) == 1L, is.numeric(fraction), 
+        is.finite(fraction), fraction > 0, fraction <= 1)
     stop_if_not(length(omit) == 1L, is.numeric(omit), is.finite(omit), 
         omit >= 0L)
     omit <- as.integer(omit)
@@ -175,7 +179,7 @@ function (constraints = NULL, methods = getOption2("parallelly.availableCores.me
             n <- freeConnections()
             if (!is.na(n)) {
                 delta <- sub(pattern_connections, "\\1", method)
-                if (nzchar(delta) && nzchar(omit)) {
+                if (nzchar(delta)) {
                   delta <- as.integer(delta)
                   n <- max(0L, n + delta)
                 }
@@ -239,6 +243,16 @@ function (constraints = NULL, methods = getOption2("parallelly.availableCores.me
                   n <- 1L
             }
         }
+        else if (method == "cgroups2.cpuset.cpus") {
+            n <- length(getCGroups2CpuSet("cpuset.cpus"))
+            if (n == 0L) 
+                n <- NA_integer_
+        }
+        else if (method == "cgroups2.cpuset.cpus.effective") {
+            n <- length(getCGroups2CpuSet("cpuset.cpus.effective"))
+            if (n == 0L) 
+                n <- NA_integer_
+        }
         else if (method == "cgroups2.cpu.max") {
             n <- getCGroups2CpuMax()
             if (is.na(n)) {
@@ -269,7 +283,7 @@ function (constraints = NULL, methods = getOption2("parallelly.availableCores.me
                 fcn()
             })
             if (length(n) != 1L) {
-                stop("Function specified by option 'parallelly.availableCores.custom' does not a single value")
+                stop("Function specified by option 'parallelly.availableCores.custom' does not return a single value")
             }
             n <- as.integer(n)
         }
@@ -297,7 +311,8 @@ function (constraints = NULL, methods = getOption2("parallelly.availableCores.me
         idx_fallback <- which(names(ncores) == "fallback")
         if (length(idx_fallback) == 1) {
             special <- c("system", "/proc/self/status", "cgroups.cpuset", 
-                "cgroups.cpuquota", "cgroups2.cpu.max", "nproc")
+                "cgroups.cpuquota", "cgroups2.cpuset.cpus", "cgroups2.cpuset.cpus.effective", 
+                "cgroups2.cpu.max", "nproc")
             special <- c(special, grep(pattern_connections, constraints, 
                 value = TRUE))
             others <- setdiff(names(ncores), c("fallback", special))
@@ -345,6 +360,10 @@ function (constraints = NULL, methods = getOption2("parallelly.availableCores.me
         names(ncores)[idxs] <- paste(names(ncores)[idxs], "*", 
             sep = "")
     }
+    if (fraction < 1) {
+        ncores <- as.integer(floor(fraction * ncores))
+        ncores[ncores < 1L] <- 1L
+    }
     if (omit > 0L) {
         ncores <- ncores - omit
         ncores[ncores < 1L] <- 1L
@@ -356,7 +375,7 @@ function (constraints = NULL, methods = getOption2("parallelly.availableCores.me
     stop_if_not(all(ncores >= 1L, na.rm = TRUE))
     ncores
 }
-<bytecode: 0x564cf2f5ceb8>
+<bytecode: 0x562b380f2b98>
 <environment: namespace:parallelly>
 attr(,"class")
 [1] "cli_fcn"  "function"
@@ -417,16 +436,16 @@ function (x)
         print(x, row.names = FALSE)
     }
 }
-<environment: 0x564cf2eadd98>
+<environment: 0x562b38046728>
 
-> options(future.p2p.tests.cmdargs = character(0))
+> options(parallelly.tests.cmdargs = character(0))
 
 > print(parallelly::availableCores, call = TRUE)
  mc.cores
         2
 NULL
 
-> options(future.p2p.tests.cmdargs = c("--max=4"))
+> options(parallelly.tests.cmdargs = c("--max=4"))
 
 > print(parallelly::availableCores, call = TRUE)
 2
@@ -459,8 +478,8 @@ function (x)
         print(x, row.names = FALSE)
     }
 }
-<bytecode: 0x564cf10b1e08>
-<environment: 0x564cf10b3228>
+<bytecode: 0x562b3629ae08>
+<environment: 0x562b36298388>
 
 > output(42)
 42
@@ -479,19 +498,19 @@ $abc
  abc
   42
 
-> options(future.p2p.tests.cmdargs = character(0))
+> options(parallelly.tests.cmdargs = character(0))
 
 > void <- print(fcn)
   abc def
 1   0   0
 
-> options(future.p2p.tests.cmdargs = c("--abc=0", "--def=3.14"))
+> options(parallelly.tests.cmdargs = c("--abc=0", "--def=3.14"))
 
 > void <- print(fcn)
   abc  def
 1   0 3.14
 
-> options(future.p2p.tests.cmdargs = c("--abc=-1", "--def=3.14"))
+> options(parallelly.tests.cmdargs = c("--abc=-1", "--def=3.14"))
 
 > void <- print(fcn)
 $abc
@@ -501,7 +520,7 @@ $def
 [1] 3.14
 
 
-> options(future.p2p.tests.cmdargs = c("--abc=+1", "--def=3.14"))
+> options(parallelly.tests.cmdargs = c("--abc=+1", "--def=3.14"))
 
 > void <- print(fcn)
 [[1]]
@@ -513,7 +532,7 @@ $def
 
 > parallelly:::cli_fcn_output(fcn) <- utils::str
 
-> options(future.p2p.tests.cmdargs = c("--abc=+1", "--def=3.14"))
+> options(parallelly.tests.cmdargs = c("--abc=+1", "--def=3.14"))
 
 > void <- print(fcn)
 List of 2
@@ -530,7 +549,7 @@ List of 2
 
 > stopifnot(inherits(void, "error"))
 
-> options(future.p2p.tests.cmdargs = NULL)
+> options(parallelly.tests.cmdargs = NULL)
 
 > res <- tryCatch(parallelly:::cli_prune(), error = identity)
 
@@ -541,6 +560,6 @@ List of 2
 
 > message("*** CLI ... DONE")
 *** CLI ... DONE
-Test time: user.self=0.08s, sys.self=0.004s, elapsed=0.09s, user.child=0.001s, sys.child=0.003s
+Test time: user.self=0.08s, sys.self=0.003s, elapsed=0.08s, user.child=0.002s, sys.child=0.004s
 Test ‘cli’ ... success
 > 

@@ -800,8 +800,391 @@ List of 2
 
 > stopifnot(inherits(res, "try-error"))
 
+> rm(list = c("b", "c", "d", "e"), inherits = FALSE)
+
+> res <- try({
++     globals <- globalsOf({
++         x <- a + b
++     }, substitute = TRUE, mustExist = TRUE)
++ }, silent = TRUE)
+
+> stopifnot(inherits(res, "try-error"))
+
 > message("*** globalsOf() - exceptions ... DONE")
 *** globalsOf() - exceptions ... DONE
+
+> message("*** globalsOf() - locals option via env var ...")
+*** globalsOf() - locals option via env var ...
+
+> a_opt <- 100
+
+> f_opt <- local({
++     local_var <- 42
++     function() local_var + a_opt
++ })
+
+> globals_t <- globalsOf(quote(f_opt), locals = TRUE)
+
+> str(globals_t)
+List of 4
+ $ f_opt    :function ()  
+ $ +        :function (e1, e2)  
+ $ local_var: num 42
+ $ a_opt    : num 100
+ - attr(*, "where")=List of 4
+  ..$ f_opt    :<environment: R_GlobalEnv> 
+  ..$ +        :<environment: base> 
+  ..$ local_var:<environment: 0x55b7c8b29eb0> 
+  ..$ a_opt    :<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+
+> stopifnot("local_var" %in% names(globals_t))
+
+> globals_f <- globalsOf(quote(f_opt), locals = FALSE)
+
+> str(globals_f)
+List of 3
+ $ f_opt:function ()  
+ $ +    :function (e1, e2)  
+ $ a_opt: num 100
+ - attr(*, "where")=List of 3
+  ..$ f_opt:<environment: R_GlobalEnv> 
+  ..$ +    :<environment: base> 
+  ..$ a_opt:<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+
+> stopifnot(!"local_var" %in% names(globals_f))
+
+> message("*** globalsOf() - locals option via env var ... DONE")
+*** globalsOf() - locals option via env var ... DONE
+
+> message("*** globalsOf() - unlist = FALSE ...")
+*** globalsOf() - unlist = FALSE ...
+
+> a_unl <- 1
+
+> b_unl <- 2
+
+> expr <- quote({
++     a_unl + b_unl
++ })
+
+> globals_u <- globalsOf(expr, unlist = FALSE, mustExist = FALSE)
+
+> str(globals_u)
+List of 4
+ $ {    :.Primitive("{") 
+ $ +    :function (e1, e2)  
+ $ a_unl: num 1
+ $ b_unl: num 2
+ - attr(*, "where")=List of 4
+  ..$ {    :<environment: base> 
+  ..$ +    :<environment: base> 
+  ..$ a_unl:<environment: R_GlobalEnv> 
+  ..$ b_unl:<environment: R_GlobalEnv> 
+ - attr(*, "class")= chr [1:2] "Globals" "list"
+
+> stopifnot(length(globals_u) > 0)
+
+> message("*** globalsOf() - unlist = FALSE ... DONE")
+*** globalsOf() - unlist = FALSE ... DONE
+
+> message("*** globalsOf() - debug mode ...")
+*** globalsOf() - debug mode ...
+
+> a_dbg <- 1
+
+> oopts <- options(globals.debug = TRUE)
+
+> globals_dbg <- globalsOf(quote(a_dbg + 1), mustExist = FALSE)
+[11:52:10.037] globalsOf(..., method = 'ordered', mustExist = FALSE, unlist = TRUE, recursive = TRUE) ...
+[11:52:10.037] | findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
+[11:52:10.038] | : workaround 'codetools' bug #16
+[11:52:10.038] | : globals found: [2] ‘+’, ‘a_dbg’
+[11:52:10.038] | findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... done
+[11:52:10.038] | preliminary globals (by name): [2] ‘+’, ‘a_dbg’
+[11:52:10.038] | globalsByName(<"+", "a_dbg"> [n=2], mustExist = FALSE) ...
+[11:52:10.038] | : search from environment: ‘R_GlobalEnv’
+[11:52:10.038] | : dotdotdots: <none>
+[11:52:10.038] | : locating #1 (‘+’)
+[11:52:10.039] | : where(‘+’, where = -1, envir = ‘R_GlobalEnv’, mode = ‘any’, inherits = TRUE) ...
+[11:52:10.039] | : . searching ‘R_GlobalEnv’: ‘a_dbg’, ‘a_opt’, ‘a_unl’, ..., ‘x’
+[11:52:10.039] | : . searching ‘globals’: ‘as.Globals’, ‘cleanup’, ‘findGlobals’, ..., ‘walkAST’
+[11:52:10.039] | : . searching ‘testme’: ‘as_function’, ‘assert_identical_sets’, ‘covr’, ..., ‘worker_label’
+[11:52:10.039] | : . searching ‘stats’: ‘.checkMFClasses’, ‘.getXlevels’, ‘.lm.fit’, ..., ‘xtabs’
+[11:52:10.040] | : . searching ‘graphics’: ‘.filled.contour’, ‘abline’, ‘arrows’, ..., ‘yinch’
+[11:52:10.040] | : . searching ‘grDevices’: ‘.axisPars’, ‘.clipPath’, ‘.defineGroup’, ..., ‘xyz.coords’
+[11:52:10.040] | : . searching ‘utils’: ‘?’, ‘.AtNames’, ‘.checkHT’, ..., ‘zip’
+[11:52:10.041] | : . searching ‘datasets’: ‘ability.cov’, ‘airmiles’, ‘AirPassengers’, ..., ‘WWWusage’
+[11:52:10.041] | : . searching ‘methods’: ‘.__C__.environment’, ‘.__C__.externalptr’, ‘.__C__.name’, ..., ‘validSlotNames’
+[11:52:10.042] | : . searching ‘Autoloads’: ‘.Autoloaded’
+[11:52:10.042] | : . searching ‘base’: ‘-’, ‘-.Date’, ‘-.POSIXt’, ..., ‘zstdfile’
+[11:52:10.045] | : . + found in location: ‘base’
+[11:52:10.045] | : where(‘+’, where = -1, envir = ‘R_GlobalEnv’, mode = ‘any’, inherits = TRUE) ... done
+[11:52:10.045] | : + found in environment: ‘base’
+[11:52:10.045] | : locating #2 (‘a_dbg’)
+[11:52:10.045] | : where(‘a_dbg’, where = -1, envir = ‘R_GlobalEnv’, mode = ‘any’, inherits = TRUE) ...
+[11:52:10.045] | : . searching ‘R_GlobalEnv’: ‘a_dbg’, ‘a_opt’, ‘a_unl’, ..., ‘x’
+[11:52:10.045] | : . + found in location: ‘R_GlobalEnv’
+[11:52:10.045] | : where(‘a_dbg’, where = -1, envir = ‘R_GlobalEnv’, mode = ‘any’, inherits = TRUE) ... done
+[11:52:10.046] | : + found in environment: ‘R_GlobalEnv’
+[11:52:10.046] | : Globals collected:
+[11:52:10.046] | : List of 2
+[11:52:10.046] | :  $ +    :function (e1, e2)  
+[11:52:10.046] | :  $ a_dbg: num 1
+[11:52:10.046] | :  - attr(*, "where")=List of 2
+[11:52:10.046] | :   ..$ +    :<environment: base> 
+[11:52:10.046] | :   ..$ a_dbg:<environment: R_GlobalEnv> 
+[11:52:10.046] | :  - attr(*, "class")= chr [1:2] "Globals" "list"
+[11:52:10.048] | globalsByName(<"+", "a_dbg"> [n=2], mustExist = FALSE) ... done
+[11:52:10.048] | preliminary globals (by value): [2] ‘+’, ‘a_dbg’
+[11:52:10.048] | recursive scan of preliminary globals ...
+[11:52:10.048] | : subset of globals to be scanned (not in loaded namespaces): [1] ‘a_dbg’
+[11:52:10.049] | : subset of globals to be scanned: [0]
+[11:52:10.049] | recursive scan of preliminary globals ... done
+[11:52:10.049] | globals found: [2] ‘+’, ‘a_dbg’
+[11:52:10.049] globalsOf(..., method = 'ordered', mustExist = FALSE, unlist = TRUE, recursive = TRUE) ... done
+
+> stopifnot("a_dbg" %in% names(globals_dbg))
+
+> globals_dbg2 <- globalsOf(quote(a_dbg + 1), method = c("ordered", 
++     "dfs"), mustExist = FALSE)
+[11:52:10.049] globalsOf(..., method = c('ordered', 'dfs'), mustExist = FALSE, unlist = TRUE, recursive = TRUE) ...
+[11:52:10.049] | findGlobals(..., dotdotdot = 'warning', method = c('ordered', 'dfs'), unlist = TRUE) ...
+[11:52:10.049] | : findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
+[11:52:10.049] | : . workaround 'codetools' bug #16
+[11:52:10.050] | : . globals found: [2] ‘+’, ‘a_dbg’
+[11:52:10.050] | : findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... done
+[11:52:10.050] | : findGlobals(..., dotdotdot = 'warning', method = 'dfs', unlist = TRUE) ...
+[11:52:10.052] | : . globals found: [2] ‘+’, ‘a_dbg’
+[11:52:10.052] | : findGlobals(..., dotdotdot = 'warning', method = 'dfs', unlist = TRUE) ... done
+[11:52:10.052] | : Globals found by per method:
+[11:52:10.053] | : ‘ordered’: ‘+’, ‘a_dbg’ [delta: <none>]
+[11:52:10.053] | : ‘dfs’: ‘+’, ‘a_dbg’ [delta: <none>]
+[11:52:10.053] | findGlobals(..., dotdotdot = 'warning', method = c('ordered', 'dfs'), unlist = TRUE) ... done
+[11:52:10.053] | preliminary globals (by name): [2] ‘+’, ‘a_dbg’
+[11:52:10.053] | globalsByName(<"+", "a_dbg"> [n=2], mustExist = FALSE) ...
+[11:52:10.053] | : search from environment: ‘R_GlobalEnv’
+[11:52:10.053] | : dotdotdots: <none>
+[11:52:10.053] | : locating #1 (‘+’)
+[11:52:10.053] | : where(‘+’, where = -1, envir = ‘R_GlobalEnv’, mode = ‘any’, inherits = TRUE) ...
+[11:52:10.053] | : . searching ‘R_GlobalEnv’: ‘a_dbg’, ‘a_opt’, ‘a_unl’, ..., ‘x’
+[11:52:10.054] | : . searching ‘globals’: ‘as.Globals’, ‘cleanup’, ‘findGlobals’, ..., ‘walkAST’
+[11:52:10.054] | : . searching ‘testme’: ‘as_function’, ‘assert_identical_sets’, ‘covr’, ..., ‘worker_label’
+[11:52:10.054] | : . searching ‘stats’: ‘.checkMFClasses’, ‘.getXlevels’, ‘.lm.fit’, ..., ‘xtabs’
+[11:52:10.055] | : . searching ‘graphics’: ‘.filled.contour’, ‘abline’, ‘arrows’, ..., ‘yinch’
+[11:52:10.055] | : . searching ‘grDevices’: ‘.axisPars’, ‘.clipPath’, ‘.defineGroup’, ..., ‘xyz.coords’
+[11:52:10.055] | : . searching ‘utils’: ‘?’, ‘.AtNames’, ‘.checkHT’, ..., ‘zip’
+[11:52:10.055] | : . searching ‘datasets’: ‘ability.cov’, ‘airmiles’, ‘AirPassengers’, ..., ‘WWWusage’
+[11:52:10.056] | : . searching ‘methods’: ‘.__C__.environment’, ‘.__C__.externalptr’, ‘.__C__.name’, ..., ‘validSlotNames’
+[11:52:10.056] | : . searching ‘Autoloads’: ‘.Autoloaded’
+[11:52:10.056] | : . searching ‘base’: ‘-’, ‘-.Date’, ‘-.POSIXt’, ..., ‘zstdfile’
+[11:52:10.059] | : . + found in location: ‘base’
+[11:52:10.060] | : where(‘+’, where = -1, envir = ‘R_GlobalEnv’, mode = ‘any’, inherits = TRUE) ... done
+[11:52:10.060] | : + found in environment: ‘base’
+[11:52:10.060] | : locating #2 (‘a_dbg’)
+[11:52:10.060] | : where(‘a_dbg’, where = -1, envir = ‘R_GlobalEnv’, mode = ‘any’, inherits = TRUE) ...
+[11:52:10.060] | : . searching ‘R_GlobalEnv’: ‘a_dbg’, ‘a_opt’, ‘a_unl’, ..., ‘x’
+[11:52:10.060] | : . + found in location: ‘R_GlobalEnv’
+[11:52:10.060] | : where(‘a_dbg’, where = -1, envir = ‘R_GlobalEnv’, mode = ‘any’, inherits = TRUE) ... done
+[11:52:10.060] | : + found in environment: ‘R_GlobalEnv’
+[11:52:10.060] | : Globals collected:
+[11:52:10.060] | : List of 2
+[11:52:10.060] | :  $ +    :function (e1, e2)  
+[11:52:10.060] | :  $ a_dbg: num 1
+[11:52:10.060] | :  - attr(*, "where")=List of 2
+[11:52:10.060] | :   ..$ +    :<environment: base> 
+[11:52:10.060] | :   ..$ a_dbg:<environment: R_GlobalEnv> 
+[11:52:10.060] | :  - attr(*, "class")= chr [1:2] "Globals" "list"
+[11:52:10.063] | globalsByName(<"+", "a_dbg"> [n=2], mustExist = FALSE) ... done
+[11:52:10.063] | preliminary globals (by value): [2] ‘+’, ‘a_dbg’
+[11:52:10.063] | recursive scan of preliminary globals ...
+[11:52:10.063] | : subset of globals to be scanned (not in loaded namespaces): [1] ‘a_dbg’
+[11:52:10.063] | : subset of globals to be scanned: [0]
+[11:52:10.063] | recursive scan of preliminary globals ... done
+[11:52:10.063] | globals found: [2] ‘+’, ‘a_dbg’
+[11:52:10.064] globalsOf(..., method = c('ordered', 'dfs'), mustExist = FALSE, unlist = TRUE, recursive = TRUE) ... done
+
+> stopifnot("a_dbg" %in% names(globals_dbg2))
+
+> options(oopts)
+
+> message("*** globalsOf() - debug mode ... DONE")
+*** globalsOf() - debug mode ... DONE
+
+> message("*** globalsOf() - recursive with nested closures ...")
+*** globalsOf() - recursive with nested closures ...
+
+> outer_val <- 100
+
+> inner_helper <- function(x) x + outer_val
+
+> outer_helper <- function(y) inner_helper(y)
+
+> globals_rec <- globalsOf(quote(outer_helper(1)), recursive = TRUE, 
++     mustExist = FALSE)
+
+> stopifnot("outer_helper" %in% names(globals_rec))
+
+> stopifnot("inner_helper" %in% names(globals_rec))
+
+> stopifnot("outer_val" %in% names(globals_rec))
+
+> oopts <- options(globals.debug = TRUE)
+
+> globals_rec_d <- globalsOf(quote(outer_helper(1)), 
++     recursive = TRUE, mustExist = FALSE)
+[11:52:10.066] globalsOf(..., method = 'ordered', mustExist = FALSE, unlist = TRUE, recursive = TRUE) ...
+[11:52:10.066] | findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
+[11:52:10.066] | : workaround 'codetools' bug #16
+[11:52:10.066] | : globals found: [1] ‘outer_helper’
+[11:52:10.066] | findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... done
+[11:52:10.066] | preliminary globals (by name): [1] ‘outer_helper’
+[11:52:10.066] | globalsByName("outer_helper", mustExist = FALSE) ...
+[11:52:10.067] | : search from environment: ‘R_GlobalEnv’
+[11:52:10.067] | : dotdotdots: <none>
+[11:52:10.067] | : locating #1 (‘outer_helper’)
+[11:52:10.067] | : where(‘outer_helper’, where = -1, envir = ‘R_GlobalEnv’, mode = ‘any’, inherits = TRUE) ...
+[11:52:10.067] | : . searching ‘R_GlobalEnv’: ‘a_dbg’, ‘a_opt’, ‘a_unl’, ..., ‘x’
+[11:52:10.067] | : . + found in location: ‘R_GlobalEnv’
+[11:52:10.067] | : where(‘outer_helper’, where = -1, envir = ‘R_GlobalEnv’, mode = ‘any’, inherits = TRUE) ... done
+[11:52:10.067] | : + found in environment: ‘R_GlobalEnv’
+[11:52:10.067] | : Globals collected:
+[11:52:10.067] | : List of 1
+[11:52:10.067] | :  $ outer_helper:function (y)  
+[11:52:10.067] | :  - attr(*, "where")=List of 1
+[11:52:10.067] | :   ..$ outer_helper:<environment: R_GlobalEnv> 
+[11:52:10.067] | :  - attr(*, "class")= chr [1:2] "Globals" "list"
+[11:52:10.069] | globalsByName("outer_helper", mustExist = FALSE) ... done
+[11:52:10.069] | preliminary globals (by value): [1] ‘outer_helper’
+[11:52:10.070] | recursive scan of preliminary globals ...
+[11:52:10.070] | : subset of globals to be scanned (not in loaded namespaces): [1] ‘outer_helper’
+[11:52:10.070] | : subset of globals to be scanned: [1] ‘outer_helper’
+[11:52:10.071] | : + scanning global #1 (‘outer_helper’) ...
+[11:52:10.071] | : globalsOf(..., method = 'ordered', mustExist = FALSE, unlist = TRUE, recursive = TRUE) ...
+[11:52:10.071] | : . findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
+[11:52:10.071] | : . ' workaround 'codetools' bug #16
+[11:52:10.071] | : . ' globals found: [1] ‘inner_helper’
+[11:52:10.071] | : . findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... done
+[11:52:10.072] | : . preliminary globals (by name): [1] ‘inner_helper’
+[11:52:10.072] | : . globalsByName("inner_helper", mustExist = FALSE) ...
+[11:52:10.072] | : . ' search from environment: ‘R_GlobalEnv’
+[11:52:10.072] | : . ' dotdotdots: <none>
+[11:52:10.072] | : . ' locating #1 (‘inner_helper’)
+[11:52:10.072] | : . ' where(‘inner_helper’, where = -1, envir = ‘R_GlobalEnv’, mode = ‘any’, inherits = TRUE) ...
+[11:52:10.072] | : . ' , searching ‘R_GlobalEnv’: ‘a_dbg’, ‘a_opt’, ‘a_unl’, ..., ‘x’
+[11:52:10.072] | : . ' , + found in location: ‘R_GlobalEnv’
+[11:52:10.072] | : . ' where(‘inner_helper’, where = -1, envir = ‘R_GlobalEnv’, mode = ‘any’, inherits = TRUE) ... done
+[11:52:10.072] | : . ' + found in environment: ‘R_GlobalEnv’
+[11:52:10.073] | : . ' Globals collected:
+[11:52:10.073] | : . ' List of 1
+[11:52:10.073] | : . '  $ inner_helper:function (x)  
+[11:52:10.073] | : . '  - attr(*, "where")=List of 1
+[11:52:10.073] | : . '   ..$ inner_helper:<environment: R_GlobalEnv> 
+[11:52:10.073] | : . '  - attr(*, "class")= chr [1:2] "Globals" "list"
+[11:52:10.074] | : . globalsByName("inner_helper", mustExist = FALSE) ... done
+[11:52:10.074] | : . preliminary globals (by value): [1] ‘inner_helper’
+[11:52:10.074] | : . recursive scan of preliminary globals ...
+[11:52:10.074] | : . ' subset of globals to be scanned (not in loaded namespaces): [1] ‘inner_helper’
+[11:52:10.074] | : . ' subset of globals to be scanned: [1] ‘inner_helper’
+[11:52:10.074] | : . ' + scanning global #1 (‘inner_helper’) ...
+[11:52:10.075] | : . ' globalsOf(..., method = 'ordered', mustExist = FALSE, unlist = TRUE, recursive = TRUE) ...
+[11:52:10.075] | : . ' , findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
+[11:52:10.075] | : . ' , ; workaround 'codetools' bug #16
+[11:52:10.075] | : . ' , ; globals found: [2] ‘+’, ‘outer_val’
+[11:52:10.075] | : . ' , findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... done
+[11:52:10.075] | : . ' , preliminary globals (by name): [2] ‘+’, ‘outer_val’
+[11:52:10.075] | : . ' , globalsByName(<"+", "outer_val"> [n=2], mustExist = FALSE) ...
+[11:52:10.076] | : . ' , ; search from environment: ‘R_GlobalEnv’
+[11:52:10.076] | : . ' , ; dotdotdots: <none>
+[11:52:10.076] | : . ' , ; locating #1 (‘+’)
+[11:52:10.076] | : . ' , ; where(‘+’, where = -1, envir = ‘R_GlobalEnv’, mode = ‘any’, inherits = TRUE) ...
+[11:52:10.076] | : . ' , ; ` searching ‘R_GlobalEnv’: ‘a_dbg’, ‘a_opt’, ‘a_unl’, ..., ‘x’
+[11:52:10.076] | : . ' , ; ` searching ‘globals’: ‘as.Globals’, ‘cleanup’, ‘findGlobals’, ..., ‘walkAST’
+[11:52:10.076] | : . ' , ; ` searching ‘testme’: ‘as_function’, ‘assert_identical_sets’, ‘covr’, ..., ‘worker_label’
+[11:52:10.076] | : . ' , ; ` searching ‘stats’: ‘.checkMFClasses’, ‘.getXlevels’, ‘.lm.fit’, ..., ‘xtabs’
+[11:52:10.077] | : . ' , ; ` searching ‘graphics’: ‘.filled.contour’, ‘abline’, ‘arrows’, ..., ‘yinch’
+[11:52:10.077] | : . ' , ; ` searching ‘grDevices’: ‘.axisPars’, ‘.clipPath’, ‘.defineGroup’, ..., ‘xyz.coords’
+[11:52:10.078] | : . ' , ; ` searching ‘utils’: ‘?’, ‘.AtNames’, ‘.checkHT’, ..., ‘zip’
+[11:52:10.078] | : . ' , ; ` searching ‘datasets’: ‘ability.cov’, ‘airmiles’, ‘AirPassengers’, ..., ‘WWWusage’
+[11:52:10.078] | : . ' , ; ` searching ‘methods’: ‘.__C__.environment’, ‘.__C__.externalptr’, ‘.__C__.name’, ..., ‘validSlotNames’
+[11:52:10.079] | : . ' , ; ` searching ‘Autoloads’: ‘.Autoloaded’
+[11:52:10.079] | : . ' , ; ` searching ‘base’: ‘-’, ‘-.Date’, ‘-.POSIXt’, ..., ‘zstdfile’
+[11:52:10.082] | : . ' , ; ` + found in location: ‘base’
+[11:52:10.082] | : . ' , ; where(‘+’, where = -1, envir = ‘R_GlobalEnv’, mode = ‘any’, inherits = TRUE) ... done
+[11:52:10.082] | : . ' , ; + found in environment: ‘base’
+[11:52:10.082] | : . ' , ; locating #2 (‘outer_val’)
+[11:52:10.082] | : . ' , ; where(‘outer_val’, where = -1, envir = ‘R_GlobalEnv’, mode = ‘any’, inherits = TRUE) ...
+[11:52:10.082] | : . ' , ; ` searching ‘R_GlobalEnv’: ‘a_dbg’, ‘a_opt’, ‘a_unl’, ..., ‘x’
+[11:52:10.083] | : . ' , ; ` + found in location: ‘R_GlobalEnv’
+[11:52:10.083] | : . ' , ; where(‘outer_val’, where = -1, envir = ‘R_GlobalEnv’, mode = ‘any’, inherits = TRUE) ... done
+[11:52:10.083] | : . ' , ; + found in environment: ‘R_GlobalEnv’
+[11:52:10.083] | : . ' , ; Globals collected:
+[11:52:10.083] | : . ' , ; List of 2
+[11:52:10.083] | : . ' , ;  $ +        :function (e1, e2)  
+[11:52:10.083] | : . ' , ;  $ outer_val: num 100
+[11:52:10.083] | : . ' , ;  - attr(*, "where")=List of 2
+[11:52:10.083] | : . ' , ;   ..$ +        :<environment: base> 
+[11:52:10.083] | : . ' , ;   ..$ outer_val:<environment: R_GlobalEnv> 
+[11:52:10.083] | : . ' , ;  - attr(*, "class")= chr [1:2] "Globals" "list"
+[11:52:10.085] | : . ' , globalsByName(<"+", "outer_val"> [n=2], mustExist = FALSE) ... done
+[11:52:10.085] | : . ' , preliminary globals (by value): [2] ‘+’, ‘outer_val’
+[11:52:10.085] | : . ' , recursive scan of preliminary globals ...
+[11:52:10.086] | : . ' , ; subset of globals to be scanned (not in loaded namespaces): [1] ‘outer_val’
+[11:52:10.086] | : . ' , ; subset of globals to be scanned: [0]
+[11:52:10.086] | : . ' , recursive scan of preliminary globals ... done
+[11:52:10.086] | : . ' , globals found: [2] ‘+’, ‘outer_val’
+[11:52:10.086] | : . ' globalsOf(..., method = 'ordered', mustExist = FALSE, unlist = TRUE, recursive = TRUE) ... done
+[11:52:10.086] | : . ' updated set of globals found: [3] ‘inner_helper’, ‘+’, ‘outer_val’
+[11:52:10.086] | : . recursive scan of preliminary globals ... done
+[11:52:10.086] | : . globals found: [3] ‘inner_helper’, ‘+’, ‘outer_val’
+[11:52:10.086] | : globalsOf(..., method = 'ordered', mustExist = FALSE, unlist = TRUE, recursive = TRUE) ... done
+[11:52:10.086] | : updated set of globals found: [4] ‘outer_helper’, ‘inner_helper’, ‘+’, ‘outer_val’
+[11:52:10.087] | recursive scan of preliminary globals ... done
+[11:52:10.087] | globals found: [4] ‘outer_helper’, ‘inner_helper’, ‘+’, ‘outer_val’
+[11:52:10.087] globalsOf(..., method = 'ordered', mustExist = FALSE, unlist = TRUE, recursive = TRUE) ... done
+
+> stopifnot("outer_helper" %in% names(globals_rec_d))
+
+> options(oopts)
+
+> message("*** globalsOf() - recursive with nested closures ... DONE")
+*** globalsOf() - recursive with nested closures ... DONE
+
+> message("*** globalsOf() - recursive, namespace closures ...")
+*** globalsOf() - recursive, namespace closures ...
+
+> globals_ns <- globalsOf(quote(base::sum(1:3)), recursive = TRUE, 
++     mustExist = FALSE)
+
+> message("*** globalsOf() - recursive, namespace closures ... DONE")
+*** globalsOf() - recursive, namespace closures ... DONE
+
+> message("*** globalsOf() - locals = FALSE with function ...")
+*** globalsOf() - locals = FALSE with function ...
+
+> outer_val2 <- 200
+
+> f_locals <- local({
++     local_var2 <- 42
++     function() local_var2 + outer_val2
++ })
+
+> globals_lt <- globalsOf(quote(f_locals), locals = TRUE, 
++     mustExist = FALSE)
+
+> stopifnot("local_var2" %in% names(globals_lt))
+
+> globals_lf <- globalsOf(quote(f_locals), locals = FALSE, 
++     mustExist = FALSE)
+
+> stopifnot(!"local_var2" %in% names(globals_lf))
+
+> message("*** globalsOf() - locals = FALSE ... DONE")
+*** globalsOf() - locals = FALSE ... DONE
+
+> rm(list = c("a_dbg", "outer_val", "inner_helper", 
++     "outer_helper", "outer_val2", "f_locals", "a_unl", "b_unl"))
 Sourcing 5 epilogue scripts ...
 01/05 epilogue script ‘/usr/local/lib/R/site-library/globals/testme/_epilogue/002.undo-state.R’
 02/05 epilogue script ‘/usr/local/lib/R/site-library/globals/testme/_epilogue/090.gc.R’
@@ -810,6 +1193,6 @@ Sourcing 5 epilogue scripts ...
 05/05 epilogue script ‘/usr/local/lib/R/site-library/globals/testme/_epilogue/999.detritus-files.R’
 Skipping, because path appears not to be an 'R CMD check' folder: ‘/tmp’
 Sourcing 5 epilogue scripts ... done
-Test time: user.self=0.2s, sys.self=0.008s, elapsed=0.2s, user.child=0s, sys.child=0s
+Test time: user.self=0.2s, sys.self=0.02s, elapsed=0.3s, user.child=0s, sys.child=0s
 Test ‘globalsOf’ ... success
 > 

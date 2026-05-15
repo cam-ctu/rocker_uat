@@ -1,0 +1,168 @@
+
+R version 4.5.3 (2026-03-11) -- "Reassured Reassurer"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> ## git2r, R bindings to the libgit2 library.
+> ## Copyright (C) 2013-2023 The git2r contributors
+> ##
+> ## This program is free software; you can redistribute it and/or modify
+> ## it under the terms of the GNU General Public License, version 2,
+> ## as published by the Free Software Foundation.
+> ##
+> ## git2r is distributed in the hope that it will be useful,
+> ## but WITHOUT ANY WARRANTY; without even the implied warranty of
+> ## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> ## GNU General Public License for more details.
+> ##
+> ## You should have received a copy of the GNU General Public License along
+> ## with this program; if not, write to the Free Software Foundation, Inc.,
+> ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+> 
+> library(git2r)
+> source("util/check.R")
+> 
+> ## For debugging
+> sessionInfo()
+R version 4.5.3 (2026-03-11)
+Platform: x86_64-pc-linux-gnu
+Running under: Ubuntu 24.04.4 LTS
+
+Matrix products: default
+BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
+LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so;  LAPACK version 3.12.0
+
+locale:
+ [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              
+ [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    
+ [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   
+ [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 
+ [9] LC_ADDRESS=C               LC_TELEPHONE=C            
+[11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
+
+time zone: Etc/UTC
+tzcode source: system (glibc)
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] git2r_0.36.2
+
+loaded via a namespace (and not attached):
+[1] compiler_4.5.3
+> libgit2_version()
+$major
+[1] 1
+
+$minor
+[1] 7
+
+$rev
+[1] 2
+
+> libgit2_features()
+$threads
+[1] TRUE
+
+$https
+[1] TRUE
+
+$ssh
+[1] TRUE
+
+> 
+> 
+> ## Create a directory in tempdir
+> path <- tempfile(pattern = "git2r-")
+> dir.create(path)
+> 
+> ## is_bare: "Invalid repository"
+> tools::assertError(is_bare(new("git_repository")))
+> 
+> ## is_empty: "Invalid repository"
+> tools::assertError(is_empty(new("git_repository")))
+> 
+> ## Check that open an invalid repository fails
+> tools::assertError(repository(path))
+> tools::assertError(repository(path, discover = FALSE))
+> 
+> ## Check that it fails to open/init a repository with a path to a
+> ## file.
+> writeLines("test", file.path(path, "test.txt"))
+> tools::assertError(repository(file.path(path, "test.txt"),
++                               discover = FALSE))
+> tools::assertError(init(file.path(path, "test.txt")))
+> unlink(file.path(path, "test.txt"))
+> 
+> ## Initialize a repository
+> repo <- init(path)
+> stopifnot(identical(print(repo), repo))
+Local:    /tmp/RtmpCvrdfe/git2r-154cd68dbd322
+Head:     nothing commited (yet)
+> 
+> ## Check the state of the repository
+> stopifnot(identical(is_bare(repo), FALSE))
+> stopifnot(identical(is_empty(repo), TRUE))
+> stopifnot(identical(is_shallow(repo), FALSE))
+> stopifnot(identical(branches(repo), empty_named_list()))
+> stopifnot(identical(references(repo), empty_named_list()))
+> stopifnot(identical(commits(repo), list()))
+> stopifnot(identical(repository_head(repo), NULL))
+> 
+> # check that we can find repository from a path
+> wd <- sub(paste0("[", .Platform$file.sep, "]$"), "",  workdir(repo))
+> writeLines("test file", con = file.path(wd, "myfile.txt"))
+> stopifnot(identical(discover_repository(file.path(wd, "myfile.txt")),
++                     file.path(wd, ".git")))
+> stopifnot(identical(discover_repository(file.path(wd, "doesntexist.txt")),
++                     NULL))
+Warning message:
+In normalizePath(path) :
+  path[1]="/tmp/RtmpCvrdfe/git2r-154cd68dbd322/doesntexist.txt": No such file or directory
+> 
+> # Check that we can use ceiling in discover repostiory
+> dir.create(file.path(wd, "temp"))
+> stopifnot(identical(discover_repository(file.path(wd, "temp"), 0), NULL))
+> stopifnot(identical(discover_repository(file.path(wd, "temp"), 1),
++                     file.path(wd, ".git")))
+> tools::assertError(discover_repository(file.path(wd, "temp"), 2))
+> 
+> ## Check that lookup with a sha of less than 4 characters or more than
+> ## 40 characters fail.
+> tools::assertError(lookup(repo, paste0(rep("a", 3), collapse = "")))
+> tools::assertError(lookup(repo, paste0(rep("a", 41), collapse = "")))
+> 
+> ## Check in_repository
+> stopifnot(identical(in_repository(path), TRUE))
+> 
+> ## Check:
+> ## - in_repository method with missing path argument
+> ## - repository method with missing path argument
+> ## - workdir method with missing path argument
+> ## - is_empty method with missing repo argument
+> ## - is_shallow method with missing repo argument
+> wd <- setwd(path)
+> stopifnot(identical(in_repository(), TRUE))
+> stopifnot(identical(workdir(repository(path)), workdir(repository())))
+> stopifnot(identical(workdir(repository(path)), workdir()))
+> stopifnot(identical(is_empty(), TRUE))
+> stopifnot(identical(is_shallow(), FALSE))
+> if (!is.null(wd))
++     setwd(wd)
+> 
+> ## Cleanup
+> unlink(path, recursive = TRUE)
+> 

@@ -461,7 +461,7 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
                      Convert to an anonymous function:
                      function () 
                      b
-                     <environment: 0x55838df8ec10>
+                     <environment: 0x55bfb0004938>
                      enter_global(type=‘variable’, v=‘b’) ...
                         before:
                         [1] name  class
@@ -545,7 +545,7 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
                      Convert to an anonymous function:
                      function () 
                      1
-                     <environment: 0x55838d0c58f8>
+                     <environment: 0x55bfaf1990a8>
                      variables (with duplicates):
                      [1] name  class
                      <0 rows> (or 0-length row.names)
@@ -602,7 +602,7 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
                      Convert to an anonymous function:
                      function () 
                      c
-                     <environment: 0x55838d4e71d0>
+                     <environment: 0x55bfaf5b8750>
                      enter_global(type=‘variable’, v=‘c’) ...
                         before:
                         [1] name  class
@@ -686,7 +686,7 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
                      Convert to an anonymous function:
                      function () 
                      d
-                     <environment: 0x55838df72738>
+                     <environment: 0x55bfb009ca98>
                      enter_global(type=‘variable’, v=‘d’) ...
                         before:
                         [1] name  class
@@ -770,7 +770,7 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
                      Convert to an anonymous function:
                      function () 
                      a + 1
-                     <environment: 0x55838bdca570>
+                     <environment: 0x55bfaf1653f0>
                      enter_global(type=‘function’, v=‘+’) ...
                         before:
                         [1] name  class
@@ -892,7 +892,7 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
                      Convert to an anonymous function:
                      function () 
                      e()
-                     <environment: 0x55838dbb9418>
+                     <environment: 0x55bfafcb96f8>
                      enter_global(type=‘function’, v=‘e’) ...
                         before:
                         [1] name  class
@@ -957,32 +957,32 @@ findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
          1     { global
          2    <- global
          3     b global
-         4     x locals
+         4     x  local
          5    <- global
-         6     b locals
+         6     b  local
          7    <- global
          8     c global
-         9     y locals
+         9     y  local
          10   <- global
          11    d global
-         12    z locals
+         12    z  local
          13   <- global
          14    a global
          15    + global
-         16    a locals
+         16    a  local
          17   <- global
          18    e global
-         19    e locals
+         19    e  local
          variables (no duplicates):
             name  class
          1     { global
          2    <- global
          3     b global
-         4     x locals
+         4     x  local
          5     c global
-         6     y locals
+         6     y  local
          7     d global
-         8     z locals
+         8     z  local
          9     a global
          10    + global
          11    e global
@@ -1494,8 +1494,8 @@ character(0)
 
 > assert_identical_sets(globals, character(0))
 
-> message("*** findGlobals() - multiple 'method's ...")
-*** findGlobals() - multiple 'method's ...
+> message("*** findGlobals() - multiple 'method':s ...")
+*** findGlobals() - multiple 'method':s ...
 
 > expr <- quote({
 +     a + 1
@@ -1534,8 +1534,995 @@ character(0)
 
 > assert_identical_sets(globals, c("{", "for"))
 
-> message("*** findGlobals() - multiple 'method's ... DONE")
-*** findGlobals() - multiple 'method's ... DONE
+> message("*** findGlobals() - multiple 'method':s ... DONE")
+*** findGlobals() - multiple 'method':s ... DONE
+
+> message("*** findGlobals() - builtins for conservative/liberal ...")
+*** findGlobals() - builtins for conservative/liberal ...
+
+> globals_c <- findGlobals(`+`, method = "conservative")
+
+> stopifnot(identical(globals_c, character(0)))
+
+> globals_l <- findGlobals(`+`, method = "liberal")
+
+> stopifnot(identical(globals_l, character(0)))
+
+> message("*** findGlobals() - builtins for conservative/liberal ... DONE")
+*** findGlobals() - builtins for conservative/liberal ... DONE
+
+> message("*** findGlobals() - multi-method with unlist = FALSE ...")
+*** findGlobals() - multi-method with unlist = FALSE ...
+
+> res <- tryCatch(findGlobals(quote(x), method = c("ordered", 
++     "liberal"), unlist = FALSE), error = identity)
+
+> stopifnot(inherits(res, "simpleError"))
+
+> message("*** findGlobals() - multi-method with unlist = FALSE ... DONE")
+*** findGlobals() - multi-method with unlist = FALSE ... DONE
+
+> message("*** findGlobals() - list input ...")
+*** findGlobals() - list input ...
+
+> exprs_list <- list(quote(a_li + b_li), quote(c_li * 
++     d_li))
+
+> globals_list <- findGlobals(exprs_list, method = "ordered")
+
+> stopifnot(all(c("a_li", "b_li", "c_li", "d_li") %in% 
++     globals_list))
+
+> exprs_basic <- list(1, 2, TRUE, "hello")
+
+> globals_basic <- findGlobals(exprs_basic, method = "ordered")
+
+> stopifnot(identical(globals_basic, character(0)))
+
+> exprs_dots <- list(quote(..1 + ..2), quote(x_li))
+
+> globals_dots <- findGlobals(exprs_dots, method = "ordered")
+
+> stopifnot("x_li" %in% globals_dots)
+
+> message("*** findGlobals() - list input ... DONE")
+*** findGlobals() - list input ... DONE
+
+> message("*** findGlobals() - debug path ...")
+*** findGlobals() - debug path ...
+
+> oopts <- options(globals.debug = TRUE)
+
+> globals_d1 <- findGlobals(quote(a_dbg + b_dbg), method = "ordered")
+[11:52:08.423] findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
+[11:52:08.424] | workaround 'codetools' bug #16
+[11:52:08.424] | globals found: [3] ‘+’, ‘a_dbg’, ‘b_dbg’
+[11:52:08.424] findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... done
+
+> stopifnot("a_dbg" %in% globals_d1)
+
+> globals_d2 <- findGlobals(quote({
++     a_dbg + 1
++     a_dbg <- 1
++ }), method = c("ordered", "dfs"))
+[11:52:08.424] findGlobals(..., dotdotdot = 'warning', method = c('ordered', 'dfs'), unlist = TRUE) ...
+[11:52:08.424] | findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
+[11:52:08.424] | : workaround 'codetools' bug #16
+[11:52:08.425] | : globals found: [4] ‘{’, ‘+’, ‘a_dbg’, ‘<-’
+[11:52:08.425] | findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... done
+[11:52:08.425] | findGlobals(..., dotdotdot = 'warning', method = 'dfs', unlist = TRUE) ...
+[11:52:08.428] | : globals found: [4] ‘{’, ‘+’, ‘a_dbg’, ‘<-’
+[11:52:08.429] | findGlobals(..., dotdotdot = 'warning', method = 'dfs', unlist = TRUE) ... done
+[11:52:08.429] | Globals found by per method:
+[11:52:08.429] | ‘ordered’: ‘{’, ‘+’, ‘a_dbg’, ‘<-’ [delta: <none>]
+[11:52:08.429] | ‘dfs’: ‘{’, ‘+’, ‘a_dbg’, ‘<-’ [delta: <none>]
+[11:52:08.429] findGlobals(..., dotdotdot = 'warning', method = c('ordered', 'dfs'), unlist = TRUE) ... done
+
+> stopifnot(length(globals_d2) > 0)
+
+> globals_d3 <- findGlobals(list(quote(a_dbg + 1)), 
++     method = "ordered")
+[11:52:08.429] findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
+[11:52:08.429] | expr: <a list of length 1>
+[11:52:08.429] | findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = FALSE) ...
+[11:52:08.429] | : workaround 'codetools' bug #16
+[11:52:08.430] | : globals found: [2] ‘+’, ‘a_dbg’
+[11:52:08.430] | findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = FALSE) ... done
+
+[11:52:08.430] | globals found: [2] ‘+’, ‘a_dbg’
+[11:52:08.430] findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... done
+
+> stopifnot("a_dbg" %in% globals_d3)
+
+> expr_attr <- quote(list())
+
+> attr(expr_attr, "my_attr") <- quote({
++     z_dbg
++ })
+
+> globals_d4 <- findGlobals(expr_attr, method = "ordered")
+[11:52:08.430] findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
+[11:52:08.430] | workaround 'codetools' bug #16
+[11:52:08.431] | searching attributes
+[11:52:08.431] | findGlobals(..., dotdotdot = 'ignore', method = 'ordered', unlist = FALSE) ...
+[11:52:08.431] | : workaround 'codetools' bug #16
+[11:52:08.431] | : globals found: [2] ‘{’, ‘z_dbg’
+[11:52:08.431] | findGlobals(..., dotdotdot = 'ignore', method = 'ordered', unlist = FALSE) ... done
+[11:52:08.431] | globals found in attributes: [2] ‘{’, ‘z_dbg’
+[11:52:08.431] | globals found: [3] ‘list’, ‘{’, ‘z_dbg’
+[11:52:08.431] findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... done
+
+> stopifnot("z_dbg" %in% globals_d4)
+
+> options(oopts)
+
+> message("*** findGlobals() - debug path ... DONE")
+*** findGlobals() - debug path ... DONE
+
+> message("*** findGlobals() - trace = TRUE with method = 'ordered' ...")
+*** findGlobals() - trace = TRUE with method = 'ordered' ...
+
+> globals_tr1 <- findGlobals(quote(y ~ x + z), method = "ordered", 
++     trace = TRUE)
+findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
+   call_find_globals_with_dotdotdot(dotdotdot = ‘warning’) ...
+      find_globals_ordered() ...
+         type = call
+         Convert to an anonymous function:
+         function () 
+         y ~ x + z
+         enter_global(type=‘function’, v=‘~’) ...
+            before:
+            [1] name  class
+            <0 rows> (or 0-length row.names)
+            hardcoded locals: [n=0] 
+            Add ‘global’ variable ‘~’
+            type = ~ (formula)
+            call_find_globals_with_dotdotdot(dotdotdot = ‘return’) ...
+               find_globals_ordered() ...
+                  type = call
+                  Convert to an anonymous function:
+                  function () 
+                  y
+                  <environment: 0x55bfaf3883e0>
+                  enter_global(type=‘variable’, v=‘y’) ...
+                     before:
+                     [1] name  class
+                     <0 rows> (or 0-length row.names)
+                     hardcoded locals: [n=0] 
+                     Add ‘global’ variable ‘y’
+                     => Nothing else to explore
+                     after:
+                       name  class
+                     1    y global
+                  enter_global(type=‘variable’, v=‘y’) ... done
+                  variables (with duplicates):
+                    name  class
+                  1    y global
+                  variables (no duplicates):
+                    name  class
+                  1    y global
+               find_globals_ordered() ... done
+               globals: [n=1] ‘y’
+            call_find_globals_with_dotdotdot(dotdotdot = ‘return’) ... done
+            Add ‘global’ variables ‘y’
+            call_find_globals_with_dotdotdot(dotdotdot = ‘return’) ...
+               find_globals_ordered() ...
+                  type = call
+                  Convert to an anonymous function:
+                  function () 
+                  x + z
+                  <environment: 0x55bfaf3883e0>
+                  enter_global(type=‘function’, v=‘+’) ...
+                     before:
+                     [1] name  class
+                     <0 rows> (or 0-length row.names)
+                     hardcoded locals: [n=0] 
+                     Add ‘global’ variable ‘+’
+                     => A function, but not of interest
+                     after:
+                       name  class
+                     1    + global
+                  enter_global(type=‘function’, v=‘+’) ... done
+                  enter_global(type=‘variable’, v=‘x’) ...
+                     before:
+                       name  class
+                     1    + global
+                     hardcoded locals: [n=0] 
+                     Add ‘global’ variable ‘x’
+                     => Nothing else to explore
+                     after:
+                       name  class
+                     1    + global
+                     2    x global
+                  enter_global(type=‘variable’, v=‘x’) ... done
+                  enter_global(type=‘variable’, v=‘z’) ...
+                     before:
+                       name  class
+                     1    + global
+                     2    x global
+                     hardcoded locals: [n=0] 
+                     Add ‘global’ variable ‘z’
+                     => Nothing else to explore
+                     after:
+                       name  class
+                     1    + global
+                     2    x global
+                     3    z global
+                  enter_global(type=‘variable’, v=‘z’) ... done
+                  variables (with duplicates):
+                    name  class
+                  1    + global
+                  2    x global
+                  3    z global
+                  variables (no duplicates):
+                    name  class
+                  1    + global
+                  2    x global
+                  3    z global
+               find_globals_ordered() ... done
+               globals: [n=3] ‘+’, ‘x’, ‘z’
+            call_find_globals_with_dotdotdot(dotdotdot = ‘return’) ... done
+            Add ‘global’ variables ‘+’, ‘x’, ‘z’
+            after:
+              name  class
+            1    ~ global
+            2    y global
+            3    + global
+            4    x global
+            5    z global
+         enter_global(type=‘function’, v=‘~’) ... done
+         variables (with duplicates):
+           name  class
+         1    ~ global
+         2    y global
+         3    + global
+         4    x global
+         5    z global
+         variables (no duplicates):
+           name  class
+         1    ~ global
+         2    y global
+         3    + global
+         4    x global
+         5    z global
+      find_globals_ordered() ... done
+      globals: [n=5] ‘~’, ‘y’, ‘+’, ‘x’, ‘z’
+   call_find_globals_with_dotdotdot(dotdotdot = ‘warning’) ... done
+findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... done
+
+> stopifnot(all(c("~", "y", "x", "z") %in% globals_tr1))
+
+> globals_tr2 <- findGlobals(`+`, method = "ordered", 
++     trace = TRUE)
+findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
+   call_find_globals_with_dotdotdot(dotdotdot = ‘warning’) ...
+      find_globals_ordered() ...
+         typeof != closure
+      find_globals_ordered() ... done
+      globals: [n=0] 
+   call_find_globals_with_dotdotdot(dotdotdot = ‘warning’) ... done
+findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... done
+
+> stopifnot(identical(globals_tr2, character(0)))
+
+> globals_tr3 <- findGlobals(expression(a + b), method = "ordered", 
++     trace = TRUE)
+findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
+   findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
+      call_find_globals_with_dotdotdot(dotdotdot = ‘warning’) ...
+         find_globals_ordered() ...
+            type = call
+            Convert to an anonymous function:
+            function () 
+            a + b
+            enter_global(type=‘function’, v=‘+’) ...
+               before:
+               [1] name  class
+               <0 rows> (or 0-length row.names)
+               hardcoded locals: [n=0] 
+               Add ‘global’ variable ‘+’
+               => A function, but not of interest
+               after:
+                 name  class
+               1    + global
+            enter_global(type=‘function’, v=‘+’) ... done
+            enter_global(type=‘variable’, v=‘a’) ...
+               before:
+                 name  class
+               1    + global
+               hardcoded locals: [n=0] 
+               Add ‘global’ variable ‘a’
+               => Nothing else to explore
+               after:
+                 name  class
+               1    + global
+               2    a global
+            enter_global(type=‘variable’, v=‘a’) ... done
+            enter_global(type=‘variable’, v=‘b’) ...
+               before:
+                 name  class
+               1    + global
+               2    a global
+               hardcoded locals: [n=0] 
+               Add ‘global’ variable ‘b’
+               => Nothing else to explore
+               after:
+                 name  class
+               1    + global
+               2    a global
+               3    b global
+            enter_global(type=‘variable’, v=‘b’) ... done
+            variables (with duplicates):
+              name  class
+            1    + global
+            2    a global
+            3    b global
+            variables (no duplicates):
+              name  class
+            1    + global
+            2    a global
+            3    b global
+         find_globals_ordered() ... done
+         globals: [n=3] ‘+’, ‘a’, ‘b’
+      call_find_globals_with_dotdotdot(dotdotdot = ‘warning’) ... done
+   findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... done
+findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... done
+
+> stopifnot("a" %in% globals_tr3)
+
+> expr_inline <- as.call(list(function(...) GLOBAL_TR, 
++     quote(ARG_TR)))
+
+> globals_tr4 <- findGlobals(expr_inline, method = "ordered", 
++     trace = TRUE)
+findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
+   call_find_globals_with_dotdotdot(dotdotdot = ‘warning’) ...
+      find_globals_ordered() ...
+         type = a call to a function
+         find_globals_ordered() ...
+            type = function
+            collect_usage_function() ...
+               parnames: [n=1] ‘...’
+               formals_clean: [n=0] 
+               locals: [n=0] 
+               Add hardcoded local variables ‘...’               hardcoded locals: [n=1] ‘...’
+               walkCode(body) ...
+                  enter_global(type=‘variable’, v=‘GLOBAL_TR’) ...
+                     before:
+                     [1] name  class
+                     <0 rows> (or 0-length row.names)
+                     hardcoded locals: [n=1] ‘...’
+                     Add ‘global’ variable ‘GLOBAL_TR’
+                     => Nothing else to explore
+                     after:
+                            name  class
+                     1 GLOBAL_TR global
+                  enter_global(type=‘variable’, v=‘GLOBAL_TR’) ... done
+               walkCode(body) ... done
+            collect_usage_function() ... done
+            variables (with duplicates):
+                   name  class
+            1 GLOBAL_TR global
+            variables (no duplicates):
+                   name  class
+            1 GLOBAL_TR global
+         find_globals_ordered() ... done
+         find_globals_ordered() ...
+            type = call
+            Convert to an anonymous function:
+            function () 
+            ARG_TR()
+            enter_global(type=‘function’, v=‘ARG_TR’) ...
+               before:
+               [1] name  class
+               <0 rows> (or 0-length row.names)
+               hardcoded locals: [n=0] 
+               Add ‘global’ variable ‘ARG_TR’
+               => A function, but not of interest
+               after:
+                   name  class
+               1 ARG_TR global
+            enter_global(type=‘function’, v=‘ARG_TR’) ... done
+            variables (with duplicates):
+                name  class
+            1 ARG_TR global
+            variables (no duplicates):
+                name  class
+            1 ARG_TR global
+         find_globals_ordered() ... done
+         variables (with duplicates):
+                name  class
+         1 GLOBAL_TR global
+         2    ARG_TR global
+         variables (no duplicates):
+                name  class
+         1 GLOBAL_TR global
+         2    ARG_TR global
+      find_globals_ordered() ... done
+      globals: [n=2] ‘GLOBAL_TR’, ‘ARG_TR’
+   call_find_globals_with_dotdotdot(dotdotdot = ‘warning’) ... done
+findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... done
+
+> stopifnot("GLOBAL_TR" %in% globals_tr4)
+
+> globals_tr5 <- findGlobals(quote(names(a_tr)[1] <- "A"), 
++     method = "ordered", trace = TRUE)
+findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
+   call_find_globals_with_dotdotdot(dotdotdot = ‘warning’) ...
+      find_globals_ordered() ...
+         type = call
+         Convert to an anonymous function:
+         function () 
+         names(a_tr)[1] <- "A"
+         enter_global(type=‘function’, v=‘<-’) ...
+            before:
+            [1] name  class
+            <0 rows> (or 0-length row.names)
+            hardcoded locals: [n=0] 
+            Add ‘global’ variable ‘<-’
+            LHS <- RHS:
+            find_globals_ordered() ...
+               type = call
+               Convert to an anonymous function:
+               function () 
+               names(a_tr)[1]
+               <environment: 0x55bfaf6a6c90>
+               enter_global(type=‘function’, v=‘[’) ...
+                  before:
+                  [1] name  class
+                  <0 rows> (or 0-length row.names)
+                  hardcoded locals: [n=0] 
+                  Add ‘global’ variable ‘[’
+                  => A function, but not of interest
+                  after:
+                    name  class
+                  1    [ global
+               enter_global(type=‘function’, v=‘[’) ... done
+               enter_global(type=‘function’, v=‘names’) ...
+                  before:
+                    name  class
+                  1    [ global
+                  hardcoded locals: [n=0] 
+                  Add ‘global’ variable ‘names’
+                  => A function, but not of interest
+                  after:
+                     name  class
+                  1     [ global
+                  2 names global
+               enter_global(type=‘function’, v=‘names’) ... done
+               enter_global(type=‘variable’, v=‘a_tr’) ...
+                  before:
+                     name  class
+                  1     [ global
+                  2 names global
+                  hardcoded locals: [n=0] 
+                  Add ‘global’ variable ‘a_tr’
+                  => Nothing else to explore
+                  after:
+                     name  class
+                  1     [ global
+                  2 names global
+                  3  a_tr global
+               enter_global(type=‘variable’, v=‘a_tr’) ... done
+               variables (with duplicates):
+                  name  class
+               1     [ global
+               2 names global
+               3  a_tr global
+               variables (no duplicates):
+                  name  class
+               1     [ global
+               2 names global
+               3  a_tr global
+            find_globals_ordered() ... done
+            Add ‘global’ variables ‘[’, ‘names’, ‘a_tr’
+            after:
+               name  class
+            1    <- global
+            2     [ global
+            3 names global
+            4  a_tr global
+         enter_global(type=‘function’, v=‘<-’) ... done
+         enter_local(type=‘<-’, v=‘a_tr’) ...
+            before:
+               name  class
+            1    <- global
+            2     [ global
+            3 names global
+            4  a_tr global
+            hardcoded locals: [n=0] 
+            LHS <- RHS:
+            call_find_globals_with_dotdotdot(dotdotdot = ‘ignore’) ...
+               find_globals_ordered() ...
+                  type = call
+                  Convert to an anonymous function:
+                  function () 
+                  "A"
+                  <environment: 0x55bfaf6a6c90>
+                  variables (with duplicates):
+                  [1] name  class
+                  <0 rows> (or 0-length row.names)
+                  variables (no duplicates):
+                  [1] name  class
+                  <0 rows> (or 0-length row.names)
+               find_globals_ordered() ... done
+               globals: [n=0] 
+            call_find_globals_with_dotdotdot(dotdotdot = ‘ignore’) ... done
+            RHS globals: [n=0] 
+            hardcoded locals: [n=0] 
+            Add ‘local’ variable ‘a_tr’
+            after:
+               name  class
+            1    <- global
+            2     [ global
+            3 names global
+            4  a_tr global
+            5  a_tr  local
+         enter_local(type=‘<-’, v=‘a_tr’) ... done
+         enter_global(type=‘variable’, v=‘a_tr’) ...
+            before:
+               name  class
+            1    <- global
+            2     [ global
+            3 names global
+            4  a_tr global
+            5  a_tr  local
+            hardcoded locals: [n=0] 
+            Add ‘global’ variable ‘a_tr’
+            => Nothing else to explore
+            after:
+               name  class
+            1    <- global
+            2     [ global
+            3 names global
+            4  a_tr global
+            5  a_tr  local
+            6  a_tr global
+         enter_global(type=‘variable’, v=‘a_tr’) ... done
+         enter_global(type=‘function’, v=‘names’) ...
+            before:
+               name  class
+            1    <- global
+            2     [ global
+            3 names global
+            4  a_tr global
+            5  a_tr  local
+            6  a_tr global
+            hardcoded locals: [n=0] 
+            Add ‘global’ variable ‘names’
+            => A function, but not of interest
+            after:
+               name  class
+            1    <- global
+            2     [ global
+            3 names global
+            4  a_tr global
+            5  a_tr  local
+            6  a_tr global
+            7 names global
+         enter_global(type=‘function’, v=‘names’) ... done
+         enter_global(type=‘function’, v=‘[<-’) ...
+            before:
+               name  class
+            1    <- global
+            2     [ global
+            3 names global
+            4  a_tr global
+            5  a_tr  local
+            6  a_tr global
+            7 names global
+            hardcoded locals: [n=0] 
+            Add ‘global’ variable ‘[<-’
+            => A function, but not of interest
+            after:
+               name  class
+            1    <- global
+            2     [ global
+            3 names global
+            4  a_tr global
+            5  a_tr  local
+            6  a_tr global
+            7 names global
+            8   [<- global
+         enter_global(type=‘function’, v=‘[<-’) ... done
+         enter_global(type=‘function’, v=‘names<-’) ...
+            before:
+               name  class
+            1    <- global
+            2     [ global
+            3 names global
+            4  a_tr global
+            5  a_tr  local
+            6  a_tr global
+            7 names global
+            8   [<- global
+            hardcoded locals: [n=0] 
+            Add ‘global’ variable ‘names<-’
+            => A function, but not of interest
+            after:
+                 name  class
+            1      <- global
+            2       [ global
+            3   names global
+            4    a_tr global
+            5    a_tr  local
+            6    a_tr global
+            7   names global
+            8     [<- global
+            9 names<- global
+         enter_global(type=‘function’, v=‘names<-’) ... done
+         enter_global(type=‘variable’, v=‘a_tr’) ...
+            before:
+                 name  class
+            1      <- global
+            2       [ global
+            3   names global
+            4    a_tr global
+            5    a_tr  local
+            6    a_tr global
+            7   names global
+            8     [<- global
+            9 names<- global
+            hardcoded locals: [n=0] 
+            Add ‘global’ variable ‘a_tr’
+            => Nothing else to explore
+            after:
+                  name  class
+            1       <- global
+            2        [ global
+            3    names global
+            4     a_tr global
+            5     a_tr  local
+            6     a_tr global
+            7    names global
+            8      [<- global
+            9  names<- global
+            10    a_tr global
+         enter_global(type=‘variable’, v=‘a_tr’) ... done
+         variables (with duplicates):
+               name  class
+         1       <- global
+         2        [ global
+         3    names global
+         4     a_tr global
+         5     a_tr  local
+         6     a_tr global
+         7    names global
+         8      [<- global
+         9  names<- global
+         10    a_tr global
+         variables (no duplicates):
+              name  class
+         1      <- global
+         2       [ global
+         3   names global
+         4    a_tr global
+         5     [<- global
+         6 names<- global
+      find_globals_ordered() ... done
+      globals: [n=6] ‘<-’, ‘[’, ‘names’, ‘a_tr’, ‘[<-’, ‘names<-’
+   call_find_globals_with_dotdotdot(dotdotdot = ‘warning’) ... done
+findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... done
+
+> stopifnot("a_tr" %in% globals_tr5)
+
+> globals_tr6 <- findGlobals(function() {
++     x_tr <- x_tr + 1
++     x_tr
++ }, method = "ordered", trace = TRUE)
+findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
+   call_find_globals_with_dotdotdot(dotdotdot = ‘warning’) ...
+      find_globals_ordered() ...
+         type = function
+         collect_usage_function() ...
+            parnames: [n=0] 
+            formals_clean: [n=0] 
+            locals: [n=0] 
+            hardcoded locals: [n=0] 
+            walkCode(body) ...
+               enter_global(type=‘function’, v=‘{’) ...
+                  before:
+                  [1] name  class
+                  <0 rows> (or 0-length row.names)
+                  hardcoded locals: [n=0] 
+                  Add ‘global’ variable ‘{’
+                  => A function, but not of interest
+                  after:
+                    name  class
+                  1    { global
+               enter_global(type=‘function’, v=‘{’) ... done
+               enter_global(type=‘function’, v=‘<-’) ...
+                  before:
+                    name  class
+                  1    { global
+                  hardcoded locals: [n=0] 
+                  Add ‘global’ variable ‘<-’
+                  LHS <- RHS:
+                  after:
+                    name  class
+                  1    { global
+                  2   <- global
+               enter_global(type=‘function’, v=‘<-’) ... done
+               enter_local(type=‘<-’, v=‘x_tr’) ...
+                  before:
+                    name  class
+                  1    { global
+                  2   <- global
+                  hardcoded locals: [n=0] 
+                  LHS <- RHS:
+                  call_find_globals_with_dotdotdot(dotdotdot = ‘ignore’) ...
+                     find_globals_ordered() ...
+                        type = call
+                        Convert to an anonymous function:
+                        function () 
+                        x_tr + 1
+                        <environment: 0x55bfaf329448>
+                        enter_global(type=‘function’, v=‘+’) ...
+                           before:
+                           [1] name  class
+                           <0 rows> (or 0-length row.names)
+                           hardcoded locals: [n=0] 
+                           Add ‘global’ variable ‘+’
+                           => A function, but not of interest
+                           after:
+                             name  class
+                           1    + global
+                        enter_global(type=‘function’, v=‘+’) ... done
+                        enter_global(type=‘variable’, v=‘x_tr’) ...
+                           before:
+                             name  class
+                           1    + global
+                           hardcoded locals: [n=0] 
+                           Add ‘global’ variable ‘x_tr’
+                           => Nothing else to explore
+                           after:
+                             name  class
+                           1    + global
+                           2 x_tr global
+                        enter_global(type=‘variable’, v=‘x_tr’) ... done
+                        variables (with duplicates):
+                          name  class
+                        1    + global
+                        2 x_tr global
+                        variables (no duplicates):
+                          name  class
+                        1    + global
+                        2 x_tr global
+                     find_globals_ordered() ... done
+                     globals: [n=2] ‘+’, ‘x_tr’
+                  call_find_globals_with_dotdotdot(dotdotdot = ‘ignore’) ... done
+                  RHS globals: [n=2] ‘+’, ‘x_tr’
+                  hardcoded locals: [n=0] 
+                  Add ‘global’ variable ‘x_tr’
+                  Add ‘local’ variable ‘x_tr’
+                  after:
+                    name  class
+                  1    { global
+                  2   <- global
+                  3 x_tr global
+                  4 x_tr  local
+               enter_local(type=‘<-’, v=‘x_tr’) ... done
+               enter_global(type=‘function’, v=‘+’) ...
+                  before:
+                    name  class
+                  1    { global
+                  2   <- global
+                  3 x_tr global
+                  4 x_tr  local
+                  hardcoded locals: [n=0] 
+                  Add ‘global’ variable ‘+’
+                  => A function, but not of interest
+                  after:
+                    name  class
+                  1    { global
+                  2   <- global
+                  3 x_tr global
+                  4 x_tr  local
+                  5    + global
+               enter_global(type=‘function’, v=‘+’) ... done
+               enter_global(type=‘variable’, v=‘x_tr’) ...
+                  before:
+                    name  class
+                  1    { global
+                  2   <- global
+                  3 x_tr global
+                  4 x_tr  local
+                  5    + global
+                  hardcoded locals: [n=0] 
+                  Add ‘global’ variable ‘x_tr’
+                  => Nothing else to explore
+                  after:
+                    name  class
+                  1    { global
+                  2   <- global
+                  3 x_tr global
+                  4 x_tr  local
+                  5    + global
+                  6 x_tr global
+               enter_global(type=‘variable’, v=‘x_tr’) ... done
+               enter_global(type=‘variable’, v=‘x_tr’) ...
+                  before:
+                    name  class
+                  1    { global
+                  2   <- global
+                  3 x_tr global
+                  4 x_tr  local
+                  5    + global
+                  6 x_tr global
+                  hardcoded locals: [n=0] 
+                  Add ‘global’ variable ‘x_tr’
+                  => Nothing else to explore
+                  after:
+                    name  class
+                  1    { global
+                  2   <- global
+                  3 x_tr global
+                  4 x_tr  local
+                  5    + global
+                  6 x_tr global
+                  7 x_tr global
+               enter_global(type=‘variable’, v=‘x_tr’) ... done
+            walkCode(body) ... done
+         collect_usage_function() ... done
+         variables (with duplicates):
+           name  class
+         1    { global
+         2   <- global
+         3 x_tr global
+         4 x_tr  local
+         5    + global
+         6 x_tr global
+         7 x_tr global
+         variables (no duplicates):
+           name  class
+         1    { global
+         2   <- global
+         3 x_tr global
+         4    + global
+      find_globals_ordered() ... done
+      globals: [n=4] ‘{’, ‘<-’, ‘x_tr’, ‘+’
+   call_find_globals_with_dotdotdot(dotdotdot = ‘warning’) ... done
+findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... done
+
+> stopifnot("x_tr" %in% globals_tr6)
+
+> globals_tr7 <- findGlobals(quote(foo_tr(a_tr)), method = "ordered", 
++     trace = TRUE)
+findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
+   call_find_globals_with_dotdotdot(dotdotdot = ‘warning’) ...
+      find_globals_ordered() ...
+         type = call
+         Convert to an anonymous function:
+         function () 
+         foo_tr(a_tr)
+         enter_global(type=‘function’, v=‘foo_tr’) ...
+            before:
+            [1] name  class
+            <0 rows> (or 0-length row.names)
+            hardcoded locals: [n=0] 
+            Add ‘global’ variable ‘foo_tr’
+            => A function, but not of interest
+            after:
+                name  class
+            1 foo_tr global
+         enter_global(type=‘function’, v=‘foo_tr’) ... done
+         enter_global(type=‘variable’, v=‘a_tr’) ...
+            before:
+                name  class
+            1 foo_tr global
+            hardcoded locals: [n=0] 
+            Add ‘global’ variable ‘a_tr’
+            => Nothing else to explore
+            after:
+                name  class
+            1 foo_tr global
+            2   a_tr global
+         enter_global(type=‘variable’, v=‘a_tr’) ... done
+         variables (with duplicates):
+             name  class
+         1 foo_tr global
+         2   a_tr global
+         variables (no duplicates):
+             name  class
+         1 foo_tr global
+         2   a_tr global
+      find_globals_ordered() ... done
+      globals: [n=2] ‘foo_tr’, ‘a_tr’
+   call_find_globals_with_dotdotdot(dotdotdot = ‘warning’) ... done
+findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... done
+
+> stopifnot("foo_tr" %in% globals_tr7)
+
+> message("*** findGlobals() - trace = TRUE with method = 'ordered' ... DONE")
+*** findGlobals() - trace = TRUE with method = 'ordered' ... DONE
+
+> message("*** findGlobals() - trace = TRUE with conservative/liberal ...")
+*** findGlobals() - trace = TRUE with conservative/liberal ...
+
+> globals_trc <- findGlobals(function(x) x + a_trc, 
++     method = "conservative", trace = TRUE)
+findGlobals(..., dotdotdot = 'warning', method = 'conservative', unlist = TRUE) ...
+   call_find_globals_with_dotdotdot(dotdotdot = ‘warning’) ...
+      collect_usage_function() ...
+         parnames: [n=1] ‘x’
+         formals_clean: [n=0] 
+         locals: [n=0] 
+         Add hardcoded local variables ‘x’         hardcoded locals: [n=1] ‘x’
+         walkCode(body) ...
+         walkCode(body) ... done
+      collect_usage_function() ... done
+      globals: [n=2] ‘+’, ‘a_trc’
+   call_find_globals_with_dotdotdot(dotdotdot = ‘warning’) ... done
+findGlobals(..., dotdotdot = 'warning', method = 'conservative', unlist = TRUE) ... done
+
+> stopifnot("a_trc" %in% globals_trc)
+
+> globals_trl <- findGlobals(function(x) x + a_trl, 
++     method = "liberal", trace = TRUE)
+findGlobals(..., dotdotdot = 'warning', method = 'liberal', unlist = TRUE) ...
+   call_find_globals_with_dotdotdot(dotdotdot = ‘warning’) ...
+      collect_usage_function() ...
+         parnames: [n=1] ‘x’
+         formals_clean: [n=0] 
+         locals: [n=0] 
+         Add hardcoded local variables ‘x’         hardcoded locals: [n=1] ‘x’
+         walkCode(body) ...
+         walkCode(body) ... done
+      collect_usage_function() ... done
+      globals: [n=2] ‘+’, ‘a_trl’
+   call_find_globals_with_dotdotdot(dotdotdot = ‘warning’) ... done
+findGlobals(..., dotdotdot = 'warning', method = 'liberal', unlist = TRUE) ... done
+
+> stopifnot("a_trl" %in% globals_trl)
+
+> message("*** findGlobals() - trace = TRUE with conservative/liberal ... DONE")
+*** findGlobals() - trace = TRUE with conservative/liberal ... DONE
+
+> message("*** findGlobals() - tweak with multi-method ...")
+*** findGlobals() - tweak with multi-method ...
+
+> my_tweak <- function(expr) quote(TWEAKED_VAR + 1)
+
+> globals_tw <- findGlobals(quote(original_var), method = c("ordered", 
++     "dfs"), tweak = my_tweak)
+
+> stopifnot("TWEAKED_VAR" %in% globals_tw)
+
+> oopts <- options(globals.debug = TRUE)
+
+> globals_tw2 <- findGlobals(quote(original_var), method = c("ordered", 
++     "dfs"), tweak = my_tweak)
+[11:52:08.549] findGlobals(..., dotdotdot = 'warning', method = c('ordered', 'dfs'), unlist = TRUE) ...
+[11:52:08.549] | tweaking expression using function
+[11:52:08.550] | findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
+[11:52:08.550] | : workaround 'codetools' bug #16
+[11:52:08.551] | : globals found: [2] ‘+’, ‘TWEAKED_VAR’
+[11:52:08.551] | findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... done
+[11:52:08.551] | findGlobals(..., dotdotdot = 'warning', method = 'dfs', unlist = TRUE) ...
+[11:52:08.553] | : globals found: [2] ‘+’, ‘TWEAKED_VAR’
+[11:52:08.553] | findGlobals(..., dotdotdot = 'warning', method = 'dfs', unlist = TRUE) ... done
+[11:52:08.553] | Globals found by per method:
+[11:52:08.554] | ‘ordered’: ‘+’, ‘TWEAKED_VAR’ [delta: <none>]
+[11:52:08.554] | ‘dfs’: ‘+’, ‘TWEAKED_VAR’ [delta: <none>]
+[11:52:08.554] findGlobals(..., dotdotdot = 'warning', method = c('ordered', 'dfs'), unlist = TRUE) ... done
+
+> stopifnot("TWEAKED_VAR" %in% globals_tw2)
+
+> globals_tw3 <- findGlobals(quote(original_var), method = "ordered", 
++     tweak = my_tweak)
+[11:52:08.554] findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ...
+[11:52:08.554] | tweaking expression using function
+[11:52:08.555] | workaround 'codetools' bug #16
+[11:52:08.555] | globals found: [2] ‘+’, ‘TWEAKED_VAR’
+[11:52:08.555] findGlobals(..., dotdotdot = 'warning', method = 'ordered', unlist = TRUE) ... done
+
+> stopifnot("TWEAKED_VAR" %in% globals_tw3)
+
+> options(oopts)
+
+> message("*** findGlobals() - tweak with multi-method ... DONE")
+*** findGlobals() - tweak with multi-method ... DONE
 
 > message("*** findGlobals() ... DONE")
 *** findGlobals() ... DONE
@@ -1547,6 +2534,6 @@ Sourcing 5 epilogue scripts ...
 05/05 epilogue script ‘/usr/local/lib/R/site-library/globals/testme/_epilogue/999.detritus-files.R’
 Skipping, because path appears not to be an 'R CMD check' folder: ‘/tmp’
 Sourcing 5 epilogue scripts ... done
-Test time: user.self=0.3s, sys.self=0.009s, elapsed=0.3s, user.child=0s, sys.child=0s
+Test time: user.self=0.4s, sys.self=0.02s, elapsed=0.4s, user.child=0s, sys.child=0s
 Test ‘findGlobals’ ... success
 > 

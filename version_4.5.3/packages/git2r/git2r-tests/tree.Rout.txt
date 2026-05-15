@@ -1,0 +1,145 @@
+
+R version 4.5.3 (2026-03-11) -- "Reassured Reassurer"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> ## git2r, R bindings to the libgit2 library.
+> ## Copyright (C) 2013-2023 The git2r contributors
+> ##
+> ## This program is free software; you can redistribute it and/or modify
+> ## it under the terms of the GNU General Public License, version 2,
+> ## as published by the Free Software Foundation.
+> ##
+> ## git2r is distributed in the hope that it will be useful,
+> ## but WITHOUT ANY WARRANTY; without even the implied warranty of
+> ## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> ## GNU General Public License for more details.
+> ##
+> ## You should have received a copy of the GNU General Public License along
+> ## with this program; if not, write to the Free Software Foundation, Inc.,
+> ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+> 
+> library("git2r")
+> 
+> ## For debugging
+> sessionInfo()
+R version 4.5.3 (2026-03-11)
+Platform: x86_64-pc-linux-gnu
+Running under: Ubuntu 24.04.4 LTS
+
+Matrix products: default
+BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
+LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so;  LAPACK version 3.12.0
+
+locale:
+ [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              
+ [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    
+ [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   
+ [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 
+ [9] LC_ADDRESS=C               LC_TELEPHONE=C            
+[11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
+
+time zone: Etc/UTC
+tzcode source: system (glibc)
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] git2r_0.36.2
+
+loaded via a namespace (and not attached):
+[1] compiler_4.5.3
+> libgit2_version()
+$major
+[1] 1
+
+$minor
+[1] 7
+
+$rev
+[1] 2
+
+> libgit2_features()
+$threads
+[1] TRUE
+
+$https
+[1] TRUE
+
+$ssh
+[1] TRUE
+
+> 
+> 
+> ## Create a directory in tempdir
+> path <- tempfile(pattern = "git2r-")
+> dir.create(path)
+> 
+> ## Initialize a repository
+> repo <- init(path)
+> config(repo, user.name = "Alice", user.email = "alice@example.org")
+> 
+> ## Create a file
+> f <- file(file.path(path, "test.txt"), "wb")
+> writeChar("Hello world!\n", f, eos = NULL)
+> close(f)
+> 
+> ## add and commit
+> add(repo, "test.txt")
+> commit(repo, "Commit message")
+[8b14908] 2026-05-15: Commit message
+> 
+> ## Check tree
+> stopifnot(is_tree(lookup(repo, "a0b0b9e615e9e433eb5f11859e9feac4564c58c5")))
+> stopifnot(identical(
++     sha(lookup(repo, "a0b0b9e615e9e433eb5f11859e9feac4564c58c5")),
++     "a0b0b9e615e9e433eb5f11859e9feac4564c58c5"))
+> stopifnot(is_tree(tree(commits(repo)[[1]])))
+> stopifnot(identical(lookup(repo, "a0b0b9e615e9e433eb5f11859e9feac4564c58c5"),
++                     tree(commits(repo)[[1]])))
+> stopifnot(identical(length(tree(commits(repo)[[1]])), 1L))
+> 
+> ## Coerce to a data.frame and check column names
+> stopifnot(identical(names(as.data.frame(tree(commits(repo)[[1]]))),
++                     c("mode", "type", "sha", "name")))
+> 
+> ## Coerce to list and check length
+> stopifnot(identical(length(as.list(tree(last_commit(repo)))), 1L))
+> 
+> ## Print and summary
+> stopifnot(identical(print(tree(last_commit(repo))), tree(last_commit(repo))))
+tree: a0b0b9e615e9e433eb5f11859e9feac4564c58c5
+
+    mode type                                      sha     name
+1 100644 blob cd0875583aabe89ee197ea133980a9085d08e497 test.txt
+> summary(tree(last_commit(repo)))
+    mode type                                      sha     name
+1 100644 blob cd0875583aabe89ee197ea133980a9085d08e497 test.txt
+> 
+> ## Check indexing
+> stopifnot(is_blob(tree(last_commit(repo))[TRUE]))
+> stopifnot(is_blob(tree(last_commit(repo))["test.txt"]))
+> res <- tools::assertError(tree(last_commit(repo))[data.frame()])
+> stopifnot(length(grep("Invalid index", res[[1]]$message)) > 0)
+> 
+> ## Check ls_tree
+> stopifnot(identical(ls_tree(repo = repo), ls_tree(repo = path)))
+> stopifnot(identical(ls_tree(tree = sha(tree(last_commit(repo))), repo = repo),
++                     ls_tree(repo = repo)))
+> 
+> ## Cleanup
+> unlink(path, recursive = TRUE)
+> 
