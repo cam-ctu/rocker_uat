@@ -1,0 +1,146 @@
+
+R version 4.6.0 (2026-04-24) -- "Because it was There"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> if (MuMIn:::testStart("survival")) {
++ 
++     bladder1 <- bladder[bladder$enum < 5, ]
++ 
++     fmcph <- coxph(Surv(stop, event) ~ (rx + size + number) * strata(enum) + cluster(id), bladder1)
++ 
++     r.squared.coxph <- function(object, ...) {
++         logtest <- -2 * (object$loglik[1L] - object$loglik[2L])
++         c(rsq = 1 - exp(-logtest/object$n), maxrsq = 1 - exp(2 * object$loglik[1L]/object$n))
++     }
++ 
++     getAllTerms(fmcph)
++     coef(fmcph)
++ 
++     ms <- dredge(fmcph, fixed=c("strata(enum)"), 
++         extra = list(R2 = "r.squared.coxph"), trace = TRUE)
++ 
++ 
++     # BUG in survival
++     if(! "logLik.coxph.null" %in% methods("logLik"))
++         registerS3method("logLik", "coxph.null", survival:::logLik.coxph.null)
++ 
++     summary(model.avg(ms[1:10]))
++ 
++     fits <- get.models(ms, delta < 5)
++     summary(model.avg(fits))
++ 
++     ####
++ 
++     lung <- na.omit(lung)
++     fm <- coxph(Surv(time, status) ~ ph.ecog + tt(age), data=lung,
++          tt=function(x,t,...) pspline(x + t/365.25))
++     ma <- model.avg(dredge(fm))
++     coef(ma)
++     coefTable(ma)
++     ####
++ 
++     fmsrvrg <- survreg(Surv(futime, fustat) ~ ecog.ps + rx, ovarian, dist='weibull',
++         scale = 1, cluster = rx)
++ 
++     r.squaredLR(fmsrvrg)
++     
++     #null <- survreg(Surv(futime, fustat) ~ 1, ovarian, dist='weibull', scale = 1)
++     #R2survreg <- function(x) r.squaredLR(x, null = null)
++     #dredge(fmsrvrg, extra = "R2survreg")
++     
++     summary(model.avg(dredge(fmsrvrg), delta  < 4))
++ 
++     fmsrvrg2 <- survreg(Surv(futime, fustat) ~ ecog.ps + rx, ovarian, dist='weibull')
++ 
++     fmsrvrg3 <- survreg(Surv(time, status) ~ ph.ecog + age + strata(sex), lung,
++           na.action = "na.omit")
++     
++     r.squaredLR(fmsrvrg3)
++ 
++ 
++     coefTable(fmsrvrg)
++     coefTable(fmsrvrg2)
++     coefTable(fmsrvrg3)
++ }
+Loading required package: MuMIn
+Fixed terms are "strata(enum)" and "(Intercept)"
+0 : coxph(formula = Surv(stop, event) ~ strata(enum), data = bladder1, 
+    cluster = id)
+1 : coxph(formula = Surv(stop, event) ~ number + strata(enum), data = bladder1, 
+    cluster = id)
+2 : coxph(formula = Surv(stop, event) ~ rx + strata(enum), data = bladder1, 
+    cluster = id)
+3 : coxph(formula = Surv(stop, event) ~ number + rx + strata(enum), 
+    data = bladder1, cluster = id)
+4 : coxph(formula = Surv(stop, event) ~ size + strata(enum), data = bladder1, 
+    cluster = id)
+5 : coxph(formula = Surv(stop, event) ~ number + size + strata(enum), 
+    data = bladder1, cluster = id)
+6 : coxph(formula = Surv(stop, event) ~ rx + size + strata(enum), 
+    data = bladder1, cluster = id)
+7 : coxph(formula = Surv(stop, event) ~ number + rx + size + strata(enum), 
+    data = bladder1, cluster = id)
+9 : coxph(formula = Surv(stop, event) ~ number + strata(enum) + number:strata(enum), 
+    data = bladder1, cluster = id)
+11 : coxph(formula = Surv(stop, event) ~ number + rx + strata(enum) + 
+    number:strata(enum), data = bladder1, cluster = id)
+13 : coxph(formula = Surv(stop, event) ~ number + size + strata(enum) + 
+    number:strata(enum), data = bladder1, cluster = id)
+15 : coxph(formula = Surv(stop, event) ~ number + rx + size + strata(enum) + 
+    number:strata(enum), data = bladder1, cluster = id)
+18 : coxph(formula = Surv(stop, event) ~ rx + strata(enum) + rx:strata(enum), 
+    data = bladder1, cluster = id)
+19 : coxph(formula = Surv(stop, event) ~ number + rx + strata(enum) + 
+    rx:strata(enum), data = bladder1, cluster = id)
+22 : coxph(formula = Surv(stop, event) ~ rx + size + strata(enum) + 
+    rx:strata(enum), data = bladder1, cluster = id)
+23 : coxph(formula = Surv(stop, event) ~ number + rx + size + strata(enum) + 
+    rx:strata(enum), data = bladder1, cluster = id)
+27 : coxph(formula = Surv(stop, event) ~ number + rx + strata(enum) + 
+    number:strata(enum) + rx:strata(enum), data = bladder1, cluster = id)
+31 : coxph(formula = Surv(stop, event) ~ number + rx + size + strata(enum) + 
+    number:strata(enum) + rx:strata(enum), data = bladder1, cluster = id)
+36 : coxph(formula = Surv(stop, event) ~ size + strata(enum) + size:strata(enum), 
+    data = bladder1, cluster = id)
+37 : coxph(formula = Surv(stop, event) ~ number + size + strata(enum) + 
+    size:strata(enum), data = bladder1, cluster = id)
+38 : coxph(formula = Surv(stop, event) ~ rx + size + strata(enum) + 
+    size:strata(enum), data = bladder1, cluster = id)
+39 : coxph(formula = Surv(stop, event) ~ number + rx + size + strata(enum) + 
+    size:strata(enum), data = bladder1, cluster = id)
+45 : coxph(formula = Surv(stop, event) ~ number + size + strata(enum) + 
+    number:strata(enum) + size:strata(enum), data = bladder1, 
+    cluster = id)
+47 : coxph(formula = Surv(stop, event) ~ number + rx + size + strata(enum) + 
+    number:strata(enum) + size:strata(enum), data = bladder1, 
+    cluster = id)
+54 : coxph(formula = Surv(stop, event) ~ rx + size + strata(enum) + 
+    rx:strata(enum) + size:strata(enum), data = bladder1, cluster = id)
+55 : coxph(formula = Surv(stop, event) ~ number + rx + size + strata(enum) + 
+    rx:strata(enum) + size:strata(enum), data = bladder1, cluster = id)
+63 : coxph(formula = Surv(stop, event) ~ number + rx + size + strata(enum) + 
+    number:strata(enum) + rx:strata(enum) + size:strata(enum), 
+    data = bladder1, cluster = id)
+Fixed term is "(Intercept)"
+Fixed term is "(Intercept)"
+Fixed term is "(Intercept)"
+                   Estimate Std. Error
+(Intercept)       6.6737246     0.4875
+ph.ecog          -0.3266802     0.1042
+age              -0.0046787     0.0081
+Log(scale):sex=1 -0.2746477     0.0904
+Log(scale):sex=2 -0.3899741     0.1273
+> 

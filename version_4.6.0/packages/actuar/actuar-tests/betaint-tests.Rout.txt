@@ -1,0 +1,98 @@
+
+R version 4.6.0 (2026-04-24) -- "Because it was There"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> ### actuar: Actuarial Functions and Heavy Tailed Distributions
+> ###
+> ### Tests for the "beta integral"
+> ###
+> ###    B(a, b; x) = Gamma(a + b) int_0^x t^(a-1) (1 - t)^(b-1) dt
+> ###
+> ### Inspired by (and some parts taken from) `tests/d-p-q-r-tests.R` in
+> ### R sources.
+> ###
+> ### AUTHOR: Vincent Goulet <vincent.goulet@act.ulaval.ca> with
+> ###         indirect help from the R Core Team
+> 
+> ## Load the package
+> library(actuar)
+
+Attaching package: ‘actuar’
+
+The following objects are masked from ‘package:stats’:
+
+    sd, var
+
+The following object is masked from ‘package:grDevices’:
+
+    cm
+
+> 
+> ## Define a "local" version of the otherwise non-exported function
+> ## 'betaint'.
+> betaint <- actuar:::betaint
+> 
+> ## Special values and utilities. Taken from `tests/d-p-q-r-tests.R`.
+> xMax <- 1 - .Machine$double.eps
+> xMin <- .Machine$double.xmin
+> All.eq <- function(x, y)
++ {
++     all.equal.numeric(x, y, tolerance = 64 * .Machine$double.eps,
++                       scale = max(0, mean(abs(x), na.rm = TRUE)))
++ }
+> 
+> if(!interactive())
++     set.seed(123)
+> 
+> ## Limiting cases
+> stopifnot(exprs = {
++     !is.finite(betaint(0.3, Inf, 2))
++     !is.finite(betaint(0.3, Inf, -2.2))
++     is.nan    (betaint(0.3,   0, 2))
++     !is.finite(betaint(0.3,   2, Inf))
++     is.nan    (betaint(0.3,   2, -2.2)) # a <= 1 + floor(-b)
++     is.nan    (betaint(0.3,   2, 0))
++ })
+Warning messages:
+1: In betaint(0.3, 0, 2) : NaNs produced
+2: In betaint(0.3, 2, -2.2) : NaNs produced
+3: In betaint(0.3, 2, 0) : NaNs produced
+> 
+> ## Tests for cases with b > 0
+> x <- c(xMin, runif(10), xMax)
+> b <- 2
+> for (a in rlnorm(5, 2))
++     stopifnot(exprs = {
++         All.eq(betaint(x, a, b),
++                gamma(a) * gamma(b) * pbeta(x, a, b))
++     })
+> 
+> ## Tests for cases with b < 0
+> b <- -2.2
+> r <- floor(-b)        # r = 2
+> for (a in 1 + r + rlnorm(5, 2))
++ {
++     s <- (x^(a-1) * (1-x)^b)/b +
++         ((a-1) * x^(a-2) * (1-x)^(b+1))/(b * (b+1)) +
++         ((a-1) * (a-2) * x^(a-3) * (1-x)^(b+2))/(b * (b+1) * (b+2))
++     stopifnot(exprs = {
++         all.equal(betaint(x, a, b),
++                   -gamma(a+b) * s +
++                   (a-1)*(a-2)*(a-3) * gamma(a-r-1)/(b*(b+1)*(b+2)) *
++                   gamma(b+r+1)*pbeta(x, a-r-1, b+r+1))
++     })
++ }
+> 

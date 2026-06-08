@@ -1,0 +1,125 @@
+
+R version 4.6.0 (2026-04-24) -- "Because it was There"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> if (MuMIn:::testStart("mgcv")) {
++ 
++     RNGkind("Mersenne")
++     set.seed(0) ## simulate some data...
++     dat <- gamSim(1, n = 400, dist = "binary", scale = 2)
++     #gam1 <- gam(y~s(x0)+s(x1)+s(x2)+s(x3), data=dat)
++ 
++     ops <- options(warn = -1)
++ 
++     gam1 <- gam(y ~ s(x0) + s(x1) + s(x2) +  s(x3) + (x1+x2+x3)^2,
++         data = dat, method = "GCV.Cp", family = binomial)
++ 
++     dd <- dredge(gam1, subset = !`s(x0)` & (!`s(x1)` | !x1) & 
++         (!`s(x2)` | !x2) & (!`s(x3)` | !x3), fixed = "x1")
++         
++     gm <- get.models(dd, cumsum(weight) <= .95)
++     ma <- model.avg(gm)
++ 
++     print(summary(ma))
++ 
++     print(predict(ma, dat[1:10, ], se.fit = TRUE, type = "link"))
++     print(predict(ma, dat[1:10, ], se.fit = TRUE, type = "response"))
++     print(predict(ma, dat[1:10, ], se.fit = TRUE, type = "link", 
++         backtransform = TRUE))
++ 
++     options(ops)
++ }
+Loading required package: MuMIn
+Gu & Wahba 4 term additive model
+Fixed terms are "x1" and "(Intercept)"
+
+Call:
+model.avg(object = gm)
+
+Component model call: 
+gam(formula = y ~ <3 unique rhs>, family = binomial, data = dat, method 
+     = GCV.Cp)
+
+Component models: 
+        df logLik   AICc delta weight
+1234 12.74 -77.91 182.20  0.00   0.68
+12   10.70 -81.42 184.88  2.68   0.18
+123  11.71 -80.62 185.42  3.23   0.14
+
+Term codes: 
+s(x2)    x1    x3 x1:x3 
+    1     2     3     4 
+
+Model-averaged coefficients:  
+(full average) 
+            Estimate Std. Error Adjusted SE z value Pr(>|z|)    
+(Intercept)    2.915      3.008       3.017   0.966 0.334028    
+x3             1.324      1.767       1.770   0.748 0.454519    
+x1            10.827      2.791       2.795   3.873 0.000107 ***
+x1:x3         -4.730      4.127       4.132   1.145 0.252346    
+s(x2).1      -19.689     10.553      10.585   1.860 0.062879 .  
+s(x2).2       14.779      8.620       8.647   1.709 0.087428 .  
+s(x2).3        8.089      5.747       5.765   1.403 0.160623    
+s(x2).4      -25.331     15.801      15.849   1.598 0.109989    
+s(x2).5      -17.329      9.758       9.788   1.770 0.076662 .  
+s(x2).6      -15.183     15.290      15.337   0.990 0.322203    
+s(x2).7       -4.143      4.733       4.748   0.873 0.382875    
+s(x2).8       -7.833     16.566      16.617   0.471 0.637375    
+s(x2).9       -1.814      5.579       5.596   0.324 0.745896    
+ 
+(conditional average) 
+            Estimate Std. Error Adjusted SE z value Pr(>|z|)    
+(Intercept)    2.915      3.008       3.017   0.966 0.334028    
+x3             1.613      1.827       1.831   0.881 0.378251    
+x1            10.827      2.791       2.795   3.873 0.000107 ***
+x1:x3         -6.910      3.133       3.143   2.199 0.027895 *  
+s(x2).1      -19.689     10.553      10.585   1.860 0.062879 .  
+s(x2).2       14.779      8.620       8.647   1.709 0.087428 .  
+s(x2).3        8.089      5.747       5.765   1.403 0.160623    
+s(x2).4      -25.331     15.801      15.849   1.598 0.109989    
+s(x2).5      -17.329      9.758       9.788   1.770 0.076662 .  
+s(x2).6      -15.183     15.290      15.337   0.990 0.322203    
+s(x2).7       -4.143      4.733       4.748   0.873 0.382875    
+s(x2).8       -7.833     16.566      16.617   0.471 0.637375    
+s(x2).9       -1.814      5.579       5.596   0.324 0.745896    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+$fit
+ [1] 12.3576831  0.8926846 -2.2950596  0.6662617  4.6175152 32.6953214
+ [7]  5.3384148 14.5012915  0.1423755 13.4264833
+
+$se.fit
+ [1]  5.6777285  0.5455619  0.6434792  1.0850647  0.8316784 14.0126044
+ [7]  0.9901408  5.8734567  0.6859540  6.7944752
+
+$fit
+ [1] 0.99999376 0.70764701 0.09214508 0.64015829 0.99010371 1.00000000
+ [7] 0.99511015 0.99999891 0.53284002 0.99999689
+
+$se.fit
+ [1] 4.522290e-05 1.119387e-01 5.410270e-02 2.331701e-01 8.238283e-03
+ [6] 6.867608e-13 4.902802e-03 9.213400e-06 1.654727e-01 3.026702e-05
+
+$fit
+ [1] 0.99999570 0.70944388 0.09153295 0.66066560 0.99021930 1.00000000
+ [7] 0.99521948 0.99999950 0.53553386 0.99999852
+
+$se.fit
+ [1] 2.439480e-05 1.124585e-01 5.350830e-02 2.432569e-01 8.054838e-03
+ [6] 3.111423e-15 4.710756e-03 2.958438e-06 1.706224e-01 1.002552e-05
+
+> 

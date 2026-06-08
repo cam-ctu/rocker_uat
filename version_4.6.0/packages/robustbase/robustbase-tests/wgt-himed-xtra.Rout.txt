@@ -1,0 +1,152 @@
+
+R version 4.6.0 (2026-04-24) -- "Because it was There"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> 
+> library(robustbase)
+> ## testing functions:
+> source(system.file("xtraR/ex-funs.R", package = "robustbase"))
+> 
+> x  <- c(0.26, 0.161, 1.33, -0.925, 0.199, -1.476, 0.489)
+> iw <- c(5, 4, 4, 1, 5, 1, 5)
+> 
+> 
+> stopifnot(0.26 == (himR <-  weighted.median(rep(x,iw))),
++           himR == wgt.himedian(x, iw), ## (once gave infinite loop)
++           himR == wgt.himedian(x, as.integer(iw)))
+> 
+> 
+> ## same result, but *different wweigted.median() debug output!
+> ##-- even when having EXACT data (& exact differences!)
+> all.equal(Qn(c(2:1,4:3)), 1.1376128)
+[1] "Mean relative difference: 0.001116917"
+> 
+> ###--- another inifinite loop {solved}:
+> 
+> (z4 <- round(qnorm(ppoints(4)), 2)) # -1.05 -0.30  0.30  1.05
+[1] -1.05 -0.30  0.30  1.05
+> 
+> ## both the same (also wweigted.median debug output)
+> (all.equal(weighted.median(z4, 4:1),
++            print(wgt.himedian (z4, 4:1))))# 3.97e-8
+[1] -0.3
+[1] TRUE
+> 
+> (all.equal(weighted.median(z4, c(4,2,3,17)),
++            print(wgt.himedian (z4, c(4,2,3,17)))))# 4.54e-8
+[1] 1.05
+[1] TRUE
+> 
+> Sn (z4)## = 0.8533053
+[1] 0.8533053
+> Sn (z4, const = 1)# = 0.75
+[1] 0.75
+> 
+> ##-- now
+> Qn (z4)# --> gave (another) infinite loop
+[1] 0.8541636
+>        ##--> now "works" after (float) rounding of differences!
+>        ##--- DIFFERENT whimed() output!
+> stopifnot(all.equal(Qn(z4, const = 1),
++                     print(Qn0R(z4))))
+[1] 0.75
+> 
+> set.seed(1)
+> n <- length(x <- round(2048*runif(16)))
+> n*(n-1)/2 # 120
+[1] 120
+> xDiff <- local({y <- sort(x); m <- outer(y,y,"-"); m[lower.tri(m)] })
+> xDsrt <- unique(sort(xDiff))
+> stopifnot(exprs = {
++     ## so all pairwise differences differ :
++     length(xDsrt) == n*(n-1)/2 # 120
++     Qn0R(x, k=1:120) == xDsrt ## *all* the "quantiles" = order stats  do differ indeed
++     Qn(x, constant=1) == 374
++ })
+> 
+> ##  Bugs in  Qn(x,  k = <multiple values>)
+> sapply(1:120, function(k) Qn(x, 1, k=k)) ## ends with 0 0 0 ... for the last ones
+  [1]    9   20   25   51   54   60   65   75   95  115  119  122  131  154  170
+ [16]  180  182  218  224  232  234  235  243  257  263  269  283  286  289  295
+ [31]  334  340  349  358  365  374  386  388  400  404  411  417  425  433  453
+ [46]  475  487  501  507  526  528  552  558  566  572  582  591  597  606  620
+ [61]  629  635  645  647  657  660  667  687  744  751  760  762  790  809  811
+ [76]  815  821  841  863  866  875  892  916  926  931  940  985  991  994 1033
+ [91] 1045 1046 1053 1073 1078 1098 1148 1155 1161 1164 1173 1215 1226 1280 1296
+[106] 1316 1391 1418 1427 1438 1447 1450 1478 1498 1513 1522 1573 1713 1733 1808
+> if(FALSE) ## e.g.
++   Qn(x, k=1:10) # enters infinite loop after k[4] = 5
+> 
+> 
+> ## yet another problem:
+> Sn0R(c(1.1, -0.93, -0.11, -0.74))# 0.82
+[1] 0.82
+> Sn  (c(1.1, -0.93, -0.11, -0.74))# 0.9329471
+[1] 0.9329471
+> ## gave segmentation fault at Sat Mar 16 23:54:30 2002
+> ## not anymore but 0.9329471
+> 
+> ### Check validity of basic algorithm few times
+> set.seed(471)
+> for(sim in 1:100) { # had '500'
++     cat(".")
++     x <- rnorm(rpois(1, lam=80))# not too large the *n0R() use time!
++     ##--> Sn0R() "fails" for  odd n
++     stopifnot(all.equal(Sn(x, const = 1), Sn0R(x)),
++               all.equal(Qn(x, const = 1), Qn0R(x), tolerance = 7e-8))
++     x <- round(x,2)
++     stopifnot(all.equal(Sn(x, const = 1), Sn0R(x)),
++               all.equal(Qn(x, const = 1), Qn0R(x), tolerance = 7e-8))
++     if(sim %% 50 == 0) cat(sim, "\n")
++ }
+..................................................50 
+..................................................100 
+> 
+> 
+> 
+> ###---- Last series of problems: when  n^2 > max.integer:
+> 
+> ## Large x with 1% outliers
+> N <- 1e5
+> n.o <- round(0.01 * N)
+> nSim <- 24## interesting
+> nSim <- 4 ## for package testing
+> estim.lst <- c("mad", "Sn", "Qn")
+> Res <- array(NA, dim = c(nSim, length(estim.lst), 1 + 2),
++              dimnames= list(NULL,estim.lst, c("Tx","cpu1", "cpu3")))
+> set.seed(101)
+> for(i in 1:nSim) {
++     x <- sample(c(rnorm(N), 10*min(1, abs(rt(1, df=2))) + rnorm(n.o)))
++     cat(i)
++     for(S in estim.lst) {
++         cpu <- system.time(Tx <- get(S)(x))[1:3]
++         Res[i, S,] <- c(Tx, cpu[c(1,3)])
++     }
++     cat(" ")
++ };  cat("\n")
+1 2 3 4 
+> 
+> options(digits = 5)
+> 
+> (Tx <- Res[,, "Tx"])
+        mad     Sn     Qn
+[1,] 1.0091 1.0128 1.0165
+[2,] 1.0082 1.0101 1.0156
+[3,] 1.0088 1.0150 1.0198
+[4,] 1.0083 1.0123 1.0177
+> stopifnot(abs(range(Tx - 1)) < 0.03)
+> 
+> q()##============================================================================

@@ -55,7 +55,7 @@ Type 'q()' to quit R.
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (FALSE) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (FALSE) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + # Workspace is empty
 + r(function() ls())
@@ -82,7 +82,7 @@ Type 'q()' to quit R.
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (FALSE) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (FALSE) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + rx <- r_bg(function() 1 + 2)
 + 
@@ -109,7 +109,7 @@ Type 'q()' to quit R.
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (FALSE) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (FALSE) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + ## List all options and their default values:
 + r_process_options()
@@ -180,37 +180,50 @@ $supervise
 [1] FALSE
 
 $load_hook
- [1] "{\n"                                                                                  
- [2] "    while (\"tools:callr\" %in% search()) detach(\"tools:callr\")\n"                  
- [3] "    env <- readRDS(\"/tmp/Rtmp9aGB6j/callr-env-a645ce444d\")\n"                       
- [4] "    do.call(\"attach\", list(env, pos = length(search()), name = \"tools:callr\"))\n" 
- [5] "    data <- env$`__callr_data__`\n"                                                   
- [6] "    data$pxlib <- data$load_client_lib(data$sofile[[paste0(\"arch-\", \n"             
- [7] "        .Platform$r_arch)]], data$pxdir)\n"                                           
- [8] "    options(error = function() invokeRestart(\"abort\"))\n"                           
- [9] "    rm(list = c(\"data\", \"env\"))\n"                                                
-[10] "    lapply(c(\"R_ENVIRON\", \"R_ENVIRON_USER\", \"R_PROFILE\", \"R_PROFILE_USER\", \n"
-[11] "        \"R_LIBS\", \"R_LIBS_USER\", \"R_LIBS_SITE\"), function(var) {\n"             
-[12] "        bakvar <- paste0(\"CALLR_\", var, \"_BAK\")\n"                                
-[13] "        val <- Sys.getenv(bakvar, NA_character_)\n"                                   
-[14] "        if (!is.na(val)) {\n"                                                         
-[15] "            do.call(\"Sys.setenv\", structure(list(val), names = var))\n"             
-[16] "        }\n"                                                                          
-[17] "        else {\n"                                                                     
-[18] "            Sys.unsetenv(var)\n"                                                      
-[19] "        }\n"                                                                          
-[20] "        Sys.unsetenv(bakvar)\n"                                                       
-[21] "    })\n"                                                                             
-[22] "    Sys.unsetenv(\"CALLR_CHILD_R_LIBS\")\n"                                           
-[23] "    Sys.unsetenv(\"CALLR_CHILD_R_LIBS_SITE\")\n"                                      
-[24] "    Sys.unsetenv(\"CALLR_CHILD_R_LIBS_USER\")\n"                                      
-[25] "}\n"                                                                                  
+ [1] "{\n"                                                                                                               
+ [2] "    while (\"tools:callr\" %in% search()) {\n"                                                                     
+ [3] "        detach(\"tools:callr\")\n"                                                                                 
+ [4] "    }\n"                                                                                                           
+ [5] "    env <- readRDS(\"/tmp/RtmpKJjn4y/callr-env-aaa276b889d4\")\n"                                                  
+ [6] "    has_otel <- nzchar(Sys.getenv(\"TRACEPARENT\")) && requireNamespace(\"otel\", \n"                              
+ [7] "        quietly = TRUE)\n"                                                                                         
+ [8] "    assign(envir = env$`__callr_data__`, \"has_otel\", has_otel)\n"                                                
+ [9] "    if (has_otel) {\n"                                                                                             
+[10] "        hdrs <- as.list(c(traceparent = Sys.getenv(\"TRACEPARENT\"), \n"                                           
+[11] "            tracestate = Sys.getenv(\"TRACESTATE\"), baggage = Sys.getenv(\"BAGGAGE\")))\n"                        
+[12] "        prtctx <- otel::extract_http_context(hdrs)\n"                                                              
+[13] "        assign(envir = env$`__callr_data__`, \"otel_span\", otel::start_local_active_span(\"callr subprocess\", \n"
+[14] "            options = list(parent = prtctx), activation_scope = .GlobalEnv, \n"                                    
+[15] "            end_on_exit = TRUE))\n"                                                                                
+[16] "    }\n"                                                                                                           
+[17] "    do.call(\"attach\", list(env, pos = length(search()), name = \"tools:callr\"))\n"                              
+[18] "    data <- env$`__callr_data__`\n"                                                                                
+[19] "    data$pxlib <- data$load_client_lib(data$sofile[[paste0(\"arch-\", \n"                                          
+[20] "        .Platform$r_arch)]], data$pxdir)\n"                                                                        
+[21] "    options(error = function() invokeRestart(\"abort\"))\n"                                                        
+[22] "    rm(list = c(\"data\", \"env\", \"has_otel\"))\n"                                                               
+[23] "    lapply(c(\"R_ENVIRON\", \"R_ENVIRON_USER\", \"R_PROFILE\", \"R_PROFILE_USER\", \n"                             
+[24] "        \"R_LIBS\", \"R_LIBS_USER\", \"R_LIBS_SITE\"), function(var) {\n"                                          
+[25] "        bakvar <- paste0(\"CALLR_\", var, \"_BAK\")\n"                                                             
+[26] "        val <- Sys.getenv(bakvar, NA_character_)\n"                                                                
+[27] "        if (!is.na(val)) {\n"                                                                                      
+[28] "            do.call(\"Sys.setenv\", structure(list(val), names = var))\n"                                          
+[29] "        }\n"                                                                                                       
+[30] "        else {\n"                                                                                                  
+[31] "            Sys.unsetenv(var)\n"                                                                                   
+[32] "        }\n"                                                                                                       
+[33] "        Sys.unsetenv(bakvar)\n"                                                                                    
+[34] "    })\n"                                                                                                          
+[35] "    Sys.unsetenv(\"CALLR_CHILD_R_LIBS\")\n"                                                                        
+[36] "    Sys.unsetenv(\"CALLR_CHILD_R_LIBS_SITE\")\n"                                                                   
+[37] "    Sys.unsetenv(\"CALLR_CHILD_R_LIBS_USER\")\n"                                                                   
+[38] "}\n"                                                                                                               
 
 $extra
 list()
 
 $package
-[1] FALSE
+NULL
 
 $arch
 [1] "same"
@@ -231,9 +244,9 @@ $arch
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (FALSE) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (FALSE) withAutoprint({ # examplesIf
 + ## End(Don't show)
-+ rs <- r_ression$new()
++ rs <- r_session$new()
 + 
 + rs$run(function() 1 + 2)
 + 
@@ -325,7 +338,7 @@ $arch
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (FALSE) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (FALSE) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + # Compare to r()
 + r(function() .libPaths())
@@ -352,7 +365,7 @@ $arch
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (FALSE) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (FALSE) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + rcmd("config", "CC")
 + ## Don't show: 
@@ -374,7 +387,7 @@ $arch
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (FALSE) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (FALSE) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + options <- rcmd_process_options(cmd = "config", cmdargs = "CC")
 + rp <- rcmd_process$new(options)
@@ -460,7 +473,7 @@ $arch
 > ### ** Examples
 > 
 > ## Don't show: 
-> if (FALSE) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
+> if (FALSE) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + options <- rscript_process_options(script = "script.R")
 + rp <- rscript_process$new(options)
@@ -555,7 +568,7 @@ $arch
 > cleanEx()
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  0.081 0.015 0.096 0 0 
+Time elapsed:  0.065 0.008 0.075 0 0 
 > grDevices::dev.off()
 null device 
           1 
