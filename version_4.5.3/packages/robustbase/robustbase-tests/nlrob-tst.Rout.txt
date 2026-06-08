@@ -1,0 +1,2160 @@
+
+R version 4.5.3 (2026-03-11) -- "Reassured Reassurer"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> commandArgs()
+[1] "/usr/local/lib/R/bin/exec/R" "--no-save"                  
+[3] "--no-restore"                "-f"                         
+[5] "nlrob-tst.R"                 "--restore"                  
+[7] "--save"                      "--no-readline"              
+[9] "--vanilla"                  
+> library(robustbase)
+> 
+> ## for now: ----------------------------------------
+> if(file.exists(fil <- system.file("xtraR/test-tools.R",  package = "robustbase"))) {
++     source(fil)
++ } else {
++   identical3 <- function(x,y,z)	  identical(x,y) && identical (y,z)
++   identical4 <- function(a,b,c,d)   identical(a,b) && identical3(b,c,d)
++   assert.EQ <- function(target, current, tol = if(showOnly) 0 else 1e-15,
++                       giveRE = FALSE, showOnly = FALSE, ...) {
++     ## Purpose: check equality *and* show non-equality
++     ## ----------------------------------------------------------------------
++     ## showOnly: if TRUE, return (and hence typically print) all.equal(...)
++     T <- isTRUE(ae <- all.equal(target, current, tolerance = tol, ...))
++     if(showOnly) return(ae) else if(giveRE && T) { ## don't show if stop() later:
++ 	ae0 <- if(tol == 0) ae else all.equal(target, current, tolerance = 0, ...)
++ 	if(!isTRUE(ae0)) writeLines(ae0)
++     }
++     if(!T) stop("all.equal() |-> ", paste(ae, collapse=sprintf("%-19s","\n")))
++     else if(giveRE) invisible(ae0)
++   }
++ }
+> if(FALSE) ## in future: ----------------------------------------
++ source(system.file("xtraR/test-tools.R",  package = "robustbase"))
+> ##
+> ## -> assert.EQ(), identical3(), ..
+> 
+> 
+> ## From  <Rsrc>/tests/reg-tests-1d.R  (2022-08-09):
+> ## A good guess if we have _not_ translated error/warning/.. messages:
+> ## (should something like this be part of package tools ?)
+> englishMsgs <- {
++     ## 1. LANGUAGE takes precedence over locale settings:
++     if(nzchar(lang <- Sys.getenv("LANGUAGE")))
++         lang == "en"
++     else { ## 2. Query the  locale
++         if(!onWindows) {
++             ## sub() :
++             lc.msgs <- sub("\\..*", "", print(Sys.getlocale("LC_MESSAGES")))
++             lc.msgs == "C" || substr(lc.msgs, 1,2) == "en"
++         } else { ## Windows
++             lc.type <- sub("\\..*", "", sub("_.*", "", print(Sys.getlocale("LC_CTYPE"))))
++             lc.type == "English" || lc.type == "C"
++         }
++     }
++ }
+> cat(sprintf("English messages: %s\n", englishMsgs))
+English messages: FALSE
+> 
+> 
+> DNase1 <- DNase[ DNase$Run == 1, ]
+> Y <- DNase1[,"density"] # for convenience below
+> 
+> ## classical
+> fm1 <- nls(density ~ Asym/(1 + exp(( xmid - log(conc) )/scal ) ),
++ 	   data = DNase1, start = list(Asym = 3, xmid = 0, scal = 1), trace=TRUE)
+14.32279    (3.02e+01): par = (3 0 1)
+0.4542698   (9.73e+00): par = (2.115246 0.8410193 1.200064)
+0.05869603  (3.34e+00): par = (2.446376 1.747516 1.189515)
+0.005663523 (4.26e-01): par = (2.294087 1.412198 1.020463)
+0.004791528 (2.02e-02): par = (2.341429 1.479688 1.040758)
+0.004789569 (1.65e-04): par = (2.345135 1.483047 1.041439)
+0.004789569 (2.00e-06): par = (2.345179 1.483089 1.041454)
+> summary(fm1)
+
+Formula: density ~ Asym/(1 + exp((xmid - log(conc))/scal))
+
+Parameters:
+     Estimate Std. Error t value Pr(>|t|)    
+Asym  2.34518    0.07815   30.01 2.17e-13 ***
+xmid  1.48309    0.08135   18.23 1.22e-10 ***
+scal  1.04145    0.03227   32.27 8.51e-14 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.01919 on 13 degrees of freedom
+
+Number of iterations to convergence: 6 
+Achieved convergence tolerance: 2.001e-06
+
+> wm1 <- update(fm1, weights = sqrt(conc)) # (weights as function of <var>)
+27.10073    (3.68e+01): par = (3 0 1)
+0.6008020   (8.66e+00): par = (2.182337 0.8948353 1.261465)
+0.1716287   (4.40e+00): par = (2.51089 1.828486 1.208884)
+0.01052871  (5.11e-01): par = (2.282185 1.401035 1.024226)
+0.008359719 (6.68e-02): par = (2.359573 1.499564 1.050668)
+0.008322484 (7.54e-04): par = (2.367424 1.506046 1.052066)
+0.008322479 (1.52e-05): par = (2.367618 1.506233 1.052148)
+0.008322479 (3.45e-07): par = (2.367623 1.506237 1.05215)
+> 
+> ## robust
+> rm1 <- nlrob(formula(fm1), data = DNase1, trace = TRUE,
++ 	     start = list(Asym = 3, xmid = 0, scal = 1))
+robust iteration 1 
+14.32279    (3.02e+01): par = (3 0 1)
+0.4542698   (9.73e+00): par = (2.115246 0.8410193 1.200064)
+0.05869603  (3.34e+00): par = (2.446376 1.747516 1.189515)
+0.005663523 (4.26e-01): par = (2.294087 1.412198 1.020463)
+0.004791528 (2.02e-02): par = (2.341429 1.479688 1.040758)
+0.004789569 (1.65e-04): par = (2.345135 1.483047 1.041439)
+0.004789569 (2.00e-06): par = (2.345179 1.483089 1.041454)
+ --> irls.delta(previous, resid) = 0.999803 -- *not* converged
+robust iteration 2 
+0.003971483 (6.54e-02): par = (2.345179 1.483089 1.041454)
+0.003954569 (1.07e-03): par = (2.356445 1.495544 1.043788)
+0.003954565 (2.78e-06): par = (2.356586 1.49565 1.043815)
+ --> irls.delta(previous, resid) = 0.0614628 -- *not* converged
+robust iteration 3 
+0.003934724 (1.25e-02): par = (2.356586 1.49565 1.043815)
+0.003934110 (8.82e-05): par = (2.358633 1.498205 1.044647)
+0.003934110 (6.26e-07): par = (2.358657 1.498229 1.044655)
+ --> irls.delta(previous, resid) = 0.0121516 -- *not* converged
+robust iteration 4 
+0.003930685 (4.06e-03): par = (2.358657 1.498229 1.044655)
+0.003930620 (2.54e-05): par = (2.359307 1.499046 1.044928)
+0.003930620 (2.79e-07): par = (2.359314 1.499053 1.044931)
+ --> irls.delta(previous, resid) = 0.0039505 -- *not* converged
+robust iteration 5 
+0.003929580 (1.33e-03): par = (2.359314 1.499053 1.044931)
+0.003929573 (7.99e-06): par = (2.359525 1.49932 1.04502)
+ --> irls.delta(previous, resid) = 0.00128457 -- *not* converged
+robust iteration 6 
+0.003929244 (4.36e-04): par = (2.359525 1.49932 1.04502)
+0.003929244 (2.72e-06): par = (2.359596 1.499409 1.04505)
+ --> irls.delta(previous, resid) = 0.000422958 -- *not* converged
+robust iteration 7 
+0.003929132 (1.44e-04): par = (2.359596 1.499409 1.04505)
+0.003929132 (9.15e-07): par = (2.35962 1.499438 1.04506)
+ --> irls.delta(previous, resid) = 0.000139362 -- *not* converged
+robust iteration 8 
+0.003929095 (4.74e-05): par = (2.35962 1.499438 1.04506)
+0.003929095 (2.27e-07): par = (2.359628 1.499448 1.045063)
+ --> irls.delta(previous, resid) = 4.59289e-05 -- *not* converged
+robust iteration 9 
+0.003929083 (1.56e-05): par = (2.359628 1.499448 1.045063)
+0.003929083 (9.27e-08): par = (2.35963 1.499451 1.045064)
+ --> irls.delta(previous, resid) = 1.5085e-05 -- *not* converged
+robust iteration 10 
+0.003929079 (5.13e-06): par = (2.35963 1.499451 1.045064)
+> (sm1 <- summary(rm1))
+
+Call:
+nlrob(formula = formula(fm1), data = DNase1, start = list(Asym = 3, 
+    xmid = 0, scal = 1), trace = TRUE, algorithm = "default")
+
+Residuals:
+       Min         1Q     Median         3Q        Max 
+-0.0322811 -0.0130976 -0.0008932  0.0095784  0.0404174 
+
+Parameters:
+     Estimate Std. Error t value Pr(>|t|)    
+Asym  2.35963    0.08627   27.35 7.10e-13 ***
+xmid  1.49945    0.09022   16.62 3.87e-10 ***
+scal  1.04506    0.03504   29.83 2.34e-13 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Robust residual standard error: 0.01829 
+Convergence in 10 IRWLS iterations
+
+Robustness weights: 
+ 14 weights are ~= 1. The remaining 2 ones are
+    11     13 
+0.6087 0.7621 
+> stopifnot(all.equal(Y, fitted(fm1) + residuals(fm1), check.attributes=FALSE),
++ 	  ## fitted(<nls>) has "label" attribute
++ 	  identical3(c(fitted(fm1)), predict(fm1), predict(fm1, newdata=DNase1)),
++ 	  ## robust fit :
++ 	  identical3(fitted(rm1), predict(rm1), predict(rm1, newdata=DNase1)),
++ 	  all.equal(Y, unname(fitted(rm1) + residuals(rm1))))
+> print(coef(rm1), digits=12)
+         Asym          xmid          scal 
+2.35963009817 1.49945089903 1.04506392244 
+> ## 2.35963008460 1.49945088410 1.04506391722	F19 Lx 64b
+> ## 2.35963008460 1.49945088410 1.04506391722	Win(Serv.2003) 64b
+> ## 2.35963008613 1.49945088600 1.04506391793	F19 Lx 32b
+> ## 2.35963008613 1.49945088600 1.04506391793	Win(Serv.2003) 32b
+> assert.EQ(coef(rm1), giveRE=TRUE,
++ 	  c(Asym=2.35963008, xmid=1.49945088, scal=1.04506392), tol = 4e-8)
+Mean relative difference: 8.082655e-09
+> assert.EQ(sqrt(diag(sm1$cov)), giveRE=TRUE,
++ 	  ## 32b 0.08626872273,     0.0902194541,      0.03503833759
++ 	  c(Asym=0.0862687305, xmid=0.0902194608, scal=0.0350383389),
++ 	  tol = 7e-7)
+Mean relative difference: 7.238911e-08
+> ## examples with weights:
+> rm. <- update(rm1, weights = NULL)# 'NULL' but not missing()
+robust iteration 1 
+14.32279    (3.02e+01): par = (3 0 1)
+0.4542698   (9.73e+00): par = (2.115246 0.8410193 1.200064)
+0.05869603  (3.34e+00): par = (2.446376 1.747516 1.189515)
+0.005663523 (4.26e-01): par = (2.294087 1.412198 1.020463)
+0.004791528 (2.02e-02): par = (2.341429 1.479688 1.040758)
+0.004789569 (1.65e-04): par = (2.345135 1.483047 1.041439)
+0.004789569 (2.00e-06): par = (2.345179 1.483089 1.041454)
+ --> irls.delta(previous, resid) = 0.999803 -- *not* converged
+robust iteration 2 
+0.003971483 (6.54e-02): par = (2.345179 1.483089 1.041454)
+0.003954569 (1.07e-03): par = (2.356445 1.495544 1.043788)
+0.003954565 (2.78e-06): par = (2.356586 1.49565 1.043815)
+ --> irls.delta(previous, resid) = 0.0614628 -- *not* converged
+robust iteration 3 
+0.003934724 (1.25e-02): par = (2.356586 1.49565 1.043815)
+0.003934110 (8.82e-05): par = (2.358633 1.498205 1.044647)
+0.003934110 (6.26e-07): par = (2.358657 1.498229 1.044655)
+ --> irls.delta(previous, resid) = 0.0121516 -- *not* converged
+robust iteration 4 
+0.003930685 (4.06e-03): par = (2.358657 1.498229 1.044655)
+0.003930620 (2.54e-05): par = (2.359307 1.499046 1.044928)
+0.003930620 (2.79e-07): par = (2.359314 1.499053 1.044931)
+ --> irls.delta(previous, resid) = 0.0039505 -- *not* converged
+robust iteration 5 
+0.003929580 (1.33e-03): par = (2.359314 1.499053 1.044931)
+0.003929573 (7.99e-06): par = (2.359525 1.49932 1.04502)
+ --> irls.delta(previous, resid) = 0.00128457 -- *not* converged
+robust iteration 6 
+0.003929244 (4.36e-04): par = (2.359525 1.49932 1.04502)
+0.003929244 (2.72e-06): par = (2.359596 1.499409 1.04505)
+ --> irls.delta(previous, resid) = 0.000422958 -- *not* converged
+robust iteration 7 
+0.003929132 (1.44e-04): par = (2.359596 1.499409 1.04505)
+0.003929132 (9.15e-07): par = (2.35962 1.499438 1.04506)
+ --> irls.delta(previous, resid) = 0.000139362 -- *not* converged
+robust iteration 8 
+0.003929095 (4.74e-05): par = (2.35962 1.499438 1.04506)
+0.003929095 (2.27e-07): par = (2.359628 1.499448 1.045063)
+ --> irls.delta(previous, resid) = 4.59289e-05 -- *not* converged
+robust iteration 9 
+0.003929083 (1.56e-05): par = (2.359628 1.499448 1.045063)
+0.003929083 (9.27e-08): par = (2.35963 1.499451 1.045064)
+ --> irls.delta(previous, resid) = 1.5085e-05 -- *not* converged
+robust iteration 10 
+0.003929079 (5.13e-06): par = (2.35963 1.499451 1.045064)
+> ww <- sqrt(DNase1[,"conc"])
+> wr1  <- update(rm1, weights = sqrt(conc), trace=FALSE)
+> wr1. <- update(rm1, weights = ww,         trace=FALSE)
+> ii <- names(rm1) != "call"
+> stopifnot(all.equal(rm1[ii], rm.[ii], tol = 1e-15),
++           all.equal(wr1[ii],wr1.[ii], tol = 1e-15))
+> 
+> ## When y has NA's: Add them to the end of DNase1
+> n <- nrow(DNase1)
+> DNAnase <- DNase1[c(1:n,1:3), ]
+> DNAnase$density[n+(1:3)] <- NA
+> 
+> naExp <- expression(na.fail = na.fail, # << the default in model.frame() which most use
++                     na.omit = na.omit,
++                     na.pass = na.pass,
++                     na.exclude= na.exclude)
+> 
+> noAction <- function(fm) {
++     if(("call" %in% names(fm)) && !is.null(fm$call))
++         fm$call <- noAction(fm$call)
++     if(!is.na(H <- match("na.action", names(fm))))
++         fm[-H]
++     else
++         fm
++ }
+> 
+> rNls <- lapply(naExp, function(naAct)
++     tryCatch(error = identity,
++        nls(formula(fm1), data = DNAnase,
++            na.action = eval(naAct),
++            start = list(Asym = 3, xmid = 0, scal = 1))
++        )
++     )
+> 
+> str(sapply(rNls, class))
+List of 4
+ $ na.fail   : chr [1:3] "simpleError" "error" "condition"
+ $ na.omit   : chr "nls"
+ $ na.pass   : chr [1:3] "simpleError" "error" "condition"
+ $ na.exclude: chr "nls"
+> ## $ na.fail   : chr [1:3] "simpleError" "error" "condition"
+> ## $ na.omit   : chr "nls"
+> ## $ na.pass   : chr [1:3] "simpleError" "error" "condition"
+> ## $ na.exclude: chr "nls"
+> 
+> stopifnot(exprs = {
++     inherits(rNls$na.pass, "simpleError")
++     inherits(rNls$na.fail, "simpleError")
++ })
+> 
+> if(englishMsgs) stopifnot(exprs = {
++     conditionMessage(rNls$na.fail) == "missing values in object"
++     grepl("NA.*foreign function call", conditionMessage(rNls$na.pass))
++ })
+> 
+> sO <- summary(rNls$na.omit)
+> sX <- summary(rNls$na.exclude)
+> stopifnot(exprs = {
++     identical(noAction(sO),
++               noAction(sX))
++     all.equal(coef(sm1), coef(sX), tol = 0.10) # 0.0857
++ })
+> 
+> 
+> robNls <- lapply(c(noCov=FALSE,doCov=TRUE), function(doCov)
++     lapply(naExp, function(naAct)
++         tryCatch(error = identity,
++                  nlrob(formula(fm1), data = DNAnase,
++                        na.action = eval(naAct),
++                        doCov = doCov, ## <--
++                        start = list(Asym = 3, xmid = 0, scal = 1))
++                  )
++         )
++     )
+Warning messages:
+1: In old - new :
+  longer object length is not a multiple of shorter object length
+2: In old - new :
+  longer object length is not a multiple of shorter object length
+> ## gives
+> ## Warning messages:
+> ## In old - new :
+> ##   longer object length is not a multiple of shorter object length
+> 
+> str(sapply(robNls[["noCov"]], class))
+List of 4
+ $ na.fail   : chr [1:3] "simpleError" "error" "condition"
+ $ na.omit   : chr [1:3] "simpleError" "error" "condition"
+ $ na.pass   : chr [1:3] "simpleError" "error" "condition"
+ $ na.exclude: chr [1:2] "nlrob" "nls"
+> ## List of 4
+> ##  $ na.fail   : chr [1:3] "simpleError" "error" "condition"
+> ##  $ na.omit   : chr [1:3] "simpleError" "error" "condition"  <<< FIXME, should work as nls() does
+> ##  $ na.pass   : chr [1:3] "simpleError" "error" "condition"
+> ##  $ na.exclude: chr [1:2] "nlrob" "nls"
+> stopifnot(identical(sapply(robNls[["noCov"]], class),
++                     sapply(robNls[["doCov"]], class)))
+> 
+> ## same checks as for nls():
+> lapply(robNls, function(LL)
++     stopifnot(exprs = {
++         inherits(LL$na.pass, "simpleError")
++         inherits(LL$na.fail, "simpleError")
++     })) -> .tmp
+> 
+> if(englishMsgs) lapply(robNls, function(LL)
++     stopifnot(exprs = {
++         conditionMessage(LL$na.fail) == "missing values in object"
++         ## different message than nls():
++         grepl("missing.*weights not allowed", conditionMessage(LL$na.pass))
++     })
++     ) -> .tmp
+> 
+> ## the only one which works currently:
+> robNxcl <- robNls[["noCov"]]$na.exclude
+> 
+> ## Fix these : ===================
+> .t <- try( s.no <- summary(robNxcl) )
+Error in .vcov.m(object, Scale = sc, resid.sc = as.vector(object$residuals)/sc) : 
+  length(resid.sc) == nobs(object) is not TRUE
+> .t <- try( v.no <- vcov(robNxcl) )
+Error in .vcov.m(object, Scale = sc, resid.sc = as.vector(object$residuals)/sc) : 
+  length(resid.sc) == nobs(object) is not TRUE
+> ## both give *same* error:
+> ## Error in .vcov.m(object, Scale = sc, resid.sc = as.vector(object$residuals)/sc) :
+> ##   length(resid.sc) == nobs(object) is not TRUE
+> 
+> 
+> 
+> ## Fix these : ===================
+> str( s.do <- summary(robNls[["doCov"]]$na.exclude) )
+List of 12
+ $ formula     :Class 'formula'  language density ~ Asym/(1 + exp((xmid - log(conc))/scal))
+  .. ..- attr(*, ".Environment")=<environment: R_GlobalEnv> 
+ $ residuals   : Named num [1:19] -0.01385 -0.01285 0.00883 0.01183 -0.00241 ...
+  ..- attr(*, "names")= chr [1:19] "1" "2" "3" "4" ...
+ $ Scale       : num 0.0183
+ $ w           : num [1:19] 1 1 1 1 1 1 1 1 1 1 ...
+ $ rweights    : num [1:19] 1 1 1 1 1 1 1 1 1 1 ...
+ $ cov         : num [1:3, 1:3] NA NA NA NA NA NA NA NA NA
+  ..- attr(*, "dimnames")=List of 2
+  .. ..$ : chr [1:3] "Asym" "xmid" "scal"
+  .. ..$ : chr [1:3] "Asym" "xmid" "scal"
+ $ call        : language nlrob(formula = formula(fm1), data = DNAnase, start = list(Asym = 3, xmid = 0,      scal = 1), na.action = eval(n| __truncated__
+ $ status      : chr "converged"
+ $ iter        : int 10
+ $ control     :List of 7
+  ..$ maxiter    : num 50
+  ..$ tol        : num 1e-05
+  ..$ minFactor  : num 0.000977
+  ..$ printEval  : logi FALSE
+  ..$ warnOnly   : logi FALSE
+  ..$ scaleOffset: num 0
+  ..$ nDcentral  : logi FALSE
+ $ df          : int [1:2] 3 NA
+ $ coefficients: num [1:3, 1:4] 2.36 1.5 1.05 NA NA ...
+  ..- attr(*, "dimnames")=List of 2
+  .. ..$ : chr [1:3] "Asym" "xmid" "scal"
+  .. ..$ : chr [1:4] "Estimate" "Std. Error" "t value" "Pr(>|t|)"
+ - attr(*, "class")= chr "summary.nlrob"
+> 
+> try(## the "doCov" -- fails "only" when printing:
++     print(s.do) #-> error
++ ) -> .tmp
+
+Call:
+nlrob(formula = formula(fm1), data = DNAnase, start = list(Asym = 3, 
+    xmid = 0, scal = 1), na.action = eval(naAct), doCov = doCov, 
+    algorithm = "default")
+
+Residuals:
+Error in if (rdf > 5L) { : missing value where TRUE/FALSE needed
+> ## Call:
+> ## ....
+> ## Residuals:
+> ## Error in if (rdf > 5L) { : missing value where TRUE/FALSE needed
+> 
+> vcov(robNls[["doCov"]]$na.exclude)
+     Asym xmid scal
+Asym   NA   NA   NA
+xmid   NA   NA   NA
+scal   NA   NA   NA
+> ##      Asym xmid scal
+> ## Asym   NA   NA   NA
+> ## xmid   NA   NA   NA
+> ## scal   NA   NA   NA
+> 
+> 
+> 
+> try( ## debug this one
++ rmNAo <- nlrob(formula(fm1), data = DNAnase,
++                na.action = na.omit,
++                trace = TRUE,
++                start = list(Asym = 3, xmid = 0, scal = 1)) ### fails
++ ## Error in (function (..., row.names = NULL, check.rows = FALSE, check.names = TRUE,  :
++ ##   arguments imply differing number of rows: 19, 16
++ )
+robust iteration 1 
+14.32279    (3.02e+01): par = (3 0 1)
+0.4542698   (9.73e+00): par = (2.115246 0.8410193 1.200064)
+0.05869603  (3.34e+00): par = (2.446376 1.747516 1.189515)
+0.005663523 (4.26e-01): par = (2.294087 1.412198 1.020463)
+0.004791528 (2.02e-02): par = (2.341429 1.479688 1.040758)
+0.004789569 (1.65e-04): par = (2.345135 1.483047 1.041439)
+0.004789569 (2.00e-06): par = (2.345179 1.483089 1.041454)
+ --> irls.delta(previous, resid) = 0.999803 -- *not* converged
+robust iteration 2 
+Error in (function (..., row.names = NULL, check.rows = FALSE, check.names = TRUE,  : 
+  arguments imply differing number of rows: 19, 16
+In addition: Warning message:
+In old - new :
+  longer object length is not a multiple of shorter object length
+> 
+> 
+> ## From: "Pascal A. Niklaus" <pascal.niklaus@ieu.uzh.ch>
+> ## To: <maechler@stat.math.ethz.ch>
+> ## Subject: nlrob problem
+> ## Date: Tue, 20 Dec 2011 07:04:38 +0100
+> 
+> ## For psi-functions that can become zero (e.g. psi.bisquare), weights in
+> ## the internal call to nls can become zero.
+> 
+> 
+> ## Was
+> ## psiTuk  <- robustbase:::psi.bisquare
+> ## psiHamp <- robustbase:::psi.hampel
+> 
+> lmrob.control(psi="bisquare")$tuning.psi
+[1] 4.685061
+> psiTuk <- function(x, der=0) {
++     ## cc:  dput( lmrob.control(psi="bisquare")$tuning.psi )
++     if(der == 0)
++         Mwgt(x, cc=4.685061, psi="Tukey")
++     else
++         Mpsi(x, cc=4.685061, psi="Tukey", deriv=1)
++ }
+> 
+> c.Ha <- lmrob.control(psi="hampel"); c.Ha$tuning.psi
+[1] 1.352413 3.155630 7.212868
+> psiHamp <- function(x, der=0) {
++     ## cc: dput( lmrob.control(psi="hampel")$tuning.psi )
++     if(der == 0)
++ 	Mwgt(x, cc=c(1.35241275, 3.15562975, 7.212868), psi="Hampel")
++     else
++ 	Mpsi(x, cc=c(1.35241275, 3.15562975, 7.212868), psi="Hampel", deriv=1)
++ }
+> 
+> d <- data.frame(x = -6:9,
++                 y = 43 + c(7, 52, 21, 12, 10, -4, -5, -4, 0, -77, -8, -10, 22, 33, 38, 51))
+> nlr1 <- nlrob(y ~ a*(x + b*exp(-c*x)), start=list(a= 4, b= 1, c= 1.2),
++               data = d,
++               maxit = 50, # default 20 is *not* sufficient
++               model = TRUE,
++               trace=TRUE)
+robust iteration 1 
+647679.7    (7.29e+00): par = (4 1 1.2)
+189112.5    (4.24e+00): par = (9.195522 -0.399165 1.050113)
+98995.20    (2.69e+00): par = (9.285753 0.1707392 1.203139)
+16121.01    (1.09e+00): par = (9.191364 0.3840145 0.8301524)
+12197.17    (9.91e-01): par = (9.350024 1.002984 0.4775522)
+10178.30    (7.56e-01): par = (9.139316 2.245923 0.2603095)
+8164.594    (5.29e-01): par = (9.193082 3.049004 0.4206007)
+6638.982    (7.81e-02): par = (8.781494 3.670834 0.3072425)
+6611.493    (2.86e-02): par = (8.841148 3.353259 0.331349)
+6608.502    (1.31e-02): par = (8.75829 3.483123 0.3206617)
+6607.890    (6.06e-03): par = (8.788465 3.430109 0.3256271)
+6607.759    (2.81e-03): par = (8.773229 3.456008 0.3233241)
+6607.731    (1.30e-03): par = (8.780026 3.444232 0.3243899)
+6607.725    (6.02e-04): par = (8.776823 3.449736 0.3238964)
+6607.724    (2.78e-04): par = (8.778294 3.447199 0.3241249)
+6607.724    (1.29e-04): par = (8.77761 3.448375 0.3240191)
+6607.724    (5.97e-05): par = (8.777926 3.447831 0.3240681)
+6607.724    (2.76e-05): par = (8.77778 3.448083 0.3240454)
+6607.724    (1.28e-05): par = (8.777848 3.447966 0.3240559)
+6607.724    (5.94e-06): par = (8.777816 3.448021 0.324051)
+ --> irls.delta(previous, resid) = 0.980105 -- *not* converged
+robust iteration 2 
+5340.496    (7.42e-01): par = (8.777816 3.448021 0.324051)
+3676.395    (1.25e-01): par = (8.752698 4.401561 0.232443)
+3626.766    (1.99e-02): par = (8.73204 4.209926 0.2480097)
+3625.628    (4.22e-03): par = (8.675651 4.285008 0.2446748)
+3625.577    (8.89e-04): par = (8.6848 4.270785 0.2453872)
+3625.575    (1.89e-04): par = (8.682719 4.274011 0.2452358)
+3625.575    (4.02e-05): par = (8.683156 4.273332 0.245268)
+3625.575    (8.55e-06): par = (8.683062 4.273477 0.2452612)
+ --> irls.delta(previous, resid) = 0.436553 -- *not* converged
+robust iteration 3 
+3071.609    (1.20e-01): par = (8.683062 4.273477 0.2452612)
+3033.045    (1.92e-02): par = (8.7166 4.463766 0.2310233)
+3032.134    (3.72e-03): par = (8.749027 4.405916 0.2338778)
+3032.100    (7.33e-04): par = (8.740244 4.418859 0.2333154)
+3032.099    (1.45e-04): par = (8.741878 4.416415 0.2334265)
+3032.099    (2.85e-05): par = (8.741552 4.416903 0.2334046)
+3032.099    (5.64e-06): par = (8.741616 4.416807 0.2334089)
+ --> irls.delta(previous, resid) = 0.074586 -- *not* converged
+robust iteration 4 
+2591.692    (5.37e-02): par = (8.741616 4.416807 0.2334089)
+2584.457    (4.14e-03): par = (8.842378 4.431044 0.2302787)
+2584.421    (7.56e-04): par = (8.850398 4.418702 0.2308676)
+2584.420    (1.38e-04): par = (8.848781 4.421062 0.2307598)
+2584.420    (2.54e-05): par = (8.849073 4.420635 0.2307795)
+2584.420    (4.65e-06): par = (8.84902 4.420713 0.2307759)
+ --> irls.delta(previous, resid) = 0.0291833 -- *not* converged
+robust iteration 5 
+2173.948    (4.47e-02): par = (8.84902 4.420713 0.2307759)
+2169.635    (1.44e-03): par = (8.952107 4.407064 0.2296879)
+2169.631    (2.41e-04): par = (8.95474 4.403385 0.2298785)
+2169.631    (4.09e-05): par = (8.954267 4.404065 0.2298461)
+2169.631    (6.94e-06): par = (8.954347 4.40395 0.2298516)
+ --> irls.delta(previous, resid) = 0.0217691 -- *not* converged
+robust iteration 6 
+1847.900    (3.72e-02): par = (8.954347 4.40395 0.2298516)
+1845.344    (2.28e-04): par = (9.043233 4.382982 0.2299199)
+1845.344    (1.38e-05): par = (9.043079 4.383407 0.2299088)
+1845.344    (2.19e-06): par = (9.043104 4.383371 0.2299105)
+ --> irls.delta(previous, resid) = 0.0169571 -- *not* converged
+robust iteration 7 
+1674.072    (2.17e-02): par = (9.043104 4.383371 0.2299105)
+1673.299    (1.19e-03): par = (9.101377 4.355638 0.2308565)
+1673.297    (1.77e-04): par = (9.099332 4.358667 0.2307111)
+1673.297    (2.67e-05): par = (9.099638 4.358233 0.230733)
+1673.297    (4.02e-06): par = (9.099592 4.358299 0.2307297)
+ --> irls.delta(previous, resid) = 0.0101474 -- *not* converged
+robust iteration 8 
+1583.914    (1.33e-02): par = (9.099592 4.358299 0.2307297)
+1583.649    (1.21e-03): par = (9.134973 4.335652 0.2317212)
+1583.647    (1.76e-04): par = (9.132912 4.338609 0.2315746)
+1583.647    (2.58e-05): par = (9.133209 4.338189 0.231596)
+1583.647    (3.78e-06): par = (9.133165 4.338251 0.2315929)
+ --> irls.delta(previous, resid) = 0.00676311 -- *not* converged
+robust iteration 9 
+1538.119    (8.45e-03): par = (9.133165 4.338251 0.2315929)
+1538.018    (8.86e-04): par = (9.153333 4.323712 0.2323299)
+1538.017    (1.27e-04): par = (9.151849 4.325821 0.2322233)
+1538.016    (1.83e-05): par = (9.152059 4.325523 0.2322386)
+1538.016    (2.62e-06): par = (9.152029 4.325566 0.2322364)
+ --> irls.delta(previous, resid) = 0.0046438 -- *not* converged
+robust iteration 10 
+1512.600    (5.67e-03): par = (9.152029 4.325566 0.2322364)
+1512.556    (6.15e-04): par = (9.164222 4.316236 0.2327531)
+1512.555    (8.73e-05): par = (9.163203 4.31768 0.2326794)
+1512.555    (1.24e-05): par = (9.163347 4.317477 0.2326899)
+1512.555    (1.76e-06): par = (9.163326 4.317506 0.2326884)
+ --> irls.delta(previous, resid) = 0.00324717 -- *not* converged
+robust iteration 11 
+1496.839    (3.92e-03): par = (9.163326 4.317506 0.2326884)
+1496.818    (4.27e-04): par = (9.171219 4.311296 0.2330487)
+1496.818    (6.01e-05): par = (9.170519 4.312288 0.2329978)
+1496.818    (8.47e-06): par = (9.170617 4.312149 0.233005)
+ --> irls.delta(previous, resid) = 0.00228631 -- *not* converged
+robust iteration 12 
+1486.420    (2.74e-03): par = (9.170617 4.312149 0.233005)
+1486.409    (2.96e-04): par = (9.175943 4.307916 0.2332563)
+1486.409    (4.15e-05): par = (9.17546 4.308601 0.2332211)
+1486.409    (5.79e-06): par = (9.175527 4.308506 0.233226)
+ --> irls.delta(previous, resid) = 0.00160615 -- *not* converged
+robust iteration 13 
+1479.278    (1.92e-03): par = (9.175527 4.308506 0.233226)
+1479.273    (2.07e-04): par = (9.179211 4.305566 0.2334022)
+1479.273    (2.89e-05): par = (9.178874 4.306043 0.2333776)
+1479.273    (4.03e-06): par = (9.178921 4.305977 0.233381)
+ --> irls.delta(previous, resid) = 0.00112928 -- *not* converged
+robust iteration 14 
+1474.308    (1.35e-03): par = (9.178921 4.305977 0.233381)
+1474.305    (1.45e-04): par = (9.181494 4.303921 0.2335047)
+1474.305    (2.02e-05): par = (9.181259 4.304255 0.2334875)
+1474.305    (2.81e-06): par = (9.181291 4.304208 0.2334899)
+ --> irls.delta(previous, resid) = 0.000794069 -- *not* converged
+robust iteration 15 
+1470.829    (9.50e-04): par = (9.181291 4.304208 0.2334899)
+1470.828    (1.02e-04): par = (9.183095 4.302766 0.2335769)
+1470.828    (1.41e-05): par = (9.18293 4.303 0.2335648)
+1470.828    (1.95e-06): par = (9.182953 4.302967 0.2335665)
+ --> irls.delta(previous, resid) = 0.000558306 -- *not* converged
+robust iteration 16 
+1468.388    (6.68e-04): par = (9.182953 4.302967 0.2335665)
+1468.388    (7.15e-05): par = (9.18422 4.301955 0.2336276)
+1468.388    (9.91e-06): par = (9.184104 4.302118 0.2336191)
+ --> irls.delta(previous, resid) = 0.000387357 -- *not* converged
+robust iteration 17 
+1466.670    (4.75e-04): par = (9.184104 4.302118 0.2336191)
+1466.670    (5.12e-05): par = (9.185009 4.301387 0.2336629)
+1466.670    (7.09e-06): par = (9.184926 4.301504 0.2336568)
+ --> irls.delta(previous, resid) = 0.000274697 -- *not* converged
+robust iteration 18 
+1465.470    (3.35e-04): par = (9.184926 4.301504 0.2336568)
+1465.469    (3.63e-05): par = (9.185562 4.300988 0.2336879)
+1465.469    (5.02e-06): par = (9.185503 4.301071 0.2336836)
+ --> irls.delta(previous, resid) = 0.000194035 -- *not* converged
+robust iteration 19 
+1464.629    (2.36e-04): par = (9.185503 4.301071 0.2336836)
+1464.629    (2.56e-05): par = (9.18595 4.300707 0.2337055)
+1464.629    (3.54e-06): par = (9.185909 4.300765 0.2337024)
+ --> irls.delta(previous, resid) = 0.000136917 -- *not* converged
+robust iteration 20 
+1464.038    (1.67e-04): par = (9.185909 4.300765 0.2337024)
+1464.038    (1.80e-05): par = (9.186224 4.300509 0.2337179)
+1464.038    (2.49e-06): par = (9.186195 4.30055 0.2337157)
+ --> irls.delta(previous, resid) = 9.65979e-05 -- *not* converged
+robust iteration 21 
+1463.621    (1.18e-04): par = (9.186195 4.30055 0.2337157)
+1463.621    (1.27e-05): par = (9.186416 4.300369 0.2337266)
+1463.621    (1.77e-06): par = (9.186396 4.300398 0.2337251)
+ --> irls.delta(previous, resid) = 6.81341e-05 -- *not* converged
+robust iteration 22 
+1463.328    (8.29e-05): par = (9.186396 4.300398 0.2337251)
+1463.328    (8.97e-06): par = (9.186552 4.300271 0.2337328)
+ --> irls.delta(previous, resid) = 5.27923e-05 -- *not* converged
+robust iteration 23 
+1463.125    (5.44e-05): par = (9.186552 4.300271 0.2337328)
+1463.125    (5.41e-06): par = (9.186649 4.300199 0.2337374)
+ --> irls.delta(previous, resid) = 3.45532e-05 -- *not* converged
+robust iteration 24 
+1462.976    (3.76e-05): par = (9.186649 4.300199 0.2337374)
+1462.976    (3.69e-06): par = (9.186718 4.300149 0.2337406)
+ --> irls.delta(previous, resid) = 2.36539e-05 -- *not* converged
+robust iteration 25 
+1462.869    (2.60e-05): par = (9.186718 4.300149 0.2337406)
+1462.869    (2.54e-06): par = (9.186767 4.300114 0.2337428)
+ --> irls.delta(previous, resid) = 1.62787e-05 -- *not* converged
+robust iteration 26 
+1462.794    (1.80e-05): par = (9.186767 4.300114 0.2337428)
+1462.794    (1.75e-06): par = (9.186801 4.300089 0.2337443)
+ --> irls.delta(previous, resid) = 1.12121e-05 -- *not* converged
+robust iteration 27 
+1462.741    (1.24e-05): par = (9.186801 4.300089 0.2337443)
+1462.741    (1.20e-06): par = (9.186825 4.300073 0.2337453)
+ --> irls.delta(previous, resid) = 7.7175e-06 -- *not* converged
+robust iteration 28 
+1462.705    (8.53e-06): par = (9.186825 4.300073 0.2337453)
+> ## These failed in robustbase version 0.8-0 and earlier
+> nlr2  <- update(nlr1, psi = psiTuk) # now *does* converge...
+robust iteration 1 
+21784.80    (1.66e+00): par = (4 1 1.2)
+8950.648    (7.57e-01): par = (6.794198 2.077053 0.5341018)
+7423.278    (6.19e-01): par = (9.060301 3.879916 0.2185499)
+6817.584    (4.25e-01): par = (10.82425 1.938862 0.4933187)
+6182.649    (2.57e-01): par = (9.035556 3.109244 0.3370087)
+5913.322    (1.09e-01): par = (9.328708 2.761379 0.4451243)
+5879.573    (5.99e-02): par = (9.040301 3.183598 0.3818531)
+5868.447    (2.85e-02): par = (9.143668 2.956701 0.4148403)
+5866.159    (1.51e-02): par = (9.072178 3.087634 0.3981463)
+5865.492    (7.57e-03): par = (9.102801 3.024171 0.4068119)
+5865.329    (3.91e-03): par = (9.085596 3.058034 0.4024024)
+5865.285    (1.99e-03): par = (9.093983 3.041015 0.4046652)
+5865.274    (1.02e-03): par = (9.089587 3.049808 0.4035098)
+5865.271    (5.21e-04): par = (9.091807 3.045334 0.4041012)
+5865.270    (2.66e-04): par = (9.090664 3.047628 0.4037989)
+5865.270    (1.36e-04): par = (9.091246 3.046456 0.4039535)
+5865.270    (6.97e-05): par = (9.090948 3.047056 0.4038745)
+5865.270    (3.56e-05): par = (9.0911 3.046749 0.4039149)
+5865.270    (1.82e-05): par = (9.091022 3.046906 0.4038942)
+5865.270    (9.33e-06): par = (9.091062 3.046826 0.4039048)
+ --> irls.delta(previous, resid) = 0.959769 -- *not* converged
+robust iteration 2 
+2467.708    (1.22e+00): par = (9.091062 3.046826 0.4039048)
+1141.197    (2.08e-01): par = (9.406518 3.956961 0.2613981)
+1096.394    (1.96e-02): par = (9.248399 3.874529 0.2786394)
+1096.040    (3.16e-03): par = (9.212545 3.914507 0.2757742)
+1096.030    (5.24e-04): par = (9.216718 3.908505 0.2762509)
+1096.030    (8.71e-05): par = (9.215978 3.909552 0.2761716)
+1096.030    (1.45e-05): par = (9.216099 3.909379 0.2761848)
+1096.030    (2.40e-06): par = (9.216079 3.909408 0.2761826)
+ --> irls.delta(previous, resid) = 0.6203 -- *not* converged
+robust iteration 3 
+581.9378    (2.93e-01): par = (9.216079 3.909408 0.2761826)
+536.2659    (7.62e-03): par = (9.454548 3.942117 0.2660394)
+536.2358    (2.91e-04): par = (9.455829 3.935567 0.2665224)
+536.2357    (1.25e-05): par = (9.455582 3.935945 0.2665017)
+536.2357    (5.28e-07): par = (9.455593 3.935929 0.2665025)
+ --> irls.delta(previous, resid) = 0.0811759 -- *not* converged
+robust iteration 4 
+195.2050    (4.04e-01): par = (9.455593 3.935929 0.2665025)
+167.8609    (6.05e-03): par = (9.723555 3.933725 0.2618007)
+167.8547    (2.68e-05): par = (9.723259 3.933427 0.2619112)
+167.8547    (2.63e-07): par = (9.723247 3.933446 0.2619102)
+ --> irls.delta(previous, resid) = 0.0544385 -- *not* converged
+robust iteration 5 
+67.83645    (1.54e-01): par = (9.723247 3.933446 0.2619102)
+66.26175    (1.69e-03): par = (9.810005 3.900449 0.2626903)
+66.26156    (2.74e-08): par = (9.809999 3.900726 0.2626896)
+ --> irls.delta(previous, resid) = 0.0127446 -- *not* converged
+robust iteration 6 
+68.65607    (1.48e-02): par = (9.809999 3.900726 0.2626896)
+68.64105    (7.76e-06): par = (9.8154 3.901786 0.2625405)
+ --> irls.delta(previous, resid) = 0.00130268 -- *not* converged
+robust iteration 7 
+68.56194    (1.24e-03): par = (9.8154 3.901786 0.2625405)
+68.56183    (9.30e-08): par = (9.81588 3.901761 0.2625422)
+ --> irls.delta(previous, resid) = 0.000115594 -- *not* converged
+robust iteration 8 
+68.53437    (2.65e-04): par = (9.81588 3.901761 0.2625422)
+68.53436    (1.26e-07): par = (9.815926 3.901755 0.2625444)
+ --> irls.delta(previous, resid) = 3.12697e-05 -- *not* converged
+robust iteration 9 
+68.52937    (7.47e-05): par = (9.815926 3.901755 0.2625444)
+68.52937    (2.29e-08): par = (9.815928 3.901762 0.2625447)
+ --> irls.delta(previous, resid) = 8.31989e-06 -- *not* converged
+robust iteration 10 
+68.52908    (2.31e-05): par = (9.815928 3.901762 0.2625447)
+68.52908    (5.00e-09): par = (9.815926 3.901767 0.2625446)
+ --> irls.delta(previous, resid) = 2.24794e-06 -- *not* converged
+robust iteration 11 
+68.52937    (7.98e-06): par = (9.815926 3.901767 0.2625446)
+> ## check 'model' and dataClasses
+> stopifnot(is.list(mod <- nlr2$model), is.data.frame(mod),
++           inherits(attr(mod, "terms"), "terms"),
++           identical(dCl <- attr(attr(mod, "terms"),"dataClasses"),
++                     nlr2$dataClasses),
++           identical(dCl, c(y = "numeric", x = "numeric")))
+> ## 'port' ditto:
+> nlr2. <- update(nlr2, algorithm= "port")
+robust iteration 1 
+  0:     10892.401:  4.00000  1.00000  1.20000
+  1:     10001.455:  4.00121 0.945141  1.17950
+  2:     5822.4271:  6.55887 0.616723  1.00486
+  3:     4146.0465:  9.06774 0.873215 0.806372
+  4:     3551.0730:  9.51133  1.46356 0.596710
+  5:     3119.4331:  9.52710  2.15368 0.480492
+  6:     2956.2769:  9.20892  2.88537 0.398621
+  7:     2932.7614:  9.10178  3.02461 0.406998
+  8:     2932.6685:  9.08526  3.05875 0.402308
+  9:     2932.6436:  9.09417  3.04065 0.404713
+ 10:     2932.6350:  9.09108  3.04683 0.403900
+ 11:     2932.6350:  9.09105  3.04685 0.403902
+ 12:     2932.6350:  9.09105  3.04685 0.403901
+ --> irls.delta(previous, resid) = 0.959769 -- *not* converged
+robust iteration 2 
+  0:     1233.8029:  9.09105  3.04685 0.403901
+  1:     1072.1844:  9.12501  2.98906 0.396524
+  2:     762.05580:  9.59748  2.93252 0.366301
+  3:     567.22759:  9.50018  3.66706 0.279669
+  4:     548.04147:  9.21121  3.90922 0.275495
+  5:     547.97232:  9.21716  3.90791 0.276298
+  6:     547.97195:  9.21591  3.90967 0.276162
+  7:     547.97194:  9.21611  3.90938 0.276185
+  8:     547.97194:  9.21608  3.90943 0.276181
+  9:     547.97194:  9.21608  3.90942 0.276182
+ --> irls.delta(previous, resid) = 0.620293 -- *not* converged
+robust iteration 3 
+  0:     290.95944:  9.21608  3.90942 0.276182
+  1:     272.15768:  9.40607  3.87523 0.272617
+  2:     268.11458:  9.45411  3.94013 0.266219
+  3:     268.10959:  9.45575  3.93571 0.266515
+  4:     268.10959:  9.45560  3.93594 0.266502
+  5:     268.10959:  9.45560  3.93593 0.266502
+ --> irls.delta(previous, resid) = 0.0811727 -- *not* converged
+robust iteration 4 
+  0:     97.597196:  9.45560  3.93593 0.266502
+  1:     85.371460:  9.66151  3.91880 0.264581
+  2:     83.922591:  9.72324  3.93384 0.261878
+  3:     83.922516:  9.72326  3.93344 0.261910
+  4:     83.922516:  9.72325  3.93345 0.261910
+ --> irls.delta(previous, resid) = 0.0544377 -- *not* converged
+robust iteration 5 
+  0:     33.917669:  9.72325  3.93345 0.261910
+  1:     33.160997:  9.79523  3.91585 0.262010
+  2:     33.130367:  9.81000  3.90072 0.262688
+  3:     33.130366:  9.81000  3.90072 0.262690
+  4:     33.130366:  9.81000  3.90072 0.262690
+ --> irls.delta(previous, resid) = 0.0127437 -- *not* converged
+robust iteration 6 
+  0:     34.327936:  9.81000  3.90072 0.262690
+  1:     34.320424:  9.81540  3.90179 0.262541
+  2:     34.320424:  9.81540  3.90179 0.262540
+ --> irls.delta(previous, resid) = 0.00130297 -- *not* converged
+robust iteration 7 
+  0:     34.281184:  9.81540  3.90179 0.262540
+  1:     34.281131:  9.81588  3.90176 0.262542
+  2:     34.281131:  9.81588  3.90176 0.262542
+ --> irls.delta(previous, resid) = 0.000115742 -- *not* converged
+robust iteration 8 
+  0:     34.267254:  9.81588  3.90176 0.262542
+  1:     34.267252:  9.81593  3.90176 0.262544
+  2:     34.267252:  9.81593  3.90176 0.262544
+ --> irls.delta(previous, resid) = 3.13213e-05 -- *not* converged
+robust iteration 9 
+  0:     34.264705:  9.81593  3.90176 0.262544
+  1:     34.264705:  9.81593  3.90176 0.262545
+  2:     34.264705:  9.81593  3.90176 0.262545
+ --> irls.delta(previous, resid) = 8.31497e-06 -- *not* converged
+robust iteration 10 
+  0:     34.264547:  9.81593  3.90176 0.262545
+  1:     34.264547:  9.81593  3.90177 0.262545
+  2:     34.264547:  9.81593  3.90177 0.262545
+  3:     34.264547:  9.81593  3.90177 0.262545
+ --> irls.delta(previous, resid) = 2.24024e-06 -- *not* converged
+robust iteration 11 
+  0:     34.264686:  9.81593  3.90177 0.262545
+  1:     34.264686:  9.81592  3.90177 0.262545
+> nlr3  <- update(nlr1, psi = psiHamp)   # *does* converge, too...
+robust iteration 1 
+31454.69    (1.77e+00): par = (4 1 1.2)
+8855.052    (7.14e-01): par = (9.566864 1.19518 0.570199)
+7978.792    (5.46e-01): par = (9.343631 2.274515 0.3379566)
+6393.905    (2.01e-01): par = (9.249048 2.846052 0.4479362)
+6217.215    (7.50e-02): par = (9.014962 3.274209 0.3636331)
+6198.861    (3.50e-02): par = (9.142487 2.962095 0.4021966)
+6195.098    (1.82e-02): par = (9.050267 3.124659 0.3832724)
+6194.058    (8.95e-03): par = (9.08679 3.049852 0.3929768)
+6193.813    (4.55e-03): par = (9.066155 3.089743 0.388113)
+6193.749    (2.28e-03): par = (9.075973 3.07008 0.39057)
+6193.733    (1.15e-03): par = (9.070885 3.080104 0.3893352)
+6193.729    (5.78e-04): par = (9.073408 3.075088 0.3899573)
+6193.728    (2.91e-04): par = (9.072129 3.077621 0.3896442)
+6193.728    (1.47e-04): par = (9.07277 3.076348 0.3898018)
+6193.728    (7.38e-05): par = (9.072447 3.076989 0.3897225)
+6193.728    (3.71e-05): par = (9.07261 3.076666 0.3897624)
+6193.728    (1.87e-05): par = (9.072528 3.076829 0.3897423)
+6193.728    (9.39e-06): par = (9.072569 3.076747 0.3897525)
+ --> irls.delta(previous, resid) = 0.964508 -- *not* converged
+robust iteration 2 
+4155.741    (9.64e-01): par = (9.072569 3.076747 0.3897525)
+2262.909    (8.11e-02): par = (9.270797 3.819417 0.2782037)
+2248.527    (4.99e-03): par = (9.13059 3.789353 0.2842888)
+2248.479    (7.32e-04): par = (9.120911 3.803002 0.2834302)
+2248.478    (1.08e-04): par = (9.122084 3.801124 0.2835572)
+2248.478    (1.60e-05): par = (9.121907 3.801407 0.2835384)
+2248.478    (2.36e-06): par = (9.121933 3.801365 0.2835412)
+ --> irls.delta(previous, resid) = 0.555917 -- *not* converged
+robust iteration 3 
+811.1612    (3.00e-01): par = (9.121933 3.801365 0.2835412)
+745.7407    (1.68e-02): par = (9.340924 3.947205 0.2674901)
+745.5398    (8.65e-04): par = (9.343033 3.931637 0.2686932)
+745.5393    (5.20e-05): par = (9.342165 3.932965 0.2686211)
+745.5393    (3.12e-06): par = (9.342214 3.932888 0.2686254)
+ --> irls.delta(previous, resid) = 0.0938441 -- *not* converged
+robust iteration 4 
+459.6674    (2.13e-01): par = (9.342214 3.932888 0.2686254)
+439.7304    (3.65e-03): par = (9.555448 3.934904 0.2644397)
+439.7246    (9.41e-05): par = (9.556348 3.932772 0.2646233)
+439.7246    (3.08e-06): par = (9.556279 3.93288 0.2646173)
+ --> irls.delta(previous, resid) = 0.0445753 -- *not* converged
+robust iteration 5 
+178.9083    (2.64e-01): par = (9.556279 3.93288 0.2646173)
+167.2243    (3.27e-03): par = (9.748598 3.905018 0.2630638)
+167.2225    (5.76e-06): par = (9.748656 3.90538 0.2630903)
+ --> irls.delta(previous, resid) = 0.033507 -- *not* converged
+robust iteration 6 
+81.93476    (1.22e-01): par = (9.748656 3.90538 0.2630903)
+80.72725    (2.02e-04): par = (9.806133 3.901482 0.2629175)
+80.72725    (1.82e-08): par = (9.806133 3.901503 0.2629184)
+ --> irls.delta(previous, resid) = 0.0111479 -- *not* converged
+robust iteration 7 
+90.48744    (1.24e-02): par = (9.806133 3.901503 0.2629184)
+90.47359    (3.30e-05): par = (9.797875 3.907304 0.2627073)
+90.47359    (1.97e-08): par = (9.797878 3.907303 0.2627077)
+ --> irls.delta(previous, resid) = 0.00119868 -- *not* converged
+robust iteration 8 
+86.56106    (5.74e-03): par = (9.797878 3.907303 0.2627077)
+86.55822    (1.20e-06): par = (9.800401 3.907005 0.262727)
+ --> irls.delta(previous, resid) = 0.000609632 -- *not* converged
+robust iteration 9 
+88.08523    (1.80e-03): par = (9.800401 3.907005 0.262727)
+88.08494    (1.07e-06): par = (9.799247 3.907513 0.2627094)
+ --> irls.delta(previous, resid) = 0.000179469 -- *not* converged
+robust iteration 10 
+87.45760    (8.13e-04): par = (9.799247 3.907513 0.2627094)
+87.45755    (3.11e-07): par = (9.799681 3.907392 0.2627146)
+ --> irls.delta(previous, resid) = 8.61024e-05 -- *not* converged
+robust iteration 11 
+87.70611    (3.02e-04): par = (9.799681 3.907392 0.2627146)
+87.70610    (1.38e-07): par = (9.7995 3.90746 0.2627121)
+ --> irls.delta(previous, resid) = 3.08994e-05 -- *not* converged
+robust iteration 12 
+87.60540    (1.26e-04): par = (9.7995 3.90746 0.2627121)
+87.60540    (5.09e-08): par = (9.799571 3.907437 0.262713)
+ --> irls.delta(previous, resid) = 1.32349e-05 -- *not* converged
+robust iteration 13 
+87.64566    (4.95e-05): par = (9.799571 3.907437 0.262713)
+87.64566    (2.06e-08): par = (9.799543 3.907447 0.2627126)
+ --> irls.delta(previous, resid) = 5.11966e-06 -- *not* converged
+robust iteration 14 
+87.62944    (2.02e-05): par = (9.799543 3.907447 0.2627126)
+87.62944    (4.07e-09): par = (9.799554 3.907443 0.2627128)
+ --> irls.delta(previous, resid) = 2.10224e-06 -- *not* converged
+robust iteration 15 
+87.63595    (8.04e-06): par = (9.799554 3.907443 0.2627128)
+> nlr3. <- update(nlr3, algorithm= "port")
+robust iteration 1 
+  0:     15727.347:  4.00000  1.00000  1.20000
+  1:     14062.188:  3.91159 0.966688  1.18649
+  2:     10672.136:  3.96238 0.834944  1.12760
+  3:     7375.3147:  5.51478 0.709171 0.974142
+  4:     4594.9111:  8.42560  1.49505 0.494567
+  5:     3317.5213:  9.21757  2.96673 0.332383
+  6:     3123.3082:  9.27814  2.82557 0.427745
+  7:     3103.2632:  9.02262  3.20925 0.370497
+  8:     3097.3210:  9.09129  3.05862 0.388622
+  9:     3096.8691:  9.07490  3.07216 0.390326
+ 10:     3096.8652:  9.07138  3.07912 0.389458
+ 11:     3096.8641:  9.07315  3.07559 0.389895
+ 12:     3096.8639:  9.07226  3.07737 0.389675
+ 13:     3096.8638:  9.07271  3.07647 0.389786
+ 14:     3096.8638:  9.07248  3.07693 0.389730
+ 15:     3096.8638:  9.07259  3.07670 0.389758
+ 16:     3096.8638:  9.07254  3.07681 0.389744
+ 17:     3096.8638:  9.07256  3.07676 0.389751
+ 18:     3096.8638:  9.07255  3.07678 0.389748
+ --> irls.delta(previous, resid) = 0.964509 -- *not* converged
+robust iteration 2 
+  0:     2077.8219:  9.07255  3.07678 0.389748
+  1:     1742.6895:  8.96914  2.99037 0.382884
+  2:     1409.1869:  9.27535  2.88218 0.364943
+  3:     1168.2376:  9.40407  3.29733 0.313685
+  4:     1126.3948:  9.19124  3.73501 0.284009
+  5:     1124.2216:  9.12129  3.80190 0.283466
+  6:     1124.2211:  9.12203  3.80121 0.283551
+  7:     1124.2211:  9.12191  3.80140 0.283539
+  8:     1124.2211:  9.12193  3.80137 0.283540
+  9:     1124.2211:  9.12193  3.80138 0.283540
+ --> irls.delta(previous, resid) = 0.555907 -- *not* converged
+robust iteration 3 
+  0:     405.57363:  9.12193  3.80138 0.283540
+  1:     383.22137:  9.32457  3.78244 0.280212
+  2:     373.43124:  9.38893  3.86693 0.271980
+  3:     372.76698:  9.34042  3.93588 0.268415
+  4:     372.76391:  9.34236  3.93267 0.268638
+  5:     372.76391:  9.34221  3.93291 0.268624
+  6:     372.76391:  9.34222  3.93289 0.268625
+ --> irls.delta(previous, resid) = 0.0938412 -- *not* converged
+robust iteration 4 
+  0:     229.82801:  9.34222  3.93289 0.268625
+  1:     220.49452:  9.52514  3.91639 0.266657
+  2:     219.85717:  9.55571  3.93403 0.264547
+  3:     219.85689:  9.55632  3.93283 0.264620
+  4:     219.85689:  9.55629  3.93288 0.264617
+  5:     219.85689:  9.55629  3.93288 0.264617
+ --> irls.delta(previous, resid) = 0.0445741 -- *not* converged
+robust iteration 5 
+  0:     89.450047:  9.55629  3.93288 0.264617
+  1:     85.536069:  9.64163  3.92824 0.264153
+  2:     83.607429:  9.74860  3.90527 0.263079
+  3:     83.607293:  9.74866  3.90538 0.263090
+  4:     83.607293:  9.74866  3.90538 0.263090
+ --> irls.delta(previous, resid) = 0.033507 -- *not* converged
+robust iteration 6 
+  0:     40.967120:  9.74866  3.90538 0.263090
+  1:     40.363460:  9.80613  3.90148 0.262917
+  2:     40.363458:  9.80613  3.90150 0.262918
+  3:     40.363458:  9.80613  3.90150 0.262918
+  4:     40.363458:  9.80613  3.90150 0.262918
+ --> irls.delta(previous, resid) = 0.0111473 -- *not* converged
+robust iteration 7 
+  0:     45.243821:  9.80613  3.90150 0.262918
+  1:     45.236899:  9.79787  3.90730 0.262707
+  2:     45.236899:  9.79788  3.90730 0.262708
+  3:     45.236899:  9.79788  3.90730 0.262708
+ --> irls.delta(previous, resid) = 0.00119869 -- *not* converged
+robust iteration 8 
+  0:     43.280493:  9.79788  3.90730 0.262708
+  1:     43.279069:  9.80040  3.90700 0.262727
+  2:     43.279069:  9.80040  3.90701 0.262727
+ --> irls.delta(previous, resid) = 0.000609604 -- *not* converged
+robust iteration 9 
+  0:     44.042626:  9.80040  3.90701 0.262727
+  1:     44.042483:  9.79925  3.90751 0.262709
+  2:     44.042483:  9.79925  3.90751 0.262709
+ --> irls.delta(previous, resid) = 0.000179326 -- *not* converged
+robust iteration 10 
+  0:     43.728818:  9.79925  3.90751 0.262709
+  1:     43.728789:  9.79968  3.90739 0.262715
+  2:     43.728789:  9.79968  3.90739 0.262715
+ --> irls.delta(previous, resid) = 8.59951e-05 -- *not* converged
+robust iteration 11 
+  0:     43.853039:  9.79968  3.90739 0.262715
+  1:     43.853035:  9.79950  3.90746 0.262712
+  2:     43.853035:  9.79950  3.90746 0.262712
+ --> irls.delta(previous, resid) = 3.08661e-05 -- *not* converged
+robust iteration 12 
+  0:     43.802710:  9.79950  3.90746 0.262712
+  1:     43.802709:  9.79957  3.90744 0.262713
+  2:     43.802709:  9.79957  3.90744 0.262713
+ --> irls.delta(previous, resid) = 1.32154e-05 -- *not* converged
+robust iteration 13 
+  0:     43.822826:  9.79957  3.90744 0.262713
+  1:     43.822826:  9.79954  3.90745 0.262713
+  2:     43.822826:  9.79954  3.90745 0.262713
+ --> irls.delta(previous, resid) = 5.11127e-06 -- *not* converged
+robust iteration 14 
+  0:     43.814723:  9.79954  3.90745 0.262713
+  1:     43.814723:  9.79955  3.90744 0.262713
+  2:     43.814723:  9.79955  3.90744 0.262713
+ --> irls.delta(previous, resid) = 2.0981e-06 -- *not* converged
+robust iteration 15 
+  0:     43.817972:  9.79955  3.90744 0.262713
+  1:     43.817972:  9.79955  3.90744 0.262713
+> summary(nlr2.)
+
+Call:
+nlrob(formula = y ~ a * (x + b * exp(-c * x)), data = d, start = list(a = 4, 
+    b = 1, c = 1.2), psi = psiTuk, maxit = 50, algorithm = "port", 
+    model = TRUE, trace = TRUE)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-80.8710  -9.0677  -0.6409   0.8336   7.8824 
+
+Parameters:
+  Estimate Std. Error t value Pr(>|t|)    
+a  9.81592    0.30133   32.58 1.19e-10 ***
+b  3.90177    0.25445   15.33 9.32e-08 ***
+c  0.26254    0.01298   20.22 8.23e-09 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Robust residual standard error: 2.871 
+Convergence in 11 IRWLS iterations
+
+Robustness weights: 
+ 4 observations c(1,10,11,12) are outliers with |weight| = 0 ( < 0.0063); 
+ 3 weights are ~= 1. The remaining 9 ones are
+     2      3      5      6      9     13     14     15     16 
+0.9665 0.6199 0.4310 0.9894 0.9944 0.9636 0.9843 0.9465 0.9540 
+> summary(nlr3.)
+
+Call:
+nlrob(formula = y ~ a * (x + b * exp(-c * x)), data = d, start = list(a = 4, 
+    b = 1, c = 1.2), psi = psiHamp, maxit = 50, algorithm = "port", 
+    model = TRUE, trace = TRUE)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-80.8093  -9.1350  -0.6438   0.8983   7.8419 
+
+Parameters:
+  Estimate Std. Error t value Pr(>|t|)    
+a  9.79955    0.27069   36.20 6.15e-12 ***
+b  3.90744    0.23112   16.91 1.10e-08 ***
+c  0.26271    0.01177   22.32 7.34e-10 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Robust residual standard error: 2.81 
+Convergence in 15 IRWLS iterations
+
+Robustness weights: 
+ 3 observations c(1,10,12) are outliers with |weight| = 0 ( < 0.0063); 
+ 10 weights are ~= 1. The remaining 3 ones are
+      3       5      11 
+0.60160 0.48469 0.05089 
+> i. <- -c(2, 15) # <- drop 'call' and 'iter' components
+> stopifnot(all.equal(nlr2[i.], nlr2.[i.], tolerance = 2e-5, check.environment = FALSE),
++           all.equal(nlr3[i.], nlr3.[i.], tolerance = 1e-4, check.environment = FALSE),
++           ## The redescending psi() give some exact 0 weights :
++ 	  identical(which(abs(nlr2$rweights) < 1e-9), c(1L, 10 :12)),
++ 	  identical(which(abs(nlr3$rweights) < 1e-9), c(1L, 10L,12L))
++ 	  )
+> 
+> ## Different example with more data:
+> pp <- list(a=10, b=4, c=1/4)
+> x <- seq(-6,9, by = 1/8)
+> f.x <- with(pp, a*(x + b*exp(-c*x)))
+> set.seed(6); y <- y0 <- f.x + 4*rnorm(x)
+> iO <- c(2:3,20,70:71,90); y[iO] <- y[iO] + 32*c(-1,-1,1)*(2+rlnorm(iO)); y <- round(y)
+> plot(x,y); lines(x, f.x, col="tomato", lty = 2)
+> dd <- data.frame(x,y)
+> 
+> nlc1 <- nls(formula(nlr1), start = coef(nlr1), data=dd, trace=TRUE)
+46029.40    (1.20e-01): par = (9.186825 4.300073 0.2337453)
+45400.15    (1.04e-02): par = (9.387432 4.478143 0.2207645)
+45395.72    (1.12e-03): par = (9.407647 4.442873 0.2225454)
+45395.67    (1.29e-04): par = (9.403353 4.448036 0.2223394)
+45395.67    (1.49e-05): par = (9.403824 4.447463 0.2223632)
+45395.67    (1.74e-06): par = (9.403769 4.447529 0.2223605)
+> nlR1 <- update(nlr1, data = dd)# update the model with the new data
+robust iteration 1 
+3168834.    (6.39e+00): par = (4 1 1.2)
+2561749.    (6.78e+00): par = (11.08659 -0.6571938 1.007253)
+174677.5    (1.27e+00): par = (11.20292 0.1094524 1.120573)
+157751.5    (2.34e+00): par = (11.19533 0.5517858 0.2485101)
+150491.2    (2.30e+00): par = (10.21642 3.396859 0.4987889)
+30722.39    (5.16e-01): par = (10.74164 3.30795 0.3607352)
+24480.55    (3.56e-02): par = (10.23807 3.687561 0.2877978)
+24450.03    (9.67e-04): par = (10.13453 3.718308 0.2839636)
+24450.01    (6.76e-05): par = (10.13686 3.715617 0.2841939)
+24450.01    (4.73e-06): par = (10.13669 3.715809 0.2841778)
+ --> irls.delta(previous, resid) = 0.985635 -- *not* converged
+robust iteration 2 
+7144.093    (6.60e-01): par = (10.13669 3.715809 0.2841778)
+4997.811    (2.18e-02): par = (9.929966 3.999455 0.2515935)
+4995.443    (2.25e-04): par = (9.89099 4.01926 0.2507756)
+4995.443    (3.18e-06): par = (9.891172 4.019093 0.2507889)
+ --> irls.delta(previous, resid) = 0.299322 -- *not* converged
+robust iteration 3 
+4429.342    (5.10e-02): par = (9.891172 4.019093 0.2507889)
+4417.861    (1.47e-04): par = (9.911611 3.992386 0.2508396)
+4417.861    (1.90e-08): par = (9.911606 3.992449 0.2508395)
+ --> irls.delta(previous, resid) = 0.0168192 -- *not* converged
+robust iteration 4 
+4351.250    (8.70e-03): par = (9.911606 3.992449 0.2508395)
+4350.921    (1.98e-06): par = (9.913543 3.988428 0.2508398)
+ --> irls.delta(previous, resid) = 0.00288391 -- *not* converged
+robust iteration 5 
+4300.932    (2.12e-03): par = (9.913543 3.988428 0.2508398)
+4300.912    (4.31e-06): par = (9.914509 3.986762 0.250877)
+ --> irls.delta(previous, resid) = 0.000677833 -- *not* converged
+robust iteration 6 
+4282.129    (6.56e-04): par = (9.914509 3.986762 0.250877)
+4282.127    (2.32e-06): par = (9.914907 3.98611 0.2508969)
+ --> irls.delta(previous, resid) = 0.000205702 -- *not* converged
+robust iteration 7 
+4287.079    (2.47e-05): par = (9.914907 3.98611 0.2508969)
+4287.079    (7.75e-08): par = (9.914874 3.986124 0.2508963)
+ --> irls.delta(previous, resid) = 8.02298e-06 -- *not* converged
+robust iteration 8 
+4287.096    (2.91e-06): par = (9.914874 3.986124 0.2508963)
+> summary(nlR1)
+
+Call:
+nlrob(formula = y ~ a * (x + b * exp(-c * x)), data = dd, start = list(a = 4, 
+    b = 1, c = 1.2), maxit = 50, algorithm = "default", model = TRUE, 
+    trace = TRUE)
+
+Residuals:
+      Min        1Q    Median        3Q       Max 
+-104.3318   -2.8778   -0.2577    2.6657   94.8054 
+
+Parameters:
+  Estimate Std. Error t value Pr(>|t|)    
+a 9.914874   0.127151   77.98   <2e-16 ***
+b 3.986124   0.100492   39.67   <2e-16 ***
+c 0.250896   0.004481   55.99   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Robust residual standard error: 4.021 
+Convergence in 8 IRWLS iterations
+
+Robustness weights: 
+ 94 weights are ~= 1. The remaining 27 ones are summarized as
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+0.05183 0.52880 0.70780 0.62570 0.88150 0.97880 
+> lines(x, predict(nlc1), col=3)
+> lines(x, predict(nlR1), col=4)
+> legend("top", c("f(x)", "least squares", "robust"),
++        col=c("tomato", palette()[3:4]), lty=c(2,1,1))
+> 
+> ## These both now *do* converge, but failed earlier
+> (nlbi <- update(nlR1, psi = psiTuk))
+robust iteration 1 
+218821.4    (2.03e+00): par = (4 1 1.2)
+67190.96    (1.41e+00): par = (11.47967 1.005964 0.5032814)
+54469.20    (1.19e+00): par = (10.80906 3.073192 0.1285173)
+41356.44    (9.35e-01): par = (12.82997 2.93352 0.431285)
+22089.84    (8.17e-02): par = (10.64003 3.251034 0.3543112)
+21937.77    (4.50e-03): par = (10.50597 3.386588 0.3320926)
+21937.31    (1.79e-04): par = (10.4895 3.399995 0.3309259)
+21937.31    (8.43e-06): par = (10.48906 3.400513 0.3308711)
+ --> irls.delta(previous, resid) = 0.973072 -- *not* converged
+robust iteration 2 
+2708.684    (1.03e+00): par = (10.48906 3.400513 0.3308711)
+1316.352    (1.26e-01): par = (10.125 3.865055 0.2631006)
+1295.806    (1.77e-03): par = (10.01052 3.922658 0.2617063)
+1295.802    (8.22e-07): par = (10.01035 3.923444 0.2616981)
+ --> irls.delta(previous, resid) = 0.547283 -- *not* converged
+robust iteration 3 
+1727.818    (4.46e-01): par = (10.01035 3.923444 0.2616981)
+1441.477    (6.97e-03): par = (9.952053 3.961289 0.2543473)
+1441.407    (3.22e-06): par = (9.949315 3.962943 0.2542019)
+ --> irls.delta(previous, resid) = 0.0932736 -- *not* converged
+robust iteration 4 
+1370.754    (7.09e-02): par = (9.949315 3.962943 0.2542019)
+1363.893    (1.47e-04): par = (9.946841 3.956505 0.2536626)
+1363.893    (9.78e-08): par = (9.946816 3.956524 0.25366)
+ --> irls.delta(previous, resid) = 0.0137294 -- *not* converged
+robust iteration 5 
+1356.836    (1.32e-02): par = (9.946816 3.956524 0.25366)
+1356.601    (3.26e-06): par = (9.947287 3.954145 0.2536149)
+ --> irls.delta(previous, resid) = 0.00251554 -- *not* converged
+robust iteration 6 
+1360.308    (2.00e-03): par = (9.947287 3.954145 0.2536149)
+1360.303    (6.60e-07): par = (9.947455 3.953883 0.2536008)
+ --> irls.delta(previous, resid) = 0.000386631 -- *not* converged
+robust iteration 7 
+1365.090    (5.26e-04): par = (9.947455 3.953883 0.2536008)
+1365.089    (6.04e-07): par = (9.947463 3.954141 0.2535868)
+ --> irls.delta(previous, resid) = 9.55048e-05 -- *not* converged
+robust iteration 8 
+1365.378    (1.16e-04): par = (9.947463 3.954141 0.2535868)
+1365.378    (1.20e-07): par = (9.947459 3.954201 0.253584)
+ --> irls.delta(previous, resid) = 2.08131e-05 -- *not* converged
+robust iteration 9 
+1365.381    (1.84e-05): par = (9.947459 3.954201 0.253584)
+1365.381    (2.07e-08): par = (9.947458 3.954211 0.2535835)
+ --> irls.delta(previous, resid) = 3.3027e-06 -- *not* converged
+robust iteration 10 
+1365.378    (2.51e-06): par = (9.947458 3.954211 0.2535835)
+Robustly fitted nonlinear regression model
+  model:  y ~ a * (x + b * exp(-c * x)) 
+   data:  dd 
+        a         b         c 
+9.9474582 3.9542106 0.2535835 
+ status:  converged 
+> (nlFH <- update(nlR1, psi = psiHamp))
+robust iteration 1 
+270384.0    (2.24e+00): par = (4 1 1.2)
+72286.00    (1.42e+00): par = (11.46105 0.8970769 0.5403462)
+53715.74    (1.15e+00): par = (11.16759 1.972172 0.2935121)
+23380.24    (8.02e-02): par = (10.44915 3.349901 0.3414424)
+23228.39    (2.56e-03): par = (10.44693 3.435853 0.3229528)
+23228.24    (4.66e-05): par = (10.43676 3.442012 0.3224136)
+23228.24    (1.20e-06): par = (10.43664 3.442148 0.3223996)
+ --> irls.delta(previous, resid) = 0.975764 -- *not* converged
+robust iteration 2 
+3706.949    (1.28e+00): par = (10.43664 3.442148 0.3223996)
+1417.131    (1.13e-01): par = (10.08804 3.889039 0.2600798)
+1399.404    (2.08e-03): par = (9.971514 3.952694 0.2574098)
+1399.398    (1.30e-07): par = (9.971213 3.953574 0.257405)
+ --> irls.delta(previous, resid) = 0.528145 -- *not* converged
+robust iteration 3 
+1659.375    (2.56e-01): par = (9.971213 3.953574 0.257405)
+1557.143    (2.38e-03): par = (9.950309 3.958075 0.2539913)
+1557.134    (1.29e-06): par = (9.949668 3.95845 0.2539479)
+ --> irls.delta(previous, resid) = 0.0520968 -- *not* converged
+robust iteration 4 
+1468.602    (5.11e-02): par = (9.949668 3.95845 0.2539479)
+1464.781    (1.81e-05): par = (9.955355 3.946951 0.2538397)
+1464.781    (2.18e-08): par = (9.955351 3.946963 0.2538392)
+ --> irls.delta(previous, resid) = 0.00985236 -- *not* converged
+robust iteration 5 
+1489.146    (8.82e-03): par = (9.955351 3.946963 0.2538392)
+1489.030    (9.98e-06): par = (9.953683 3.948046 0.253687)
+ --> irls.delta(previous, resid) = 0.00178012 -- *not* converged
+robust iteration 6 
+1491.851    (1.75e-03): par = (9.953683 3.948046 0.253687)
+1491.846    (2.49e-06): par = (9.953151 3.94864 0.2536412)
+ --> irls.delta(previous, resid) = 0.000357033 -- *not* converged
+robust iteration 7 
+1493.922    (4.23e-04): par = (9.953151 3.94864 0.2536412)
+1493.922    (7.83e-07): par = (9.952956 3.948936 0.2536263)
+ --> irls.delta(previous, resid) = 8.12132e-05 -- *not* converged
+robust iteration 8 
+1494.386    (1.16e-04): par = (9.952956 3.948936 0.2536263)
+1494.386    (1.89e-07): par = (9.952908 3.949019 0.2536227)
+ --> irls.delta(previous, resid) = 2.15116e-05 -- *not* converged
+robust iteration 9 
+1494.524    (3.50e-05): par = (9.952908 3.949019 0.2536227)
+1494.524    (4.54e-08): par = (9.952897 3.949041 0.2536219)
+ --> irls.delta(previous, resid) = 6.40031e-06 -- *not* converged
+robust iteration 10 
+1494.563    (1.06e-05): par = (9.952897 3.949041 0.2536219)
+1494.563    (1.19e-08): par = (9.952894 3.949047 0.2536217)
+ --> irls.delta(previous, resid) = 1.9547e-06 -- *not* converged
+robust iteration 11 
+1494.573    (3.15e-06): par = (9.952894 3.949047 0.2536217)
+Robustly fitted nonlinear regression model
+  model:  y ~ a * (x + b * exp(-c * x)) 
+   data:  dd 
+        a         b         c 
+9.9528938 3.9490474 0.2536217 
+ status:  converged 
+> lines(x, predict(nlbi), col=5)
+> lines(x, predict(nlFH), col=6)
+> 
+> stopifnot(nlR1$status == "converged", nlbi$status == "converged",
++ 	  nlFH$status == "converged")
+> assert.EQ(coef(nlR1), c(a=9.914874,    b=3.98612416,  c=0.250896252),  tol = 4e-9)
+> assert.EQ(coef(nlbi), c(a=9.947458207, b=3.954210623, c=0.2535835248), tol = 4e-9)
+> ## This is suddently quite different :  ???!?!??
+> ## assert.EQ(coef(nlFH), c(a=9.94242831, b=3.97370746, c=0.252907618))
+> assert.EQ(coef(nlFH),    c(a=9.952893755,b=3.949047387,c=0.2536216541), tol = 1e-7)
+> assert.EQ(1000*diag(vcov(nlR1)),
++           c(a=16.167493, b=10.0986644, c=0.0200814189), tol = 7e-7, giveRE=TRUE)
+Mean relative difference: 1.960399e-08
+> assert.EQ(1000*local({V <- vcov(nlFH); V[lower.tri(V, diag=TRUE)]}),
++           c(16.33774615, -9.704702857, 0.3149189329,
++             10.03560556, -0.4079936961, 0.02039106329), tol = 7e-7)
+> assert.EQ(predict(nlR1), predict(nlbi), tol = 0.05, giveRE=TRUE)
+Mean relative difference: 0.004298822
+> assert.EQ(predict(nlR1), predict(nlFH), tol = 0.05, giveRE=TRUE)
+Mean relative difference: 0.004179098
+> 
+> nlFH2 <- update(nlFH, psi = .Mwgt.psi1("Hampel", c(2,4,8)))
+robust iteration 1 
+350706.2    (2.49e+00): par = (4 1 1.2)
+85829.27    (1.45e+00): par = (11.48608 0.7331785 0.5917242)
+73419.94    (1.34e+00): par = (11.26332 1.811758 0.2748707)
+27827.79    (2.48e-01): par = (10.5316 3.318498 0.3672919)
+26205.58    (1.46e-02): par = (10.52134 3.401801 0.3279451)
+26199.95    (3.27e-04): par = (10.48292 3.422433 0.3249664)
+26199.95    (9.74e-06): par = (10.48202 3.423437 0.3248697)
+ --> irls.delta(previous, resid) = 0.974981 -- *not* converged
+robust iteration 2 
+5431.585    (1.58e+00): par = (10.48202 3.423437 0.3248697)
+1567.259    (1.27e-01): par = (10.10363 3.889287 0.2591098)
+1542.356    (3.19e-03): par = (9.96365 3.969473 0.255059)
+1542.341    (1.04e-06): par = (9.962861 3.971006 0.2550389)
+ --> irls.delta(previous, resid) = 0.560849 -- *not* converged
+robust iteration 3 
+1767.891    (1.59e-01): par = (9.962861 3.971006 0.2550389)
+1724.468    (9.74e-04): par = (9.941902 3.97751 0.2527665)
+1724.467    (5.58e-07): par = (9.9416 3.977706 0.2527468)
+ --> irls.delta(previous, resid) = 0.0333368 -- *not* converged
+robust iteration 4 
+1696.769    (7.61e-03): par = (9.9416 3.977706 0.2527468)
+1696.671    (1.13e-05): par = (9.942364 3.973438 0.2529201)
+1696.671    (5.19e-09): par = (9.942365 3.973435 0.2529204)
+ --> irls.delta(previous, resid) = 0.00145877 -- *not* converged
+robust iteration 5 
+1699.315    (6.55e-04): par = (9.942365 3.973435 0.2529204)
+1699.315    (4.45e-07): par = (9.942432 3.973736 0.2529063)
+ --> irls.delta(previous, resid) = 0.000125733 -- *not* converged
+robust iteration 6 
+1699.078    (5.94e-05): par = (9.942432 3.973736 0.2529063)
+1699.078    (5.19e-08): par = (9.942428 3.973707 0.2529076)
+ --> irls.delta(previous, resid) = 1.13884e-05 -- *not* converged
+robust iteration 7 
+1699.099    (5.29e-06): par = (9.942428 3.973707 0.2529076)
+> ## TODO: and compare
+> ## TODO: same with Tukey
+> 
+> 
+> ##----- *Vector* parameters indexed by factor  levels -------------
+> ##----- MM: ~/R/MM/Pkg-ex/robustbase/nlrob-vectorpar.R
+> 
+> data(biomassTill)## see also smaller example in ../man/biomassTill.Rd
+> 
+> if(!dev.interactive(orNone=TRUE))  pdf("nlrob-biomT.pdf")
+> 
+> require(lattice)
+Loading required package: lattice
+> xyplot(Biomass ~ DVS | Tillage, data = biomassTill)
+> xyplot(Biom.2  ~ DVS | Tillage, data = biomassTill)
+> 
+> ## starting values
+> m0.st <- list(Wm = rep(200, 3),
++                a = rep(  1, 3),
++                b = rep(  2, 3))
+> ##-> nls(), even with -expm1(.) fails to start properly (and hence nlrob() fails too):
+> try(
++ m.c0 <- nls(Biomass ~ Wm[Tillage] * (- expm1(-(DVS/a[Tillage])^b[Tillage])),
++             data = biomassTill, start = m0.st, trace=TRUE)
++ )
+587654.1    (9.81e-01): par = (200 200 200 1 1 1 2 2 2)
+482258.8    (7.99e-01): par = (272.4978 374.0926 409.5831 1.799294 2.134555 2.012146 1.402013 1.257745 2.20363)
+Error in numericDeriv(form[[3L]], names(ind), env, central = nDcentral) : 
+  Missing value or an infinity produced when evaluating the model
+> 
+> ## several other versions of the above fail similarly.  This works:
+> m00st <- list(Wm = rep(300,  3),
++                a = rep( 1.5, 3),
++                b = rep( 2.2, 3))
+> m.c00 <- nls(Biomass ~ Wm[Tillage] * (- expm1(-(DVS/a[Tillage])^b[Tillage])),
++             data = biomassTill, start = m00st, trace=TRUE)
+420613.6    (6.51e-01): par = (300 300 300 1.5 1.5 1.5 2.2 2.2 2.2)
+344484.0    (4.11e-01): par = (362.5376 497.0366 343.0101 2.020939 2.224128 1.132643 2.220821 2.385964 3.655383)
+299205.0    (1.24e-01): par = (457.7625 577.6558 372.3018 2.311593 2.066906 1.363035 2.39158 2.687003 2.986474)
+294696.7    (1.33e-02): par = (487.9167 622.4387 380.0351 2.338248 2.203776 1.37486 2.399665 2.571926 3.506427)
+294644.3    (8.78e-04): par = (490.3131 609.5898 380.0224 2.343958 2.176673 1.371195 2.396815 2.601775 3.591947)
+294644.1    (1.89e-04): par = (489.8298 616.8029 380.0659 2.342473 2.192439 1.371285 2.397443 2.59302 3.594869)
+294644.1    (4.95e-05): par = (489.9346 615.1609 380.064 2.342793 2.188804 1.371278 2.39731 2.595326 3.594965)
+294644.1    (1.34e-05): par = (489.9127 615.6588 380.064 2.342726 2.189888 1.371278 2.397338 2.594692 3.594968)
+294644.1    (3.61e-06): par = (489.9173 615.5279 380.064 2.34274 2.189602 1.371278 2.397332 2.594862 3.594968)
+> 
+> ## These were the "true" beta for simulating in creation of {Biomass, Biom.2}:
+> m1.st <- list(Wm = c(219.8, 265.9, 343.4),
++                a = c(1.461, 1.493, 1.294),
++                b = c(2.889, 2.838, 4.046))
+> 
+> m.cl <- nls(Biomass ~ Wm[Tillage] * (1 - exp(-(DVS/a[Tillage])^b[Tillage])),
++             data = biomassTill, start = m00st, trace=TRUE)
+420613.6    (6.51e-01): par = (300 300 300 1.5 1.5 1.5 2.2 2.2 2.2)
+344484.0    (4.11e-01): par = (362.5376 497.0366 343.0101 2.020939 2.224128 1.132643 2.220821 2.385964 3.655383)
+299205.0    (1.24e-01): par = (457.7625 577.6558 372.3018 2.311593 2.066906 1.363035 2.39158 2.687003 2.986474)
+294696.7    (1.33e-02): par = (487.9168 622.4386 380.0351 2.338248 2.203776 1.37486 2.399665 2.571926 3.506427)
+294644.3    (8.78e-04): par = (490.3131 609.5897 380.0224 2.343958 2.176673 1.371195 2.396815 2.601775 3.591947)
+294644.1    (1.89e-04): par = (489.8299 616.8029 380.0659 2.342474 2.192439 1.371285 2.397443 2.59302 3.594869)
+294644.1    (4.95e-05): par = (489.9346 615.1609 380.064 2.342793 2.188804 1.371278 2.39731 2.595326 3.594965)
+294644.1    (1.34e-05): par = (489.9127 615.6588 380.064 2.342726 2.189888 1.371278 2.397338 2.594692 3.594968)
+294644.1    (3.60e-06): par = (489.9174 615.528 380.064 2.34274 2.189602 1.371278 2.397332 2.594862 3.594968)
+> ## this now fails to converge:
+> try( # "singular gradient"
++ m.c2 <- nls(Biom.2 ~ Wm[Tillage] * (1 - exp(-(DVS/a[Tillage])^b[Tillage])),
++             data = biomassTill, start = m00st, trace=TRUE)
++ )
+438775.3    (7.04e-01): par = (300 300 300 1.5 1.5 1.5 2.2 2.2 2.2)
+Error in nls(Biom.2 ~ Wm[Tillage] * (1 - exp(-(DVS/a[Tillage])^b[Tillage])),  : 
+  singular gradient
+> 
+> str(C1 <- nls.control(minFactor=1e-6, warnOnly=TRUE, printEval=TRUE, maxiter=500))
+List of 7
+ $ maxiter    : num 500
+ $ tol        : num 1e-05
+ $ minFactor  : num 1e-06
+ $ printEval  : logi TRUE
+ $ warnOnly   : logi TRUE
+ $ scaleOffset: num 0
+ $ nDcentral  : logi FALSE
+> 
+> try(
++ m.c2 <- nls(Biom.2 ~ Wm[Tillage] * (1 - exp(-(DVS/a[Tillage])^b[Tillage])),
++                 data = biomassTill, start = m00st, trace=TRUE, control=C1)
++ )
+438775.3    (7.04e-01): par = (300 300 300 1.5 1.5 1.5 2.2 2.2 2.2)
+  It.   1, fac=           1, eval (no.,total): ( 1,  1):Warning message:
+In nls(Biom.2 ~ Wm[Tillage] * (1 - exp(-(DVS/a[Tillage])^b[Tillage])),  :
+  singular gradient
+> ## fails (!) too {numericDeriv() in iteration 129} even though we have
+> ## 'warnOnly' ! ==> bug in nls()  !!!!!!!!!!!!!!!!!!!!!!!!!!!
+> 
+> ## -expm1(u) is better than (1 - exp(u)) :
+> m.c00 <- nls(Biom.2 ~ Wm[Tillage] * (- expm1(-(DVS/a[Tillage])^b[Tillage])),
++              data = biomassTill, start = m00st, trace=TRUE, control=C1)
+438775.3    (7.04e-01): par = (300 300 300 1.5 1.5 1.5 2.2 2.2 2.2)
+  It.   1, fac=           1, eval (no.,total): ( 1,  1):Warning message:
+In nls(Biom.2 ~ Wm[Tillage] * (-expm1(-(DVS/a[Tillage])^b[Tillage])),  :
+  singular gradient
+> ## "fails" but returns .. very bad..
+> m.c00
+Nonlinear regression model
+  model: Biom.2 ~ Wm[Tillage] * (-expm1(-(DVS/a[Tillage])^b[Tillage]))
+   data: biomassTill
+     Wm1      Wm2      Wm3       a1       a2       a3       b1       b2 
+579.5709 -65.2797 343.0101   3.0370   0.1953   1.1326   0.1499   3.6698 
+      b3 
+  3.6554 
+ residual sum-of-squares: 1755085
+
+Number of iterations till stop: 0 
+Achieved convergence tolerance: 0.7041
+Reason stopped: singular gradient
+> ## Use better starting values, as we have such problems:
+> m.c2 <- nls(Biom.2 ~ Wm[Tillage] * (- expm1(-(DVS/a[Tillage])^b[Tillage])),
++             data = biomassTill, start = m1.st, trace=TRUE, control=C1)
+346662.5    (3.97e-01): par = (219.8 265.9 343.4 1.461 1.493 1.294 2.889 2.838 4.046)
+  It.   1, fac=           1, eval (no.,total): ( 1,  1): new dev = 851368
+  It.   1, fac=         0.5, eval (no.,total): ( 2,  2): new dev = 312626
+312625.9    (3.04e-01): par = (309.4095 153.7503 359.7017 1.892067 1.100219 1.328286 1.430481 3.275306 3.800108)
+  It.   2, fac=           1, eval (no.,total): ( 1,  3): new dev = 4.28282e+07
+  It.   2, fac=         0.5, eval (no.,total): ( 2,  4): new dev = 2.57229e+06
+  It.   2, fac=        0.25, eval (no.,total): ( 3,  5): new dev = 384268
+  It.   2, fac=       0.125, eval (no.,total): ( 4,  6): new dev = 315274
+  It.   2, fac=      0.0625, eval (no.,total): ( 5,  7): new dev = 311399
+311399.5    (3.01e-01): par = (390.7912 153.1392 360.8844 2.477 1.091192 1.330795 1.2808 3.372159 3.786863)
+  It.   3, fac=       0.125, eval (no.,total): ( 1,  8): new dev = 334082
+  It.   3, fac=      0.0625, eval (no.,total): ( 2,  9): new dev = 312701
+  It.   3, fac=     0.03125, eval (no.,total): ( 3, 10): new dev = 310867
+310866.6    (3.00e-01): par = (479.6162 152.8703 361.4434 3.149754 1.08712 1.33198 1.20463 3.420235 3.780688)
+  It.   4, fac=      0.0625, eval (no.,total): ( 1, 11): new dev = 316839
+  It.   4, fac=     0.03125, eval (no.,total): ( 2, 12): new dev = 311168
+  It.   4, fac=    0.015625, eval (no.,total): ( 3, 13): new dev = 310551
+310550.8    (2.99e-01): par = (560.1891 152.7435 361.7153 3.780869 1.085179 1.332556 1.165901 3.444206 3.777705)
+  It.   5, fac=     0.03125, eval (no.,total): ( 1, 14): new dev = 311781
+  It.   5, fac=    0.015625, eval (no.,total): ( 2, 15): new dev = 310448
+310447.6    (2.99e-01): par = (682.7774 152.6203 361.9834 4.759826 1.083281 1.333124 1.126675 3.468146 3.774771)
+  It.   6, fac=     0.03125, eval (no.,total): ( 1, 16): new dev = 313578
+  It.   6, fac=    0.015625, eval (no.,total): ( 2, 17): new dev = 310756
+  It.   6, fac=   0.0078125, eval (no.,total): ( 3, 18): new dev = 310336
+310335.7    (2.99e-01): par = (784.0033 152.5603 362.1155 5.586798 1.082353 1.333405 1.106825 3.480102 3.773329)
+  It.   7, fac=    0.015625, eval (no.,total): ( 1, 19): new dev = 311007
+  It.   7, fac=   0.0078125, eval (no.,total): ( 2, 20): new dev = 310316
+310315.7    (2.99e-01): par = (925.9602 152.5012 362.2468 6.761123 1.081436 1.333683 1.086805 3.492051 3.771899)
+  It.   8, fac=    0.015625, eval (no.,total): ( 1, 21): new dev = 311576
+  It.   8, fac=   0.0078125, eval (no.,total): ( 2, 22): new dev = 310442
+  It.   8, fac=  0.00390625, eval (no.,total): ( 3, 23): new dev = 310254
+310254.4    (2.99e-01): par = (1031.081 152.472 362.312 7.642703 1.080982 1.333821 1.076715 3.498023 3.77119)
+  It.   9, fac=   0.0078125, eval (no.,total): ( 1, 24): new dev = 310489
+  It.   9, fac=  0.00390625, eval (no.,total): ( 2, 25): new dev = 310222
+310221.9    (2.99e-01): par = (1165.986 152.443 362.377 8.782305 1.080531 1.333959 1.06657 3.503993 3.770484)
+  It.  10, fac=   0.0078125, eval (no.,total): ( 1, 26): new dev = 310603
+  It.  10, fac=  0.00390625, eval (no.,total): ( 2, 27): new dev = 310229
+  It.  10, fac=  0.00195312, eval (no.,total): ( 3, 28): new dev = 310176
+310176.3    (2.99e-01): par = (1255.212 152.4287 362.4094 9.541778 1.080307 1.334027 1.061472 3.506977 3.770133)
+  It.  11, fac=  0.00390625, eval (no.,total): ( 1, 29): new dev = 310208
+  It.  11, fac=  0.00195312, eval (no.,total): ( 2, 30): new dev = 310137
+310137.5    (2.99e-01): par = (1360.591 152.4143 362.4417 10.44226 1.080083 1.334096 1.056356 3.509961 3.769782)
+  It.  12, fac=  0.00390625, eval (no.,total): ( 1, 31): new dev = 310200
+  It.  12, fac=  0.00195312, eval (no.,total): ( 2, 32): new dev = 310107
+310107.1    (2.98e-01): par = (1486.757 152.4 362.4739 11.52469 1.07986 1.334164 1.051224 3.512944 3.769432)
+  It.  13, fac=  0.00390625, eval (no.,total): ( 1, 33): new dev = 310207
+  It.  13, fac=  0.00195312, eval (no.,total): ( 2, 34): new dev = 310087
+310086.8    (2.98e-01): par = (1640.242 152.3858 362.5061 12.84689 1.079637 1.334232 1.046076 3.515927 3.769082)
+  It.  14, fac=  0.00390625, eval (no.,total): ( 1, 35): new dev = 310234
+  It.  14, fac=  0.00195312, eval (no.,total): ( 2, 36): new dev = 310079
+310079.4    (2.98e-01): par = (1830.522 152.3716 362.5383 14.49289 1.079415 1.3343 1.040912 3.51891 3.768734)
+  It.  15, fac=  0.00390625, eval (no.,total): ( 1, 37): new dev = 310286
+  It.  15, fac=  0.00195312, eval (no.,total): ( 2, 38): new dev = 310088
+  It.  15, fac= 0.000976562, eval (no.,total): ( 3, 39): new dev = 310058
+310058.0    (2.98e-01): par = (1951.175 152.3645 362.5543 15.54105 1.079305 1.334334 1.038322 3.520401 3.76856)
+  It.  16, fac=  0.00195312, eval (no.,total): ( 1, 40): new dev = 310077
+  It.  16, fac= 0.000976562, eval (no.,total): ( 2, 41): new dev = 310039
+310039.5    (2.98e-01): par = (2089.64 152.3575 362.5703 16.74655 1.079194 1.334368 1.035728 3.521892 3.768386)
+  It.  17, fac=  0.00195312, eval (no.,total): ( 1, 42): new dev = 310070
+  It.  17, fac= 0.000976562, eval (no.,total): ( 2, 43): new dev = 310024
+310024.1    (2.98e-01): par = (2250.049 152.3504 362.5864 18.14615 1.079084 1.334402 1.033129 3.523383 3.768212)
+  It.  18, fac=  0.00195312, eval (no.,total): ( 1, 44): new dev = 310069
+  It.  18, fac= 0.000976562, eval (no.,total): ( 2, 45): new dev = 310012
+310012.4    (2.98e-01): par = (2437.878 152.3434 362.6024 19.78862 1.078974 1.334436 1.030525 3.524874 3.768039)
+  It.  19, fac=  0.00195312, eval (no.,total): ( 1, 46): new dev = 310073
+  It.  19, fac= 0.000976562, eval (no.,total): ( 2, 47): new dev = 310005
+310005.2    (2.98e-01): par = (2660.545 152.3364 362.6184 21.74006 1.078864 1.33447 1.027916 3.526365 3.767866)
+  It.  20, fac=  0.00195312, eval (no.,total): ( 1, 48): new dev = 310085
+  It.  20, fac= 0.000976562, eval (no.,total): ( 2, 49): new dev = 310003
+310003.4    (2.98e-01): par = (2928.318 152.3294 362.6343 24.09203 1.078754 1.334504 1.025304 3.527856 3.767693)
+  It.  21, fac=  0.00195312, eval (no.,total): ( 1, 50): new dev = 310107
+  It.  21, fac= 0.000976562, eval (no.,total): ( 2, 51): new dev = 310008
+  It.  21, fac= 0.000488281, eval (no.,total): ( 3, 52): new dev = 309993
+309992.8    (2.98e-01): par = (3092.055 152.3259 362.6423 25.53344 1.078699 1.334521 1.023995 3.528601 3.767606)
+  It.  22, fac= 0.000976562, eval (no.,total): ( 1, 53): new dev = 310001
+  It.  22, fac= 0.000488281, eval (no.,total): ( 2, 54): new dev = 309983
+309983.2    (2.98e-01): par = (3275.574 152.3224 362.6503 27.15084 1.078644 1.334538 1.022686 3.529347 3.76752)
+  It.  23, fac= 0.000976562, eval (no.,total): ( 1, 55): new dev = 309996
+  It.  23, fac= 0.000488281, eval (no.,total): ( 2, 56): new dev = 309975
+309974.9    (2.98e-01): par = (3482.602 152.3189 362.6583 28.9775 1.078589 1.334555 1.021375 3.530092 3.767434)
+  It.  24, fac= 0.000976562, eval (no.,total): ( 1, 57): new dev = 309993
+  It.  24, fac= 0.000488281, eval (no.,total): ( 2, 58): new dev = 309968
+309967.9    (2.98e-01): par = (3717.841 152.3154 362.6662 31.05544 1.078534 1.334572 1.020062 3.530837 3.767347)
+  It.  25, fac= 0.000976562, eval (no.,total): ( 1, 59): new dev = 309992
+  It.  25, fac= 0.000488281, eval (no.,total): ( 2, 60): new dev = 309962
+309962.5    (2.98e-01): par = (3987.31 152.3119 362.6742 33.43844 1.07848 1.334588 1.018749 3.531582 3.767261)
+  It.  26, fac= 0.000976562, eval (no.,total): ( 1, 61): new dev = 309993
+  It.  26, fac= 0.000488281, eval (no.,total): ( 2, 62): new dev = 309959
+309958.8    (2.98e-01): par = (4298.839 152.3084 362.6822 36.19652 1.078425 1.334605 1.017434 3.532327 3.767175)
+  It.  27, fac= 0.000976562, eval (no.,total): ( 1, 63): new dev = 309997
+  It.  27, fac= 0.000488281, eval (no.,total): ( 2, 64): new dev = 309957
+309957.3    (2.98e-01): par = (4662.766 152.3049 362.6901 39.42215 1.07837 1.334622 1.016118 3.533073 3.767089)
+  It.  28, fac= 0.000976562, eval (no.,total): ( 1, 65): new dev = 310004
+  It.  28, fac= 0.000488281, eval (no.,total): ( 2, 66): new dev = 309958
+  It.  28, fac= 0.000244141, eval (no.,total): ( 3, 67): new dev = 309952
+309951.6    (2.98e-01): par = (4877.904 152.3032 362.6941 41.33115 1.078343 1.334631 1.015459 3.533445 3.767046)
+  It.  29, fac= 0.000488281, eval (no.,total): ( 1, 68): new dev = 309954
+  It.  29, fac= 0.000244141, eval (no.,total): ( 2, 69): new dev = 309946
+309946.3    (2.98e-01): par = (5113.991 152.3015 362.6981 43.42723 1.078316 1.334639 1.0148 3.533818 3.767002)
+  It.  30, fac= 0.000488281, eval (no.,total): ( 1, 70): new dev = 309950
+  It.  30, fac= 0.000244141, eval (no.,total): ( 2, 71): new dev = 309941
+309941.4    (2.98e-01): par = (5374.185 152.2997 362.7021 45.73865 1.078288 1.334647 1.014141 3.53419 3.766959)
+  It.  31, fac= 0.000488281, eval (no.,total): ( 1, 72): new dev = 309947
+  It.  31, fac= 0.000244141, eval (no.,total): ( 2, 73): new dev = 309937
+309937.0    (2.98e-01): par = (5662.304 152.298 362.706 48.29957 1.078261 1.334656 1.013482 3.534563 3.766916)
+  It.  32, fac= 0.000488281, eval (no.,total): ( 1, 74): new dev = 309945
+  It.  32, fac= 0.000244141, eval (no.,total): ( 2, 75): new dev = 309933
+309933.1    (2.98e-01): par = (5982.993 152.2963 362.71 51.15159 1.078234 1.334664 1.012822 3.534936 3.766873)
+  It.  33, fac= 0.000488281, eval (no.,total): ( 1, 76): new dev = 309943
+  It.  33, fac= 0.000244141, eval (no.,total): ( 2, 77): new dev = 309930
+309929.8    (2.98e-01): par = (6341.987 152.2945 362.714 54.34603 1.078206 1.334673 1.012161 3.535308 3.76683)
+  It.  34, fac= 0.000488281, eval (no.,total): ( 1, 78): new dev = 309942
+  It.  34, fac= 0.000244141, eval (no.,total): ( 2, 79): new dev = 309927
+309927.2    (2.98e-01): par = (6746.421 152.2928 362.718 57.9468 1.078179 1.334681 1.011501 3.535681 3.766787)
+  It.  35, fac= 0.000488281, eval (no.,total): ( 1, 80): new dev = 309942
+  It.  35, fac= 0.000244141, eval (no.,total): ( 2, 81): new dev = 309925
+309925.3    (2.98e-01): par = (7205.273 152.291 362.7219 62.03429 1.078152 1.33469 1.01084 3.536053 3.766744)
+  It.  36, fac= 0.000488281, eval (no.,total): ( 1, 82): new dev = 309943
+  It.  36, fac= 0.000244141, eval (no.,total): ( 2, 83): new dev = 309924
+309924.2    (2.98e-01): par = (7730.019 152.2893 362.7259 66.7113 1.078125 1.334698 1.010179 3.536426 3.766701)
+  It.  37, fac= 0.000488281, eval (no.,total): ( 1, 84): new dev = 309946
+  It.  37, fac= 0.000244141, eval (no.,total): ( 2, 85): new dev = 309924
+309924.2    (2.98e-01): par = (8335.504 152.2876 362.7299 72.11082 1.078097 1.334706 1.009517 3.536798 3.766659)
+  It.  38, fac= 0.000488281, eval (no.,total): ( 1, 86): new dev = 309950
+  It.  38, fac= 0.000244141, eval (no.,total): ( 2, 87): new dev = 309925
+  It.  38, fac=  0.00012207, eval (no.,total): ( 3, 88): new dev = 309921
+309921.5    (2.98e-01): par = (8688.418 152.2867 362.7319 75.25966 1.078084 1.334711 1.009186 3.536984 3.766637)
+  It.  39, fac= 0.000244141, eval (no.,total): ( 1, 89): new dev = 309923
+  It.  39, fac=  0.00012207, eval (no.,total): ( 2, 90): new dev = 309919
+309919.0    (2.98e-01): par = (9072.38 152.2858 362.7338 78.68642 1.07807 1.334715 1.008855 3.537171 3.766616)
+  It.  40, fac= 0.000244141, eval (no.,total): ( 1, 91): new dev = 309921
+  It.  40, fac=  0.00012207, eval (no.,total): ( 2, 92): new dev = 309917
+309916.6    (2.98e-01): par = (9491.594 152.285 362.7358 82.42878 1.078057 1.334719 1.008524 3.537357 3.766594)
+  It.  41, fac= 0.000244141, eval (no.,total): ( 1, 93): new dev = 309920
+  It.  41, fac=  0.00012207, eval (no.,total): ( 2, 94): new dev = 309914
+309914.5    (2.98e-01): par = (9951.066 152.2841 362.7378 86.53158 1.078043 1.334723 1.008193 3.537543 3.766573)
+  It.  42, fac= 0.000244141, eval (no.,total): ( 1, 95): new dev = 309919
+  It.  42, fac=  0.00012207, eval (no.,total): ( 2, 96): new dev = 309913
+309912.6    (2.98e-01): par = (10456.79 152.2833 362.7398 91.0485 1.078029 1.334727 1.007862 3.53773 3.766551)
+  It.  43, fac= 0.000244141, eval (no.,total): ( 1, 97): new dev = 309918
+  It.  43, fac=  0.00012207, eval (no.,total): ( 2, 98): new dev = 309911
+309911.0    (2.98e-01): par = (11015.98 152.2824 362.7418 96.04421 1.078016 1.334732 1.00753 3.537916 3.76653)
+  It.  44, fac= 0.000244141, eval (no.,total): ( 1, 99): new dev = 309917
+  It.  44, fac=  0.00012207, eval (no.,total): ( 2,100): new dev = 309910
+309909.6    (2.98e-01): par = (11637.4 152.2815 362.7438 101.5973 1.078002 1.334736 1.007199 3.538102 3.766508)
+  It.  45, fac= 0.000244141, eval (no.,total): ( 1,101): new dev = 309917
+  It.  45, fac=  0.00012207, eval (no.,total): ( 2,102): new dev = 309909
+309908.6    (2.98e-01): par = (12331.83 152.2807 362.7458 107.8043 1.077989 1.33474 1.006867 3.538288 3.766487)
+  It.  46, fac= 0.000244141, eval (no.,total): ( 1,103): new dev = 309917
+  It.  46, fac=  0.00012207, eval (no.,total): ( 2,104): new dev = 309908
+309907.9    (2.98e-01): par = (13112.62 152.2798 362.7477 114.7849 1.077975 1.334744 1.006536 3.538475 3.766465)
+  It.  47, fac= 0.000244141, eval (no.,total): ( 1,105): new dev = 309918
+  It.  47, fac=  0.00012207, eval (no.,total): ( 2,106): new dev = 309908
+309907.6    (2.98e-01): par = (13996.56 152.2789 362.7497 122.6895 1.077961 1.334748 1.006204 3.538661 3.766444)
+  It.  48, fac= 0.000244141, eval (no.,total): ( 1,107): new dev = 309919
+  It.  48, fac=  0.00012207, eval (no.,total): ( 2,108): new dev = 309908
+  It.  48, fac= 6.10352e-05, eval (no.,total): ( 3,109): new dev = 309906
+309906.1    (2.98e-01): par = (14500.78 152.2785 362.7507 127.1995 1.077955 1.334751 1.006038 3.538754 3.766433)
+  It.  49, fac=  0.00012207, eval (no.,total): ( 1,110): new dev = 309907
+  It.  49, fac= 6.10352e-05, eval (no.,total): ( 2,111): new dev = 309905
+309904.7    (2.98e-01): par = (15042.37 152.2781 362.7517 132.0443 1.077948 1.334753 1.005872 3.538847 3.766422)
+  It.  50, fac=  0.00012207, eval (no.,total): ( 1,112): new dev = 309905
+  It.  50, fac= 6.10352e-05, eval (no.,total): ( 2,113): new dev = 309903
+309903.4    (2.98e-01): par = (15625.54 152.2776 362.7527 137.2617 1.077941 1.334755 1.005706 3.53894 3.766412)
+  It.  51, fac=  0.00012207, eval (no.,total): ( 1,114): new dev = 309904
+  It.  51, fac= 6.10352e-05, eval (no.,total): ( 2,115): new dev = 309902
+309902.2    (2.98e-01): par = (16255.26 152.2772 362.7537 142.896 1.077934 1.334757 1.00554 3.539033 3.766401)
+  It.  52, fac=  0.00012207, eval (no.,total): ( 1,116): new dev = 309903
+  It.  52, fac= 6.10352e-05, eval (no.,total): ( 2,117): new dev = 309901
+309901.0    (2.98e-01): par = (16937.25 152.2768 362.7547 148.9988 1.077928 1.334759 1.005374 3.539126 3.76639)
+  It.  53, fac=  0.00012207, eval (no.,total): ( 1,118): new dev = 309903
+  It.  53, fac= 6.10352e-05, eval (no.,total): ( 2,119): new dev = 309900
+309900.0    (2.98e-01): par = (17678.17 152.2763 362.7557 155.6296 1.077921 1.334761 1.005208 3.53922 3.76638)
+  It.  54, fac=  0.00012207, eval (no.,total): ( 1,120): new dev = 309902
+  It.  54, fac= 6.10352e-05, eval (no.,total): ( 2,121): new dev = 309899
+309899.0    (2.98e-01): par = (18485.86 152.2759 362.7567 162.8586 1.077914 1.334763 1.005042 3.539313 3.766369)
+  It.  55, fac=  0.00012207, eval (no.,total): ( 1,122): new dev = 309901
+  It.  55, fac= 6.10352e-05, eval (no.,total): ( 2,123): new dev = 309898
+309898.1    (2.98e-01): par = (19369.64 152.2755 362.7576 170.7694 1.077907 1.334765 1.004876 3.539406 3.766358)
+  It.  56, fac=  0.00012207, eval (no.,total): ( 1,124): new dev = 309901
+  It.  56, fac= 6.10352e-05, eval (no.,total): ( 2,125): new dev = 309897
+309897.4    (2.98e-01): par = (20340.63 152.275 362.7586 179.4617 1.0779 1.334767 1.00471 3.539499 3.766347)
+  It.  57, fac=  0.00012207, eval (no.,total): ( 1,126): new dev = 309901
+  It.  57, fac= 6.10352e-05, eval (no.,total): ( 2,127): new dev = 309897
+309896.8    (2.98e-01): par = (21412.14 152.2746 362.7596 189.0547 1.077894 1.334769 1.004544 3.539592 3.766337)
+  It.  58, fac=  0.00012207, eval (no.,total): ( 1,128): new dev = 309901
+  It.  58, fac= 6.10352e-05, eval (no.,total): ( 2,129): new dev = 309896
+309896.3    (2.98e-01): par = (22600.26 152.2742 362.7606 199.6926 1.077887 1.334772 1.004378 3.539685 3.766326)
+  It.  59, fac=  0.00012207, eval (no.,total): ( 1,130): new dev = 309901
+  It.  59, fac= 6.10352e-05, eval (no.,total): ( 2,131): new dev = 309896
+309896.1    (2.98e-01): par = (23924.82 152.2737 362.7616 211.5531 1.07788 1.334774 1.004212 3.539778 3.766315)
+  It.  60, fac=  0.00012207, eval (no.,total): ( 1,132): new dev = 309901
+  It.  60, fac= 6.10352e-05, eval (no.,total): ( 2,133): new dev = 309896
+309895.9    (2.98e-01): par = (25410.04 152.2733 362.7626 224.8533 1.077873 1.334776 1.004046 3.539871 3.766305)
+  It.  61, fac=  0.00012207, eval (no.,total): ( 1,134): new dev = 309902
+  It.  61, fac= 6.10352e-05, eval (no.,total): ( 2,135): new dev = 309896
+  It.  61, fac= 3.05176e-05, eval (no.,total): ( 3,136): new dev = 309895
+309895.2    (2.98e-01): par = (26248.29 152.2731 362.7631 232.3604 1.07787 1.334777 1.003963 3.539918 3.766299)
+  It.  62, fac= 6.10352e-05, eval (no.,total): ( 1,137): new dev = 309895
+  It.  62, fac= 3.05176e-05, eval (no.,total): ( 2,138): new dev = 309895
+309894.5    (2.98e-01): par = (27143.07 152.2729 362.7636 240.3741 1.077866 1.334778 1.00388 3.539964 3.766294)
+  It.  63, fac= 6.10352e-05, eval (no.,total): ( 1,139): new dev = 309895
+  It.  63, fac= 3.05176e-05, eval (no.,total): ( 2,140): new dev = 309894
+309893.8    (2.98e-01): par = (28100.26 152.2727 362.7641 248.947 1.077863 1.334779 1.003797 3.540011 3.766288)
+  It.  64, fac= 6.10352e-05, eval (no.,total): ( 1,141): new dev = 309894
+  It.  64, fac= 3.05176e-05, eval (no.,total): ( 2,142): new dev = 309893
+309893.2    (2.98e-01): par = (29126.45 152.2725 362.7646 258.1382 1.07786 1.33478 1.003714 3.540058 3.766283)
+  It.  65, fac= 6.10352e-05, eval (no.,total): ( 1,143): new dev = 309894
+  It.  65, fac= 3.05176e-05, eval (no.,total): ( 2,144): new dev = 309893
+309892.6    (2.98e-01): par = (30229.43 152.2722 362.7651 268.0175 1.077856 1.334781 1.00363 3.540104 3.766278)
+  It.  66, fac= 6.10352e-05, eval (no.,total): ( 1,145): new dev = 309893
+  It.  66, fac= 3.05176e-05, eval (no.,total): ( 2,146): new dev = 309892
+309892.0    (2.98e-01): par = (31417.92 152.272 362.7656 278.6629 1.077853 1.334782 1.003547 3.540151 3.766272)
+  It.  67, fac= 6.10352e-05, eval (no.,total): ( 1,147): new dev = 309893
+  It.  67, fac= 3.05176e-05, eval (no.,total): ( 2,148): new dev = 309892
+309891.5    (2.98e-01): par = (32702.14 152.2718 362.7661 290.1661 1.077849 1.334783 1.003464 3.540197 3.766267)
+  It.  68, fac= 6.10352e-05, eval (no.,total): ( 1,149): new dev = 309893
+  It.  68, fac= 3.05176e-05, eval (no.,total): ( 2,150): new dev = 309891
+309891.1    (2.98e-01): par = (34093.86 152.2716 362.7666 302.6326 1.077846 1.334784 1.003381 3.540244 3.766262)
+  It.  69, fac= 6.10352e-05, eval (no.,total): ( 1,151): new dev = 309892
+  It.  69, fac= 3.05176e-05, eval (no.,total): ( 2,152): new dev = 309891
+309890.6    (2.98e-01): par = (35607.18 152.2714 362.7671 316.1885 1.077843 1.334785 1.003298 3.54029 3.766256)
+  It.  70, fac= 6.10352e-05, eval (no.,total): ( 1,153): new dev = 309892
+  It.  70, fac= 3.05176e-05, eval (no.,total): ( 2,154): new dev = 309890
+309890.3    (2.98e-01): par = (37258.33 152.2712 362.7676 330.9794 1.077839 1.334786 1.003215 3.540337 3.766251)
+  It.  71, fac= 6.10352e-05, eval (no.,total): ( 1,155): new dev = 309892
+  It.  71, fac= 3.05176e-05, eval (no.,total): ( 2,156): new dev = 309890
+309890.0    (2.98e-01): par = (39066.89 152.2709 362.768 347.1806 1.077836 1.334787 1.003132 3.540384 3.766246)
+  It.  72, fac= 6.10352e-05, eval (no.,total): ( 1,157): new dev = 309892
+  It.  72, fac= 3.05176e-05, eval (no.,total): ( 2,158): new dev = 309890
+309889.7    (2.98e-01): par = (41055.92 152.2707 362.7685 364.9988 1.077832 1.334788 1.003049 3.54043 3.76624)
+  It.  73, fac= 6.10352e-05, eval (no.,total): ( 1,159): new dev = 309892
+  It.  73, fac= 3.05176e-05, eval (no.,total): ( 2,160): new dev = 309890
+309889.5    (2.98e-01): par = (43253.38 152.2705 362.769 384.6842 1.077829 1.334789 1.002965 3.540477 3.766235)
+  It.  74, fac= 6.10352e-05, eval (no.,total): ( 1,161): new dev = 309892
+  It.  74, fac= 3.05176e-05, eval (no.,total): ( 2,162): new dev = 309889
+309889.4    (2.98e-01): par = (45692.92 152.2703 362.7695 406.5385 1.077826 1.33479 1.002882 3.540523 3.76623)
+  It.  75, fac= 6.10352e-05, eval (no.,total): ( 1,163): new dev = 309892
+  It.  75, fac= 3.05176e-05, eval (no.,total): ( 2,164): new dev = 309889
+309889.4    (2.98e-01): par = (48416.45 152.2701 362.77 430.9368 1.077822 1.334791 1.002799 3.54057 3.766224)
+  It.  76, fac= 6.10352e-05, eval (no.,total): ( 1,165): new dev = 309892
+  It.  76, fac= 3.05176e-05, eval (no.,total): ( 2,166): new dev = 309889
+  It.  76, fac= 1.52588e-05, eval (no.,total): ( 3,167): new dev = 309889
+309889.1    (2.98e-01): par = (49945.81 152.27 362.7703 444.6374 1.077821 1.334792 1.002758 3.540593 3.766222)
+  It.  77, fac= 3.05176e-05, eval (no.,total): ( 1,168): new dev = 309889
+  It.  77, fac= 1.52588e-05, eval (no.,total): ( 2,169): new dev = 309889
+309888.7    (2.98e-01): par = (51573.83 152.2699 362.7705 459.2217 1.077819 1.334792 1.002716 3.540616 3.766219)
+  It.  78, fac= 3.05176e-05, eval (no.,total): ( 1,170): new dev = 309889
+  It.  78, fac= 1.52588e-05, eval (no.,total): ( 2,171): new dev = 309888
+309888.4    (2.98e-01): par = (53309.58 152.2698 362.7708 474.771 1.077817 1.334793 1.002674 3.54064 3.766216)
+  It.  79, fac= 3.05176e-05, eval (no.,total): ( 1,172): new dev = 309889
+  It.  79, fac= 1.52588e-05, eval (no.,total): ( 2,173): new dev = 309888
+309888.1    (2.98e-01): par = (55164.62 152.2696 362.771 491.3889 1.077816 1.334794 1.002633 3.540663 3.766214)
+  It.  80, fac= 3.05176e-05, eval (no.,total): ( 1,174): new dev = 309888
+  It.  80, fac= 1.52588e-05, eval (no.,total): ( 2,175): new dev = 309888
+309887.8    (2.98e-01): par = (57151.4 152.2695 362.7713 509.1867 1.077814 1.334794 1.002591 3.540686 3.766211)
+  It.  81, fac= 3.05176e-05, eval (no.,total): ( 1,176): new dev = 309888
+  It.  81, fac= 1.52588e-05, eval (no.,total): ( 2,177): new dev = 309888
+309887.5    (2.98e-01): par = (59284.2 152.2694 362.7715 528.2924 1.077812 1.334795 1.00255 3.540709 3.766208)
+  It.  82, fac= 3.05176e-05, eval (no.,total): ( 1,178): new dev = 309888
+  It.  82, fac= 1.52588e-05, eval (no.,total): ( 2,179): new dev = 309887
+309887.2    (2.98e-01): par = (61579.85 152.2693 362.7718 548.8567 1.07781 1.334795 1.002508 3.540733 3.766205)
+  It.  83, fac= 3.05176e-05, eval (no.,total): ( 1,180): new dev = 309888
+  It.  83, fac= 1.52588e-05, eval (no.,total): ( 2,181): new dev = 309887
+309887.0    (2.98e-01): par = (64056.97 152.2692 362.772 571.0463 1.077809 1.334796 1.002466 3.540756 3.766203)
+  It.  84, fac= 3.05176e-05, eval (no.,total): ( 1,182): new dev = 309888
+  It.  84, fac= 1.52588e-05, eval (no.,total): ( 2,183): new dev = 309887
+309886.8    (2.98e-01): par = (66737.54 152.2691 362.7723 595.058 1.077807 1.334796 1.002425 3.540779 3.7662)
+  It.  85, fac= 3.05176e-05, eval (no.,total): ( 1,184): new dev = 309887
+  It.  85, fac= 1.52588e-05, eval (no.,total): ( 2,185): new dev = 309887
+309886.6    (2.98e-01): par = (69648.06 152.269 362.7725 621.129 1.077805 1.334797 1.002383 3.540803 3.766197)
+  It.  86, fac= 3.05176e-05, eval (no.,total): ( 1,186): new dev = 309887
+  It.  86, fac= 1.52588e-05, eval (no.,total): ( 2,187): new dev = 309886
+309886.4    (2.98e-01): par = (72818.82 152.2689 362.7728 649.5306 1.077804 1.334797 1.002342 3.540826 3.766195)
+  It.  87, fac= 3.05176e-05, eval (no.,total): ( 1,188): new dev = 309887
+  It.  87, fac= 1.52588e-05, eval (no.,total): ( 2,189): new dev = 309886
+309886.3    (2.98e-01): par = (76285.33 152.2688 362.773 680.5806 1.077802 1.334798 1.0023 3.540849 3.766192)
+  It.  88, fac= 3.05176e-05, eval (no.,total): ( 1,190): new dev = 309887
+  It.  88, fac= 1.52588e-05, eval (no.,total): ( 2,191): new dev = 309886
+309886.2    (2.98e-01): par = (80089.39 152.2687 362.7732 714.6532 1.0778 1.334798 1.002259 3.540872 3.766189)
+  It.  89, fac= 3.05176e-05, eval (no.,total): ( 1,192): new dev = 309887
+  It.  89, fac= 1.52588e-05, eval (no.,total): ( 2,193): new dev = 309886
+309886.1    (2.98e-01): par = (84283.82 152.2686 362.7735 752.2212 1.077799 1.334799 1.002217 3.540896 3.766187)
+  It.  90, fac= 3.05176e-05, eval (no.,total): ( 1,194): new dev = 309887
+  It.  90, fac= 1.52588e-05, eval (no.,total): ( 2,195): new dev = 309886
+309886.1    (2.98e-01): par = (88929.82 152.2685 362.7737 793.8325 1.077797 1.334799 1.002175 3.540919 3.766184)
+  It.  91, fac= 3.05176e-05, eval (no.,total): ( 1,196): new dev = 309887
+  It.  91, fac= 1.52588e-05, eval (no.,total): ( 2,197): new dev = 309886
+309886.1    (2.98e-01): par = (94102.98 152.2684 362.774 840.1635 1.077795 1.3348 1.002134 3.540942 3.766181)
+  It.  92, fac= 3.05176e-05, eval (no.,total): ( 1,198): new dev = 309888
+  It.  92, fac= 1.52588e-05, eval (no.,total): ( 2,199): new dev = 309886
+  It.  92, fac= 7.62939e-06, eval (no.,total): ( 3,200): new dev = 309886
+309885.9    (2.98e-01): par = (96999.82 152.2683 362.7741 866.1068 1.077794 1.3348 1.002113 3.540954 3.76618)
+  It.  93, fac= 1.52588e-05, eval (no.,total): ( 1,201): new dev = 309886
+  It.  93, fac= 7.62939e-06, eval (no.,total): ( 2,202): new dev = 309886
+309885.7    (2.98e-01): par = (100078.5 152.2682 362.7742 893.6777 1.077793 1.3348 1.002092 3.540966 3.766179)
+  It.  94, fac= 1.52588e-05, eval (no.,total): ( 1,203): new dev = 309886
+  It.  94, fac= 7.62939e-06, eval (no.,total): ( 2,204): new dev = 309886
+309885.5    (2.98e-01): par = (103355.2 152.2682 362.7744 923.0215 1.077793 1.334801 1.002071 3.540977 3.766177)
+  It.  95, fac= 1.52588e-05, eval (no.,total): ( 1,205): new dev = 309886
+  It.  95, fac= 7.62939e-06, eval (no.,total): ( 2,206): new dev = 309885
+309885.4    (2.98e-01): par = (106850 152.2681 362.7745 954.3176 1.077792 1.334801 1.002051 3.540989 3.766176)
+  It.  96, fac= 1.52588e-05, eval (no.,total): ( 1,207): new dev = 309886
+  It.  96, fac= 7.62939e-06, eval (no.,total): ( 2,208): new dev = 309885
+309885.2    (2.98e-01): par = (110586.2 152.2681 362.7746 987.7746 1.077791 1.334801 1.00203 3.541 3.766175)
+  It.  97, fac= 1.52588e-05, eval (no.,total): ( 1,209): new dev = 309885
+  It.  97, fac= 7.62939e-06, eval (no.,total): ( 2,210): new dev = 309885
+309885.1    (2.98e-01): par = (114588.8 152.268 362.7747 1023.616 1.07779 1.334801 1.002009 3.541012 3.766173)
+  It.  98, fac= 1.52588e-05, eval (no.,total): ( 1,211): new dev = 309885
+  It.  98, fac= 7.62939e-06, eval (no.,total): ( 2,212): new dev = 309885
+309885.0    (2.98e-01): par = (118886.5 152.268 362.7749 1062.099 1.077789 1.334802 1.001988 3.541024 3.766172)
+  It.  99, fac= 1.52588e-05, eval (no.,total): ( 1,213): new dev = 309885
+  It.  99, fac= 7.62939e-06, eval (no.,total): ( 2,214): new dev = 309885
+309884.8    (2.98e-01): par = (123513.4 152.2679 362.775 1103.528 1.077788 1.334802 1.001967 3.541035 3.766171)
+  It. 100, fac= 1.52588e-05, eval (no.,total): ( 1,215): new dev = 309885
+  It. 100, fac= 7.62939e-06, eval (no.,total): ( 2,216): new dev = 309885
+309884.7    (2.98e-01): par = (128506.4 152.2679 362.7751 1148.234 1.077788 1.334802 1.001947 3.541047 3.766169)
+  It. 101, fac= 1.52588e-05, eval (no.,total): ( 1,217): new dev = 309885
+  It. 101, fac= 7.62939e-06, eval (no.,total): ( 2,218): new dev = 309885
+309884.6    (2.98e-01): par = (133913.4 152.2678 362.7752 1196.644 1.077787 1.334802 1.001926 3.541059 3.766168)
+  It. 102, fac= 1.52588e-05, eval (no.,total): ( 1,219): new dev = 309885
+  It. 102, fac= 7.62939e-06, eval (no.,total): ( 2,220): new dev = 309885
+309884.5    (2.98e-01): par = (139785.7 152.2678 362.7754 1249.22 1.077786 1.334803 1.001905 3.54107 3.766167)
+  It. 103, fac= 1.52588e-05, eval (no.,total): ( 1,221): new dev = 309885
+  It. 103, fac= 7.62939e-06, eval (no.,total): ( 2,222): new dev = 309884
+309884.4    (2.98e-01): par = (146182.6 152.2677 362.7755 1306.489 1.077785 1.334803 1.001884 3.541082 3.766165)
+  It. 104, fac= 1.52588e-05, eval (no.,total): ( 1,223): new dev = 309885
+  It. 104, fac= 7.62939e-06, eval (no.,total): ( 2,224): new dev = 309884
+309884.3    (2.98e-01): par = (153180.8 152.2677 362.7756 1369.139 1.077784 1.334803 1.001863 3.541094 3.766164)
+  It. 105, fac= 1.52588e-05, eval (no.,total): ( 1,225): new dev = 309885
+  It. 105, fac= 7.62939e-06, eval (no.,total): ( 2,226): new dev = 309884
+309884.3    (2.98e-01): par = (160866.6 152.2676 362.7757 1437.941 1.077783 1.334804 1.001842 3.541105 3.766163)
+  It. 106, fac= 1.52588e-05, eval (no.,total): ( 1,227): new dev = 309885
+  It. 106, fac= 7.62939e-06, eval (no.,total): ( 2,228): new dev = 309884
+309884.2    (2.98e-01): par = (169341.7 152.2675 362.7758 1513.805 1.077782 1.334804 1.001822 3.541117 3.766161)
+  It. 107, fac= 1.52588e-05, eval (no.,total): ( 1,229): new dev = 309885
+  It. 107, fac= 7.62939e-06, eval (no.,total): ( 2,230): new dev = 309884
+309884.2    (2.98e-01): par = (178735 152.2675 362.776 1597.884 1.077782 1.334804 1.001801 3.541128 3.76616)
+  It. 108, fac= 1.52588e-05, eval (no.,total): ( 1,231): new dev = 309885
+  It. 108, fac= 7.62939e-06, eval (no.,total): ( 2,232): new dev = 309884
+309884.2    (2.98e-01): par = (189195.5 152.2674 362.7761 1691.511 1.077781 1.334804 1.00178 3.54114 3.766159)
+  It. 109, fac= 1.52588e-05, eval (no.,total): ( 1,233): new dev = 309885
+  It. 109, fac= 7.62939e-06, eval (no.,total): ( 2,234): new dev = 309884
+  It. 109, fac=  3.8147e-06, eval (no.,total): ( 3,235): new dev = 309884
+309884.1    (2.98e-01): par = (195060.4 152.2674 362.7762 1744.001 1.07778 1.334804 1.00177 3.541146 3.766158)
+  It. 110, fac= 7.62939e-06, eval (no.,total): ( 1,236): new dev = 309884
+  It. 110, fac=  3.8147e-06, eval (no.,total): ( 2,237): new dev = 309884
+309884.0    (2.98e-01): par = (201293.6 152.2674 362.7762 1799.786 1.07778 1.334805 1.001759 3.541152 3.766157)
+  It. 111, fac= 7.62939e-06, eval (no.,total): ( 1,238): new dev = 309884
+  It. 111, fac=  3.8147e-06, eval (no.,total): ( 2,239): new dev = 309884
+309883.9    (2.98e-01): par = (207932 152.2674 362.7763 1859.195 1.07778 1.334805 1.001749 3.541158 3.766157)
+  It. 112, fac= 7.62939e-06, eval (no.,total): ( 1,240): new dev = 309884
+  It. 112, fac=  3.8147e-06, eval (no.,total): ( 2,241): new dev = 309884
+309883.8    (2.98e-01): par = (215015 152.2673 362.7763 1922.581 1.077779 1.334805 1.001738 3.541163 3.766156)
+  It. 113, fac= 7.62939e-06, eval (no.,total): ( 1,242): new dev = 309884
+  It. 113, fac=  3.8147e-06, eval (no.,total): ( 2,243): new dev = 309884
+309883.7    (2.98e-01): par = (222587.7 152.2673 362.7764 1990.347 1.077779 1.334805 1.001728 3.541169 3.766155)
+  It. 114, fac= 7.62939e-06, eval (no.,total): ( 1,244): new dev = 309884
+  It. 114, fac=  3.8147e-06, eval (no.,total): ( 2,245): new dev = 309884
+309883.7    (2.98e-01): par = (230706 152.2673 362.7765 2062.992 1.077778 1.334805 1.001718 3.541175 3.766155)
+  It. 115, fac= 7.62939e-06, eval (no.,total): ( 1,246): new dev = 309884
+  It. 115, fac=  3.8147e-06, eval (no.,total): ( 2,247): new dev = 309884
+309883.6    (2.98e-01): par = (239425.7 152.2673 362.7765 2141.015 1.077778 1.334805 1.001707 3.541181 3.766154)
+  It. 116, fac= 7.62939e-06, eval (no.,total): ( 1,248): new dev = 309884
+  It. 116, fac=  3.8147e-06, eval (no.,total): ( 2,249): new dev = 309884
+309883.5    (2.98e-01): par = (248824.1 152.2672 362.7766 2225.109 1.077777 1.334805 1.001697 3.541187 3.766153)
+  It. 117, fac= 7.62939e-06, eval (no.,total): ( 1,250): new dev = 309884
+  It. 117, fac=  3.8147e-06, eval (no.,total): ( 2,251): new dev = 309883
+309883.4    (2.98e-01): par = (258968.5 152.2672 362.7767 2315.872 1.077777 1.334805 1.001686 3.541192 3.766153)
+  It. 118, fac= 7.62939e-06, eval (no.,total): ( 1,252): new dev = 309884
+  It. 118, fac=  3.8147e-06, eval (no.,total): ( 2,253): new dev = 309883
+309883.4    (2.98e-01): par = (269956.3 152.2672 362.7767 2414.178 1.077777 1.334806 1.001676 3.541198 3.766152)
+  It. 119, fac= 7.62939e-06, eval (no.,total): ( 1,254): new dev = 309883
+  It. 119, fac=  3.8147e-06, eval (no.,total): ( 2,255): new dev = 309883
+309883.3    (2.98e-01): par = (281896.8 152.2671 362.7768 2521.002 1.077776 1.334806 1.001666 3.541204 3.766151)
+  It. 120, fac= 7.62939e-06, eval (no.,total): ( 1,256): new dev = 309883
+  It. 120, fac=  3.8147e-06, eval (no.,total): ( 2,257): new dev = 309883
+309883.2    (2.98e-01): par = (294919.1 152.2671 362.7768 2637.498 1.077776 1.334806 1.001655 3.54121 3.766151)
+  It. 121, fac= 7.62939e-06, eval (no.,total): ( 1,258): new dev = 309883
+  It. 121, fac=  3.8147e-06, eval (no.,total): ( 2,259): new dev = 309883
+309883.2    (2.98e-01): par = (309172.5 152.2671 362.7769 2765 1.077775 1.334806 1.001645 3.541216 3.76615)
+  It. 122, fac= 7.62939e-06, eval (no.,total): ( 1,260): new dev = 309883
+  It. 122, fac=  3.8147e-06, eval (no.,total): ( 2,261): new dev = 309883
+309883.1    (2.98e-01): par = (324847.1 152.2671 362.777 2905.208 1.077775 1.334806 1.001634 3.541222 3.766149)
+  It. 123, fac= 7.62939e-06, eval (no.,total): ( 1,262): new dev = 309883
+  It. 123, fac=  3.8147e-06, eval (no.,total): ( 2,263): new dev = 309883
+309883.1    (2.98e-01): par = (342135.9 152.267 362.777 3059.846 1.077774 1.334806 1.001624 3.541227 3.766149)
+  It. 124, fac= 7.62939e-06, eval (no.,total): ( 1,264): new dev = 309883
+  It. 124, fac=  3.8147e-06, eval (no.,total): ( 2,265): new dev = 309883
+309883.0    (2.98e-01): par = (361319.7 152.267 362.7771 3231.422 1.077774 1.334806 1.001614 3.541233 3.766148)
+  It. 125, fac= 7.62939e-06, eval (no.,total): ( 1,266): new dev = 309883
+  It. 125, fac=  3.8147e-06, eval (no.,total): ( 2,267): new dev = 309883
+309883.0    (2.98e-01): par = (382722.7 152.267 362.7771 3422.834 1.077774 1.334807 1.001603 3.541239 3.766147)
+  It. 126, fac= 7.62939e-06, eval (no.,total): ( 1,268): new dev = 309883
+  It. 126, fac=  3.8147e-06, eval (no.,total): ( 2,269): new dev = 309883
+309883.0    (2.98e-01): par = (406723.8 152.267 362.7772 3637.466 1.077773 1.334807 1.001593 3.541245 3.766147)
+  It. 127, fac= 7.62939e-06, eval (no.,total): ( 1,270): new dev = 309883
+  It. 127, fac=  3.8147e-06, eval (no.,total): ( 2,271): new dev = 309883
+309882.9    (2.98e-01): par = (433852.3 152.2669 362.7773 3880.048 1.077773 1.334807 1.001582 3.541251 3.766146)
+  It. 128, fac= 7.62939e-06, eval (no.,total): ( 1,272): new dev = 309883
+  It. 128, fac=  3.8147e-06, eval (no.,total): ( 2,273): new dev = 309883
+309882.9    (2.98e-01): par = (464680.3 152.2669 362.7773 4155.688 1.077772 1.334807 1.001572 3.541256 3.766145)
+  It. 129, fac= 7.62939e-06, eval (no.,total): ( 1,274): new dev = 309883
+  It. 129, fac=  3.8147e-06, eval (no.,total): ( 2,275): new dev = 309883
+309882.8    (2.98e-01): par = (500038.2 152.2669 362.7774 4471.803 1.077772 1.334807 1.001562 3.541262 3.766145)
+  It. 130, fac= 7.62939e-06, eval (no.,total): ( 1,276): new dev = 309883
+  It. 130, fac=  3.8147e-06, eval (no.,total): ( 2,277): new dev = 309883
+309882.8    (2.98e-01): par = (541059.2 152.2668 362.7775 4838.517 1.077771 1.334807 1.001551 3.541268 3.766144)
+  It. 131, fac= 7.62939e-06, eval (no.,total): ( 1,278): new dev = 309883
+  It. 131, fac=  3.8147e-06, eval (no.,total): ( 2,279): new dev = 309883
+309882.8    (2.98e-01): par = (589013.2 152.2668 362.7775 5267.166 1.077771 1.334807 1.001541 3.541274 3.766143)
+  It. 132, fac= 7.62939e-06, eval (no.,total): ( 1,280): new dev = 309883
+  It. 132, fac=  3.8147e-06, eval (no.,total): ( 2,281): new dev = 309883
+309882.7    (2.98e-01): par = (645896.4 152.2668 362.7776 5775.578 1.077771 1.334807 1.00153 3.54128 3.766143)
+  It. 133, fac= 7.62939e-06, eval (no.,total): ( 1,282): new dev = 309883
+  It. 133, fac=  3.8147e-06, eval (no.,total): ( 2,283): new dev = 309883
+309882.7    (2.98e-01): par = (714413.6 152.2668 362.7776 6387.9 1.07777 1.334808 1.00152 3.541286 3.766142)
+  It. 134, fac= 7.62939e-06, eval (no.,total): ( 1,284): new dev = 309883
+  It. 134, fac=  3.8147e-06, eval (no.,total): ( 2,285): new dev = 309883
+309882.6    (2.98e-01): par = (798182.6 152.2667 362.7777 7136.429 1.07777 1.334808 1.00151 3.541291 3.766141)
+  It. 135, fac= 7.62939e-06, eval (no.,total): ( 1,286): new dev = 309883
+309882.6    (2.98e-01): par = (1006859 152.2667 362.7778 9000.82 1.077769 1.334808 1.001489 3.541303 3.76614)
+  It. 136, fac= 1.52588e-05, eval (no.,total): ( 1,287): new dev = 309883
+  It. 136, fac= 7.62939e-06, eval (no.,total): ( 2,288): new dev = 309882
+309882.2    (2.98e-01): par = (1339730 152.2666 362.778 11973.99 1.077768 1.334808 1.001468 3.541315 3.766139)
+  It. 137, fac= 1.52588e-05, eval (no.,total): ( 1,289): new dev = 309880
+309880.4    (2.98e-01): par = (2515737 152.2665 362.7782 22474.46 1.077766 1.334809 1.001426 3.541338 3.766136)
+  It. 138, fac= 3.05176e-05, eval (no.,total): ( 1,290): new dev = 309869
+309869.2    (2.97e-01): par = (10811683 152.2663 362.7787 96501.71 1.077763 1.33481 1.001343 3.541385 3.766131)
+  It. 139, fac= 6.10352e-05, eval (no.,total): ( 1,291):Warning message:
+In nls(Biom.2 ~ Wm[Tillage] * (-expm1(-(DVS/a[Tillage])^b[Tillage])),  :
+  singular gradient
+> ## "fails" but returns at least: singular gradient iteration 126
+> m.c2
+Nonlinear regression model
+  model: Biom.2 ~ Wm[Tillage] * (-expm1(-(DVS/a[Tillage])^b[Tillage]))
+   data: biomassTill
+      Wm1       Wm2       Wm3        a1        a2        a3        b1        b2 
+3.140e+08 1.523e+02 3.628e+02 2.799e+06 1.078e+00 1.335e+00 1.001e+00 3.541e+00 
+       b3 
+3.766e+00 
+ residual sum-of-squares: 309828
+
+Number of iterations till stop: 138 
+Achieved convergence tolerance: 0.2965
+Reason stopped: singular gradient
+> 
+> ## Robust: not converging in 20 steps (only warning)
+> mrob <- nlrob(Biomass ~ Wm[Tillage] * (-expm1(-(DVS/a[Tillage])^b[Tillage])),
++               data = biomassTill, start = m00st, trace=TRUE)
+robust iteration 1 
+221630.5    (6.09e-01): par = (300 300 300 1.5 1.5 1.5 2.2 2.2 2.2)
+182287.8    (3.56e-01): par = (318.8886 282.024 311.2545 1.822548 1.494574 1.129525 2.41827 2.767964 3.476529)
+163748.1    (1.10e-01): par = (318.805 288.0167 341.9654 1.786274 1.522607 1.353841 2.642103 2.802773 2.967205)
+161787.5    (8.56e-03): par = (323.5734 289.8453 349.4942 1.808498 1.529869 1.364095 2.623699 2.785542 3.394002)
+161775.6    (2.26e-04): par = (323.3195 289.595 349.5757 1.807366 1.528734 1.361839 2.626092 2.789592 3.442828)
+161775.6    (3.08e-05): par = (323.4009 289.68 349.5981 1.80769 1.529108 1.361903 2.625694 2.788484 3.443476)
+161775.6    (7.96e-06): par = (323.3889 289.659 349.5978 1.807642 1.529015 1.361902 2.625755 2.78877 3.443488)
+ --> irls.delta(previous, resid) = 0.408764 -- *not* converged
+robust iteration 2 
+117522.1    (1.05e-01): par = (323.3889 289.659 349.5978 1.807642 1.529015 1.361902 2.625755 2.78877 3.443488)
+116317.6    (3.00e-02): par = (309.8399 261.4694 339.9658 1.757397 1.458788 1.296644 2.681645 2.910159 3.869811)
+116214.1    (1.55e-03): par = (312.0578 264.5256 344.209 1.765736 1.468128 1.311145 2.674374 2.896012 3.888938)
+116213.8    (1.16e-04): par = (311.9484 264.5546 344.0997 1.765259 1.468147 1.310422 2.675235 2.897492 3.898021)
+116213.8    (1.50e-05): par = (311.9696 264.5818 344.1002 1.765345 1.46828 1.310422 2.675113 2.897016 3.898588)
+116213.8    (3.09e-06): par = (311.9667 264.5766 344.0999 1.765333 1.468254 1.31042 2.675129 2.897124 3.898638)
+ --> irls.delta(previous, resid) = 0.0748333 -- *not* converged
+robust iteration 3 
+114540.4    (2.86e-02): par = (311.9667 264.5766 344.0999 1.765333 1.468254 1.31042 2.675129 2.897124 3.898638)
+114446.9    (2.10e-03): par = (308.4384 262.4976 343.2871 1.75248 1.471376 1.297822 2.688719 2.878705 4.002375)
+114446.4    (1.88e-04): par = (308.7768 262.2461 343.4617 1.753803 1.470158 1.298522 2.687043 2.88345 4.008064)
+114446.4    (3.35e-05): par = (308.743 262.3038 343.4531 1.753664 1.470445 1.298481 2.687258 2.88232 4.008934)
+114446.4    (7.62e-06): par = (308.7477 262.2903 343.4531 1.753683 1.470377 1.29848 2.687229 2.88259 4.009003)
+ --> irls.delta(previous, resid) = 0.0199464 -- *not* converged
+robust iteration 4 
+114058.3    (8.86e-03): par = (308.7477 262.2903 343.4531 1.753683 1.470377 1.29848 2.687229 2.88259 4.009003)
+114049.4    (6.10e-04): par = (306.7243 263.3887 343.2719 1.746941 1.478768 1.294858 2.692571 2.863133 4.035404)
+114049.4    (1.14e-04): par = (306.8306 263.2693 343.2979 1.747354 1.478143 1.294968 2.691987 2.866724 4.036535)
+114049.4    (2.70e-05): par = (306.8187 263.3239 343.2965 1.747305 1.478412 1.294961 2.692062 2.865754 4.036697)
+114049.4    (6.53e-06): par = (306.8202 263.3119 343.2965 1.747312 1.478352 1.294961 2.692053 2.865985 4.036711)
+ --> irls.delta(previous, resid) = 0.00614413 -- *not* converged
+robust iteration 5 
+113640.7    (3.53e-03): par = (306.8202 263.3119 343.2965 1.747312 1.478352 1.294961 2.692053 2.865985 4.036711)
+113639.3    (2.12e-04): par = (304.7822 263.7971 343.188 1.740445 1.482136 1.293735 2.697783 2.858173 4.043971)
+113639.3    (4.28e-05): par = (304.8944 263.7466 343.1959 1.740884 1.481876 1.293769 2.697154 2.859536 4.044165)
+113639.3    (1.02e-05): par = (304.882 263.7673 343.1955 1.740833 1.481978 1.293767 2.697234 2.859171 4.0442)
+113639.3    (2.49e-06): par = (304.8836 263.7626 343.1955 1.74084 1.481955 1.293767 2.697224 2.859259 4.044203)
+ --> irls.delta(previous, resid) = 0.00251115 -- *not* converged
+robust iteration 6 
+113259.0    (2.04e-03): par = (304.8836 263.7626 343.1955 1.74084 1.481955 1.293767 2.697224 2.859259 4.044203)
+113258.6    (7.80e-05): par = (302.9367 263.8221 343.1148 1.734292 1.483014 1.293296 2.702685 2.857353 4.04644)
+113258.6    (1.18e-05): par = (303.0389 263.8116 343.1179 1.734694 1.48296 1.29331 2.702095 2.857649 4.046456)
+113258.6    (2.42e-06): par = (303.0277 263.8162 343.1178 1.734647 1.482983 1.293309 2.70217 2.857569 4.046464)
+ --> irls.delta(previous, resid) = 0.00153445 -- *not* converged
+robust iteration 7 
+113007.7    (1.69e-03): par = (303.0277 263.8162 343.1178 1.734647 1.482983 1.293309 2.70217 2.857569 4.046464)
+113007.4    (4.79e-05): par = (301.3007 263.7487 343.0672 1.728976 1.483034 1.293115 2.706517 2.857682 4.04723)
+113007.4    (5.68e-06): par = (301.3752 263.7523 343.0686 1.729269 1.483052 1.293121 2.706072 2.857629 4.04722)
+ --> irls.delta(previous, resid) = 0.00131597 -- *not* converged
+robust iteration 8 
+112867.9    (1.60e-03): par = (301.3752 263.7523 343.0686 1.729269 1.483052 1.293121 2.706072 2.857629 4.04722)
+112867.6    (3.77e-05): par = (299.8246 263.6773 343.0408 1.724307 1.482853 1.293039 2.709502 2.858166 4.047505)
+112867.6    (5.23e-06): par = (299.8776 263.683 343.0414 1.724515 1.482881 1.293041 2.709173 2.858052 4.047497)
+ --> irls.delta(previous, resid) = 0.00127036 -- *not* converged
+robust iteration 9 
+112799.9    (1.58e-03): par = (299.8776 263.683 343.0414 1.724515 1.482881 1.293041 2.709173 2.858052 4.047497)
+112799.6    (2.96e-05): par = (298.4498 263.6301 343.0279 1.720046 1.482687 1.293007 2.711958 2.858526 4.047605)
+112799.6    (4.12e-06): par = (298.4883 263.6347 343.0282 1.720195 1.48271 1.293008 2.711711 2.858431 4.0476)
+ --> irls.delta(previous, resid) = 0.00126056 -- *not* converged
+robust iteration 10 
+112770.7    (1.58e-03): par = (298.4883 263.6347 343.0282 1.720195 1.48271 1.293008 2.711711 2.858431 4.0476)
+112770.5    (2.42e-05): par = (297.1321 263.6041 343.0224 1.716005 1.48258 1.292994 2.71414 2.858737 4.04764)
+112770.5    (3.05e-06): par = (297.1627 263.6069 343.0225 1.716123 1.482594 1.292995 2.713938 2.858677 4.047638)
+ --> irls.delta(previous, resid) = 0.00125903 -- *not* converged
+robust iteration 11 
+112760.1    (1.58e-03): par = (297.1627 263.6069 343.0225 1.716123 1.482594 1.292995 2.713938 2.858677 4.047638)
+112759.8    (2.14e-05): par = (295.8463 263.5914 343.0203 1.71208 1.482521 1.29299 2.716198 2.858845 4.047651)
+112759.8    (2.42e-06): par = (295.873 263.5929 343.0203 1.712182 1.482528 1.29299 2.716018 2.858813 4.04765)
+ --> irls.delta(previous, resid) = 0.00125948 -- *not* converged
+robust iteration 12 
+112757.3    (1.58e-03): par = (295.873 263.5929 343.0203 1.712182 1.482528 1.29299 2.716018 2.858813 4.04765)
+112757.0    (2.03e-05): par = (294.5799 263.586 343.0197 1.708215 1.482492 1.292988 2.71821 2.858895 4.047653)
+112757.0    (2.16e-06): par = (294.6046 263.5867 343.0197 1.708309 1.482496 1.292988 2.718039 2.858879 4.047653)
+ --> irls.delta(previous, resid) = 0.00126039 -- *not* converged
+robust iteration 13 
+112757.3    (1.58e-03): par = (294.6046 263.5867 343.0197 1.708309 1.482496 1.292988 2.718039 2.858879 4.047653)
+112757.1    (1.99e-05): par = (293.3269 263.5839 343.0196 1.704384 1.48248 1.292988 2.720209 2.858914 4.047653)
+112757.1    (2.07e-06): par = (293.3507 263.5842 343.0196 1.704476 1.482481 1.292988 2.720042 2.858908 4.047653)
+ --> irls.delta(previous, resid) = 0.00126137 -- *not* converged
+robust iteration 14 
+112758.1    (1.58e-03): par = (293.3507 263.5842 343.0196 1.704476 1.482481 1.292988 2.720042 2.858908 4.047653)
+112757.8    (1.97e-05): par = (292.0851 263.5834 343.0197 1.700579 1.482475 1.292988 2.722211 2.85892 4.047652)
+112757.8    (2.05e-06): par = (292.1083 263.5835 343.0197 1.700669 1.482476 1.292988 2.722045 2.858918 4.047652)
+ --> irls.delta(previous, resid) = 0.0012623 -- *not* converged
+robust iteration 15 
+112758.9    (1.58e-03): par = (292.1083 263.5835 343.0197 1.700669 1.482476 1.292988 2.722045 2.858918 4.047652)
+112758.6    (1.97e-05): par = (290.8536 263.5833 343.0198 1.696796 1.482474 1.292988 2.72422 2.858922 4.047652)
+112758.6    (2.04e-06): par = (290.8765 263.5833 343.0198 1.696884 1.482474 1.292988 2.724054 2.858921 4.047652)
+ --> irls.delta(previous, resid) = 0.00126316 -- *not* converged
+robust iteration 16 
+112759.6    (1.58e-03): par = (290.8765 263.5833 343.0198 1.696884 1.482474 1.292988 2.724054 2.858921 4.047652)
+112759.3    (1.96e-05): par = (289.6324 263.5834 343.0198 1.693034 1.482474 1.292989 2.726237 2.858921 4.047652)
+112759.3    (2.03e-06): par = (289.6549 263.5834 343.0198 1.693121 1.482474 1.292989 2.726072 2.858921 4.047652)
+ --> irls.delta(previous, resid) = 0.00126394 -- *not* converged
+robust iteration 17 
+112760.1    (1.58e-03): par = (289.6549 263.5834 343.0198 1.693121 1.482474 1.292989 2.726072 2.858921 4.047652)
+112759.8    (1.96e-05): par = (288.4213 263.5835 343.0199 1.689293 1.482474 1.292989 2.728263 2.858921 4.047651)
+112759.8    (2.03e-06): par = (288.4434 263.5835 343.0199 1.689379 1.482474 1.292989 2.728097 2.858921 4.047651)
+ --> irls.delta(previous, resid) = 0.00126464 -- *not* converged
+robust iteration 18 
+112760.5    (1.58e-03): par = (288.4434 263.5835 343.0199 1.689379 1.482474 1.292989 2.728097 2.858921 4.047651)
+112760.2    (1.96e-05): par = (287.2204 263.5836 343.0199 1.685574 1.482474 1.292989 2.730295 2.85892 4.047651)
+112760.2    (2.02e-06): par = (287.2421 263.5836 343.0199 1.685659 1.482474 1.292989 2.730129 2.85892 4.047651)
+ --> irls.delta(previous, resid) = 0.00126527 -- *not* converged
+robust iteration 19 
+112760.9    (1.58e-03): par = (287.2421 263.5836 343.0199 1.685659 1.482474 1.292989 2.730129 2.85892 4.047651)
+112760.6    (1.95e-05): par = (286.0295 263.5836 343.0199 1.681877 1.482475 1.292989 2.732334 2.85892 4.047651)
+112760.6    (2.02e-06): par = (286.0509 263.5836 343.0199 1.68196 1.482475 1.292989 2.732169 2.85892 4.047651)
+ --> irls.delta(previous, resid) = 0.00126582 -- *not* converged
+robust iteration 20 
+112761.2    (1.58e-03): par = (286.0509 263.5836 343.0199 1.68196 1.482475 1.292989 2.732169 2.85892 4.047651)
+112760.9    (1.95e-05): par = (284.8488 263.5836 343.0199 1.678201 1.482475 1.292989 2.734381 2.85892 4.047651)
+112760.9    (2.01e-06): par = (284.8698 263.5836 343.0199 1.678283 1.482475 1.292989 2.734215 2.85892 4.047651)
+ --> irls.delta(previous, resid) = 0.0012663 -- *not* converged
+Warning message:
+In nlrob(Biomass ~ Wm[Tillage] * (-expm1(-(DVS/a[Tillage])^b[Tillage])),  :
+  failed to converge in 20 steps
+> stopifnot(identical(mrob$dataClasses,
++                     c(Biomass = "numeric", Tillage = "factor", DVS = "numeric")))
+> try(## now: singular gradient in nls
++ mr.2 <- nlrob(Biom.2  ~ Wm[Tillage] * (-expm1(-(DVS/a[Tillage])^b[Tillage])),
++               data = biomassTill, start = m00st, trace=TRUE)
++ )
+robust iteration 1 
+254879.8    (6.42e-01): par = (300 300 300 1.5 1.5 1.5 2.2 2.2 2.2)
+205968.0    (3.87e-01): par = (378.5169 187.1208 304.3391 1.987966 1.126072 1.302035 1.656035 2.712645 2.854579)
+202969.6    (3.67e-01): par = (561.0956 185.1383 316.7028 2.992485 1.132649 1.322806 1.398006 2.90733 2.984323)
+202028.3    (3.60e-01): par = (723.2085 184.7889 318.9273 3.884849 1.133846 1.325783 1.334008 2.947067 3.011013)
+201425.8    (3.56e-01): par = (882.2615 184.6267 319.9639 4.742891 1.134403 1.327119 1.301686 2.965931 3.023689)
+201143.4    (3.54e-01): par = (1142.369 184.4701 320.9654 6.118309 1.13494 1.328389 1.269096 2.984308 3.036041)
+200842.6    (3.52e-01): par = (1381.272 184.3946 321.4494 7.350051 1.1352 1.328993 1.252659 2.993255 3.042058)
+200622.7    (3.50e-01): par = (1749.191 184.3204 321.9252 9.205839 1.135454 1.329582 1.23612 3.002085 3.047996)
+200482.1    (3.49e-01): par = (2370.247 184.2474 322.3931 12.25402 1.135705 1.330156 1.219472 3.010797 3.053857)
+200374.3    (3.48e-01): par = (3569.427 184.1757 322.8531 17.9377 1.135951 1.330716 1.202709 3.019393 3.059642)
+200079.1    (3.46e-01): par = (6427.504 184.1052 323.3055 30.87743 1.136192 1.331263 1.185814 3.027873 3.06535)
+198772.3    (3.36e-01): par = (16191.13 184.036 323.7503 72.44143 1.13643 1.331797 1.168736 3.036238 3.070983)
+197021.6    (3.21e-01): par = (148960 183.8998 324.6251 592.3525 1.136896 1.33284 1.133819 3.052741 3.0821)
+192784.9    (2.82e-01): par = (12800897 183.7682 325.4709 45109.2 1.137346 1.333833 1.097294 3.068791 3.092921)
+Error in nls(formula, data = data, start = start, algorithm = algorithm,  : 
+  singular gradient
+> 
+> ## Compare coeffs:
+> rbind(c.true = unlist(m1.st),
++       cl0 = coef(m.c00),
++       cl = coef(m.cl), rob = coef(mrob),
++       c2 = coef(m.c2))#, r.2 = coef(mr.2))
+                Wm1       Wm2      Wm3           a1        a2       a3       b1
+c.true 2.198000e+02 265.90000 343.4000 1.461000e+00 1.4930000 1.294000 2.889000
+cl0    5.795709e+02 -65.27969 343.0101 3.036982e+00 0.1953332 1.132643 0.149942
+cl     4.899174e+02 615.52798 380.0640 2.342740e+00 2.1896021 1.371278 2.397332
+rob    2.848698e+02 263.58362 343.0199 1.678283e+00 1.4824746 1.292989 2.734215
+c2     3.139832e+08 152.26588 362.7797 2.799084e+06 1.0777562 1.334812 1.001179
+             b2       b3
+c.true 2.838000 4.046000
+cl0    3.669756 3.655383
+cl     2.594862 3.594968
+rob    2.858920 4.047651
+c2     3.541478 3.766120
+> ## Compare  fit
+> 
+> ## Now for plotting --- nice would be xyplot, but I don't easily see how:
+> 
+> 
+> (yl2  <- range(biomassTill[,"Biom.2"]))
+[1]   0.9085065 513.6421369
+> (ylim <- range(biomassTill[,"Biomass"]))# --> *not* showing the two outliers!
+[1]   0.5412327 579.6046045
+> ## or even a bit more robustly:
+> ## sfsmisc::rrange(biomassTill[,"Biom.2"]) ##-> -201.3064  394.0914
+> 
+> ## using global data + fits from above
+> p.biomass.fits <- function(ylim = c(-200, 400), n = 257, f.DVS = 0.1,
++                            leg.txt =
++                                c(outer(c("nls()   ", "nlrob()"),
++                                        c("", "[ + 2 outl.]"), paste)),
++                            col = c("blue2","blue3","tomato","red3"),
++                            lty = c(2,1,2,1),
++                            lwd = 2)
++ {
++     ## more and equispaced DVS values for nice plot:
++     rr <- extendrange(biomassTill[,"DVS"], f=f.DVS)
++     bbDVS <- seq(rr[1], rr[2], length = n)
++     b.Till <- biomassTill[,"Tillage"]
++     nP <- nlevels(b.Till) # == 3
++     m <- length(leg.txt)
++     col <- rep_len(col, m)
++     lwd <- rep_len(lwd, m)
++     lty <- rep_len(lty, m)
++     ## Prefer xyplot() - this is ugly but works (and tests predict(*, <subset>)):
++     op <- par(mfrow = c(nP,1), mar = .1 + c(3, 3, 2, 1), mgp = c(1.25, 0.6, 0))
++     on.exit(par(op))
++     for(lev in levels(b.Till)) {
++         cat(lev,":\n--------\n")
++         dsub <- subset(biomassTill, Tillage == lev)
++         plot(Biom.2 ~ DVS, data = dsub, ylim=ylim, main = paste("Tillage = ", lev))
++         grid()
++         dd <- data.frame(Tillage = factor(rep.int(lev, n), levels=levels(b.Till)),
++                          DVS = bbDVS)
++         lines(predict(m.cl, dd) ~ DVS, data=dd, col=col[1], lty=lty[1], lwd=lwd[1])
++         lines(predict(mrob, dd) ~ DVS, data=dd, col=col[2], lty=lty[2], lwd=lwd[2])
++         lines(predict(m.c2, dd) ~ DVS, data=dd, col=col[3], lty=lty[3], lwd=lwd[3])
++         ## lines(predict(mr.2, dd) ~ DVS, data=dd, col=col[4], lty=lty[4], lwd=lwd[4])
++         if(lev == "CA-")
++             legend("top", leg.txt, col = col, lty=lty, lwd=lwd,
++                    inset=.02, bg = "gray96") #, bty="n")
++     }
++ }
+> 
+> ## showing all data points:
+> p.biomass.fits(ylim = yl2)
+CA- :
+--------
+CA+ :
+--------
+CT :
+--------
+> ## more interesting:
+> p.biomass.fits()
+CA- :
+--------
+CA+ :
+--------
+CT :
+--------
+> 
+> 
+> cat('Time elapsed: ', proc.time(),'\n') # for ``statistical reasons''
+Time elapsed:  1.023 0.365 1.054 0.002 0.004 
+> 

@@ -1,0 +1,2400 @@
+
+R version 4.5.3 (2026-03-11) -- "Reassured Reassurer"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "MuMIn"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('MuMIn')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("AICc")
+> ### * AICc
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: AICc
+> ### Title: Second-order Akaike Information Criterion
+> ### Aliases: AICc
+> ### Keywords: models
+> 
+> ### ** Examples
+> 
+> #Model-averaging mixed models
+> ## Don't show: 
+>  if(require(nlme)) {
++ oop <- 
++ ## End(Don't show)
++ options(na.action = "na.fail")
++ 
++ data(Orthodont, package = "nlme")
++ 
++ # Fit model by REML
++ fm2 <- lme(distance ~ Sex*age, data = Orthodont,
++     random = ~ 1|Subject / Sex, method = "REML")
++ 
++ # Model selection: ranking by AICc using ML
++ ms2 <- dredge(fm2, trace = TRUE, rank = "AICc", REML = FALSE)
++ 
++ (attr(ms2, "rank.call"))
++ 
++ # Get the models (fitted by REML, as in the global model)
++ fmList <- get.models(ms2, 1:4)
++ 
++ # Because the models originate from 'dredge(..., rank = AICc, REML = FALSE)',
++ # the default weights in 'model.avg' are ML based:
++ summary(model.avg(fmList))
++ 
++ ## Not run: 
++ ##D # the same result:
++ ##D model.avg(fmList, rank = "AICc", rank.args = list(REML = FALSE))
++ ## End(Not run)
++ ## Don't show: 
++  } 
+Loading required package: nlme
+Fixed term is "(Intercept)"
+0 : lme.formula(fixed = distance ~ 1, data = Orthodont, random = ~1 | 
+    Subject/Sex, method = "REML")
+1 : lme.formula(fixed = distance ~ age + 1, data = Orthodont, random = ~1 | 
+    Subject/Sex, method = "REML")
+2 : lme.formula(fixed = distance ~ Sex + 1, data = Orthodont, random = ~1 | 
+    Subject/Sex, method = "REML")
+3 : lme.formula(fixed = distance ~ age + Sex + 1, data = Orthodont, 
+    random = ~1 | Subject/Sex, method = "REML")
+7 : lme.formula(fixed = distance ~ age + Sex + age:Sex + 1, data = Orthodont, 
+    random = ~1 | Subject/Sex, method = "REML")
+
+Call:
+model.avg(object = fmList)
+
+Component model call: 
+lme.formula(fixed = distance ~ <4 unique rhs>, data = Orthodont, random 
+     = ~1 | Subject/Sex, method = REML)
+
+Component models: 
+    df  logLik   AICc delta weight
+123  7 -216.88 443.79  0.00   0.87
+12   6 -218.76 447.73  3.94   0.12
+1    5 -223.50 453.98 10.20   0.01
+2    5 -252.94 517.61 73.82   0.00
+
+Term codes: 
+    age     Sex age:Sex 
+      1       2       3 
+
+Model-averaged coefficients:  
+(full average) 
+              Estimate Std. Error Adjusted SE z value Pr(>|z|)    
+(Intercept)   16.50890    1.06217     1.07577  15.346   <2e-16 ***
+age            0.76862    0.08622     0.08726   8.809   <2e-16 ***
+SexFemale      0.61907    1.82643     1.88632   0.328    0.743    
+age:SexFemale -0.26616    0.15220     0.15352   1.734    0.083 .  
+ 
+(conditional average) 
+              Estimate Std. Error Adjusted SE z value Pr(>|z|)    
+(Intercept)   16.50890    1.06217     1.07577  15.346   <2e-16 ***
+age            0.76862    0.08622     0.08726   8.809   <2e-16 ***
+SexFemale      0.62239    1.83075     1.89082   0.329   0.7420    
+age:SexFemale -0.30483    0.12142     0.12331   2.472   0.0134 *  
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:nlme’
+
+> nameEx("BGweights")
+> ### * BGweights
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: BGWeights
+> ### Title: Bates-Granger minimal variance model weights
+> ### Aliases: BGWeights
+> ### Keywords: models
+> 
+> ### ** Examples
+> 
+> fm <- glm(Prop ~ mortality + dose, family = binomial, Beetle, na.action = na.fail)
+> models <- lapply(dredge(fm, evaluate = FALSE), eval)
+Fixed term is "(Intercept)"
+> ma <- model.avg(models)
+> 
+> # this produces warnings because of negative variances:
+> set.seed(78)
+> Weights(ma) <- BGWeights(ma, data = Beetle)
+> coefTable(ma, full = TRUE)
+             Estimate Std. Error
+(Intercept) -6.956333     6.1472
+dose         0.095898     0.1183
+mortality    2.813398     2.8082
+> 
+> # SE for prediction is not reliable if some or none of coefficient's SE
+> # are available
+> predict(ma, data = test.data, se.fit = TRUE)
+$fit
+[1] -1.9139710 -1.2557521 -0.6828942  0.2847985  1.5891400  2.1629570  2.7639489
+[8]  3.1970959
+
+$se.fit
+[1] 0.9254979 0.6544394 0.4801025 0.1670266 0.5464026 0.6472613 0.8764116
+[8] 1.1546316
+
+> coefTable(ma, full = TRUE)
+             Estimate Std. Error
+(Intercept) -6.956333     6.1472
+dose         0.095898     0.1183
+mortality    2.813398     2.8082
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("MuMIn-package")
+> ### * MuMIn-package
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: MuMIn-package
+> ### Title: Multi-model inference
+> ### Aliases: MuMIn-package MuMIn
+> ### Keywords: package models
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> oop <- 
++ ## End(Don't show)
++ options(na.action = "na.fail") #  change the default "na.omit" to prevent models 
+>                                #  from being fitted to different datasets in 
+>                                #  case of missing values.
+> 
+> fm1 <- lm(y ~ ., data = Cement)
+> ms1 <- dredge(fm1)
+Fixed term is "(Intercept)"
+> 
+> # Visualize the model selection table:
+> ## Don't show: 
+>  if(require(graphics)) { 
++ ## End(Don't show)
++ par(mar = c(3,5,6,4))
++ plot(ms1, labAsExpr = TRUE)
++ ## Don't show: 
++  } 
+> ## End(Don't show)
+> model.avg(ms1, subset = delta < 4)
+
+Call:
+model.avg(object = ms1, subset = delta < 4)
+
+Component models: 
+‘12’  ‘124’ ‘123’ ‘14’  ‘134’
+
+Coefficients: 
+       (Intercept)       X1        X2         X4           X3
+full      64.69313 1.455798 0.5057578 -0.1478697 -0.004302377
+subset    64.69313 1.455798 0.6250260 -0.4760071 -0.021531961
+> 
+> confset.95p <- get.models(ms1, cumsum(weight) <= .95)
+> avgmod.95p <- model.avg(confset.95p)
+> summary(avgmod.95p)
+
+Call:
+model.avg(object = confset.95p)
+
+Component model call: 
+lm(formula = y ~ <4 unique rhs>, data = Cement)
+
+Component models: 
+    df logLik  AICc delta weight
+12   4 -28.16 69.31  0.00   0.62
+124  5 -26.93 72.44  3.13   0.13
+123  5 -26.95 72.48  3.16   0.13
+14   4 -29.82 72.63  3.32   0.12
+
+Term codes: 
+X1 X2 X3 X4 
+ 1  2  3  4 
+
+Model-averaged coefficients:  
+(full average) 
+            Estimate Std. Error Adjusted SE z value Pr(>|z|)    
+(Intercept) 60.48430   17.92604    18.21471   3.321 0.000898 ***
+X1           1.49198    0.15745     0.17467   8.542  < 2e-16 ***
+X2           0.55106    0.23133     0.23552   2.340 0.019299 *  
+X4          -0.10354    0.21306     0.21628   0.479 0.632129    
+X3           0.03204    0.10656     0.11317   0.283 0.777105    
+ 
+(conditional average) 
+            Estimate Std. Error Adjusted SE z value Pr(>|z|)    
+(Intercept)  60.4843    17.9260     18.2147   3.321 0.000898 ***
+X1            1.4920     0.1575      0.1747   8.542  < 2e-16 ***
+X2            0.6250     0.1203      0.1292   4.839 1.31e-06 ***
+X4           -0.4160     0.2289      0.2408   1.728 0.084009 .  
+X3            0.2500     0.1847      0.2132   1.173 0.240898    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+> confint(avgmod.95p)
+                 2.5 %      97.5 %
+(Intercept) 24.7841330 96.18447223
+X1           1.1496363  1.83431889
+X2           0.3718565  0.87819546
+X4          -0.8878522  0.05587375
+X3          -0.1678276  0.66786280
+> ## Don't show: 
+> options(oop)
+> ## End(Don't show)
+> 
+> 
+> 
+> graphics::par(get("par.postscript", pos = 'CheckExEnv'))
+> cleanEx()
+> nameEx("QAIC")
+> ### * QAIC
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: QAIC
+> ### Title: Quasi AIC or AICc
+> ### Aliases: QAIC QAICc
+> ### Keywords: models
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> oop <- 
++ ## End(Don't show)
++ options(na.action = "na.fail")
+> 
+> # Based on "example(predict.glm)", with one number changed to create
+> # overdispersion
+> budworm <- data.frame(
++     ldose = rep(0:5, 2), sex = factor(rep(c("M", "F"), c(6, 6))),
++     numdead = c(10, 4, 9, 12, 18, 20, 0, 2, 6, 10, 12, 16))
+> budworm$SF = cbind(numdead = budworm$numdead,
++     numalive = 20 - budworm$numdead)
+> 
+> budworm.lg <- glm(SF ~ sex*ldose, data = budworm, family = binomial)
+> (chat <- deviance(budworm.lg) / df.residual(budworm.lg))
+[1] 2.412699
+> 
+> dredge(budworm.lg, rank = "QAIC", chat = chat)
+Fixed term is "(Intercept)"
+Global model call: glm(formula = SF ~ sex * ldose, family = binomial, data = budworm)
+---
+Model selection table 
+     (Int)    lds sex lds:sex df  logLik QAIC delta weight
+4 -2.61700 0.7796   +          3 -26.069 29.6  0.00  0.646
+8 -2.99400 0.9060   +       +  4 -25.493 31.1  1.52  0.301
+2 -1.81600 0.7174              2 -34.514 34.6  5.00  0.053
+3 -0.47540          +          2 -62.416 57.7 28.13  0.000
+1 -0.01667                     1 -68.544 60.8 31.21  0.000
+Models ranked by QAIC(x, chat = 2.41269909201026) 
+> dredge(budworm.lg, rank = "AIC")
+Fixed term is "(Intercept)"
+Global model call: glm(formula = SF ~ sex * ldose, family = binomial, data = budworm)
+---
+Model selection table 
+     (Int)    lds sex lds:sex df  logLik   AIC delta weight
+4 -2.61700 0.7796   +          3 -26.069  58.1  0.00  0.604
+8 -2.99400 0.9060   +       +  4 -25.493  59.0  0.85  0.395
+2 -1.81600 0.7174              2 -34.514  73.0 14.89  0.000
+3 -0.47540          +          2 -62.416 128.8 70.69  0.000
+1 -0.01667                     1 -68.544 139.1 80.95  0.000
+Models ranked by AIC(x) 
+> 
+> 
+> ## Not run: 
+> ##D # A 'hacked' constructor for quasibinomial family object that allows for
+> ##D # ML estimation
+> ##D hacked.quasibinomial <- function(...) {
+> ##D     res <- quasibinomial(...)
+> ##D     res$aic <- binomial(...)$aic
+> ##D     res
+> ##D }
+> ##D QAIC(update(budworm.lg, family = hacked.quasibinomial), chat = chat)
+> ## End(Not run)
+> ## Don't show: 
+> options(oop)
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("QIC")
+> ### * QIC
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: QIC
+> ### Title: QIC and quasi-Likelihood for GEE
+> ### Aliases: QIC QICu quasiLik
+> ### Keywords: models
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+>  if(require(geepack)) { 
++ ## End(Don't show)
++ 
++ data(ohio)
++ 
++ fm1 <- geeglm(resp ~ age * smoke, id = id, data = ohio,
++     family = binomial, corstr = "exchangeable", scale.fix = TRUE)
++ fm2 <- update(fm1, corstr = "ar1")
++ fm3 <- update(fm1, corstr = "unstructured")
++ 
++ # QIC function is also defined in 'geepack' but is returns a vector[6], so
++ # cannot be used as 'rank'. Either use `MuMIn::QIC` syntax or make a wrapper
++ # around `geepack::QIC`
++ 
++ QIC <- MuMIn::QIC
++ ## Not run: 
++ ##D QIC <- function(x) geepack::QIC(x)[1]
++ ## End(Not run)
++ 
++ model.sel(fm1, fm2, fm3, rank = QIC)
++ 
++ #####
++ library(geepack)
++ library(MuMIn)
++ 
++ ## Not run: 
++ ##D # same result:
++ ##D     dredge(fm1, m.lim = c(3, NA), rank = QIC, varying = list(
++ ##D     corstr = list("exchangeable", "unstructured", "ar1")
++ ##D     ))      
++ ## End(Not run)
++ ## Don't show: 
++  } 
+Loading required package: geepack
+Registered S3 methods overwritten by 'broom':
+  method        from 
+  nobs.fitdistr MuMIn
+  nobs.multinom MuMIn
+
+Attaching package: ‘geepack’
+
+The following object is masked from ‘package:MuMIn’:
+
+    QIC
+
+> ## End(Don't show)
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:geepack’
+
+> nameEx("Weights")
+> ### * Weights
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Weights
+> ### Title: Akaike weights
+> ### Aliases: Weights Weights<-
+> ### Keywords: models
+> 
+> ### ** Examples
+> 
+> 
+> fm1 <- glm(Prop ~ dose, data = Beetle, family = binomial)
+> fm2 <- update(fm1, . ~ . + I(dose^2))
+> fm3 <- update(fm1, . ~ log(dose))
+> fm4 <- update(fm3, . ~ . + I(log(dose)^2))
+> 
+> round(Weights(AICc(fm1, fm2, fm3, fm4)), 3)
+ model weights 
+[1] 0.312 0.329 0.044 0.314
+> 
+> 
+> am <- model.avg(fm1, fm2, fm3, fm4, rank = AICc)
+> 
+> coef(am)
+   (Intercept)           dose      I(dose^2)      log(dose) I(log(dose)^2) 
+  149.56958558    -0.20303260     0.00726326  -219.93533091    32.74938293 
+> 
+> # Assign equal weights to all models:
+> Weights(am) <- rep(1, 4) # assigned weights are rescaled to sum to 1
+> Weights(am)
+unknown model weights 
+[1] 0.25 0.25 0.25 0.25
+> coef(am)
+   (Intercept)           dose      I(dose^2)      log(dose) I(log(dose)^2) 
+  105.86553402    -0.19150628     0.00726326  -119.12081828    32.74938293 
+> 
+> # Assign dummy weights:
+> wts <- c(2,1,4,3)
+> Weights(am) <- wts
+> coef(am)
+   (Intercept)           dose      I(dose^2)      log(dose) I(log(dose)^2) 
+   27.13729609    -0.04582424     0.00726326   -52.21611191    32.74938293 
+> # Component models are now sorted according to the new weights.
+> # The same weights assigned again produce incorrect results!
+> Weights(am) <- wts
+> coef(am) # wrong!
+   (Intercept)           dose      I(dose^2)      log(dose) I(log(dose)^2) 
+  141.62459048    -0.33718833     0.00726326  -186.02552464    32.74938293 
+> #
+> Weights(am) <- NULL # reset to original model weights
+> Weights(am) <- wts 
+> coef(am) # correct
+   (Intercept)           dose      I(dose^2)      log(dose) I(log(dose)^2) 
+   27.13729609    -0.04582424     0.00726326   -52.21611191    32.74938293 
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("arm.glm")
+> ### * arm.glm
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: arm.glm
+> ### Title: Adaptive Regression by Mixing
+> ### Aliases: arm.glm armWeights
+> ### Keywords: models
+> 
+> ### ** Examples
+> 
+> fm <- glm(y ~ X1 + X2 + X3 + X4, data = Cement)
+> 
+> summary(am1 <- arm.glm(fm, R = 15))
+
+Call:
+arm.glm(object = fm, R = 15)
+
+
+Component models: 
+       df logLik    AIC delta weight ARM weight
+124     5 -26.93  63.87  0.00   0.27       0.12
+123     5 -26.95  63.90  0.04   0.27       0.13
+12      4 -28.16  64.31  0.45   0.22       0.30
+134     5 -27.31  64.62  0.75   0.19       0.08
+14      4 -29.82  67.63  3.77   0.04       0.26
+234     5 -29.73  69.47  5.60   0.02       0.07
+34      4 -35.37  78.74 14.88   0.00       0.03
+23      4 -40.96  89.93 26.06   0.00       0.00
+4       3 -45.87  97.74 33.88   0.00       0.00
+2       3 -46.04  98.07 34.20   0.00       0.00
+24      4 -45.76  99.52 35.66   0.00       0.00
+1       3 -48.21 102.41 38.55   0.00       0.00
+13      4 -48.00 104.01 40.14   0.00       0.00
+3       3 -50.98 107.96 44.09   0.00       0.00
+(Null)  2 -53.17 110.34 46.47   0.00       0.00
+
+Term codes: 
+X1 X2 X3 X4 
+ 1  2  3  4 
+
+Model-averaged coefficients:  
+(ARM average) 
+            Estimate Std. Error Adjusted SE z value Pr(>|z|)  
+(Intercept)  86.0566    42.7460     42.9884   2.002   0.0453 *
+X1            1.2825     0.5095      0.5158   2.486   0.0129 *
+X2            0.2687     0.4601      0.4638   0.579   0.5624  
+X3           -0.1521     0.4650      0.4688   0.325   0.7455  
+X4           -0.3784     0.4472      0.4505   0.840   0.4009  
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+> 
+> mst <- dredge(fm)
+Fixed term is "(Intercept)"
+> 
+> am2 <- model.avg(mst, fit = TRUE)
+> 
+> Weights(am2) <- armWeights(am2, data = Cement, R = 15)
+> 
+> # differences are due to small R:
+> coef(am1, full = TRUE)
+(Intercept)          X1          X2          X3          X4 
+ 86.0565914   1.2824948   0.2686953  -0.1521433  -0.3783667 
+> coef(am2, full = TRUE)
+(Intercept)          X1          X2          X4          X3 
+75.66864205  1.35705656  0.38716539 -0.26360768 -0.09402204 
+> 
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("bootWeights")
+> ### * bootWeights
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: bootWeights
+> ### Title: Bootstrap model weights
+> ### Aliases: bootWeights
+> ### Keywords: models
+> 
+> ### ** Examples
+> 
+> # To speed up the bootstrap, use 'x = TRUE' so that model matrix is included
+> #     in the returned object
+> fm <- glm(Prop ~ mortality + dose, family = binomial, data = Beetle, 
++    na.action = na.fail, x = TRUE)
+> 
+> fml <- lapply(dredge(fm, eval = FALSE), eval)
+Fixed term is "(Intercept)"
+> am <- model.avg(fml)
+> 
+> Weights(am) <- bootWeights(am, data = Beetle, R = 25)
+Warning in bootWeights(am, data = Beetle, R = 25) :
+  extra arguments ignored
+> 
+> summary(am)
+
+Call:
+model.avg(object = fml)
+
+Component model call: 
+glm(formula = Prop ~ <4 unique rhs>, family = binomial, data = Beetle, 
+     na.action = na.fail, x = TRUE)
+
+Component models: 
+       df bootstrap weight
+1       2              0.6
+2       2              0.4
+12      3              0.0
+(Null)  1              0.0
+
+Term codes: 
+     dose mortality 
+        1         2 
+
+Model-averaged coefficients:  
+(full average) 
+            Estimate Std. Error Adjusted SE z value Pr(>|z|)
+(Intercept)  -9.8098     5.9282      5.9769   1.641    0.101
+dose          0.1473     0.1214      0.1221   1.207    0.227
+mortality     2.2711     2.7966      2.8049   0.810    0.418
+ 
+(conditional average) 
+            Estimate Std. Error Adjusted SE z value Pr(>|z|)    
+(Intercept) -9.80980    5.92817     5.97691   1.641    0.101    
+dose         0.24554    0.02149     0.02683   9.150   <2e-16 ***
+mortality    5.67779    0.45764     0.57134   9.938   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("coefplot")
+> ### * coefplot
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: coefplot
+> ### Title: Plot model coefficients
+> ### Aliases: coefplot plot.averaging
+> ### Keywords: hplot
+> 
+> ### ** Examples
+> 
+> fm <- glm(Prop ~ dose + I(dose^2) + log(dose) + I(log(dose)^2),
++   data = Beetle, family = binomial, na.action = na.fail)
+> ma <- model.avg(dredge(fm))
+Fixed term is "(Intercept)"
+> 
+> # default coefficient plot:
+> plot(ma, full = NA, intercept = FALSE)
+> 
+> # Add colours per coefficient type
+> # Replicate each colour n(=number of coefficients) times
+> clr <- c("black", "red2")
+> i <- rep(1:2, each = length(coef(ma)) - 1)
+> plot(ma, full = NA, intercept = FALSE,
++    pch = 22, dotcex = 1.5,
++    col = clr[i], bg = clr[i],
++    lwd = 6, lend = 1, width = 0, horizontal = 0)
+> 
+> # Use `type = "n"` and `add` argument to e.g. add grid beneath the figure
+> plot(ma, full = NA, intercept = FALSE,
++    width = 0, horizontal = FALSE, zerolty = NA, type = "n")
+> grid()
+> plot(ma, full = NA, intercept = FALSE,
++    pch = 22, dotcex = 1.5,
++    col = clr[i], bg = clr[i],
++    lwd = 6, lend = 1, width = 0, horizontal = FALSE, add = TRUE)
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("cos2weights")
+> ### * cos2weights
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: cos2Weights
+> ### Title: Cos-squared model weights
+> ### Aliases: cos2Weights
+> ### Keywords: models
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if(length(find.package("expm", quiet = TRUE)) == 1) {
++ ## End(Don't show)
++ fm <- lm(y ~ X1 + X2 + X3 + X4, Cement, na.action = na.fail)
++ # most efficient way to produce a list of all-subsets models
++ models <- lapply(dredge(fm, evaluate = FALSE), eval)
++ ma <- model.avg(models)
++ 
++ test.data <- Cement
++ Weights(ma) <- cos2Weights(models, data = test.data)
++ predict(ma, data = test.data)
++ ## Don't show: 
++ } else message("Need CRAN package 'expm' to run this example")
+Fixed term is "(Intercept)"
+Warning in cos2Weights(models, data = test.data) :
+  maximum number of iterations reached without convergence
+        1         2         3         4         5         6         7         8 
+ 79.91877  74.33084 106.58802  89.56664  97.09551 104.94886 104.00033  74.95942 
+        9        10        11        12        13 
+ 92.17167 113.23059  80.71268 111.52352 111.45315 
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("data-Beetle")
+> ### * data-Beetle
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Beetle
+> ### Title: Flour beetle mortality data
+> ### Aliases: Beetle
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> 
+> # "Logistic regression example"
+> # from Burnham & Anderson (2002) chapter 4.11
+> # Fit a global model with all the considered variables
+> 
+> globmod <- glm(Prop ~ dose + I(dose^2) + log(dose) + I(log(dose)^2),
++    data = Beetle, family = binomial, na.action = na.fail)
+> # A logical expression defining the subset of models to use:
+> # * either log(dose) or dose
+> # * the quadratic terms can appear only together with linear terms
+> msubset <- expression(xor(dose, `log(dose)`) &
++     dc(dose, `I(dose^2)`) &
++     dc(`log(dose)`, `I(log(dose)^2)`))
+> 
+> # Table 4.6
+> # Use 'varying' argument to fit models with different link functions
+> # Note the use of 'alist' rather than 'list' in order to keep the
+> # 'family' objects unevaluated
+> varying.link <- list(family = alist(
++     logit = binomial("logit"),
++     probit = binomial("probit"),
++     cloglog = binomial("cloglog")
++     ))
+> 
+> (ms12 <- dredge(globmod, subset = msubset, varying = varying.link,
++     rank = AIC))
+Fixed term is "(Intercept)"
+Global model call: glm(formula = Prop ~ dose + I(dose^2) + log(dose) + I(log(dose)^2), 
+    family = binomial, data = Beetle, na.action = na.fail)
+---
+Model selection table 
+     (Int)     dos      dos^2 log(dos) log(dos)^2 family df  logLik  AIC delta
+6   -9.570  0.1526                                cloglg  2 -14.918 33.8  0.00
+15 -38.920                       9.416            cloglg  2 -14.970 33.9  0.10
+10  11.460 -0.6286  0.0072630                      logit  3 -14.454 34.9  1.07
+37 486.500                    -252.900     32.750  logit  3 -14.499 35.0  1.16
+38 236.700                    -124.300     16.240 probit  3 -14.552 35.1  1.27
+11   3.516 -0.2578  0.0033080                     probit  3 -14.649 35.3  1.46
+12 -11.890  0.2282 -0.0006073                     cloglg  3 -14.860 35.7  1.88
+39  12.110                     -15.380      3.011 cloglg  3 -14.865 35.7  1.89
+5   -8.394  0.1415                                probit  2 -16.773 37.5  3.71
+4  -14.580  0.2455                                 logit  2 -17.306 38.6  4.78
+14 -34.500                       8.463            probit  2 -18.719 41.4  7.60
+13 -59.910                      14.690             logit  2 -19.261 42.5  8.69
+   weight
+6   0.194
+15  0.184
+10  0.113
+37  0.108
+38  0.103
+11  0.093
+12  0.075
+39  0.075
+5   0.030
+4   0.018
+14  0.004
+13  0.003
+Abbreviations:
+ family: cloglg = ‘cloglog’
+Models ranked by AIC(x) 
+>  
+> # Table 4.7 "models justifiable a priori"
+> (ms3 <- subset(ms12, has(dose, !`I(dose^2)`))) 
+Global model call: glm(formula = Prop ~ dose + I(dose^2) + log(dose) + I(log(dose)^2), 
+    family = binomial, data = Beetle, na.action = na.fail)
+---
+Model selection table 
+    (Int)    dos family df  logLik  AIC delta weight
+6  -9.570 0.1526 cloglg  2 -14.918 33.8  0.00  0.801
+5  -8.394 0.1415 probit  2 -16.773 37.5  3.71  0.125
+4 -14.580 0.2455  logit  2 -17.306 38.6  4.78  0.074
+Abbreviations:
+ family: cloglg = ‘cloglog’
+Models ranked by AIC(x) 
+> # The same result, but would fit the models again:
+> # ms3 <- update(ms12, update(globmod, . ~ dose), subset =,
+> #    fixed = ~dose)
+> mod3 <- get.models(ms3, 1:3) 
+> # Table 4.8. Predicted mortality probability at dose 40.
+> # calculate confidence intervals on logit scale
+> logit.ci <- function(p, se, quantile = 2) {
++     C. <- exp(quantile * se / (p * (1 - p))) 
++     p /(p + (1 - p) * c(C., 1/C.)) 
++ }
+> 
+> mavg3 <- model.avg(mod3, revised.var = FALSE) 
+> # get predictions both from component and averaged models
+> pred <- lapply(c(component = mod3, list(averaged = mavg3)), predict,
++ 	   newdata = list(dose = 40), type = "response", se.fit = TRUE) 
+> # reshape predicted values
+> pred <- t(sapply(pred, function(x) unlist(x)[1:2])) 
+> colnames(pred) <- c("fit", "se.fit") 
+> 
+> # build the table
+> tab <- cbind(
++     c(Weights(ms3), NA),
++     pred,
++     matrix(logit.ci(pred[,"fit"], pred[,"se.fit"],
++         quantile = c(rep(1.96, 3), 2)), ncol = 2) 
++     ) 
+> colnames(tab) <- c("Akaike weight", "Predicted(40)", "SE", "Lower CI",
++     "Upper CI") 
+> rownames(tab) <- c(as.character(ms3$family), "model-averaged") 
+> print(tab, digits = 3, na.print = "") 
+               Akaike weight Predicted(40)      SE Lower CI Upper CI
+cloglog               0.8011       0.03079 0.00945 0.016796   0.0558
+probit                0.1254       0.00313 0.00226 0.000759   0.0128
+logit                 0.0735       0.00852 0.00382 0.003535   0.0204
+model-averaged                     0.02569 0.01274 0.009437   0.0680
+> # Figure 4.3
+> newdata <- list(dose = seq(min(Beetle$dose), max(Beetle$dose), length.out = 25)) 
+> 
+> # add model-averaged prediction with CI, using the same method as above
+> avpred <- predict(mavg3, newdata, se.fit = TRUE, type = "response")
+> 
+> avci <- matrix(logit.ci(avpred$fit, avpred$se.fit, quantile = 2), ncol = 2) 
+> 
+> ## Don't show: 
+>  if(require(graphics)) { 
++ ## End(Don't show)
++ matplot(newdata$dose, sapply(mod3, predict, newdata, type = "response"),
++     type = "l", xlab = quote(list("Dose of" ~ CS[2],(mg/L))),
++     ylab = "Mortality", col = 2:4, lty = 3, lwd = 1
++ ) 
++ matplot(newdata$dose, cbind(avpred$fit, avci), type = "l", add = TRUE,
++     lwd = 1, lty = c(1, 2, 2), col = 1)  
++ 
++ legend("topleft", NULL, c(as.character(ms3$family), expression(`averaged`
++     %+-% CI)), lty = c(3, 3, 3, 1), col = c(2:4, 1))  
++ ## Don't show: 
++  } 
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("dredge")
+> ### * dredge
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: dredge
+> ### Title: Automated model selection
+> ### Aliases: dredge dc V print.model.selection
+> ### Keywords: models
+> 
+> ### ** Examples
+> 
+> # Example from Burnham and Anderson (2002), page 100:
+> 
+> #  prevent fitting sub-models to different datasets
+> ## Don't show: 
+> oop <- 
++ ## End(Don't show)
++ options(na.action = "na.fail")
+> 
+> fm1 <- lm(y ~ ., data = Cement)
+> dd <- dredge(fm1)
+Fixed term is "(Intercept)"
+> subset(dd, delta < 4)
+Global model call: lm(formula = y ~ ., data = Cement)
+---
+Model selection table 
+   (Intrc)    X1     X2    X3      X4 df  logLik AICc delta weight
+4    52.58 1.468 0.6623                4 -28.156 69.3  0.00  0.572
+12   71.65 1.452 0.4161       -0.2365  5 -26.933 72.4  3.13  0.120
+8    48.19 1.696 0.6569  0.25          5 -26.952 72.5  3.16  0.118
+10  103.10 1.440              -0.6140  4 -29.817 72.6  3.32  0.109
+14  111.70 1.052        -0.41 -0.6428  5 -27.310 73.2  3.88  0.082
+Models ranked by AICc(x) 
+> 
+> # Visualize the model selection table:
+> ## Don't show: 
+>  if(require(graphics)) { 
++ ## End(Don't show)
++ par(mar = c(3,5,6,4))
++ plot(dd, labAsExpr = TRUE)
++ ## Don't show: 
++  } 
+> ## End(Don't show)
+> 
+> # Model average models with delta AICc < 4
+> model.avg(dd, subset = delta < 4)
+
+Call:
+model.avg(object = dd, subset = delta < 4)
+
+Component models: 
+‘12’  ‘124’ ‘123’ ‘14’  ‘134’
+
+Coefficients: 
+       (Intercept)       X1        X2         X4           X3
+full      64.69313 1.455798 0.5057578 -0.1478697 -0.004302377
+subset    64.69313 1.455798 0.6250260 -0.4760071 -0.021531961
+> 
+> #or as a 95% confidence set:
+> model.avg(dd, subset = cumsum(weight) <= .95) # get averaged coefficients
+
+Call:
+model.avg(object = dd, subset = cumsum(weight) <= 0.95)
+
+Component models: 
+‘12’  ‘124’ ‘123’ ‘14’ 
+
+Coefficients: 
+       (Intercept)       X1        X2         X4         X3
+full       60.4843 1.491978 0.5510565 -0.1035411 0.03203825
+subset     60.4843 1.491978 0.6250260 -0.4159892 0.25001761
+> 
+> #'Best' model
+> summary(get.models(dd, 1)[[1]])
+
+Call:
+lm(formula = y ~ X1 + X2 + 1, data = Cement)
+
+Residuals:
+   Min     1Q Median     3Q    Max 
+-2.893 -1.574 -1.302  1.363  4.048 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 52.57735    2.28617   23.00 5.46e-10 ***
+X1           1.46831    0.12130   12.11 2.69e-07 ***
+X2           0.66225    0.04585   14.44 5.03e-08 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 2.406 on 10 degrees of freedom
+Multiple R-squared:  0.9787,	Adjusted R-squared:  0.9744 
+F-statistic: 229.5 on 2 and 10 DF,  p-value: 4.407e-09
+
+> 
+> ## Not run: 
+> ##D # Examples of using 'subset':
+> ##D # keep only models containing X3
+> ##D dredge(fm1, subset = ~ X3) # subset as a formula
+> ##D dredge(fm1, subset = expression(X3)) # subset as expression object
+> ##D # the same, but more effective:
+> ##D dredge(fm1, fixed = "X3")
+> ##D # exclude models containing both X1 and X2 at the same time
+> ##D dredge(fm1, subset = !(X1 && X2))
+> ##D # Fit only models containing either X3 or X4 (but not both);
+> ##D # include X3 only if X2 is present, and X2 only if X1 is present.
+> ##D dredge(fm1, subset = dc(X1, X2, X3) && xor(X3, X4))
+> ##D # the same as above, without "dc"
+> ##D dredge(fm1, subset = (X1 | !X2) && (X2 | !X3) && xor(X3, X4))
+> ##D 
+> ##D # Include only models with up to 2 terms (and intercept)
+> ##D dredge(fm1, m.lim = c(0, 2))
+> ## End(Not run)
+> 
+> # Add R^2 and F-statistics, use the 'extra' argument
+> dredge(fm1, m.lim = c(NA, 1), extra = c("R^2", F = function(x)
++     summary(x)$fstatistic[[1]]))
+Fixed term is "(Intercept)"
+Global model call: lm(formula = y ~ ., data = Cement)
+---
+Model selection table 
+  (Intrc)    X1     X2     X3      X4    R^2      F df  logLik  AICc delta
+9  117.60                     -0.7382 0.6745 22.800  3 -45.872 100.4  0.00
+3   57.42       0.7891                0.6663 21.960  3 -46.035 100.7  0.33
+2   81.48 1.869                       0.5339 12.600  3 -48.206 105.1  4.67
+5  110.20              -1.256         0.2859  4.403  3 -50.980 110.6 10.22
+1   95.42                             0.0000         2 -53.168 111.5 11.13
+  weight
+9  0.511
+3  0.434
+2  0.050
+5  0.003
+1  0.002
+Models ranked by AICc(x) 
+> 
+> # with summary statistics:
+> dredge(fm1, m.lim = c(NA, 1), extra = list(
++     "R^2", "*" = function(x) {
++         s <- summary(x)
++         c(Rsq = s$r.squared, adjRsq = s$adj.r.squared,
++             F = s$fstatistic[[1]])
++     })
++ )
+Fixed term is "(Intercept)"
+Global model call: lm(formula = y ~ ., data = Cement)
+---
+Model selection table 
+  (Intrc)    X1     X2     X3      X4    R^2  *.Rsq *.adjRsq    *.F df  logLik
+9  117.60                     -0.7382 0.6745 0.6745   0.6450 22.800  3 -45.872
+3   57.42       0.7891                0.6663 0.6663   0.6359 21.960  3 -46.035
+2   81.48 1.869                       0.5339 0.5339   0.4916 12.600  3 -48.206
+5  110.20              -1.256         0.2859 0.2859   0.2210  4.403  3 -50.980
+1   95.42                             0.0000 0.0000   0.0000         2 -53.168
+   AICc delta weight
+9 100.4  0.00  0.511
+3 100.7  0.33  0.434
+2 105.1  4.67  0.050
+5 110.6 10.22  0.003
+1 111.5 11.13  0.002
+Models ranked by AICc(x) 
+> 
+> # Add other information criteria (but rank with AICc):
+> dredge(fm1, m.lim = c(NA, 1), extra = alist(AIC, BIC, ICOMP, Cp))
+Fixed term is "(Intercept)"
+Global model call: lm(formula = y ~ ., data = Cement)
+---
+Model selection table 
+  (Intrc)    X1     X2     X3      X4    AIC    BIC  ICOMP   Cp df  logLik
+9  117.60                     -0.7382  97.74  99.44  98.91 1205  3 -45.872
+3   57.42       0.7891                 98.07  99.77 101.00 1236  3 -46.035
+2   81.48 1.869                       102.40 104.10 100.50 1726  3 -48.206
+5  110.20              -1.256         108.00 109.70 107.30 2645  3 -50.980
+1   95.42                             110.30 111.50 106.30 3168  2 -53.168
+   AICc delta weight
+9 100.4  0.00  0.511
+3 100.7  0.33  0.434
+2 105.1  4.67  0.050
+5 110.6 10.22  0.003
+1 111.5 11.13  0.002
+Models ranked by AICc(x) 
+> ## Don't show: 
+> options(oop)
+> ## End(Don't show)
+> 
+> 
+> 
+> graphics::par(get("par.postscript", pos = 'CheckExEnv'))
+> cleanEx()
+> nameEx("exprApply")
+> ### * exprApply
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: exprApply
+> ### Title: Apply a function to calls inside an expression
+> ### Aliases: exprApply
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> ### simple usage:
+> # print all Y(...) terms in a formula (note that symbol "Y" is omitted):
+> # Note: if `print` is defined as S4 "standardGeneric", we need to use 
+> # 'print.default' rather than 'print', or put the call to 'print' inside a 
+> # function, i.e. as `function(x) print(x)`:
+> exprApply(~ X(1) + Y(2 + Y(4)) + N(Y + Y(3)), "Y", print.default)
+Y(4)
+Y(2 + Y(4))
+Y(3)
+~X(1) + Y(2 + Y(4)) + N(Y + Y(3))
+> 
+> 
+> # replace X() with log(X, base = n)
+> exprApply(expression(A() + B() + C()), c("A", "B", "C"), function(expr, base) {
++     expr[[2]] <- expr[[1]]
++     expr[[1]] <- as.name("log")
++     expr$base <- base
++     expr
++ }, base = 10)
+expression(log(A, base = 10) + log(B, base = 10) + log(C, base = 10))
+> 
+> ###
+> # TASK: fit lm with two poly terms, varying the degree from 1 to 3 in each.
+> # lm(y ~ poly(X1, degree = a) + poly(X2, degree = b), data = Cement)
+> # for a = {1,2,3} and b = {1,2,3}
+> 
+> # First we create a wrapper function for lm. Within it, use "exprApply" to add
+> # "degree" argument to all occurences of "poly()" having "X1" or "X2" as the
+> # first argument. Values for "degree" are taken from arguments "d1" and "d2"
+> 
+> lmpolywrap <- function(formula, d1 = NA, d2 = NA, ...) { 
++     cl <- origCall <- match.call()
++     cl[[1]] <- as.name("lm")
++     cl$formula <- exprApply(formula, "poly", function(e, degree, x) {
++         i <- which(e[[2]] == x)[1]
++         if(!is.na(i) && !is.na(degree[i])) e$degree <- degree[i]
++         e
++     }, degree = c(d1, d2), x = c("X1", "X2"))
++     cl$d1 <- cl$d2 <- NULL
++     fit <- eval(cl, parent.frame())
++     fit$call <- origCall # replace the stored call
++     fit
++ }
+> 
+> # global model:
+> fm <- lmpolywrap(y ~ poly(X1) + poly(X2), data = Cement)
+> 
+> # Use "dredge" with argument "varying" to generate calls of all combinations of
+> # degrees for poly(X1) and poly(X2). Use "fixed = TRUE" to keep all global model
+> # terms in all models.
+> # Since "dredge" expects that global model has all the coefficients the 
+> # submodels can have, which is not the case here, we first generate model calls,
+> # evaluate them and feed to "model.sel"
+> 
+> modCalls <- dredge(fm, 
++     varying = list(d1 = 1:3, d2 = 1:3), 
++     fixed = TRUE,
++     evaluate = FALSE
++ )
+Fixed terms are "poly(X1)", "poly(X2)" and "(Intercept)"
+> 
+> model.sel(models <- lapply(modCalls, eval))
+Model selection table 
+  (Int) ply(X1,1) ply(X2,1) ply(X1,2) ply(X1,3) ply(X2,2) ply(X2,3) d1 d2 df
+1 95.42     29.92     35.70                                          1  1  4
+4 95.42     28.65                                       +            1  2  5
+2 95.42               36.48         +                                2  1  5
+5 95.42                             +                   +            2  2  6
+7 95.42     28.72                                                 +  1  3  6
+3 95.42               36.81                   +                      3  1  6
+6 95.42                                       +         +            3  2  7
+8 95.42                             +                             +  2  3  7
+9 95.42                                       +                   +  3  3  8
+   logLik  AICc delta weight
+1 -28.156  69.3  0.00  0.539
+4 -25.783  70.1  0.83  0.357
+2 -27.303  73.2  3.86  0.078
+5 -25.354  76.7  7.40  0.013
+7 -25.769  77.5  8.23  0.009
+3 -26.541  79.1  9.77  0.004
+6 -24.811  86.0 16.71  0.000
+8 -25.246  86.9 17.58  0.000
+9 -24.487 101.0 31.66  0.000
+Models ranked by AICc(x) 
+> 
+> # Note: to fit *all* submodels replace "fixed = TRUE" with: 
+> # "subset = (d1==1 || {poly(X1)}) && (d2==1 || {poly(X2)})"
+> # This is to avoid fitting 3 identical models when the matching "poly()" term is
+> # absent.
+> 
+> 
+> 
+> cleanEx()
+> nameEx("get.models")
+> ### * get.models
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: get.models
+> ### Title: Retrieve models from selection table
+> ### Aliases: get.models pget.models
+> ### Keywords: models
+> 
+> ### ** Examples
+> 
+> # Mixed models:
+> 
+> ## Don't show: 
+>  if(require(nlme)) { 
++ ## End(Don't show)
++ fm2 <- lme(distance ~ age + Sex, data = Orthodont,
++     random = ~ 1 | Subject, method = "ML")
++ ms2 <- dredge(fm2)
++ 
++ # Get top-most models, but fitted by REML:
++ (confset.d4 <- get.models(ms2, subset = delta < 4, method = "REML"))
++ 
++ ## Not run: 
++ ##D # Get the top model:
++ ##D get.models(ms2, subset = 1)[[1]]
++ ## End(Not run)
++ 
++ ## Don't show: 
++   } 
+Loading required package: nlme
+Fixed term is "(Intercept)"
+$`4`
+Linear mixed-effects model fit by REML
+  Data: Orthodont 
+  Log-restricted-likelihood: -218.7563
+  Fixed: distance ~ age + Sex + 1 
+(Intercept)         age   SexFemale 
+ 17.7067130   0.6601852  -2.3210227 
+
+Random effects:
+ Formula: ~1 | Subject
+        (Intercept) Residual
+StdDev:    1.807425 1.431592
+
+Number of Observations: 108
+Number of Groups: 27 
+
+attr(,"rank")
+function (x) 
+rank(x)
+<environment: 0x55b18bac58f8>
+attr(,"beta")
+[1] "none"
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:nlme’
+
+> nameEx("jackknifeWeights")
+> ### * jackknifeWeights
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: jackknifeWeights
+> ### Title: Jackknifed model weights
+> ### Aliases: jackknifeWeights
+> ### Keywords: models
+> 
+> ### ** Examples
+> 
+> fm <- glm(Prop ~ mortality * dose, binomial(), Beetle, na.action = na.fail)
+> 
+> fits <- lapply(dredge(fm, eval = FALSE), eval)
+Fixed term is "(Intercept)"
+> 
+> amJk <- amAICc <- model.avg(fits)
+> set.seed(666)
+> Weights(amJk) <- jackknifeWeights(fits, data = Beetle)
+> 
+> coef(amJk)
+   (Intercept)           dose      mortality dose:mortality 
+    -2.6214071      0.1058767     -6.3219855      0.1814192 
+> coef(amAICc)
+   (Intercept)           dose      mortality dose:mortality 
+   -11.8251645      0.2323824      4.0101597      0.1814192 
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("loo")
+> ### * loo
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: loo
+> ### Title: Leave-one-out cross-validation
+> ### Aliases: loo loo.default loo.lm
+> ### Keywords: models
+> 
+> ### ** Examples
+> 
+> fm <- lm(y ~ X1 + X2 + X3 + X4, Cement)
+> loo(fm, type = "l")
+[1] 1.79803
+> loo(fm, type = "r")
+[1] 2.913451
+> 
+> ## Compare LOO_RMSE and AIC/c
+> options(na.action = na.fail)
+> dd <- dredge(fm, rank = loo, extra = list(AIC, AICc), type = "rmse")
+Fixed term is "(Intercept)"
+> plot(loo ~ AIC, dd, ylab = expression(LOO[RMSE]), xlab = "AIC/c")
+> points(loo ~ AICc, data = dd, pch = 19)
+> legend("topleft", legend = c("AIC", "AICc"), pch = c(1, 19))
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("manip-formula")
+> ### * manip-formula
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Formula manipulation
+> ### Title: Manipulate model formulas
+> ### Aliases: simplify.formula expand.formula
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> 
+> simplify.formula(y ~ a + b + a:b + (c + b)^2)
+y ~ a * b + b * c
+> simplify.formula(y ~ a + b + a:b + 0)
+y ~ a * b - 1
+> 
+> expand.formula(~ a * b)
+~a + b + a:b
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("merge.model.selection")
+> ### * merge.model.selection
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: merge.model.selection
+> ### Title: Combine model selection tables
+> ### Aliases: merge.model.selection rbind.model.selection
+> ###   append.model.selection
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D require(mgcv)
+> ##D 
+> ##D ms1 <- dredge(glm(Prop ~ dose + I(dose^2) + log(dose) + I(log(dose)^2),
+> ##D     data = Beetle, family = binomial, na.action = na.fail))
+> ##D 	
+> ##D fm2 <- gam(Prop ~ s(dose, k = 3), data = Beetle, family = binomial)
+> ##D 
+> ##D merge(ms1, model.sel(fm2))
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("model.avg")
+> ### * model.avg
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: model.avg
+> ### Title: Model averaging
+> ### Aliases: model.avg model.avg.default model.avg.model.selection
+> ###   print.averaging
+> ### Keywords: models
+> 
+> ### ** Examples
+> 
+> 
+> # Example from Burnham and Anderson (2002), page 100:
+> fm1 <- lm(y ~ ., data = Cement, na.action = na.fail)
+> (ms1 <- dredge(fm1))
+Fixed term is "(Intercept)"
+Global model call: lm(formula = y ~ ., data = Cement, na.action = na.fail)
+---
+Model selection table 
+   (Intrc)    X1      X2      X3      X4 df  logLik  AICc delta weight
+4    52.58 1.468  0.6623                  4 -28.156  69.3  0.00  0.566
+12   71.65 1.452  0.4161         -0.2365  5 -26.933  72.4  3.13  0.119
+8    48.19 1.696  0.6569  0.2500          5 -26.952  72.5  3.16  0.116
+10  103.10 1.440                 -0.6140  4 -29.817  72.6  3.32  0.107
+14  111.70 1.052         -0.4100 -0.6428  5 -27.310  73.2  3.88  0.081
+15  203.60       -0.9234 -1.4480 -1.5570  5 -29.734  78.0  8.73  0.007
+16   62.41 1.551  0.5102  0.1019 -0.1441  6 -26.918  79.8 10.52  0.003
+13  131.30               -1.2000 -0.7246  4 -35.372  83.7 14.43  0.000
+7    72.07        0.7313 -1.0080          4 -40.965  94.9 25.62  0.000
+9   117.60                       -0.7382  3 -45.872 100.4 31.10  0.000
+3    57.42        0.7891                  3 -46.035 100.7 31.42  0.000
+11   94.16        0.3109         -0.4569  4 -45.761 104.5 35.21  0.000
+2    81.48 1.869                          3 -48.206 105.1 35.77  0.000
+6    72.35 2.312          0.4945          4 -48.005 109.0 39.70  0.000
+5   110.20               -1.2560          3 -50.980 110.6 41.31  0.000
+1    95.42                                2 -53.168 111.5 42.22  0.000
+Models ranked by AICc(x) 
+> 
+> # Use models with Delta AICc < 4
+> summary(model.avg(ms1, subset = delta < 4))
+
+Call:
+model.avg(object = ms1, subset = delta < 4)
+
+Component model call: 
+lm(formula = y ~ <5 unique rhs>, data = Cement, na.action = na.fail)
+
+Component models: 
+    df logLik  AICc delta weight
+12   4 -28.16 69.31  0.00   0.57
+124  5 -26.93 72.44  3.13   0.12
+123  5 -26.95 72.48  3.16   0.12
+14   4 -29.82 72.63  3.32   0.11
+134  5 -27.31 73.19  3.88   0.08
+
+Term codes: 
+X1 X2 X3 X4 
+ 1  2  3  4 
+
+Model-averaged coefficients:  
+(full average) 
+             Estimate Std. Error Adjusted SE z value Pr(>|z|)    
+(Intercept) 64.693128  22.235479   22.462414   2.880  0.00398 ** 
+X1           1.455798   0.203668    0.219304   6.638  < 2e-16 ***
+X2           0.505758   0.268371    0.271702   1.861  0.06268 .  
+X4          -0.147870   0.252517    0.255126   0.580  0.56219    
+X3          -0.004302   0.168612    0.175632   0.024  0.98046    
+ 
+(conditional average) 
+            Estimate Std. Error Adjusted SE z value Pr(>|z|)    
+(Intercept) 64.69313   22.23548    22.46241   2.880  0.00398 ** 
+X1           1.45580    0.20367     0.21930   6.638  < 2e-16 ***
+X2           0.62503    0.12026     0.12917   4.839  1.3e-06 ***
+X4          -0.47601    0.22152     0.23094   2.061  0.03929 *  
+X3          -0.02153    0.37671     0.39244   0.055  0.95624    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+> 
+> #or as a 95% confidence set:
+> avgmod.95p <- model.avg(ms1, cumsum(weight) <= .95)
+> confint(avgmod.95p)
+                 2.5 %      97.5 %
+(Intercept) 24.7841330 96.18447223
+X1           1.1496363  1.83431889
+X2           0.3718565  0.87819546
+X4          -0.8878522  0.05587375
+X3          -0.1678276  0.66786280
+> 
+> ## Not run: 
+> ##D # The same result, but re-fitting the models via 'get.models'
+> ##D confset.95p <- get.models(ms1, cumsum(weight) <= .95)
+> ##D model.avg(confset.95p)
+> ##D 
+> ##D # Force re-fitting the component models
+> ##D model.avg(ms1, cumsum(weight) <= .95, fit = TRUE)
+> ##D # Models are also fitted if additional arguments are given
+> ##D model.avg(ms1, cumsum(weight) <= .95, rank = "AIC")
+> ## End(Not run)
+> 
+> ## Not run: 
+> ##D # using BIC (Schwarz's Bayesian criterion) to rank the models
+> ##D BIC <- function(x) AIC(x, k = log(length(residuals(x))))
+> ##D model.avg(confset.95p, rank = BIC)
+> ##D # the same result, using AIC directly, with argument k
+> ##D # 'x' in a quoted 'rank' argument is substituted with a model object
+> ##D # (in this case it does not make much sense as the number of observations is
+> ##D # common to all models)
+> ##D model.avg(confset.95p, rank = AIC, rank.args = alist(k = log(length(residuals(x)))))
+> ## End(Not run)
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("model.sel")
+> ### * model.sel
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: model.sel
+> ### Title: model selection table
+> ### Aliases: mod.sel model.sel model.sel.default model.sel.model.selection
+> ###   model.sel<-
+> ### Keywords: models
+> 
+> ### ** Examples
+> 
+> 
+> Cement$X1 <- cut(Cement$X1, 3)
+> Cement$X2 <- cut(Cement$X2, 2)
+> 
+> fm1 <- glm(formula = y ~ X1 + X2 * X3, data = Cement)
+> fm2 <- update(fm1, . ~ . - X1 - X2)
+> fm3 <- update(fm1, . ~ . - X2 - X3)
+> 
+> ## ranked with AICc by default
+> (msAICc <- model.sel(fm1, fm2, fm3))
+Model selection table 
+     (Int) X1 X2       X3 X2:X3 df  logLik  AICc delta weight
+fm3  83.25  +                 +  6 -39.584 105.2  0.00  0.558
+fm1  75.79  +  +  0.07826     +  7 -34.924 106.2  1.08  0.325
+fm2 104.70       -1.39800     +  4 -47.653 108.3  3.14  0.116
+Models ranked by AICc(x) 
+> 
+> ## ranked with BIC
+> model.sel(fm1, fm2, fm3, rank = AIC, rank.args = alist(k = log(nobs(x))))
+Model selection table 
+     (Int) X1 X2       X3 X2:X3 df  logLik   AIC delta weight
+fm1  75.79  +  +  0.07826     +  7 -34.924  87.8  0.00  0.967
+fm3  83.25  +                 +  6 -39.584  94.6  6.75  0.033
+fm2 104.70       -1.39800     +  4 -47.653 105.6 17.76  0.000
+Models ranked by AIC(x, k = log(nobs(x))) 
+> # or
+> # model.sel(msAICc, rank = AIC, rank.args = alist(k = log(nobs(x))))
+> # or
+> # update(msAICc, rank = AIC, rank.args = alist(k = log(nobs(x))))
+> 
+> # appending new models:
+> model.sel(msAICc) <- update(fm1, . ~ 1)
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("nested")
+> ### * nested
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: nested
+> ### Title: Identify nested models
+> ### Aliases: nested
+> ### Keywords: models
+> 
+> ### ** Examples
+> 
+> 
+> fm <- lm(y ~ X1 + X2 + X3 + X4, data = Cement, na.action = na.fail)
+> ms <- dredge(fm)
+Fixed term is "(Intercept)"
+> 
+> # filter out overly complex models according to the 
+> # "nesting selection rule":
+> subset(ms, !nested(.)) # dot represents the ms table object
+Global model call: lm(formula = y ~ X1 + X2 + X3 + X4, data = Cement, na.action = na.fail)
+---
+Model selection table 
+   (Intrc)    X1      X2     X3      X4 df  logLik  AICc delta weight
+4    52.58 1.468  0.6623                 4 -28.156  69.3  0.00  0.831
+10  103.10 1.440                -0.6140  4 -29.817  72.6  3.32  0.158
+15  203.60       -0.9234 -1.448 -1.5570  5 -29.734  78.0  8.73  0.011
+13  131.30               -1.200 -0.7246  4 -35.372  83.7 14.43  0.001
+7    72.07        0.7313 -1.008          4 -40.965  94.9 25.62  0.000
+9   117.60                      -0.7382  3 -45.872 100.4 31.10  0.000
+3    57.42        0.7891                 3 -46.035 100.7 31.42  0.000
+2    81.48 1.869                         3 -48.206 105.1 35.77  0.000
+5   110.20               -1.256          3 -50.980 110.6 41.31  0.000
+1    95.42                               2 -53.168 111.5 42.22  0.000
+Models ranked by AICc(x) 
+> 
+> # print model "4" and all models nested within it
+> nst <- nested(ms, indices = "row")
+> ms[c("4", nst[["4"]])]
+Global model call: lm(formula = y ~ X1 + X2 + X3 + X4, data = Cement, na.action = na.fail)
+---
+Model selection table 
+  (Intrc)    X1     X2 df  logLik  AICc delta weight
+4   52.58 1.468 0.6623  4 -28.156  69.3  0.00      1
+3   57.42       0.7891  3 -46.035 100.7 31.42      0
+2   81.48 1.869         3 -48.206 105.1 35.77      0
+1   95.42               2 -53.168 111.5 42.22      0
+Models ranked by AICc(x) 
+> 
+> ms$nested <- sapply(nst, paste, collapse = ",")
+> 
+> ms
+Global model call: lm(formula = y ~ X1 + X2 + X3 + X4, data = Cement, na.action = na.fail)
+---
+Model selection table 
+   (Intrc)    X1      X2      X3      X4 df  logLik  AICc delta weight
+4    52.58 1.468  0.6623                  4 -28.156  69.3  0.00  0.566
+12   71.65 1.452  0.4161         -0.2365  5 -26.933  72.4  3.13  0.119
+8    48.19 1.696  0.6569  0.2500          5 -26.952  72.5  3.16  0.116
+10  103.10 1.440                 -0.6140  4 -29.817  72.6  3.32  0.107
+14  111.70 1.052         -0.4100 -0.6428  5 -27.310  73.2  3.88  0.081
+15  203.60       -0.9234 -1.4480 -1.5570  5 -29.734  78.0  8.73  0.007
+16   62.41 1.551  0.5102  0.1019 -0.1441  6 -26.918  79.8 10.52  0.003
+13  131.30               -1.2000 -0.7246  4 -35.372  83.7 14.43  0.000
+7    72.07        0.7313 -1.0080          4 -40.965  94.9 25.62  0.000
+9   117.60                       -0.7382  3 -45.872 100.4 31.10  0.000
+3    57.42        0.7891                  3 -46.035 100.7 31.42  0.000
+11   94.16        0.3109         -0.4569  4 -45.761 104.5 35.21  0.000
+2    81.48 1.869                          3 -48.206 105.1 35.77  0.000
+6    72.35 2.312          0.4945          4 -48.005 109.0 39.70  0.000
+5   110.20               -1.2560          3 -50.980 110.6 41.31  0.000
+1    95.42                                2 -53.168 111.5 42.22  0.000
+                                nested
+4                                3,2,1
+12                     4,10,9,3,11,2,1
+8                        4,7,3,2,6,5,1
+10                               9,2,1
+14                     10,13,9,2,6,5,1
+15                     13,7,9,3,11,5,1
+16 4,12,8,10,14,15,13,7,9,3,11,2,6,5,1
+13                               9,5,1
+7                                3,5,1
+9                                    1
+3                                    1
+11                               9,3,1
+2                                    1
+6                                2,5,1
+5                                    1
+1                                     
+Models ranked by AICc(x) 
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("pdredge")
+> ### * pdredge
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: pdredge
+> ### Title: Automated model selection using parallel computation
+> ### Aliases: pdredge
+> ### Keywords: models
+> 
+> ### ** Examples
+> 
+> 
+> ## Don't show: 
+> # Normally this should be simply "require(parallel) || require(snow)",
+> # but here we resort to an (ugly) trick to avoid MuMIn's dependency on one of
+> # these packages and still pass R-check:
+> if(MuMIn:::.parallelPkgCheck(quiet = TRUE)) {
++ ## End(Don't show)
++ 
++ # One of these packages is required:
++ ## Not run: require(parallel) || require(snow)
++ 
++ # From example(Beetle)
++ 
++ Beetle100 <- Beetle[sample(nrow(Beetle), 100, replace = TRUE),]
++ 
++ fm1 <- glm(Prop ~ dose + I(dose^2) + log(dose) + I(log(dose)^2),
++     data = Beetle100, family = binomial, na.action = na.fail)
++ 
++ msubset <- expression(xor(dose, `log(dose)`) & (dose | !`I(dose^2)`)
++     & (`log(dose)` | !`I(log(dose)^2)`))
++ varying.link <- list(family = alist(logit = binomial("logit"),
++     probit = binomial("probit"), cloglog = binomial("cloglog") ))
++ 
++ # Set up the cluster
++ clusterType <- if(length(find.package("snow", quiet = TRUE))) "SOCK" else "PSOCK"
++ clust <- try(makeCluster(getOption("cl.cores", 2), type = clusterType))
++ ## Don't show: 
++ if(inherits(clust, "cluster")) { 
++ ## End(Don't show)
++ clusterExport(clust, "Beetle100")
++ 
++ # noticeable gain only when data has about 3000 rows (Windows 2-core machine)
++ print(system.time(dredge(fm1, subset = msubset, varying = varying.link)))
++ print(system.time(dredge(fm1, cluster = FALSE, subset = msubset,
++     varying = varying.link)))
++ print(system.time(pdd <- dredge(fm1, cluster = clust, subset = msubset,
++     varying = varying.link)))
++ 
++ print(pdd)
++ 
++ ## Not run: 
++ ##D # Time consuming example with 'unmarked' model, based on example(pcount).
++ ##D # Having enough patience you can run this with 'demo(pdredge.pcount)'.
++ ##D library(unmarked)
++ ##D data(mallard)
++ ##D mallardUMF <- unmarkedFramePCount(mallard.y, siteCovs = mallard.site,
++ ##D     obsCovs = mallard.obs)
++ ##D (ufm.mallard <- pcount(~ ivel + date + I(date^2) ~ length + elev + forest,
++ ##D     mallardUMF, K = 30))
++ ##D clusterEvalQ(clust, library(unmarked))
++ ##D clusterExport(clust, "mallardUMF")
++ ##D 
++ ##D # 'stats4' is needed for AIC to work with unmarkedFit objects but is not
++ ##D # loaded automatically with 'unmarked'.
++ ##D require(stats4)
++ ##D invisible(clusterCall(clust, "library", "stats4", character.only = TRUE))
++ ##D 
++ ##D #system.time(print(pdd1 <- dredge(ufm.mallard,
++ ##D #   subset = `p(date)` | !`p(I(date^2))`, rank = AIC)))
++ ##D 
++ ##D system.time(print(pdd2 <- dredge(ufm.mallard, cluster = clust,
++ ##D     subset = `p(date)` | !`p(I(date^2))`, rank = AIC, extra = "adjR^2")))
++ ##D 
++ ##D 
++ ##D # best models and null model
++ ##D subset(pdd2, delta < 2 | df == min(df))
++ ##D 
++ ##D # Compare with the model selection table from unmarked
++ ##D # the statistics should be identical:
++ ##D models <- get.models(pdd2, delta < 2 | df == min(df), cluster = clust)
++ ##D 
++ ##D modSel(fitList(fits = structure(models, names = model.names(models,
++ ##D     labels = getAllTerms(ufm.mallard)))), nullmod = "(Null)")
++ ## End(Not run)
++ 
++ stopCluster(clust)
++ ## Don't show: 
++ } else # if(! inherits(clust, "cluster"))
++ message("Could not set up the cluster")
++ }
+Fixed term is "(Intercept)"
+   user  system elapsed 
+  0.026   0.000   0.026 
+Fixed term is "(Intercept)"
+   user  system elapsed 
+  0.027   0.000   0.027 
+Fixed term is "(Intercept)"
+   user  system elapsed 
+  0.008   0.001   0.781 
+Global model call: glm(formula = Prop ~ dose + I(dose^2) + log(dose) + I(log(dose)^2), 
+    family = binomial, data = Beetle100, na.action = na.fail)
+---
+Model selection table 
+     (Int)     dos      dos^2 log(dos) log(dos)^2 family df   logLik  AICc
+9    9.136 -0.5451  0.0065240                     cloglg  3 -185.348 376.9
+36 441.800                    -230.800     30.000 cloglg  3 -185.983 378.2
+37 216.600                    -114.400     15.010  logit  3 -186.008 378.3
+10   2.570 -0.2234  0.0030010                      logit  3 -186.806 379.9
+5   -9.383  0.1497                                probit  2 -189.489 383.1
+11 -11.890  0.2313 -0.0006587                     probit  3 -188.564 383.4
+14 -38.010                       9.198            probit  2 -189.677 383.5
+38   5.232                     -11.840      2.557 probit  3 -188.656 383.6
+4   -8.167  0.1381                                 logit  2 -209.477 423.1
+3  -14.120  0.2385                                cloglg  2 -215.810 435.7
+13 -33.480                       8.220             logit  2 -231.487 467.1
+12 -57.860                      14.200            cloglg  2 -238.136 480.4
+    delta weight
+9    0.00  0.410
+36   1.27  0.217
+37   1.32  0.212
+10   2.92  0.095
+5    6.16  0.019
+11   6.43  0.016
+14   6.53  0.016
+38   6.62  0.015
+4   46.13  0.000
+3   58.80  0.000
+13  90.15  0.000
+12 103.45  0.000
+Abbreviations:
+ family: cloglg = ‘cloglog’
+Models ranked by AICc(x) 
+> ## End(Don't show)
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:parallel’
+
+> nameEx("plot.model.selection")
+> ### * plot.model.selection
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: plot.model.selection
+> ### Title: Visualize model selection table
+> ### Aliases: plot.model.selection
+> ### Keywords: hplot
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (require(graphics)) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ ms <- dredge(lm(formula = y ~ ., data = Cement, na.action = na.fail))
++ plot(ms,
++     # colours by coefficient value:
++     col.mode = "value",
++     par.lab = list(las = 2, line = 1.2, cex = 1),
++     bg = "gray30",
++     # change labels for the models to Akaike weights:
++     vlabels = parse(text = paste("omega ==", round(Weights(ms), 2)))
++     )
++ plot(ms, col = 2:3, col.mode = 0) # colour recycled by row
++ plot(ms, col = cbind(2:3, 4:5), col.mode = 0) # colour recycled by row and column
++ plot(ms, col = 2:3, col.mode = 1) # colour gradient by model weight
++ ## Don't show: 
++ }) # examplesIf
+> ms <- dredge(lm(formula = y ~ ., data = Cement, na.action = na.fail))
+Fixed term is "(Intercept)"
+> plot(ms, col.mode = "value", par.lab = list(las = 2, line = 1.2, cex = 1), 
++     bg = "gray30", vlabels = parse(text = paste("omega ==", round(Weights(ms), 2))))
+> plot(ms, col = 2:3, col.mode = 0)
+> plot(ms, col = cbind(2:3, 4:5), col.mode = 0)
+> plot(ms, col = 2:3, col.mode = 1)
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("predict.averaging")
+> ### * predict.averaging
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: predict.averaging
+> ### Title: Predict method for averaged models
+> ### Aliases: predict.averaging
+> ### Keywords: models
+> 
+> ### ** Examples
+> 
+> 
+> ## Don't show: 
+> oop <- options(na.action="na.fail")
+> if(require(graphics)) { 
++ ## End(Don't show)
++ 
++ # Example from Burnham and Anderson (2002), page 100:
++ fm1 <- lm(y ~ X1 + X2 + X3 + X4, data = Cement)
++ 
++ ms1 <- dredge(fm1)
++ confset.95p <- get.models(ms1, subset = cumsum(weight) <= .95)
++ avgm <- model.avg(confset.95p)
++ 
++ nseq <- function(x, len = length(x)) seq(min(x, na.rm = TRUE),
++     max(x, na.rm=TRUE), length = len)
++ 
++ # New predictors: X1 along the range of original data, other
++ # variables held constant at their means
++ newdata <- as.data.frame(lapply(lapply(Cement[, -1], mean), rep, 25))
++ newdata$X1 <- nseq(Cement$X1, nrow(newdata))
++ 
++ n <- length(confset.95p)
++ 
++ # Predictions from each of the models in a set, and with averaged coefficients
++ pred <- data.frame(
++ 	model = sapply(confset.95p, predict, newdata = newdata),
++ 	averaged.subset = predict(avgm, newdata, full = FALSE),
++     averaged.full = predict(avgm, newdata, full = TRUE)
++ 	)
++ 
++ opal <- palette(c(topo.colors(n), "black", "red", "orange"))
++ matplot(newdata$X1, pred, type = "l",
++ 	lwd = c(rep(2,n),3,3), lty = 1,
++     xlab = "X1", ylab = "y", col=1:7)
++ 
++ # For comparison, prediction obtained by averaging predictions of the component
++ # models
++ pred.se <- predict(avgm, newdata, se.fit = TRUE)
++ y <- pred.se$fit
++ ci <- pred.se$se.fit  * 2
++ matplot(newdata$X1, cbind(y, y - ci, y + ci), add = TRUE, type="l",
++ 	lty = 2, col = n + 3, lwd = 3)
++ 
++ legend("topleft",
++     legend=c(lapply(confset.95p, formula),
++         paste(c("subset", "full"), "averaged"), "averaged predictions + CI"),
++     lty = 1, lwd = c(rep(2,n),3,3,3),  cex = .75, col=1:8)
++ 
++ palette(opal)
++ ## Don't show: 
++  } 
+Fixed term is "(Intercept)"
+> options(oop) 
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("r.squaredGLMM")
+> ### * r.squaredGLMM
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: r.squaredGLMM
+> ### Title: Pseudo-R-squared for Generalized Mixed-Effect models
+> ### Aliases: r.squaredGLMM r.squaredGLMM.merMod
+> ### Keywords: models
+> 
+> ### ** Examples
+> 
+> 
+> ## Don't show: 
+>  if(require(nlme)) {   
++ ## End(Don't show)
++ data(Orthodont, package = "nlme")
++ 
++ fm1 <- lme(distance ~ Sex * age, ~ 1 | Subject, data = Orthodont)
++ 
++ fmnull <- lme(distance ~ 1, ~ 1 | Subject, data = Orthodont)
++ 
++ r.squaredGLMM(fm1)
++ r.squaredGLMM(fm1, fmnull)
++ r.squaredGLMM(update(fm1, . ~ Sex), fmnull)
++ 
++ r.squaredLR(fm1)
++ r.squaredLR(fm1, null.RE = TRUE)
++ r.squaredLR(fm1, fmnull) # same result
++ 
++ ## Not run: 
++ ##D if(require(MASS)) {
++ ##D     fm <- glmmPQL(y ~ trt + I(week > 2), random = ~ 1 | ID, 
++ ##D         family = binomial, data = bacteria, verbose = FALSE)
++ ##D     fmnull <- update(fm, . ~ 1)
++ ##D     r.squaredGLMM(fm)
++ ##D 
++ ##D     # Include R2GLMM (delta method estimates) in a model selection table:
++ ##D     # Note the use of a common null model
++ ##D     dredge(fm, extra = list(R2 = function(x) r.squaredGLMM(x, fmnull)["delta", ]))
++ ##D     
++ ##D }
++ ## End(Not run)
++ ## Don't show: 
++   }  
+Loading required package: nlme
+[1] 0.5524951
+attr(,"adj.r.squared")
+[1] 0.5572053
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:nlme’
+
+> nameEx("stackingWeights")
+> ### * stackingWeights
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: stackingWeights
+> ### Title: Stacking model weights
+> ### Aliases: stackingWeights
+> ### Keywords: models
+> 
+> ### ** Examples
+> 
+> #simulated Cement dataset to increase sample size for the training data 
+> fm0 <- glm(y ~ X1 + X2 + X3 + X4, data = Cement, na.action = na.fail)
+> dat <- as.data.frame(apply(Cement[, -1], 2, sample, 50, replace = TRUE))
+> dat$y <- rnorm(nrow(dat), predict(fm0), sigma(fm0))
+> 
+> # global model fitted to training data:
+> fm <- glm(y ~ X1 + X2 + X3 + X4, data = dat, na.action = na.fail)
+> 
+> # generate a list of *some* subsets of the global model
+> models <- lapply(dredge(fm, evaluate = FALSE, fixed = "X1", m.lim = c(1, 3)), eval)
+Fixed terms are "X1" and "(Intercept)"
+> 
+> wts <- stackingWeights(models, data = dat, R = 10)
+> 
+> ma <- model.avg(models)
+> Weights(ma) <- wts["mean", ]
+> 
+> predict(ma)
+       1        2        3        4        5        6        7        8 
+98.91169 91.30465 98.47852 94.67664 99.34550 92.79133 97.61468 98.87409 
+       9       10       11       12       13       14       15       16 
+99.90178 99.17701 91.44538 94.49627 94.65335 95.19848 84.45237 91.04852 
+      17       18       19       20       21       22       23       24 
+84.56154 98.41981 98.98648 94.70979 94.12078 99.15582 98.52107 94.48254 
+      25       26       27       28       29       30       31       32 
+94.06736 99.82303 84.04862 98.88342 91.95759 94.75905 91.66778 92.29939 
+      33       34       35       36       37       38       39       40 
+92.21059 84.67418 84.60962 91.98587 91.88362 92.24076 92.22212 84.02472 
+      41       42       43       44       45       46       47       48 
+92.21457 98.71348 98.01953 91.16610 98.79004 99.82912 92.28206 98.88260 
+      49       50 
+97.70595 99.08227 
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("std.coef")
+> ### * std.coef
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: std.coef
+> ### Title: Standardized model coefficients
+> ### Aliases: std.coef beta.weights partial.sd
+> ### Keywords: models
+> 
+> ### ** Examples
+> 
+> 
+> # Fit model to original data:
+> fm  <- lm(y ~ x1 + x2 + x3 + x4, data = GPA)
+> 
+> # Partial SD for the default formula:   y ~ x1 + x2 + x3 + x4
+> psd <- partial.sd(lm(data = GPA))[-1] # remove first element for intercept
+> 
+> # Standardize data:
+> zGPA <- stdize(GPA, scale = c(NA, psd), center = TRUE)
+> # Note: first element of 'scale' is set to NA to ignore the first column 'y'
+> 
+> # Coefficients of a model fitted to standardized data:
+> zapsmall(coefTable(stdizeFit(fm, newdata = zGPA)))
+            Estimate Std. Error df
+(Intercept) 0.000000   0.060042 15
+z.x1        0.206511   0.060042 15
+z.x2        0.136321   0.060042 15
+z.x3        0.123811   0.060042 15
+z.x4        0.029788   0.060042 15
+> # Standardized coefficients of a model fitted to original data:
+> zapsmall(std.coef(fm, partial = TRUE))
+            Estimate* Std. Error* df
+(Intercept)  0.000000    0.000000 15
+x1           0.206511    0.060042 15
+x2           0.136321    0.060042 15
+x3           0.123811    0.060042 15
+x4           0.029788    0.060042 15
+> 
+> 
+> # Standardizing nonlinear models:
+> fam <- Gamma("inverse")
+> fmg <- glm(log(y) ~ x1 + x2 + x3 + x4, data = GPA, family = fam)
+> 
+> psdg <- partial.sd(fmg)
+> zGPA <- stdize(GPA, scale = c(NA, psdg[-1]), center = FALSE)
+> fmgz <- glm(log(y) ~ z.x1 + z.x2 + z.x3 + z.x4, zGPA, family = fam)
+> 
+> # Coefficients using standardized data:
+> coef(fmgz) # (intercept is unchanged because the variables haven't been
+ (Intercept)         z.x1         z.x2         z.x3         z.x4 
+ 2.326276715 -0.104168765 -0.047322052 -0.104439028 -0.008194491 
+>            #  centred)
+> # Standardized coefficients:
+> coef(fmg) * psdg
+ (Intercept)           x1           x2           x3           x4 
+ 0.000000000 -0.104168765 -0.047322052 -0.104439028 -0.008194491 
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("stdize")
+> ### * stdize
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: stdize
+> ### Title: Standardize data
+> ### Aliases: stdize stdize.default stdize.logical stdize.formula
+> ###   stdize.data.frame stdizeFit
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> # compare "stdize" and "scale"
+> nmat <- matrix(runif(15, 0, 10), ncol = 3)
+> 
+> stdize(nmat)
+           [,1]        [,2]       [,3]
+[1,] -0.6957397  0.73789153 -0.8760932
+[2,] -0.3221799  0.86953710 -0.9840531
+[3,]  0.3811385  0.06213211  0.8892963
+[4,]  1.5561576 -0.02798288 -0.2223806
+[5,] -0.9193766 -1.64157786  1.1932306
+attr(,"scaled:center")
+[1] 4.640751 6.389526 4.446999
+attr(,"scaled:scale")
+[1] 2.854034 3.515924 2.724885
+> scale(nmat)
+           [,1]        [,2]       [,3]
+[1,] -0.6957397  0.73789153 -0.8760932
+[2,] -0.3221799  0.86953710 -0.9840531
+[3,]  0.3811385  0.06213211  0.8892963
+[4,]  1.5561576 -0.02798288 -0.2223806
+[5,] -0.9193766 -1.64157786  1.1932306
+attr(,"scaled:center")
+[1] 4.640751 6.389526 4.446999
+attr(,"scaled:scale")
+[1] 2.854034 3.515924 2.724885
+> 
+> rootmeansq <- function(v) {
++     v <- v[!is.na(v)]
++     sqrt(sum(v^2) / max(1, length(v) - 1L))
++ }
+> 
+> scale(nmat, center = FALSE)
+          [,1]       [,2]      [,3]
+[1,] 0.4483676 1.12833933 0.3632943
+[2,] 0.6284100 1.18647206 0.3114077
+[3,] 0.9673841 0.82993399 1.2117589
+[4,] 1.5337010 0.79014055 0.6774754
+[5,] 0.3405826 0.07760093 1.3578328
+attr(,"scaled:scale")
+[1] 5.921674 7.962052 5.669633
+> stdize(nmat, center = FALSE, scale = rootmeansq)
+          [,1]       [,2]      [,3]
+[1,] 0.4483676 1.12833933 0.3632943
+[2,] 0.6284100 1.18647206 0.3114077
+[3,] 0.9673841 0.82993399 1.2117589
+[4,] 1.5337010 0.79014055 0.6774754
+[5,] 0.3405826 0.07760093 1.3578328
+attr(,"scaled:center")
+[1] 0 0 0
+attr(,"scaled:scale")
+[1] 5.921674 7.962052 5.669633
+> 
+> if(require(lme4)) {
++ # define scale function as twice the SD to reproduce "arm::standardize"
++ twosd <- function(v) 2 * sd(v, na.rm = TRUE)
++ 
++ # standardize data (scaled variables are prefixed with "z.")
++ z.CO2 <- stdize(uptake ~ conc + Plant, data = CO2, omit = "Plant", scale = twosd)
++ summary(z.CO2)
++ 
++ 
++ fmz <- stdizeFit(lmer(uptake ~ conc + I(conc^2) + (1 | Plant)), newdata = z.CO2)
++ # produces:
++ # lmer(uptake ~ z.conc + I(z.conc^2) + (1 | Plant), data = z.CO2)
++ 
++ 
++ ## standardize using scale and center from "z.CO2", keeping the original data:
++ z.CO2a <- stdize(CO2, source = z.CO2, append = TRUE)
++ # Here, the "subset" expression uses untransformed variable, so we modify only
++ # "formula" argument, keeping "subset" as-is. For that reason we needed the
++ # untransformed variables in "newdata".
++ stdizeFit(lmer(uptake ~ conc + I(conc^2) + (1 | Plant),
++     subset = conc > 100,
++     ), newdata = z.CO2a, which = "formula", evaluate = FALSE)
++ 
++ 
++ # create new data as a sequence along "conc"
++ newdata <-  data.frame(conc = seq(min(CO2$conc), max(CO2$conc), length = 10))
++ 
++ # scale new data using scale and center of the original scaled data: 
++ z.newdata <- stdize(newdata, source = z.CO2)
++ 
++ ## Don't show: 
++  if(require(graphics)) { 
++ ## End(Don't show)
++ # plot predictions against "conc" on real scale:
++ plot(newdata$conc, predict(fmz, z.newdata, re.form = NA))
++ ## Don't show: 
++  } 
++ ## End(Don't show)
++ 
++ # compare with "arm::standardize"
++ ## Not run: 
++ ##D library(arm)
++ ##D fms <- standardize(lmer(uptake ~ conc + I(conc^2) + (1 | Plant), data = CO2))
++ ##D plot(newdata$conc, predict(fms, z.newdata, re.form = NA))
++ ## End(Not run)
++ }
+Loading required package: lme4
+Loading required package: Matrix
+Warning in names(newdata) != attr(newdata, "orig.names") :
+  longer object length is not a multiple of shorter object length
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:lme4’, ‘package:Matrix’
+
+> nameEx("subset.model.selection")
+> ### * subset.model.selection
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: subset.model.selection
+> ### Title: Subsetting model selection table
+> ### Aliases: subset.model.selection [.model.selection [[.model.selection
+> ###   has
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> fm1 <- lm(formula = y ~ X1 + X2 + X3 + X4, data = Cement, na.action = na.fail)
+> 
+> # generate models where each variable is included only if the previous
+> # are included too, e.g. X2 only if X1 is there, and X3 only if X2 and X1
+> dredge(fm1, subset = dc(X1, X2, X3, X4))
+Fixed term is "(Intercept)"
+Global model call: lm(formula = y ~ X1 + X2 + X3 + X4, data = Cement, na.action = na.fail)
+---
+Model selection table 
+   (Intrc)    X1     X2     X3      X4 df  logLik  AICc delta weight
+4    52.58 1.468 0.6623                 4 -28.156  69.3  0.00  0.826
+8    48.19 1.696 0.6569 0.2500          5 -26.952  72.5  3.16  0.170
+16   62.41 1.551 0.5102 0.1019 -0.1441  6 -26.918  79.8 10.52  0.004
+2    81.48 1.869                        3 -48.206 105.1 35.77  0.000
+1    95.42                              2 -53.168 111.5 42.22  0.000
+Models ranked by AICc(x) 
+> 
+> # which is equivalent to
+> # dredge(fm1, subset = (!X2 | X1) & (!X3 | X2) & (!X4 | X3))
+> 
+> # alternatively, generate "all possible" combinations
+> ms0 <- dredge(fm1)
+Fixed term is "(Intercept)"
+> # ...and afterwards select the subset of models
+> subset(ms0, dc(X1, X2, X3, X4))
+Global model call: lm(formula = y ~ X1 + X2 + X3 + X4, data = Cement, na.action = na.fail)
+---
+Model selection table 
+   (Intrc)    X1     X2     X3      X4 df  logLik  AICc delta weight
+4    52.58 1.468 0.6623                 4 -28.156  69.3  0.00  0.826
+8    48.19 1.696 0.6569 0.2500          5 -26.952  72.5  3.16  0.170
+16   62.41 1.551 0.5102 0.1019 -0.1441  6 -26.918  79.8 10.52  0.004
+2    81.48 1.869                        3 -48.206 105.1 35.77  0.000
+1    95.42                              2 -53.168 111.5 42.22  0.000
+Models ranked by AICc(x) 
+> # which is equivalent to
+> # subset(ms0, (has(!X2) | has(X1)) & (has(!X3) | has(X2)) & (has(!X4) | has(X3)))
+> 
+> # Different ways of finding a confidence set of models:
+> # delta(AIC) cutoff
+> subset(ms0, delta <= 4, recalc.weights = FALSE)
+Global model call: lm(formula = y ~ X1 + X2 + X3 + X4, data = Cement, na.action = na.fail)
+---
+Model selection table 
+   (Intrc)    X1     X2    X3      X4 df  logLik AICc delta weight
+4    52.58 1.468 0.6623                4 -28.156 69.3  0.00  0.566
+12   71.65 1.452 0.4161       -0.2365  5 -26.933 72.4  3.13  0.119
+8    48.19 1.696 0.6569  0.25          5 -26.952 72.5  3.16  0.116
+10  103.10 1.440              -0.6140  4 -29.817 72.6  3.32  0.107
+14  111.70 1.052        -0.41 -0.6428  5 -27.310 73.2  3.88  0.081
+Models ranked by AICc(x) 
+> # cumulative sum of Akaike weights
+> subset(ms0, cumsum(weight) <= .95, recalc.weights = FALSE)
+Global model call: lm(formula = y ~ X1 + X2 + X3 + X4, data = Cement, na.action = na.fail)
+---
+Model selection table 
+   (Intrc)    X1     X2   X3      X4 df  logLik AICc delta weight
+4    52.58 1.468 0.6623               4 -28.156 69.3  0.00  0.566
+12   71.65 1.452 0.4161      -0.2365  5 -26.933 72.4  3.13  0.119
+8    48.19 1.696 0.6569 0.25          5 -26.952 72.5  3.16  0.116
+10  103.10 1.440             -0.6140  4 -29.817 72.6  3.32  0.107
+Models ranked by AICc(x) 
+> # relative likelihood
+> subset(ms0, (weight / weight[1]) > (1/8), recalc.weights = FALSE)
+Global model call: lm(formula = y ~ X1 + X2 + X3 + X4, data = Cement, na.action = na.fail)
+---
+Model selection table 
+   (Intrc)    X1     X2    X3      X4 df  logLik AICc delta weight
+4    52.58 1.468 0.6623                4 -28.156 69.3  0.00  0.566
+12   71.65 1.452 0.4161       -0.2365  5 -26.933 72.4  3.13  0.119
+8    48.19 1.696 0.6569  0.25          5 -26.952 72.5  3.16  0.116
+10  103.10 1.440              -0.6140  4 -29.817 72.6  3.32  0.107
+14  111.70 1.052        -0.41 -0.6428  5 -27.310 73.2  3.88  0.081
+Models ranked by AICc(x) 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("sumofweights")
+> ### * sumofweights
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: sw
+> ### Title: Per-variable sum of model weights
+> ### Aliases: importance sum.of.weights sw
+> ### Keywords: models
+> 
+> ### ** Examples
+> 
+> 
+> # Generate some models
+> fm1 <- lm(y ~ ., data = Cement, na.action = na.fail)
+> ms1 <- dredge(fm1)
+Fixed term is "(Intercept)"
+> 
+> # Sum of weights can be calculated/extracted from various objects:
+> sw(ms1)
+                     X1   X2   X4   X3  
+Sum of weights:      0.99 0.81 0.32 0.21
+N containing models:    8    8    8    8
+> ## Not run: 
+> ##D sw(subset(model.sel(ms1), delta <= 4))
+> ##D sw(model.avg(ms1, subset = delta <= 4))
+> ##D sw(subset(ms1, delta <= 4))
+> ##D sw(get.models(ms1, delta <= 4))
+> ## End(Not run)
+> 
+> # Re-evaluate SW according to BIC
+> # note that re-ranking involves fitting the models again
+> 
+> # 'nobs' is not used here for backwards compatibility
+> lognobs <- log(length(resid(fm1)))
+> 
+> sw(subset(model.sel(ms1, rank = AIC, rank.args = list(k = lognobs)),
++     cumsum(weight) <= .95))
+Re-fitting models...
+                     X1   X2   X4   X3  
+Sum of weights:      1.00 0.83 0.49 0.49
+N containing models:    5    4    3    3
+> 
+> # This gives a different result than previous command, because 'subset' is
+> # applied to the original selection table that is ranked with 'AICc'
+> sw(model.avg(ms1, rank = AIC, rank.args = list(k = lognobs),
++     subset = cumsum(weight) <= .95))
+                     X1   X2   X4   X3  
+Sum of weights:      1.00 0.94 0.37 0.30
+N containing models:    4    3    2    1
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("updateable")
+> ### * updateable
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: updateable
+> ### Title: Make a function return updateable result
+> ### Aliases: updateable updateable2 get_call uGamm fitdistr2 MuMIn-gamm
+> ###   gamm-wrapper
+> ### Keywords: utils
+> 
+> ### ** Examples
+> 
+> 
+> # Simple example with cor.test:
+> 
+> # From example(cor.test)
+> x <- c(44.4, 45.9, 41.9, 53.3, 44.7, 44.1, 50.7, 45.2, 60.1)
+> y <- c( 2.6,  3.1,  2.5,  5.0,  3.6,  4.0,  5.2,  2.8,  3.8)
+> 
+> ct1 <- cor.test(x, y, method = "kendall", alternative = "greater")
+> 
+> uCor.test <- updateable(cor.test)
+> 
+> ct2 <- uCor.test(x, y, method = "kendall", alternative = "greater")
+> 
+> getCall(ct1) # --> NULL
+NULL
+> getCall(ct2)
+uCor.test(x = x, y, method = "kendall", alternative = "greater")
+> 
+> #update(ct1, method = "pearson") --> Error
+> update(ct2, method = "pearson")
+
+	Pearson's product-moment correlation
+
+data:  x and y
+t = 1.8411, df = 7, p-value = 0.05409
+alternative hypothesis: true correlation is greater than 0
+95 percent confidence interval:
+ -0.02223023  1.00000000
+sample estimates:
+      cor 
+0.5711816 
+
+> update(ct2, alternative = "two.sided")
+
+	Kendall's rank correlation tau
+
+data:  x and y
+T = 26, p-value = 0.1194
+alternative hypothesis: true tau is not equal to 0
+sample estimates:
+      tau 
+0.4444444 
+
+> 
+> 
+> ## predefined wrapper for 'gamm':
+> ## Don't show: 
+>  if(require(mgcv)) { 
++ ## End(Don't show)
++ set.seed(0)
++ dat <- gamSim(6, n = 100, scale = 5, dist = "normal")
++ 
++ fmm1 <- uGamm(y ~s(x0)+ s(x3) + s(x2), family = gaussian, data = dat, 
++     random = list(fac = ~1))
++ 
++ getCall(fmm1)
++ class(fmm1)
++ ## Don't show: 
++  } 
+Loading required package: mgcv
+Loading required package: nlme
+This is mgcv 1.9-4. For overview type '?mgcv'.
+4 term additive + random effectGu & Wahba 4 term additive model
+[1] "gamm"
+> ## End(Don't show)
+> ###
+> 
+> ## Not run: 
+> ##D library(caper)
+> ##D data(shorebird)
+> ##D shorebird <- comparative.data(shorebird.tree, shorebird.data, Species)
+> ##D 
+> ##D fm1 <- crunch(Egg.Mass ~ F.Mass * M.Mass, data = shorebird)
+> ##D 
+> ##D uCrunch <- updateable(crunch)
+> ##D 
+> ##D fm2 <- uCrunch(Egg.Mass ~ F.Mass * M.Mass, data = shorebird)
+> ##D 
+> ##D getCall(fm1)
+> ##D getCall(fm2)
+> ##D update(fm2) # Error with 'fm1'
+> ##D dredge(fm2)
+> ## End(Not run)
+> 
+> ###
+> ## Not run: 
+> ##D # "lmekin" does not store "formula" element 
+> ##D library(coxme)
+> ##D uLmekin <- updateable(lmekin, eval.args = "formula")
+> ##D 
+> ##D f <- effort ~ Type + (1|Subject)
+> ##D fm1 <- lmekin(f, data = ergoStool)
+> ##D fm2 <- uLmekin(f, data = ergoStool)
+> ##D 
+> ##D f <- wrong ~ formula # reassigning "f"
+> ##D 
+> ##D getCall(fm1) # formula is "f"
+> ##D getCall(fm2) 
+> ##D 
+> ##D formula(fm1) # returns the current value of "f" 
+> ##D formula(fm2)
+> ## End(Not run)
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+
+detaching ‘package:mgcv’, ‘package:nlme’
+
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  4.019 0.139 5.278 0 0.002 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

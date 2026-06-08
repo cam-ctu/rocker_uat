@@ -1,0 +1,43 @@
+
+R version 4.5.3 (2026-03-11) -- "Reassured Reassurer"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(bbmle)
+Loading required package: stats4
+> set.seed(1002)
+> lymax <- c(0,2)
+> lhalf <- 0
+> x <- runif(200)
+> g <- factor(rep(c("a","b"),each=100))
+> y <- rnbinom(200,mu=(exp(lymax[g])/(1+x/exp(lhalf)))^2,size=2)
+> dd <- data.frame(x,g,y)
+> 
+> fit3 <- mle2(y~dnbinom(mu=(exp(lymax)/(1+x/exp(lhalf)))^d,size=exp(logk)),
++     parameters=list(lymax~g),
++     start=list(lymax=0,lhalf=0,logk=0,d=NA),
++     data=dd,
++     fixed=list(d=2))
+> 
+> pp <- pop_pred_samp(fit3,PDify=TRUE)
+> stopifnot(
++     !any(is.na(pp)),
++     identical(colnames(pp),
++               c("lymax.(Intercept)", "lymax.gb", "lhalf", "logk", "d")))
+> 
+> ## fix parameters instead of dealing with negative variance
+> pp2 <- pop_pred_samp(fit3,fix_param="lhalf")
+> stopifnot(length(unique(pp2[,"lhalf"]))==1)
+> 

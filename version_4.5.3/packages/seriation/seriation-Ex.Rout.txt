@@ -1,0 +1,2704 @@
+
+R version 4.5.3 (2026-03-11) -- "Reassured Reassurer"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "seriation"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('seriation')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("Chameleon")
+> ### * Chameleon
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Chameleon
+> ### Title: 2D Data Sets used for the CHAMELEON Clustering Algorithm
+> ### Aliases: Chameleon chameleon chameleon_ds4 chameleon_ds5 chameleon_ds7
+> ###   chameleon_ds8
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> data(Chameleon)
+> 
+> plot(chameleon_ds4, cex = .1)
+> plot(chameleon_ds5, cex = .1)
+> plot(chameleon_ds7, cex = .1)
+> plot(chameleon_ds8, cex = .1)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Irish")
+> ### * Irish
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Irish
+> ### Title: Irish Referendum Data Set
+> ### Aliases: Irish
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> data(Irish)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Munsingen")
+> ### * Munsingen
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Munsingen
+> ### Title: Hodson's Munsingen Data Set
+> ### Aliases: Munsingen
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> data("Munsingen")
+> 
+> ## Seriation method after Kendall (1971)
+> ## Kendall's square symmetric matrix S and SoS
+> S <- function(x, w = 1) {
++   sij <- function(i , j) w * sum(pmin(x[i,], x[j,]))
++   h <- nrow(x)
++   r <- matrix(ncol = h, nrow =h)
++   for(i in 1:h) for (j in 1:h)  r[i,j] <- sij(i,j)
++   r
++ }
+> 
+> SoS <- function(x) S(S(x))
+> 
+> ## Kendall's horse shoe (Hamiltonian arc)
+> horse_shoe_plot <- function(mds, sigma, threshold = mean(sigma), ...) {
++     plot(mds, main = paste("Kendall's horse shoe with th =", threshold), ...)
++     l <- which(sigma > threshold, arr.ind=TRUE)
++     for(i in 1:nrow(l))  lines(rbind(mds[l[i,1],], mds[l[i,2],]))
++ }
+> 
+> ## shuffle data
+> x <- Munsingen[sample(nrow(Munsingen)),]
+> 
+> ## calculate matrix and do isoMDS (from package MASS)
+> sigma <- SoS(x)
+> library("MASS")
+> mds <- isoMDS(1/(1+sigma))$points
+initial  value 21.256540 
+iter   5 value 15.880270
+iter  10 value 15.250082
+iter  10 value 15.249796
+iter  10 value 15.236816
+final  value 15.236816 
+converged
+> 
+> ## plot Kendall's horse shoe
+> horse_shoe_plot(mds, sigma)
+> 
+> ## find order using a TSP
+> library("TSP")
+> tour <- solve_TSP(insert_dummy(TSP(dist(mds)), label = "cut"),
++     method = "2-opt", control = list(rep = 15))
+Warning: executing %dopar% sequentially: no parallel backend registered
+> tour <- cut_tour(tour, "cut")
+> lines(mds[tour,], col = "red", lwd = 2)
+> 
+> ## create and plot order
+> order <- ser_permutation(tour, 1:ncol(x))
+> bertinplot(x, order, options= list(panel=panel.circles,
++     rev = TRUE))
+Warning: .get_parameters(options, list(panel.function = panel.bars, flip_axes = TRUE, : Unknown control parameter(s) ‘options’ are ignored. Rerun with verbose = TRUE.    frame = FALSE, spacing = 0.2, margins = c(5, 4, 8, 8), gp_labels = gpar(), : Unknown control parameter(s) ‘options’ are ignored. Rerun with verbose = TRUE.    gp_panels = gpar(), shading = NULL, shading_col = .sequential_pal(100), : Unknown control parameter(s) ‘options’ are ignored. Rerun with verbose = TRUE.    newpage = TRUE, pop = TRUE)): Unknown control parameter(s) ‘options’ are ignored. Rerun with verbose = TRUE.
+> 
+> ## compare criterion values
+> rbind(
++     random = criterion(x),
++     reordered = criterion(x, order),
++     Hodson = criterion(Munsingen)
++    )
+               Cor_R  ME Moore_stress Neumann_stress
+random    -0.0715374 149         3506           1564
+reordered -0.9066556 221         2784           1278
+Hodson     0.9423637 239         2574           1206
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:TSP’, ‘package:MASS’
+
+> nameEx("Psych24")
+> ### * Psych24
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Psych24
+> ### Title: Results of 24 Psychological Test for 8th Grade Students
+> ### Aliases: Psych24
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> data("Psych24")
+> 
+> ## create a dist object and also get rid of the one negative entry in the
+> ## correlation matrix
+> d <- as.dist(1 - abs(Psych24))
+> 
+> pimage(d)
+> 
+> ## do hclust as in Ling (1973)
+> hc <- hclust(d, method = "complete")
+> plot(hc)
+> 
+> pimage(d, hc)
+> 
+> ## use seriation
+> order <- seriate(d, method = "tsp")
+> #order <- seriate(d, method = "tsp", control = list(method = "concorde"))
+> pimage(d, order)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("SupremeCourt")
+> ### * SupremeCourt
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: SupremeCourt
+> ### Title: Voting Patterns in the Second Rehnquist U.S. Supreme Court
+> ### Aliases: SupremeCourt
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> data("SupremeCourt")
+> 
+> # a matrix with joint probability of disagreement
+> SupremeCourt
+           Breyer Ginsburg Kennedy OConnor Rehnquist  Scalia  Souter Stevens
+Breyer    0.00000  0.11966 0.25000 0.20940   0.29915 0.35256 0.11752 0.16239
+Ginsburg  0.11966  0.00000 0.26790 0.25214   0.30769 0.36966 0.09615 0.14530
+Kennedy   0.25000  0.26709 0.00000 0.15598   0.12179 0.18803 0.24786 0.32692
+OConnor   0.20940  0.25214 0.15598 0.00000   0.16239 0.20726 0.22009 0.32906
+Rehnquist 0.29915  0.30769 0.12179 0.16239   0.00000 0.14316 0.29274 0.40171
+Scalia    0.35256  0.36966 0.18803 0.20726   0.14316 0.00000 0.33761 0.43803
+Souter    0.11752  0.09615 0.24790 0.22009   0.29274 0.33761 0.00000 0.16880
+Stevens   0.16239  0.14530 0.32692 0.32906   0.40171 0.43803 0.16880 0.00000
+Thomas    0.35897  0.36752 0.17735 0.20513   0.13675 0.06624 0.33120 0.43590
+           Thomas
+Breyer    0.35897
+Ginsburg  0.36752
+Kennedy   0.17735
+OConnor   0.20513
+Rehnquist 0.13675
+Scalia    0.06624
+Souter    0.33120
+Stevens   0.43590
+Thomas    0.00000
+> 
+> # show judges in original alphabetical order
+> d <- as.dist(SupremeCourt)
+> pimage(d, diag = TRUE, upper_tri = TRUE)
+> 
+> # reorder judges using seriation based on similar decisions
+> o <- seriate(d)
+> o
+object of class ‘ser_permutation’, ‘list’
+contains permutation vectors for 1-mode data
+
+  vector length seriation method
+1             9         Spectral
+> 
+> pimage(d, o, diag = TRUE, upper_tri = TRUE)
+> 
+> # Use optimal leaf ordering (hierarchical clustering with reordering)
+> # which uses a dendrogram
+> o <- seriate(d, method = "OLO")
+> o
+object of class ‘ser_permutation’, ‘list’
+contains permutation vectors for 1-mode data
+
+  vector length seriation method
+1             9              OLO
+> 
+> plot(o[[1]])
+> 
+> # Use multi-dimensional scaling and show the configuration
+> o <- seriate(d, method = "sammon")
+> o
+object of class ‘ser_permutation’, ‘list’
+contains permutation vectors for 1-mode data
+
+  vector length seriation method
+1             9   Sammon_mapping
+> 
+> pimage(d, o, diag = TRUE, upper_tri = TRUE)
+> plot_config(o[[1]])
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Townships")
+> ### * Townships
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Townships
+> ### Title: Bertin's Characteristics of Townships
+> ### Aliases: Townships
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> data("Townships")
+> 
+> ## original data
+> pimage(Townships)
+> criterion(Townships)
+         Cor_R             ME   Moore_stress Neumann_stress 
+   -0.02834833    19.00000000   464.00000000   260.00000000 
+> 
+> ## seriated data using an improved Bond-Energy Algorithm
+> order <- seriate(Townships, method = "BEA_TSP")
+> pimage(Townships, order)
+> criterion(Townships, order)
+         Cor_R             ME   Moore_stress Neumann_stress 
+   -0.07078142    64.00000000   196.00000000    78.00000000 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("VAT")
+> ### * VAT
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: VAT
+> ### Title: Visual Analysis for Cluster Tendency Assessment (VAT/iVAT)
+> ### Aliases: VAT iVAT path_dist ggVAT ggiVAT
+> ### Keywords: cluster manip
+> 
+> ### ** Examples
+> 
+> ## lines data set from Havens and Bezdek (2011)
+> x <- create_lines_data(250)
+> plot(x, xlim=c(-5,5), ylim=c(-3,3), cex=.2)
+> d <- dist(x)
+> 
+> ## create regular VAT
+> VAT(d, main = "VAT for Lines")
+> ## same as: pimage(d, seriate(d, "VAT"))
+> 
+> ## ggplot2 version
+> if (require("ggplot2")) {
++   ggVAT(d) + labs(title = "VAT")
++ }
+Loading required package: ggplot2
+> 
+> ## create iVAT which shows visually the three lines
+> iVAT(d, main = "iVAT for Lines")
+> ## same as:
+> ## d_path <- path_dist(d)
+> ## pimage(d_path, seriate(d_path, "VAT for Lines"))
+> 
+> ## ggplot2 version
+> if (require("ggplot2")) {
++   ggiVAT(d) + labs(title = "iVAT for Lines")
++ }
+> 
+> ## compare with dissplot (shows banded structures and relationship between
+> ## center line and the two outer lines)
+> dissplot(d, method = "OLO_single", main = "Dissplot for Lines", col = bluered(100, bias = .5))
+> 
+> ## compare with optimally reordered heatmap
+> hmap(d, method = "OLO_single", main = "Heatmap for Lines (opt. leaf ordering)",
++   col = bluered(100, bias = .5))
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’
+
+> nameEx("Wood")
+> ### * Wood
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Wood
+> ### Title: Gene Expression Data for Wood Formation in Poplar Trees
+> ### Aliases: Wood
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> data(Wood)
+> head(Wood)
+                  P          A          B          C          D          E
+AI161452 -0.7546223 -2.2447910 -2.4157241 -0.8181829  1.0121892  0.8839819
+AI161500 -2.0621934  0.2127532  0.3556842  0.2219739 -0.6714808  0.3477471
+AI161513  0.1708342  1.3265617  0.4093247 -1.2003526 -3.3316990 -2.0194944
+AI161572 -1.1837279 -1.5292043 -2.1512254 -1.0145349  1.1844282 -0.4033869
+AI161573 -1.8637857 -2.1495779 -2.5108412 -0.8444706  1.4952223 -1.7662259
+AI161629  1.5917360  1.0212036 -0.1519370 -1.3543136 -2.7099315 -1.3129411
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Zoo")
+> ### * Zoo
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Zoo
+> ### Title: Zoo Data Set
+> ### Aliases: Zoo
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> data("Zoo")
+> x <- scale(Zoo[, -17])
+> 
+> 
+> d <- dist(x)
+> pimage(d)
+> 
+> order <- seriate(d, method = "tsp")
+> pimage(d, order)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("bertinplot")
+> ### * bertinplot
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: bertinplot
+> ### Title: Plot a Bertin Matrix
+> ### Aliases: bertinplot panel.bars panel.circles panel.rectangles
+> ###   panel.squares panel.tiles panel.blocks panel.lines bertin_cut_line
+> ###   ggbertinplot
+> ### Keywords: cluster hplot
+> 
+> ### ** Examples
+> 
+> data("Irish")
+> scale_by_rank <- function(x) apply(x, 2, rank)
+> x <- scale_by_rank(Irish[,-6])
+> 
+> # Use the the sum of absolute rank differences
+> order <- c(
++   seriate(dist(x, "minkowski", p = 1)),
++   seriate(dist(t(x), "minkowski", p = 1))
++ )
+> 
+> # Plot
+> bertinplot(x, order)
+> 
+> # Some alternative displays
+> bertinplot(x, order, panel.function = panel.tiles, shading_col = bluered(100), highlight = FALSE)
+> bertinplot(x, order, panel.function = panel.circles, spacing = -.2)
+> bertinplot(x, order, panel.function = panel.rectangles)
+> bertinplot(x, order, panel.function = panel.lines)
+> 
+> # Plot with cut lines (we manually set the order here)
+> order <- ser_permutation(c(6L, 9L, 29L, 10L, 32L, 22L, 2L, 35L,
++   24L, 30L, 33L, 25L, 37L, 36L, 8L, 27L, 4L, 39L, 3L, 40L, 38L,
++   1L, 31L, 34L, 28L, 23L, 5L, 11L, 7L, 41L, 13L, 26L, 17L, 15L,
++   12L, 20L, 14L, 18L, 19L, 16L, 21L),
++     c(4L, 2L, 1L, 6L, 7L, 8L, 5L, 3L))
+> 
+> bertinplot(x, order, pop=FALSE)
+> bertin_cut_line(, 4) ## horizontal line between rows 4 and 5
+> bertin_cut_line(, 7) ## separate "Right to Life" from the rest
+> bertin_cut_line(18, c(0, 4)) ## separate a block of large values (vertically)
+> 
+> # ggplot2-based plots
+> if (require("ggplot2")) {
++   library(ggplot2)
++ 
++   # Default plot uses bars and highlighting values larger than the mean
++   ggbertinplot(x, order)
++ 
++   # highlight values in the 4th quartile
++   ggbertinplot(x, order, highlight = quantile(x, probs = .75))
++ 
++   # Use different geoms. "none" lets the user specify their own geom.
++   # Variables set are row, col and x (for the value).
++ 
++   ggbertinplot(x, order, geom = "tile", prop = TRUE)
++   ggbertinplot(x, order, geom = "rectangle")
++   ggbertinplot(x, order, geom = "rectangle", prop = TRUE)
++   ggbertinplot(x, order, geom = "circle")
++   ggbertinplot(x, order, geom = "line")
++ 
++   # Tiles with diverging color scale
++   ggbertinplot(x, order, geom = "tile", prop = TRUE) +
++     scale_fill_gradient2(midpoint = mean(x))
++ 
++   # Custom geom (geom = "none"). Defined variables are row, col, and x for the value
++   ggbertinplot(x, order, geom = "none", prop = FALSE) +
++     geom_point(aes(x = col, y = row, size = x, color = x > 30), pch = 15) +
++     scale_size(range = c(1, 10))
++ 
++   # Use a ggplot2 theme with theme_set()
++   old_theme <- theme_set(theme_minimal() +
++       theme(panel.grid = element_blank())
++     )
++   ggbertinplot(x, order, geom = "bar")
++   theme_set(old_theme)
++ }
+Loading required package: ggplot2
+Scale for fill is already present.
+Adding another scale for fill, which will replace the existing scale.
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’
+
+> nameEx("create_lines_data")
+> ### * create_lines_data
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: create_lines_data
+> ### Title: Create Simulated Data for Seriation Evaluation
+> ### Aliases: create_lines_data create_ordered_data
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> ## lines data set from Havens and Bezdek (2011)
+> x <- create_lines_data(100)
+> plot(x, xlim = c(-5, 5), ylim = c(-3, 3), cex = .2, col = attr(x, "id"))
+> d <- dist(x)
+> pimage(d, seriate(d, "OLO_single"), col = bluered(100, bias = .5), key = TRUE)
+> 
+> ## create_ordered_data can produce many types of "orderable" data
+> 
+> ## perfect pre-Anti-Robinson matrix (with a single components)
+> x <- create_ordered_data(100, k = 1)
+> plot(x, cex = .2, col = attr(x, "id"))
+> d <- dist(x)
+> pimage(d, seriate(d, "MDS"), col = bluered(100, bias=.5), key = TRUE)
+> 
+> ## separated components
+> x <- create_ordered_data(100, k = 5)
+> plot(x, cex =.2, col = attr(x, "id"))
+> d <- dist(x)
+> pimage(d, seriate(d, "MDS"), col = bluered(100, bias = .5), key = TRUE)
+> 
+> ## overlapping components
+> x <- create_ordered_data(100, k = 5, sd1 = 2)
+> plot(x, cex = .2, col = attr(x, "id"))
+> d <- dist(x)
+> pimage(d, seriate(d, "MDS"), col = bluered(100, bias = .5), key = TRUE)
+> 
+> ## introduce anti-Robinson violations (a non-zero y value)
+> x <- create_ordered_data(100, k = 5, sd1 = 2, sd2 = 5)
+> plot(x, cex = .2, col = attr(x, "id"))
+> d <- dist(x)
+> pimage(d, seriate(d, "MDS"), col = bluered(100, bias = .5), key = TRUE)
+> 
+> ## circular path (has always violations)
+> x <- create_ordered_data(100, k = 5, path = "circular", sd1 = 2)
+> plot(x, cex = .2, col = attr(x, "id"))
+> d <- dist(x)
+> pimage(d, seriate(d, "OLO"), col = bluered(100, bias = .5), key = TRUE)
+> 
+> ## circular path (with more violations violations)
+> x <- create_ordered_data(100, k = 5, path = "circular", sd1 = 2, sd2 = 1)
+> plot(x, cex=.2, col = attr(x, "id"))
+> d <- dist(x)
+> pimage(d, seriate(d, "OLO"), col = bluered(100, bias = .5), key = TRUE)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("criterion")
+> ### * criterion
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: criterion
+> ### Title: Criterion for a Loss/Merit Function for Data Given a Permutation
+> ### Aliases: criterion criterion.array criterion.dist criterion.matrix
+> ###   criterion.data.frame criterion.table
+> ### Keywords: cluster
+> 
+> ### ** Examples
+> 
+> ## create random data and calculate distances
+> m <- matrix(runif(20),ncol=2)
+> d <- dist(m)
+> 
+> ## get an order for rows (optimal for the least squares criterion)
+> o <- seriate(d, method = "MDS")
+> o
+object of class ‘ser_permutation’, ‘list’
+contains permutation vectors for 1-mode data
+
+  vector length seriation method
+1            10              MDS
+> 
+> ## compare the values for all available criteria
+> rbind(
++     unordered = criterion(d),
++     ordered = criterion(d, o)
++ )
+               2SUM AR_deviations AR_events      BAR Gradient_raw
+unordered 1066.2871     24.037269       105 13.20916           30
+ordered    980.3107      7.459374        51 10.19346          138
+          Gradient_weighted   Inertia Lazy_path_length Least_squares       LS
+unordered          10.05022  955.2078         21.11777      1307.285 186.9086
+ordered            44.98042 1162.1031         16.08581      1260.712 210.1955
+          MDS_stress       ME Moore_stress Neumann_stress Path_length   RGAR
+unordered  0.5914991 87.51347     21.86043      13.906758    4.588805 0.4375
+ordered    0.3600998 88.71082     15.07578       8.501781    3.289349 0.2125
+                Rho
+unordered 0.1346735
+ordered   0.6794283
+> 
+> ## compare RGAR by window size (from local to global)
+> w <- 2:(nrow(m)-1)
+> RGAR <- sapply(w, FUN = function (w)
++   criterion(d, o, method="RGAR", w = w))
+> plot(w, RGAR, type = "b", ylim = c(0,1),
++   xlab = "Windows size (w)", main = "RGAR by window size")
+> 
+> 
+> 
+> cleanEx()
+> nameEx("dissplot")
+> ### * dissplot
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: dissplot
+> ### Title: Dissimilarity Plot
+> ### Aliases: dissplot plot.reordered_cluster_dissimilarity_matrix
+> ###   print.reordered_cluster_dissimilarity_matrix ggdissplot
+> ### Keywords: cluster hplot
+> 
+> ### ** Examples
+> 
+> data("iris")
+> 
+> # shuffle rows
+> x_iris <- iris[sample(seq(nrow(iris))), -5]
+> d <- dist(x_iris)
+> 
+> # Plot original matrix
+> dissplot(d, method = NA)
+> 
+> # Plot reordered matrix using the nearest insertion algorithm (from tsp)
+> dissplot(d, method = "TSP", main = "Seriation (TSP)")
+> 
+> # Cluster iris with k-means and 3 clusters and reorder the dissimality matrix
+> l <- kmeans(x_iris, centers = 3)$cluster
+> dissplot(d, labels = l, main = "k-means")
+> 
+> # show only distances as lower triangle
+> dissplot(d, labels = l, main = "k-means", lower_tri = TRUE, upper_tri = FALSE)
+> 
+> # Use a grid layout to place several plots on a page
+> library("grid")
+> grid.newpage()
+> pushViewport(viewport(layout=grid.layout(nrow = 2, ncol = 2),
++     gp = gpar(fontsize = 8)))
+> pushViewport(viewport(layout.pos.row = 1, layout.pos.col = 1))
+> 
+> # Visualize the clustering (using Spectral between clusters and MDS within)
+> res <- dissplot(d, l, method = list(inter_cluster = "Spectral", 
++                                     intra_cluster = "MDS"),
++     main = "K-Means + Seriation", newpage = FALSE)
+> 
+> popViewport()
+> pushViewport(viewport(layout.pos.row = 1, layout.pos.col = 2))
+> 
+> # More visualization options. Note that we reuse the reordered object res!
+> # color: use 10 shades red-blue, biased towards small distances
+> plot(res, main = "K-Means + Seriation (red-blue + biased)",
++     col= bluered(10, bias = .5), newpage = FALSE)
+> 
+> popViewport()
+> pushViewport(viewport(layout.pos.row = 2, layout.pos.col = 1))
+> 
+> # Threshold (using zlim) and cubic scale to highlight differences
+> plot(res, main = "K-Means + Seriation (cubic + threshold)",
++     zlim = c(0, 2), col = grays(100, power = 3), newpage = FALSE)
+> 
+> popViewport()
+> pushViewport(viewport(layout.pos.row = 2, layout.pos.col = 2))
+> 
+> # Use gray scale with logistic transformation
+> plot(res, main = "K-Means + Seriation (logistic scale)",
++   col = gray(
++     plogis(seq(max(res$x_reordered), min(res$x_reordered), length.out = 100),
++       location = 2, scale = 1/2, log.p = FALSE)
++     ),
++   newpage = FALSE)
+> 
+> popViewport(2)
+> 
+> # The reordered_cluster_dissimilarity_matrix object
+> res
+object of class 'reordered_cluster_dissimilarity_matrix'
+matrix dimensions: 150 x 150 
+dissimilarity measure: 'euclidean'
+number of clusters k: 3 
+
+cluster description
+  position label size aggregated_dissimilarity avg_silhouette_width
+1        1     2   38                1.0338691            0.4511051
+2        2     1   62                1.0229060            0.4173199
+3        3     3   50                0.6968169            0.7981405
+
+used seriation methods
+inter-cluster: 'Spectral'
+intra-cluster: 'MDS'
+
+dissimilarity aggregation method: 'avg'
+> names(res)
+ [1] "x_reordered"             "labels"                 
+ [3] "seriation_methods"       "aggregation_method"     
+ [5] "k"                       "cluster_dissimilarities"
+ [7] "sil"                     "order"                  
+ [9] "cluster_order"           "diss_measure"           
+[11] "description"            
+> 
+> ## --------------------------------------------------------------------
+> ## ggplot-based dissplot
+> if (require("ggplot2")) {
++ 
++ library("ggplot2")
++ 
++ # Plot original matrix
++ ggdissplot(d, method = NA)
++ 
++ # Plot seriated matrix
++ ggdissplot(d, method = "TSP") +
++   labs(title = "Seriation (TSP)")
++ 
++ # Cluster iris with k-means and 3 clusters
++ l <- kmeans(x_iris, centers = 3)$cluster
++ 
++ ggdissplot(d, labels = l) +
++   labs(title = "K-means + Seriation")
++ 
++ # show only lower triangle
++ ggdissplot(d, labels = l, lower_tri = TRUE, upper_tri = FALSE) +
++   labs(title = "K-means + Seriation")
++ 
++ # No lines or cluster labels and add a label for the color key (fill)
++ ggdissplot(d, labels = l, cluster_lines = FALSE, cluster_labels = FALSE) +
++   labs(title = "K-means + Seriation", fill = "Distances\n(Euclidean)")
++ 
++ # Diverging color palette with manual set midpoint and different seriation methods
++ ggdissplot(d, l, method = list(inter_cluster = "Spectral", 
++                                intra_cluster = "MDS")) +
++   labs(title = "K-Means + Seriation", subtitle = "biased color scale") +
++   scale_fill_gradient2(midpoint = median(d))
++ 
++ # Use manipulate scale using package scales
++ library("scales")
++ 
++ # Threshold (using limit and na.value) and cubic scale to highlight differences
++ cubic_dist_trans <- trans_new(
++   name = "cubic",
++   # note that we have to do the inverse transformation for distances
++   transform = function(x) x^(1/3),
++   inverse = function(x) x^3
++ )
++ 
++ ggdissplot(d, l, method = list(inter_cluster = "Spectral", 
++                                intra_cluster = "MDS")) +
++   labs(title = "K-Means + Seriation", subtitle = "cubic + biased color scale") +
++   scale_fill_gradient(low = "black", high = "white",
++     limits = c(0,2), na.value = "white",
++     transform = cubic_dist_trans)
++ 
++ # Use gray scale with logistic transformation
++ logis_2_.5_dist_trans <- trans_new(
++   name = "Logistic transform (location, scale)",
++   # note that we have to do the inverse transformation for distances
++   transform = function(x) plogis(x, location = 2, scale = .5, log.p = FALSE),
++   inverse = function(x) qlogis(x, location = 2, scale = .5, log.p = FALSE),
++ )
++ 
++ ggdissplot(d, l, method = list(inter_cluster = "Spectral", 
++                                intra_cluster = "MDS")) +
++   labs(title = "K-Means + Seriation", subtitle = "logistic color scale") +
++   scale_fill_gradient(low = "black", high = "white",
++     transform = logis_2_.5_dist_trans,
++     breaks = c(0, 1, 2, 3, 4))
++ }
+Loading required package: ggplot2
+Scale for fill is already present.
+Adding another scale for fill, which will replace the existing scale.
+Scale for fill is already present.
+Adding another scale for fill, which will replace the existing scale.
+Scale for fill is already present.
+Adding another scale for fill, which will replace the existing scale.
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:scales’, ‘package:ggplot2’, ‘package:grid’
+
+> nameEx("get_order")
+> ### * get_order
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: get_order
+> ### Title: Extracting Order Information from a Permutation Object
+> ### Aliases: get_order get_order.ser_permutation_vector
+> ###   get_order.ser_permutation get_order.hclust get_order.dendrogram
+> ###   get_order.integer get_order.numeric get_rank get_permutation_matrix
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> ## create a random ser_permutation_vector
+> ## Note that ser_permutation_vector is a single permutation vector
+> x <- structure(1:10, names = paste0("X", 1:10))
+> o <- sample(x)
+> o
+ X9  X4  X7  X1  X2  X5  X3 X10  X6  X8 
+  9   4   7   1   2   5   3  10   6   8 
+> 
+> p <- ser_permutation_vector(o)
+> p
+object of class ‘ser_permutation_vector’, ‘integer’
+contains a permutation vector of length 10
+used seriation method: 'unknown'
+> 
+> get_order(p)
+ X9  X4  X7  X1  X2  X5  X3 X10  X6  X8 
+  9   4   7   1   2   5   3  10   6   8 
+> get_rank(p)
+ X1  X2  X3  X4  X5  X6  X7  X8  X9 X10 
+  4   5   7   2   6   9   3  10   1   8 
+> get_permutation_matrix(p)
+    X9 X4 X7 X1 X2 X5 X3 X10 X6 X8
+X9   0  0  0  0  0  0  0   0  1  0
+X4   0  0  0  1  0  0  0   0  0  0
+X7   0  0  0  0  0  0  1   0  0  0
+X1   1  0  0  0  0  0  0   0  0  0
+X2   0  1  0  0  0  0  0   0  0  0
+X5   0  0  0  0  1  0  0   0  0  0
+X3   0  0  1  0  0  0  0   0  0  0
+X10  0  0  0  0  0  0  0   0  0  1
+X6   0  0  0  0  0  1  0   0  0  0
+X8   0  0  0  0  0  0  0   1  0  0
+> 
+> ## reorder objects using subsetting, the provided permute function or by
+> ## multiplying the with the permutation matrix. We use here
+> x[get_order(p)]
+ X9  X4  X7  X1  X2  X5  X3 X10  X6  X8 
+  9   4   7   1   2   5   3  10   6   8 
+> permute(x, p)
+ X9  X4  X7  X1  X2  X5  X3 X10  X6  X8 
+  9   4   7   1   2   5   3  10   6   8 
+> drop(get_permutation_matrix(p) %*%  x)
+ X9  X4  X7  X1  X2  X5  X3 X10  X6  X8 
+  9   4   7   1   2   5   3  10   6   8 
+> 
+> ## ser_permutation contains one permutation vector for each dimension
+> p2 <- ser_permutation(p, sample(5))
+> p2
+object of class ‘ser_permutation’, ‘list’
+contains permutation vectors for 2-mode data
+
+  vector length seriation method
+1            10          unknown
+2             5          unknown
+> 
+> get_order(p2, dim = 2)
+[1] 3 5 1 4 2
+> get_rank(p2, dim = 2)
+[1] 3 5 1 4 2
+> get_permutation_matrix(p2, dim = 2)
+     [,1] [,2] [,3] [,4] [,5]
+[1,]    0    0    1    0    0
+[2,]    0    0    0    0    1
+[3,]    1    0    0    0    0
+[4,]    0    0    0    1    0
+[5,]    0    1    0    0    0
+> 
+> 
+> 
+> cleanEx()
+> nameEx("hmap")
+> ### * hmap
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: hmap
+> ### Title: Plot Heat Map Reordered Using Seriation
+> ### Aliases: hmap gghmap
+> ### Keywords: hplot
+> 
+> ### ** Examples
+> 
+> data("Wood")
+> 
+> # Default heatmap does Euclidean distance, hierarchical clustering with
+> # complete-link and optimal leaf ordering. Note that the rows are
+> # ordered top-down in the seriation order (stats::heatmap orders in reverse)
+> hmap(Wood, main = "Wood (opt. leaf ordering)")
+> hmap(Wood, plot_margins = "distances", main = "Wood (opt. leaf ordering)")
+> hmap(Wood, plot_margins = "none", main = "Wood (opt. leaf ordering)")
+> 
+> # Heatmap with correlation-based distance, green-red color (greenred is
+> # predefined) and optimal leaf ordering and no row label
+> dist_cor <- function(x) as.dist(sqrt(1 - cor(t(x))))
+> hmap(Wood, distfun = dist_cor, col = greenred(100),
++   main = "Wood (reorded by corr. between obs.)")
+> 
+> # Heatmap for distances
+> d <- dist(Wood)
+> hmap(d, main = "Wood (Euclidean distances)")
+> 
+> # order-based with dissimilarity matrices
+> hmap(Wood, method = "MDS_angle",
++   col = greenred(100), col_dist = greens(100, power = 2),
++   keylab = "norm. Expression", main = "Wood (reorderd with distances)")
+> 
+> # Manually create a simple heatmap with pimage.
+> o <- seriate(Wood, method = "heatmap",
++    control = list(dist_fun = dist, seriation_method = "OLO_ward"))
+> o
+object of class ‘ser_permutation’, ‘list’
+contains permutation vectors for 2-mode data
+
+  vector length seriation method
+1           136          Heatmap
+2             6          Heatmap
+> 
+> pimage(Wood, o)
+> 
+> # Note: method heatmap calculates reorderd hclust objects which can be used
+> #       for many heatmap implementations like the standard implementation in
+> #       package stats.
+> heatmap(Wood, Rowv = as.dendrogram(o[[1]]), Colv = as.dendrogram(o[[2]]))
+> 
+> # ggplot 2 version does not support dendrograms in the margin (for now)
+> if (require("ggplot2")) {
++   library("ggplot2")
++ 
++   gghmap(Wood) + labs(title = "Wood", subtitle = "Optimal leaf ordering")
++ 
++   gghmap(Wood, flip_axes = TRUE, prop = TRUE) +
++     labs(title = "Wood", subtitle = "Optimal leaf ordering")
++ 
++   dist_cor <- function(x) as.dist(sqrt(1 - cor(t(x))))
++   gghmap(Wood, distfun = dist_cor) +
++     labs(title = "Wood", subtitle = "Reorded by correlation between observations") +
++     scale_fill_gradient2(low = "darkgreen", high = "red")
++ 
++   gghmap(d, prop = TRUE) +
++     labs(title = "Wood", subtitle = "Euclidean distances, reordered")
++ 
++   # Note: the ggplot2-based version currently cannot show distance matrices
++   #      in the same plot.
++ 
++   # Manually seriate and plot as pimage.
++   o <- seriate(Wood, method = "heatmap", control = list(dist_fun = dist,
++     seriation_method = "OLO_ward"))
++   o
++ 
++   ggpimage(Wood, o)
++ }
+Loading required package: ggplot2
+Scale for fill is already present.
+Adding another scale for fill, which will replace the existing scale.
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’
+
+> nameEx("is.robinson")
+> ### * is.robinson
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: is.robinson
+> ### Title: Create and Recognize Robinson and Pre-Robinson Matrices
+> ### Aliases: is.robinson Robinson robinson random.robinson
+> 
+> ### ** Examples
+> 
+> ## create a perfect anti Robinson structure
+> m <- random.robinson(10)
+> pimage(m)
+> 
+> is.robinson(m)
+[1] TRUE
+> 
+> ## permute the structure to make it not Robinsonian. However,
+> ## it is still pre-Robinson.
+> o <- sample(10)
+> m2 <- permute(m, ser_permutation(o,o))
+> pimage(m2)
+> 
+> is.robinson(m2)
+[1] FALSE
+> is.robinson(m2, pre = TRUE)
+[1] TRUE
+> 
+> ## create a binary random Robinson matrix (not anti Robinson)
+> m3 <- random.robinson(10, anti = FALSE) > .7
+> pimage(m3)
+> is.robinson(m3, anti = FALSE)
+[1] TRUE
+> 
+> ## create matrices with noise (as distance matrices)
+> m4 <- as.dist(random.robinson(50, pre = FALSE, noise = .1))
+> pimage(m4)
+> criterion(m4, method = "AR")
+AR_events 
+      327 
+> 
+> m5 <- as.dist(random.robinson(50, pre = FALSE, noise = .5))
+> pimage(m5)
+> criterion(m5, method = "AR")
+AR_events 
+     4673 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("lle")
+> ### * lle
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: lle
+> ### Title: Locally Linear Embedding (LLE)
+> ### Aliases: lle LLE
+> ### Keywords: cluster manip
+> 
+> ### ** Examples
+> 
+> data(iris)
+> x <- iris[, -5]
+> 
+> # project iris on 2 dimensions
+> conf <- lle(x, m = 2, k = 30)
+> conf
+               [,1]         [,2]
+  [1,]  0.582625348  1.277719259
+  [2,] -1.144646751  1.247143401
+  [3,] -1.137951008  1.271129435
+  [4,] -1.655188012  1.261127858
+  [5,]  0.580096171  1.288270924
+  [6,]  2.203018869  1.280541211
+  [7,] -0.940222121  1.281922032
+  [8,]  0.074732464  1.270571144
+  [9,] -2.624603377  1.255847366
+ [10,] -0.876424763  1.255805682
+ [11,]  1.806672859  1.280098648
+ [12,] -0.434636858  1.274001075
+ [13,] -1.358673848  1.254492591
+ [14,] -2.560326547  1.278891630
+ [15,]  3.565977853  1.298229977
+ [16,]  4.193129649  1.313539784
+ [17,]  2.252286220  1.292098709
+ [18,]  0.547728226  1.273454893
+ [19,]  2.732973819  1.268091685
+ [20,]  1.273433475  1.292645389
+ [21,]  1.041819070  1.252216230
+ [22,]  0.991914658  1.281039608
+ [23,] -0.368598147  1.312146034
+ [24,] -0.053091937  1.241550425
+ [25,] -0.468267685  1.265238453
+ [26,] -0.920653815  1.238185111
+ [27,] -0.007182899  1.259144823
+ [28,]  0.817860564  1.271636880
+ [29,]  0.584356744  1.267143041
+ [30,] -1.173375421  1.262416054
+ [31,] -1.171187817  1.251858155
+ [32,]  0.997371666  1.249533223
+ [33,]  2.327383666  1.319845670
+ [34,]  3.293427997  1.316444539
+ [35,] -0.910949513  1.251583791
+ [36,] -0.379991798  1.264522965
+ [37,]  1.585128627  1.268031525
+ [38,]  0.364915538  1.295615984
+ [39,] -2.369117574  1.266037021
+ [40,]  0.323720566  1.267397029
+ [41,]  0.310025758  1.279507309
+ [42,] -3.847518179  1.208572794
+ [43,] -1.881248705  1.280568758
+ [44,]  0.169324528  1.258125675
+ [45,]  1.188749400  1.276790724
+ [46,] -1.427303975  1.246115737
+ [47,]  1.296097117  1.293988878
+ [48,] -1.397973816  1.271394088
+ [49,]  1.558861261  1.283243224
+ [50,] -0.159910066  1.266077408
+ [51,]  0.421270909 -0.646481030
+ [52,]  0.136653530 -0.474972833
+ [53,]  0.323668151 -0.727507118
+ [54,] -0.565633917  0.001494707
+ [55,]  0.043748433 -0.507506102
+ [56,] -0.328797609 -0.282462485
+ [57,]  0.105467052 -0.569316762
+ [58,] -0.770269310  0.460886315
+ [59,]  0.137309374 -0.491971921
+ [60,] -0.575341368  0.051079282
+ [61,] -0.865246446  0.384726818
+ [62,] -0.157321275 -0.243561739
+ [63,] -0.345487899 -0.021569973
+ [64,] -0.116692015 -0.465673876
+ [65,] -0.295536742  0.115405433
+ [66,]  0.258985989 -0.458767150
+ [67,] -0.319449911 -0.318751442
+ [68,] -0.278537306 -0.062942369
+ [69,] -0.300233181 -0.370162095
+ [70,] -0.436159389  0.052387664
+ [71,] -0.138528869 -0.574189871
+ [72,] -0.107420244 -0.139717116
+ [73,] -0.171572601 -0.578691129
+ [74,] -0.140517243 -0.418556541
+ [75,]  0.056171782 -0.328628676
+ [76,]  0.176760999 -0.433977961
+ [77,]  0.183782609 -0.625690246
+ [78,]  0.175924859 -0.767583457
+ [79,] -0.159190415 -0.382822965
+ [80,] -0.329312135  0.219459072
+ [81,] -0.512713629  0.120165424
+ [82,] -0.502913667  0.182640939
+ [83,] -0.276767976 -0.016729153
+ [84,] -0.264636358 -0.644391320
+ [85,] -0.415251529 -0.283488135
+ [86,]  0.003883132 -0.437879826
+ [87,]  0.237424102 -0.606442383
+ [88,] -0.202018846 -0.312152714
+ [89,] -0.288808423 -0.107789856
+ [90,] -0.498552868 -0.012356920
+ [91,] -0.482225702 -0.170877386
+ [92,] -0.077046702 -0.430100771
+ [93,] -0.315906777 -0.052664542
+ [94,] -0.755476082  0.450229872
+ [95,] -0.394329011 -0.129517438
+ [96,] -0.241301254 -0.148575906
+ [97,] -0.278753265 -0.161211439
+ [98,] -0.040990855 -0.293011446
+ [99,] -0.631469405  0.533912374
+[100,] -0.306800415 -0.111379083
+[101,] -0.016861812 -1.303305314
+[102,] -0.377444370 -0.669571417
+[103,]  0.299391349 -1.303849360
+[104,] -0.089554106 -0.964695452
+[105,]  0.007039570 -1.173267793
+[106,]  0.506782432 -1.690324560
+[107,] -0.830354030 -0.200481757
+[108,]  0.360384816 -1.442356238
+[109,] -0.038847678 -1.093962040
+[110,]  0.509150756 -1.528478871
+[111,]  0.123743860 -0.849223234
+[112,] -0.098494793 -0.861424322
+[113,]  0.174384112 -1.079392639
+[114,] -0.492276689 -0.615812221
+[115,] -0.371095971 -0.777994841
+[116,]  0.046640980 -0.977222870
+[117,]  0.046447628 -0.964618260
+[118,]  0.801582145 -1.825562344
+[119,]  0.402236801 -1.845107369
+[120,] -0.422907555 -0.547266152
+[121,]  0.266956723 -1.236855419
+[122,] -0.434006577 -0.576190193
+[123,]  0.491367427 -1.716289079
+[124,] -0.120275045 -0.653213321
+[125,]  0.214996779 -1.167407848
+[126,]  0.424296725 -1.317746246
+[127,] -0.128783804 -0.599967595
+[128,] -0.114982963 -0.638495765
+[129,] -0.091995705 -1.036122731
+[130,]  0.382170393 -1.178138088
+[131,]  0.381169013 -1.388603960
+[132,]  0.923095110 -1.694942679
+[133,] -0.097516792 -1.056511829
+[134,] -0.080006245 -0.684427184
+[135,] -0.264764500 -0.826982015
+[136,]  0.568144393 -1.536488319
+[137,]  0.042785425 -1.120762606
+[138,]  0.031159091 -0.953635792
+[139,] -0.157707871 -0.578203343
+[140,]  0.261711339 -1.061633638
+[141,]  0.136143186 -1.171559543
+[142,]  0.264960181 -0.974342519
+[143,] -0.377444370 -0.669571417
+[144,]  0.208349594 -1.303933050
+[145,]  0.191500870 -1.248039264
+[146,]  0.129549390 -0.974164927
+[147,] -0.199258466 -0.702188906
+[148,]  0.050626855 -0.877692249
+[149,]  0.011511722 -0.997995530
+[150,] -0.222127082 -0.687886405
+> 
+> plot(conf, col = iris[, 5])
+> 
+> # project iris onto a single dimension
+> conf <- lle(x, m = 1, k = 30)
+> conf
+  [1]  1.277719259  1.247143401  1.271129435  1.261127858  1.288270924
+  [6]  1.280541211  1.281922032  1.270571144  1.255847366  1.255805682
+ [11]  1.280098648  1.274001075  1.254492591  1.278891630  1.298229977
+ [16]  1.313539784  1.292098709  1.273454893  1.268091685  1.292645389
+ [21]  1.252216230  1.281039608  1.312146034  1.241550425  1.265238453
+ [26]  1.238185111  1.259144823  1.271636880  1.267143041  1.262416054
+ [31]  1.251858155  1.249533223  1.319845670  1.316444539  1.251583791
+ [36]  1.264522965  1.268031525  1.295615984  1.266037021  1.267397029
+ [41]  1.279507309  1.208572794  1.280568758  1.258125675  1.276790724
+ [46]  1.246115737  1.293988878  1.271394088  1.283243224  1.266077408
+ [51] -0.646481030 -0.474972833 -0.727507118  0.001494707 -0.507506102
+ [56] -0.282462485 -0.569316762  0.460886315 -0.491971921  0.051079282
+ [61]  0.384726818 -0.243561739 -0.021569973 -0.465673876  0.115405433
+ [66] -0.458767150 -0.318751442 -0.062942369 -0.370162095  0.052387664
+ [71] -0.574189871 -0.139717116 -0.578691129 -0.418556541 -0.328628676
+ [76] -0.433977961 -0.625690246 -0.767583457 -0.382822965  0.219459072
+ [81]  0.120165424  0.182640939 -0.016729153 -0.644391320 -0.283488135
+ [86] -0.437879826 -0.606442383 -0.312152714 -0.107789856 -0.012356920
+ [91] -0.170877386 -0.430100771 -0.052664542  0.450229872 -0.129517438
+ [96] -0.148575906 -0.161211439 -0.293011446  0.533912374 -0.111379083
+[101] -1.303305314 -0.669571417 -1.303849360 -0.964695452 -1.173267793
+[106] -1.690324560 -0.200481757 -1.442356238 -1.093962040 -1.528478871
+[111] -0.849223234 -0.861424322 -1.079392639 -0.615812221 -0.777994841
+[116] -0.977222870 -0.964618260 -1.825562344 -1.845107369 -0.547266152
+[121] -1.236855419 -0.576190193 -1.716289079 -0.653213321 -1.167407848
+[126] -1.317746246 -0.599967595 -0.638495765 -1.036122731 -1.178138088
+[131] -1.388603960 -1.694942679 -1.056511829 -0.684427184 -0.826982015
+[136] -1.536488319 -1.120762606 -0.953635792 -0.578203343 -1.061633638
+[141] -1.171559543 -0.974342519 -0.669571417 -1.303933050 -1.248039264
+[146] -0.974164927 -0.702188906 -0.877692249 -0.997995530 -0.687886405
+> 
+> plot_config(conf, col = iris[, 5], labels = FALSE)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("palette")
+> ### * palette
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: palette
+> ### Title: Different Useful Color Palettes
+> ### Aliases: palette bluered colors greenred reds blues greens greys grays
+> ### Keywords: hplot
+> 
+> ### ** Examples
+> 
+> m <- outer(1:10,1:10)
+> m
+      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10]
+ [1,]    1    2    3    4    5    6    7    8    9    10
+ [2,]    2    4    6    8   10   12   14   16   18    20
+ [3,]    3    6    9   12   15   18   21   24   27    30
+ [4,]    4    8   12   16   20   24   28   32   36    40
+ [5,]    5   10   15   20   25   30   35   40   45    50
+ [6,]    6   12   18   24   30   36   42   48   54    60
+ [7,]    7   14   21   28   35   42   49   56   63    70
+ [8,]    8   16   24   32   40   48   56   64   72    80
+ [9,]    9   18   27   36   45   54   63   72   81    90
+[10,]   10   20   30   40   50   60   70   80   90   100
+> 
+> pimage(m)
+> pimage(m, col = greys(100, power = 2))
+> pimage(m, col = greys(100, bias = 2))
+> pimage(m, col = bluered(100))
+> pimage(m, col = bluered(100, power = .5))
+> pimage(m, col = bluered(100, bias = 2))
+> pimage(m - 25, col = greenred(20, bias = 2))
+> 
+> ## choose your own color palettes
+> library(colorspace)
+> hcl_palettes(plot = TRUE)
+> 
+> ## blues (with 20 shades)
+> pimage(m,
++   col = colorspace::sequential_hcl(20, "Blues", rev = TRUE))
+> ## blue to green (aka "Cork")
+> pimage(m,
++   col = colorspace::diverging_hcl(100, "Cork"))
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:colorspace’
+
+> nameEx("permutation_vector2matrix")
+> ### * permutation_vector2matrix
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: permutation_vector2matrix
+> ### Title: Conversion Between Permutation Vector and Permutation Matrix
+> ### Aliases: permutation_vector2matrix permutation_matrix2vector
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> ## create a random permutation vector
+> pv <- structure(sample(5), names = paste0("X", 1:5))
+> pv
+X1 X2 X3 X4 X5 
+ 1  4  3  5  2 
+> 
+> ## convert into a permutation matrix
+> pm <- permutation_vector2matrix(pv)
+> pm
+   X1 X2 X3 X4 X5
+X1  1  0  0  0  0
+X2  0  0  0  1  0
+X3  0  0  1  0  0
+X4  0  0  0  0  1
+X5  0  1  0  0  0
+> 
+> ## convert back
+> permutation_matrix2vector(pm)
+X1 X2 X3 X4 X5 
+ 1  4  3  5  2 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("permute")
+> ### * permute
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: permute
+> ### Title: Permute the Order in Various Objects
+> ### Aliases: permute permute.array permute.matrix permute.data.frame
+> ###   permute.table permute.numeric permute.character permute.list
+> ###   permute.dist permute.dendrogram permute.hclust
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> # List data types for permute
+> methods("permute")
+ [1] permute.array*      permute.character*  permute.data.frame*
+ [4] permute.default*    permute.dendrogram* permute.dist*      
+ [7] permute.hclust*     permute.list*       permute.matrix*    
+[10] permute.numeric*    permute.table*     
+see '?methods' for accessing help and source code
+> 
+> # Permute matrix
+> m <- matrix(rnorm(10), 5, 2, dimnames = list(1:5, LETTERS[1:2]))
+> m
+           A          B
+1 -0.6264538 -0.8204684
+2  0.1836433  0.4874291
+3 -0.8356286  0.7383247
+4  1.5952808  0.5757814
+5  0.3295078 -0.3053884
+> 
+> # Permute rows and columns
+> o <- ser_permutation(5:1, 2:1)
+> o
+object of class ‘ser_permutation’, ‘list’
+contains permutation vectors for 2-mode data
+
+  vector length seriation method
+1             5          unknown
+2             2          unknown
+> 
+> permute(m, o)
+           B          A
+5 -0.3053884  0.3295078
+4  0.5757814  1.5952808
+3  0.7383247 -0.8356286
+2  0.4874291  0.1836433
+1 -0.8204684 -0.6264538
+> 
+> ## permute only columns
+> permute(m, o, margin = 2)
+           B          A
+1 -0.8204684 -0.6264538
+2  0.4874291  0.1836433
+3  0.7383247 -0.8356286
+4  0.5757814  1.5952808
+5 -0.3053884  0.3295078
+> 
+> ## permute using PCA seriation
+> permute(m, "PCA")
+           A          B
+1 -0.6264538 -0.8204684
+3 -0.8356286  0.7383247
+5  0.3295078 -0.3053884
+2  0.1836433  0.4874291
+4  1.5952808  0.5757814
+> 
+> ## permute only rows using PCA
+> permute(m, "PCA", margin = 1)
+           A          B
+1 -0.6264538 -0.8204684
+3 -0.8356286  0.7383247
+5  0.3295078 -0.3053884
+2  0.1836433  0.4874291
+4  1.5952808  0.5757814
+> 
+> # Permute data.frames using heatmap seration (= hierarchical
+> #  clustering + optimal leaf ordering)
+> df <- as.data.frame(m)
+> permute(df, "Heatmap")
+           A          B
+4  1.5952808  0.5757814
+2  0.1836433  0.4874291
+5  0.3295078 -0.3053884
+1 -0.6264538 -0.8204684
+3 -0.8356286  0.7383247
+> 
+> # Permute objects in a dist object
+> d <- dist(m)
+> d
+         1        2        3        4
+2 1.538458                           
+3 1.572765 1.049697                  
+4 2.624046 1.414400 2.436338         
+5 1.085896 0.806124 1.564251 1.542284
+> 
+> permute(d, c(3, 2, 1, 4, 5))
+         3        2        1        4
+2 1.049697                           
+1 1.572765 1.538458                  
+4 2.436338 1.414400 2.624046         
+5 1.564251 0.806124 1.085896 1.542284
+> 
+> permute(d, "Spectral")
+         4        2        5        3
+2 1.414400                           
+5 1.542284 0.806124                  
+3 2.436338 1.049697 1.564251         
+1 2.624046 1.538458 1.085896 1.572765
+> 
+> # Permute a list
+> l <- list(a = 1:5, b = letters[1:3], c = 0)
+> l
+$a
+[1] 1 2 3 4 5
+
+$b
+[1] "a" "b" "c"
+
+$c
+[1] 0
+
+> 
+> permute(l, c(2, 3, 1))
+$c
+[1] 0
+
+$a
+[1] 1 2 3 4 5
+
+$b
+[1] "a" "b" "c"
+
+> 
+> # Permute to reorder dendrogram (see also reorder.hclust)
+> hc <- hclust(d)
+> plot(hc)
+> 
+> plot(permute(hc, 5:1))
+Warning in permute.dendrogram(stats::as.dendrogram(x), order, dist = dist,  :
+  Dendrogram cannot be perfectly reordered! Using best approximation.
+> plot(permute(hc, 5:1, incompartible = "stop"))
+Warning in permute.dendrogram(stats::as.dendrogram(x), order, dist = dist,  :
+  Dendrogram cannot be perfectly reordered! Using best approximation.
+> 
+> plot(permute(hc, "OLO", dist = d))
+> plot(permute(hc, "GW", dist = d))
+> plot(permute(hc, "MDS", dist = d))
+Warning in permute.dendrogram(stats::as.dendrogram(x), order, dist = dist,  :
+  Dendrogram cannot be perfectly reordered! Using best approximation.
+> plot(permute(hc, "TSP", dist = d))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("pimage")
+> ### * pimage
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: pimage
+> ### Title: Permutation Image Plot
+> ### Aliases: pimage pimage.matrix pimage.table pimage.data.frame
+> ###   pimage.dist ggpimage ggpimage.matrix ggpimage.dist
+> ### Keywords: hplot
+> 
+> ### ** Examples
+> 
+> set.seed(1234)
+> data(iris)
+> x <- as.matrix(iris[sample(nrow(iris), 20) , -5])
+> 
+> pimage(x)
+> 
+> # Show all labels and flip axes, reverse columns, or change colors
+> pimage(x, prop = TRUE)
+> pimage(x, flip_axes = TRUE)
+> pimage(x, reverse_columns = TRUE)
+> pimage(x, col = grays(100))
+> 
+> # A matrix with positive and negative values
+> x_scaled <- scale(x)
+> pimage(x_scaled)
+> 
+> # Use reordering
+> pimage(x_scaled, order = TRUE)
+> pimage(x_scaled, order = "Heatmap")
+> 
+> ## Example: Distance Matrix
+> # Show a reordered distance matrix (distances between rows).
+> # Dark means low distance. The aspect ratio is automatically fixed to 1:1
+> # using prop = TRUE
+> d <- dist(x)
+> pimage(d)
+> pimage(d, order = TRUE)
+> 
+> # Supress the upper triangle and diagonal
+> pimage(d, order = TRUE, upper_tri = FALSE, diag = FALSE)
+> 
+> # Show only distances that are smaller than 2 using limits on z.
+> pimage(d, order = TRUE, zlim = c(0, 3))
+> 
+> ## Example: Correlation Matrix
+> # we calculate correlation between rows and seriate the matrix
+> # and seriate by converting the correlations into distances.
+> # pimage reorders then rows and columns with c(o, o).
+> r <- cor(t(x))
+> o <- seriate(as.dist(sqrt(1 - r)))
+> pimage(r, order = c(o, o),
++   upper_tri = FALSE, diag = FALSE,
++   zlim = c(-1, 1),
++   reverse_columns = TRUE,
++   main = "Correlation matrix")
+> 
+> # Add to the plot using functions in package grid
+> # Note: pop = FALSE allows us to manipulate viewports
+> library("grid")
+> pimage(x, order = TRUE, pop = FALSE)
+> 
+> # available viewports are: "main", "colorkey", "plot", "image"
+> current.vpTree()
+viewport[ROOT]->(viewport[GRID.VP.381]->(viewport[GRID.VP.382]->(viewport[main], viewport[GRID.VP.383]->(viewport[GRID.VP.384]->(viewport[colorkey]->(viewport[colorkey]), viewport[plot]->(viewport[image])))))) 
+> 
+> # Highlight cell 2/2 with a red arrow
+> # Note: columns are x and rows are y.
+> downViewport(name = "image")
+> grid.lines(x = c(1, 2), y = c(-1, 2), arrow = arrow(),
++   default.units = "native", gp = gpar(col = "red", lwd = 3))
+> 
+> # add a red box around the first 4 rows of the 2nd column
+> grid.rect(x = 1 + .5 , y = 4 + .5, width = 1, height = 4,
++   hjust = 0, vjust = 1,
++   default.units = "native", gp = gpar(col = "red", lwd = 3, fill = NA))
+> 
+> ## remove the viewports
+> popViewport(0)
+> 
+> ## put several pimages on a page (use grid viewports and newpage = FALSE)
+> # set up grid layout
+> library(grid)
+> grid.newpage()
+> top_vp <- viewport(layout = grid.layout(nrow = 1, ncol = 2,
++   widths = unit(c(.4, .6), units = "npc")))
+> col1_vp <- viewport(layout.pos.row = 1, layout.pos.col = 1, name = "col1_vp")
+> col2_vp <- viewport(layout.pos.row = 1, layout.pos.col = 2, name = "col2_vp")
+> splot <- vpTree(top_vp, vpList(col1_vp, col2_vp))
+> pushViewport(splot)
+> 
+> seekViewport("col1_vp")
+> o <- seriate(d)
+> pimage(x, c(o, NA), col_labels = FALSE, main = "Data",
++   newpage = FALSE)
+> 
+> seekViewport("col2_vp")
+> ## add the reordered dissimilarity matrix for rows
+> pimage(d, o, main = "Distances",
++   newpage = FALSE)
+> 
+> popViewport(0)
+> 
+> ##-------------------------------------------------------------
+> ## ggplot2 Examples
+> if (require("ggplot2")) {
++ 
++ library("ggplot2")
++ 
++ set.seed(1234)
++ data(iris)
++ x <- as.matrix(iris[sample(nrow(iris), 20) , -5])
++ 
++ ggpimage(x)
++ 
++ # Show all labels and flip axes, reverse columns
++ ggpimage(x, prop = TRUE)
++ ggpimage(x, flip_axes = TRUE)
++ ggpimage(x, reverse_columns = TRUE)
++ 
++ 
++ # A matrix with positive and negative values
++ x_scaled <- scale(x)
++ ggpimage(x_scaled)
++ 
++ # Use reordering
++ ggpimage(x_scaled, order = TRUE)
++ ggpimage(x_scaled, order = "Heatmap")
++ 
++ ## Example: Distance Matrix
++ # Show a reordered distance matrix (distances between rows).
++ # Dark means low distance. The aspect ratio is automatically fixed to 1:1
++ # using prop = TRUE
++ d <- dist(x)
++ ggpimage(d)
++ ggpimage(d, order = TRUE)
++ 
++ # Supress the upper triangle and diagonal
++ ggpimage(d, order = TRUE, upper_tri = FALSE, diag = FALSE)
++ 
++ # Show only distances that are smaller than 2 using limits on z.
++ ggpimage(d, order = TRUE, zlim = c(0, 2))
++ 
++ ## Example: Correlation Matrix
++ # we calculate correlation between rows and seriate the matrix
++ r <- cor(t(x))
++ o <- seriate(as.dist(sqrt(1 - r)))
++ ggpimage(r, order = c(o, o),
++   upper_tri = FALSE, diag = FALSE,
++   zlim = c(-1, 1),
++   reverse_columns = TRUE) + labs(title = "Correlation matrix")
++ 
++ ## Example: Custom themes and colors
++ # Reorder matrix, use custom colors, add a title,
++ # and hide colorkey.
++ ggpimage(x) +
++   theme(legend.position = "none") +
++   labs(title = "Random Data") + xlab("Variables")
++ 
++ # Add lines
++ ggpimage(x) +
++   geom_hline(yintercept = seq(0, nrow(x)) + .5) +
++   geom_vline(xintercept = seq(0, ncol(x)) + .5)
++ 
++ # Use ggplot2 themes with theme_set
++ old_theme <- theme_set(theme_linedraw())
++ ggpimage(d)
++ theme_set(old_theme)
++ 
++ # Use custom color palettes: Gray scale, Colorbrewer (provided in ggplot2) and colorspace
++ ggpimage(d, order = seriate(d), upper_tri = FALSE) +
++   scale_fill_gradient(low = "black", high = "white", na.value = "white")
++ 
++ ggpimage(d, order = seriate(d), upper_tri = FALSE) +
++   scale_fill_distiller(palette = "Spectral", direction = +1, na.value = "white")
++ 
++ ggpimage(d, order = seriate(d), upper_tri = FALSE) +
++   colorspace::scale_fill_continuous_sequential("Reds", rev = FALSE, na.value = "white")
++ }
+Loading required package: ggplot2
+Scale for fill is already present.
+Adding another scale for fill, which will replace the existing scale.
+Scale for fill is already present.
+Adding another scale for fill, which will replace the existing scale.
+Scale for fill is already present.
+Adding another scale for fill, which will replace the existing scale.
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’, ‘package:grid’
+
+> nameEx("register_DendSer")
+> ### * register_DendSer
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: register_DendSer
+> ### Title: Register Seriation Methods from Package DendSer
+> ### Aliases: register_DendSer DendSer dendser
+> ### Keywords: cluster optimize
+> 
+> ### ** Examples
+> 
+> 
+> ## Not run: 
+> ##D register_DendSer()
+> ##D get_seriation_method("dist", "DendSer")
+> ##D 
+> ##D d <- dist(random.robinson(20, pre=TRUE))
+> ##D 
+> ##D ## use Banded AR form with default clustering (complete-link)
+> ##D o <- seriate(d, "DendSer_BAR")
+> ##D pimage(d, o)
+> ##D 
+> ##D ## use different hclust method (Ward) and AR as the cost function for
+> ##D ## dendrogram reordering
+> ##D o <- seriate(d, "DendSer", control = list(method = "ward.D2", criterion = "AR"))
+> ##D pimage(d, o)
+> ## End(Not run)
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("register_GA")
+> ### * register_GA
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: register_GA
+> ### Title: Register a Genetic Algorithm Seriation Method
+> ### Aliases: register_GA GA ga gaperm_mixedMutation
+> ### Keywords: cluster optimize
+> 
+> ### ** Examples
+> 
+> 
+> ## Not run: 
+> ##D register_GA()
+> ##D get_seriation_method("dist", "GA")
+> ##D 
+> ##D data(SupremeCourt)
+> ##D d <- as.dist(SupremeCourt)
+> ##D 
+> ##D ## optimize for linear seriation criterion (LS)
+> ##D o <- seriate(d, "GA", criterion = "LS", verbose = TRUE)
+> ##D pimage(d, o)
+> ##D 
+> ##D ## Note that by default the algorithm is already seeded with a LS heuristic.
+> ##D ## This run is no warm start (no suggestions) and increase run to 100
+> ##D o <- seriate(d, "GA", criterion = "LS", suggestions = NA, run = 100,
+> ##D   verbose = TRUE)
+> ##D pimage(d, o)
+> ##D 
+> ##D o <- seriate(d, "GA", criterion = "LS", suggestions = NA, run = 100,
+> ##D   verbose = TRUE,  )
+> ##D 
+> ##D pimage(d, o)
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("register_optics")
+> ### * register_optics
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: register_optics
+> ### Title: Register Seriation Based on OPTICS
+> ### Aliases: register_optics optics OPTICS
+> ### Keywords: cluster optimize
+> 
+> ### ** Examples
+> 
+> 
+> ## Not run: 
+> ##D register_optics()
+> ##D get_seriation_method("dist", "optics")
+> ##D 
+> ##D d <- dist(random.robinson(50, pre=TRUE, noise=.1))
+> ##D 
+> ##D o <- seriate(d, method = "optics")
+> ##D pimage(d, o)
+> ## End(Not run)
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("register_smacof")
+> ### * register_smacof
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: register_smacof
+> ### Title: Register Seriation Methods from Package smacof
+> ### Aliases: register_smacof registersmacof smacof
+> ### Keywords: cluster optimize
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D register_smacof()
+> ##D 
+> ##D get_seriation_method("dist", "MDS_smacof")
+> ##D 
+> ##D d <- dist(random.robinson(20, pre = TRUE))
+> ##D 
+> ##D ## use Banded AR form with default clustering (complete-link)
+> ##D o <- seriate(d, "MDS_smacof", verbose = TRUE)
+> ##D pimage(d, o)
+> ##D 
+> ##D # recalculate stress for the order
+> ##D MDS_stress(d, o)
+> ##D 
+> ##D # ordinal MDS. stress needs to be calculated using the correct type with stress0
+> ##D o <- seriate(d, "MDS_smacof", type = "ordinal", verbose = TRUE)
+> ##D criterion(d, o, method = "smacof_stress0", type = "ordinal")
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("register_tsne")
+> ### * register_tsne
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: register_tsne
+> ### Title: Register Seriation Based on 1D t-SNE
+> ### Aliases: register_tsne tsne tSNE
+> ### Keywords: cluster optimize
+> 
+> ### ** Examples
+> 
+> 
+> ## Not run: 
+> ##D register_tsne()
+> ##D 
+> ##D # distances
+> ##D get_seriation_method("dist", "tsne")
+> ##D 
+> ##D data(SupremeCourt)
+> ##D d <- as.dist(SupremeCourt)
+> ##D 
+> ##D o <- seriate(d, method = "tsne", verbose = TRUE)
+> ##D pimage(d, o)
+> ##D 
+> ##D # look at the returned configuration and plot it
+> ##D attr(o[[1]], "configuration")
+> ##D plot_config(o)
+> ##D 
+> ##D # the t-SNE results are also available as an attribute (see ? Rtsne::Rtsne)
+> ##D attr(o[[1]], "model")
+> ##D 
+> ##D ## matrix
+> ##D get_seriation_method("matrix", "tsne")
+> ##D 
+> ##D data("Zoo")
+> ##D x <- Zoo
+> ##D 
+> ##D x[,"legs"] <- (x[,"legs"] > 0)
+> ##D 
+> ##D # t-SNE does not allow duplicates
+> ##D x <- x[!duplicated(x), , drop = FALSE]
+> ##D 
+> ##D class <- x$class
+> ##D label <- rownames(x)
+> ##D x <- as.matrix(x[,-17])
+> ##D 
+> ##D o <- seriate(x, method = "tsne", eta = 10, verbose = TRUE)
+> ##D pimage(x, o, prop = FALSE, row_labels = TRUE, col_labels = TRUE)
+> ##D 
+> ##D # look at the row embedding
+> ##D plot_config(o[[1]], col = class)
+> ## End(Not run)
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("register_umap")
+> ### * register_umap
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: register_umap
+> ### Title: Register Seriation Based on 1D UMAP
+> ### Aliases: register_umap umap
+> ### Keywords: cluster optimize
+> 
+> ### ** Examples
+> 
+> 
+> ## Not run: 
+> ##D register_umap()
+> ##D 
+> ##D ## distances
+> ##D get_seriation_method("dist", "umap")
+> ##D 
+> ##D data(SupremeCourt)
+> ##D d <- as.dist(SupremeCourt)
+> ##D 
+> ##D o <- seriate(d, method = "umap", verbose = TRUE)
+> ##D pimage(d, o)
+> ##D 
+> ##D # look at the returned embedding and plot it
+> ##D attr(o[[1]], "configuration")
+> ##D plot_config(o)
+> ##D 
+> ##D ## matrix
+> ##D get_seriation_method("matrix", "umap")
+> ##D 
+> ##D data("Zoo")
+> ##D Zoo[,"legs"] <- (Zoo[,"legs"] > 0)
+> ##D x <- as.matrix(Zoo[,-17])
+> ##D label <- rownames(Zoo)
+> ##D class <- Zoo$class
+> ##D 
+> ##D o <- seriate(x, method = "umap", verbose = TRUE)
+> ##D pimage(x, o)
+> ##D 
+> ##D plot_config(o[[1]], col = class)
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("registry_for_criterion_methods")
+> ### * registry_for_criterion_methods
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: registry_for_criterion_methods
+> ### Title: Registry for Criterion Methods
+> ### Aliases: registry_for_criterion_methods registry_criterion
+> ###   list_criterion_methods get_criterion_method set_criterion_method
+> ###   print.criterion_method
+> ### Keywords: misc
+> 
+> ### ** Examples
+> 
+> ## the registry
+> registry_criterion
+An object of class 'registry' with 21 entries.
+> 
+> # List all criterion calculation methods by type
+> list_criterion_methods()
+$dist
+ [1] "2SUM"              "AR_deviations"     "AR_events"        
+ [4] "BAR"               "Gradient_raw"      "Gradient_weighted"
+ [7] "Inertia"           "Lazy_path_length"  "Least_squares"    
+[10] "LS"                "MDS_stress"        "ME"               
+[13] "Moore_stress"      "Neumann_stress"    "Path_length"      
+[16] "RGAR"              "Rho"              
+
+$matrix
+[1] "Cor_R"          "ME"             "Moore_stress"   "Neumann_stress"
+
+> 
+> # List methods for matrix
+> list_criterion_methods("matrix")
+[1] "Cor_R"          "ME"             "Moore_stress"   "Neumann_stress"
+> 
+> # get more description
+> list_criterion_methods("matrix", names_only = FALSE)
+$matrix_Cor_R
+name:          Cor_R
+kind:          matrix
+merit:         TRUE
+description: Weighted correlation coefficient R: A measure of
+              effectiveness normalized between -1 and 1 (Deutsch and
+              Martin, 1971).
+additional parameters:
+no parameters
+
+
+$matrix_ME
+name:          ME
+kind:          matrix
+merit:         TRUE
+description: Measure of effectiveness (McCormick, 1972).
+additional parameters:
+no parameters
+
+
+$matrix_Moore_stress
+name:          Moore_stress
+kind:          matrix
+merit:         FALSE
+description: Stress criterion (Moore neighborhood) applied to the
+              reordered matrix (Niermann, 2005).
+additional parameters:
+no parameters
+
+
+$matrix_Neumann_stress
+name:          Neumann_stress
+kind:          matrix
+merit:         FALSE
+description: Stress criterion (Neumann neighborhood) applied to the
+              reordered matrix (Niermann, 2005).
+additional parameters:
+no parameters
+
+
+> 
+> # get a specific method
+> get_criterion_method(kind = "dist", name = "AR_d")
+name:          AR_deviations
+kind:          dist
+merit:         FALSE
+description: Anti-Robinson deviations: The number of violations of the
+              anti-Robinson form weighted by the deviation (Chen,
+              2002).
+additional parameters:
+no parameters
+
+> 
+> # Define a new method (sum of the diagonal elements)
+> 
+> ## 1. implement a function to calculate the measure
+> criterion_method_matrix_foo <- function(x, order, ...) {
++ if(!is.null(order)) x <- permute(x,order)
++     sum(diag(x))
++ }
+> 
+> ## 2. Register new method
+> set_criterion_method("matrix", "DiagSum", criterion_method_matrix_foo,
++     description = "Calculated the sum of all diagonal entries", merit = FALSE)
+> 
+> list_criterion_methods("matrix")
+[1] "Cor_R"          "DiagSum"        "ME"             "Moore_stress"  
+[5] "Neumann_stress"
+> get_criterion_method("matrix", "DiagSum")
+name:          DiagSum
+kind:          matrix
+merit:         FALSE
+registered by: manual
+description: Calculated the sum of all diagonal entries
+additional parameters:
+no parameters
+
+> 
+> ## 3. use all criterion methods (including the new one)
+> criterion(matrix(1:9, ncol = 3))
+         Cor_R        DiagSum             ME   Moore_stress Neumann_stress 
+   -0.09301487    15.00000000   340.00000000   280.00000000   120.00000000 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("registry_for_seriation_methods")
+> ### * registry_for_seriation_methods
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: registry_for_seriation_methods
+> ### Title: Registry for Seriation Methods
+> ### Aliases: registry_for_seriation_methods registry_seriate
+> ###   list_seriation_methods get_seriation_method set_seriation_method
+> ###   print.seriation_method
+> ### Keywords: misc
+> 
+> ### ** Examples
+> 
+> # Registry
+> registry_seriate
+An object of class 'registry' with 58 entries.
+> 
+> # List all seriation methods by type
+> list_seriation_methods()
+$array
+[1] "Identity" "Random"   "Reverse" 
+
+$dist
+ [1] "ARSA"           "BBURCG"         "BBWRCG"         "Enumerate"     
+ [5] "GSA"            "GW"             "GW_average"     "GW_complete"   
+ [9] "GW_single"      "GW_ward"        "HC"             "HC_average"    
+[13] "HC_complete"    "HC_single"      "HC_ward"        "Identity"      
+[17] "isomap"         "isoMDS"         "MDS"            "MDS_angle"     
+[21] "metaMDS"        "monoMDS"        "OLO"            "OLO_average"   
+[25] "OLO_complete"   "OLO_single"     "OLO_ward"       "QAP_2SUM"      
+[29] "QAP_BAR"        "QAP_Inertia"    "QAP_LS"         "R2E"           
+[33] "Random"         "Reverse"        "Sammon_mapping" "SGD"           
+[37] "Spectral"       "Spectral_norm"  "SPIN_NH"        "SPIN_STS"      
+[41] "TSP"            "VAT"           
+
+$matrix
+ [1] "AOE"              "BEA"              "BEA_TSP"          "BK_unconstrained"
+ [5] "CA"               "Heatmap"          "Identity"         "LLE"             
+ [9] "Mean"             "PCA"              "PCA_angle"        "Random"          
+[13] "Reverse"         
+
+> 
+> # List methods for matrix seriation
+> list_seriation_methods("matrix")
+ [1] "AOE"              "BEA"              "BEA_TSP"          "BK_unconstrained"
+ [5] "CA"               "Heatmap"          "Identity"         "LLE"             
+ [9] "Mean"             "PCA"              "PCA_angle"        "Random"          
+[13] "Reverse"         
+> 
+> get_seriation_method(name = "BEA")
+name:        BEA
+kind:        matrix
+optimizes:   ME (Measure of effectiveness)
+randomized:  TRUE
+description: Bond Energy Algorithm (BEA; McCormick 1972) to maximize
+             the Measure of Effectiveness of a non-negative matrix.
+control:
+no parameters
+
+> 
+> # Example for defining a new seriation method (reverse identity function for matrix)
+> 
+> # 1. Create the seriation method: Reverse the row order
+> #    (NA means no seriation is applied to columns)
+> seriation_method_reverse_rows <- function(x, control = NULL, margin = c(1, 2)) {
++     list(rev(seq(nrow(x))), NA)[margin]
++ }
+> 
+> # 2. Register new method
+> set_seriation_method("matrix", "Reverse_rows", seriation_method_reverse_rows,
++     description = "Reverse identity order", control = list())
+> 
+> list_seriation_methods("matrix")
+ [1] "AOE"              "BEA"              "BEA_TSP"          "BK_unconstrained"
+ [5] "CA"               "Heatmap"          "Identity"         "LLE"             
+ [9] "Mean"             "PCA"              "PCA_angle"        "Random"          
+[13] "Reverse"          "Reverse_rows"    
+> get_seriation_method("matrix", "reverse_rows")
+name:        Reverse_rows
+kind:        matrix
+optimizes:   Other
+randomized:  FALSE
+registered by: manual
+description: Reverse identity order
+control:
+no parameters
+
+> 
+> # 3. Use the new seriation methods
+> seriate(matrix(1:12, ncol = 3), "reverse_rows")
+object of class ‘ser_permutation’, ‘list’
+contains permutation vectors for 2-mode data
+
+  vector length seriation method
+1             4     Reverse_rows
+2            NA     Reverse_rows
+> 
+> 
+> 
+> cleanEx()
+> nameEx("reorder.hclust")
+> ### * reorder.hclust
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: reorder.hclust
+> ### Title: Reorder Dendrograms using Optimal Leaf Ordering
+> ### Aliases: reorder.hclust reorder
+> ### Keywords: cluster optimize
+> 
+> ### ** Examples
+> 
+> ## cluster European cities by distance
+> data("eurodist")
+> d <- as.dist(eurodist)
+> hc <- hclust(eurodist)
+> 
+> ## plot original dendrogram and the reordered dendrograms
+> plot(hc)
+> plot(reorder(hc, d, method = "GW"))
+Registered S3 method overwritten by 'gclus':
+  method         from     
+  reorder.hclust seriation
+> plot(reorder(hc, d, method = "OLO"))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("ser_dist")
+> ### * ser_dist
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: ser_dist
+> ### Title: Dissimilarities and Correlations Between Seriation Orders
+> ### Aliases: ser_dist ser_cor ser_align
+> ### Keywords: cluster
+> 
+> ### ** Examples
+> 
+> set.seed(1234)
+> ## seriate dist of 50 flowers from the iris data set
+> data("iris")
+> x <- as.matrix(iris[-5])
+> x <- x[sample(1:nrow(x), 50), ]
+> rownames(x) <- 1:50
+> d <- dist(x)
+> 
+> ## Create a list of different seriations
+> methods <- c("HC_complete", "OLO", "GW", "VAT",
++   "TSP", "Spectral", "MDS", "Identity", "Random")
+> 
+> os <- sapply(methods, function(m) {
++   cat("Doing", m, "... ")
++   tm <- system.time(o <- seriate(d, method = m))
++   cat("took", tm[3],"s.\n")
++   o
++ })
+Doing HC_complete ... took 0.091 s.
+Doing OLO ... took 0.11 s.
+Doing GW ... took 0.1 s.
+Doing VAT ... took 0.1 s.
+Doing TSP ... took 0.116 s.
+Doing Spectral ... took 0.096 s.
+Doing MDS ... took 0.09 s.
+Doing Identity ... took 0.091 s.
+Doing Random ... took 0.091 s.
+> 
+> ## Compare the methods using distances. Default is based on
+> ## Spearman's rank correlation coefficient where reverse orders are
+> ## also considered.
+> ds <- ser_dist(os)
+> hmap(ds, margins = c(7,7))
+> 
+> ## Compare using correlation between orders. Reversed orders have
+> ## negative correlation!
+> cs <- ser_cor(os, reverse = FALSE)
+> hmap(cs, margins = c(7,7))
+> 
+> ## Compare orders by allowing orders to be reversed.
+> ## Now all but random and identity are highly positive correlated
+> cs2 <- ser_cor(os, reverse = TRUE)
+> hmap(cs2, margins = c(7,7))
+> 
+> ## A better approach is to align the direction of the orders first
+> ## and then calculate correlation.
+> os_aligned <- ser_align(os)
+> cs3 <- ser_cor(os_aligned, reverse = FALSE)
+> hmap(cs3, margins = c(7,7))
+> 
+> ## Compare the orders using clustering. We use Spearman's foot rule
+> ## (Manhattan distance of ranks). In order to use rank-based method,
+> ## we align the direction of the orders.
+> os_aligned <- ser_align(os)
+> ds <- ser_dist(os_aligned, method = "manhattan")
+> plot(hclust(ds))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("ser_permutation")
+> ### * ser_permutation
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: ser_permutation
+> ### Title: Class ser_permutation - A Collection of Permutation Vectors for
+> ###   Seriation
+> ### Aliases: ser_permutation print.ser_permutation summary.ser_permutation
+> ###   c.ser_permutation [.ser_permutation
+> ### Keywords: classes
+> 
+> ### ** Examples
+> 
+> o <- ser_permutation(1:5, 10:1)
+> o
+object of class ‘ser_permutation’, ‘list’
+contains permutation vectors for 2-mode data
+
+  vector length seriation method
+1             5          unknown
+2            10          unknown
+> 
+> ## length (number of dimensions)
+> length(o)
+[1] 2
+> 
+> ## get permutation vector for 2nd dimension
+> get_order(o, 2)
+ [1] 10  9  8  7  6  5  4  3  2  1
+> 
+> ## reverse dimensions
+> o[2:1]
+object of class ‘ser_permutation’, ‘list’
+contains permutation vectors for 2-mode data
+
+  vector length seriation method
+1            10          unknown
+2             5          unknown
+> 
+> ## combine
+> o <- c(o, ser_permutation(1:15))
+> o
+object of class ‘ser_permutation’, ‘list’
+contains permutation vectors for 3-mode data
+
+  vector length seriation method
+1             5          unknown
+2            10          unknown
+3            15          unknown
+> 
+> ## get an individual permutation
+> o[[2]]
+object of class ‘ser_permutation_vector’, ‘integer’
+contains a permutation vector of length 10
+used seriation method: 'unknown'
+> 
+> ## reverse the order of a permutation
+> o[[2]] <- rev(o[[2]])
+> get_order(o,2)
+ [1]  1  2  3  4  5  6  7  8  9 10
+> 
+> 
+> 
+> cleanEx()
+> nameEx("ser_permutation_vector")
+> ### * ser_permutation_vector
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: ser_permutation_vector
+> ### Title: Class ser_permutation_vector - A Single Permutation Vector for
+> ###   Seriation
+> ### Aliases: ser_permutation_vector c.ser_permutation_vector
+> ###   rev.ser_permutation_vector get_method length.ser_permutation_vector
+> ###   print.ser_permutation_vector summary.ser_permutation_vector
+> ### Keywords: classes
+> 
+> ### ** Examples
+> 
+> o <- structure(sample(10), names = paste0("X", 1:10))
+> o
+ X1  X2  X3  X4  X5  X6  X7  X8  X9 X10 
+  9   4   7   1   2   5   3  10   6   8 
+> 
+> p <- ser_permutation_vector(o, "random")
+> p
+object of class ‘ser_permutation_vector’, ‘integer’
+contains a permutation vector of length 10
+used seriation method: 'random'
+> 
+> ## some methods
+> length(p)
+[1] 10
+> get_method(p)
+[1] "random"
+> get_order(p)
+ X1  X2  X3  X4  X5  X6  X7  X8  X9 X10 
+  9   4   7   1   2   5   3  10   6   8 
+> get_rank(p)
+ X4  X5  X7  X2  X6  X9  X3 X10  X1  X8 
+  4   5   7   2   6   9   3  10   1   8 
+> get_permutation_matrix(p)
+    X1 X2 X3 X4 X5 X6 X7 X8 X9 X10
+X1   0  0  0  0  0  0  0  0  1   0
+X2   0  0  0  1  0  0  0  0  0   0
+X3   0  0  0  0  0  0  1  0  0   0
+X4   1  0  0  0  0  0  0  0  0   0
+X5   0  1  0  0  0  0  0  0  0   0
+X6   0  0  0  0  1  0  0  0  0   0
+X7   0  0  1  0  0  0  0  0  0   0
+X8   0  0  0  0  0  0  0  0  0   1
+X9   0  0  0  0  0  1  0  0  0   0
+X10  0  0  0  0  0  0  0  1  0   0
+> 
+> r <- rev(p)
+> r
+object of class ‘ser_permutation_vector’, ‘integer’
+contains a permutation vector of length 10
+used seriation method: 'random'
+> get_order(r)
+X10  X9  X8  X7  X6  X5  X4  X3  X2  X1 
+  8   6  10   3   5   2   1   7   4   9 
+> 
+> ## create a symbolic identity permutation vector (with unknown length)
+> ## Note: This can be used to permute an object, but methods
+> ##       like length and get_order are not available.
+> ip <- ser_permutation_vector(NA)
+> ip
+object of class ‘ser_permutation_vector’, ‘integer’
+contains a permutation vector of length 0
+used seriation method: 'identity permutation'
+> 
+> 
+> 
+> cleanEx()
+> nameEx("seriate")
+> ### * seriate
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: seriate
+> ### Title: Seriate Dissimilarity Matrices, Matrices or Arrays
+> ### Aliases: seriate seriate.dist seriate.matrix seriate.array
+> ###   seriate.data.frame seriate.table
+> ### Keywords: cluster optimize
+> 
+> ### ** Examples
+> 
+> # Show available seriation methods (for dist and matrix)
+> list_seriation_methods()
+$array
+[1] "Identity" "Random"   "Reverse" 
+
+$dist
+ [1] "ARSA"           "BBURCG"         "BBWRCG"         "Enumerate"     
+ [5] "GSA"            "GW"             "GW_average"     "GW_complete"   
+ [9] "GW_single"      "GW_ward"        "HC"             "HC_average"    
+[13] "HC_complete"    "HC_single"      "HC_ward"        "Identity"      
+[17] "isomap"         "isoMDS"         "MDS"            "MDS_angle"     
+[21] "metaMDS"        "monoMDS"        "OLO"            "OLO_average"   
+[25] "OLO_complete"   "OLO_single"     "OLO_ward"       "QAP_2SUM"      
+[29] "QAP_BAR"        "QAP_Inertia"    "QAP_LS"         "R2E"           
+[33] "Random"         "Reverse"        "Sammon_mapping" "SGD"           
+[37] "Spectral"       "Spectral_norm"  "SPIN_NH"        "SPIN_STS"      
+[41] "TSP"            "VAT"           
+
+$matrix
+ [1] "AOE"              "BEA"              "BEA_TSP"          "BK_unconstrained"
+ [5] "CA"               "Heatmap"          "Identity"         "LLE"             
+ [9] "Mean"             "PCA"              "PCA_angle"        "Random"          
+[13] "Reverse"          "Reverse_rows"    
+
+> 
+> # show the description for ARSA
+> get_seriation_method("dist", name = "ARSA")
+name:        ARSA
+kind:        dist
+optimizes:   LS (Linear seriation criterion)
+randomized:  TRUE
+description: Minimize the linear seriation criterion using simulated
+             annealing (Brusco et al, 2008).
+control:
+                  default values                                          help
+cool                         0.5 cooling factor (smaller means faster cooling)
+tmin                       1e-04                          stopping temperature
+swap_to_inversion            0.5  probability for swap vs inversion local move
+try_multiplier               100         number of local move tries per object
+verbose                    FALSE                                           N/A
+
+> 
+> ### Seriate as distance matrix (for 50 flowers from the iris dataset)
+> data("iris")
+> x <- as.matrix(iris[-5])
+> x <- x[sample(nrow(x), size = 50), ]
+> d <- dist(x)
+> 
+> order <- seriate(d)
+> order
+object of class ‘ser_permutation’, ‘list’
+contains permutation vectors for 1-mode data
+
+  vector length seriation method
+1            50         Spectral
+> 
+> pimage(d, main = "Distances (Random Order)")
+> pimage(d, order, main = "Distances (Reordered)")
+> 
+> # Compare seriation quality
+> rbind(
++         random = criterion(d),
++         reordered = criterion(d, order)
++      )
+              2SUM AR_deviations AR_events      BAR Gradient_raw
+random    367324.6    38334.7568     19901 7011.343         -633
+reordered 213757.4      343.4373      1972 2313.812        35189
+          Gradient_weighted Inertia Lazy_path_length Least_squares       LS
+random            -1910.082 2755995        3950.6092      844634.1 111016.4
+reordered         67754.192 4610990         742.1723      751748.4 157459.3
+          MDS_stress       ME Moore_stress Neumann_stress Path_length
+random     0.7969773 633.9561    1690.8834      947.11002   151.38906
+reordered  0.1484322 849.4906     195.2415       97.47381    29.59819
+                RGAR        Rho
+random    0.50767857 0.01778173
+reordered 0.05030612 0.89912734
+> 
+> # Reorder the distance matrix
+> d_reordered <-  permute(d, order)
+> pimage(d_reordered, main = "Distances (Reordered)")
+> 
+> 
+> ### Seriate a matrix (50 flowers from iris)
+> 
+> # To make the variables comparable, we scale the data
+> x <- scale(x, center = FALSE)
+> 
+> # The iris flowers are ordered by species in the data set
+> pimage(x, main = "original data", prop = FALSE)
+> criterion(x)
+         Cor_R        DiagSum             ME   Moore_stress Neumann_stress 
+   -0.01713233     2.24918827   292.14727571   384.52371289   190.20042596 
+> 
+> # Apply some methods
+> order <- seriate(x, method = "BEA_TSP")
+> pimage(x, order, main = "TSP to optimize ME", prop = FALSE)
+> criterion(x, order)
+         Cor_R        DiagSum             ME   Moore_stress Neumann_stress 
+   -0.02301907     1.99107242   335.17002710    70.29177851    25.86805565 
+> 
+> order <- seriate(x, method = "PCA")
+> pimage(x, order, main = "First principal component", prop = FALSE)
+> criterion(x, order)
+         Cor_R        DiagSum             ME   Moore_stress Neumann_stress 
+    -0.3057828      5.3151435    331.5675285     69.4617700     26.7486979 
+> 
+> order <- seriate(x, method = "heatmap")
+> pimage(x, order, main = "Heatmap seriation", prop = FALSE)
+> criterion(x, order)
+         Cor_R        DiagSum             ME   Moore_stress Neumann_stress 
+    -0.3005988      2.1669546    332.1484867     67.6045174     24.9006834 
+> 
+> # reorder the matrix
+> x_reordered <- permute(x, order)
+> 
+> # create a heatmap seriation manually by calculating
+> # distances between rows and between columns
+> order <- c(
++     seriate(dist(x), method = "OLO"),
++     seriate(dist(t(x)), method = "OLO")
++ )
+> pimage(x, order, main = "Heatmap seriation", prop = FALSE)
+> criterion(x, order)
+         Cor_R        DiagSum             ME   Moore_stress Neumann_stress 
+    -0.3005988      2.1669546    332.1484867     67.6045174     24.9006834 
+> 
+> ### Seriate a correlation matrix
+> corr <- cor(x)
+> 
+> # plot in original order
+> pimage(corr, main = "Correlation matrix")
+> 
+> # reorder the correlation matrix using the angle of eigenvectors
+> pimage(corr, order = "AOE", main = "Correlation matrix (AOE)")
+> 
+> # we can also define a distance (we used d = sqrt(1 - r)) and
+> # then reorder the matrix (rows and columns) using any seriation method.
+> d <- as.dist(sqrt(1 - corr))
+> o <- seriate(d, method = "R2E")
+> corr_reordered <- permute(corr, order = c(o, o))
+> pimage(corr_reordered, main = "Correlation matrix (R2E)")
+> 
+> 
+> 
+> cleanEx()
+> nameEx("seriate_best")
+> ### * seriate_best
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: seriate_best
+> ### Title: Best Seriation
+> ### Aliases: seriate_best seriate_rep seriate_improve
+> ### Keywords: cluster optimize
+> 
+> ### ** Examples
+> 
+> data(SupremeCourt)
+> d_supreme <- as.dist(SupremeCourt)
+> 
+> # find best seriation order (tries by by default several fast methods)
+> o <- seriate_best(d_supreme, criterion = "AR_events")
+Criterion: AR_events 
+Performing: 
+spectral - Method not randomized. Running once.
+
+MDS - Method not randomized. Running once.
+
+QAP_2SUM - Replications 10  ..........
+Found orders with ‘AR_events’ in the range 5 to 18 - returning best
+
+QAP_BAR - Replications 10  ..........
+Found orders with ‘AR_events’ in the range 7 to 79 - returning best
+
+QAP_LS - Replications 10  ..........
+Found orders with ‘AR_events’ in the range 5 to 34 - returning best
+
+QAP_Inertia - Replications 10  ..........
+Found orders with ‘AR_events’ in the range 5 to 11 - returning best
+
+TSP - Replications 10  ..........
+Found orders with ‘AR_events’ in the range 7 to 37 - returning best
+
+OLO_average - Method not randomized. Running once.
+
+Results (first was chosen):
+       method criterion  secs
+1    spectral         5 0.095
+3    QAP_2SUM         5 0.946
+5      QAP_LS         5 0.926
+6 QAP_Inertia         5 0.983
+4     QAP_BAR         7 0.945
+7         TSP         7 0.968
+8 OLO_average         7 0.094
+2         MDS        10 0.093
+
+> o
+object of class ‘ser_permutation’, ‘list’
+contains permutation vectors for 1-mode data
+
+  vector length seriation method
+1             9         Spectral
+> pimage(d_supreme, o)
+> 
+> # run a randomized algorithms several times. It automatically chooses the
+> # LS criterion. Repetition information is returned as attributes
+> o <- seriate_rep(d_supreme, "QAP_LS", rep = 5)
+Replications 5  .....
+Found orders with ‘LS’ in the range -71.63244 to -71.63244 - returning best
+> 
+> attr(o, "criterion")
+[1] -71.63244
+> hist(attr(o, "criterion_distribution"))
+> pimage(d_supreme, o)
+> 
+> ## Not run: 
+> ##D # Using parallel execution on a larger dataset
+> ##D data(iris)
+> ##D m_iris <- as.matrix(iris[sample(seq(nrow(iris))),-5])
+> ##D d_iris <- dist(m_iris)
+> ##D 
+> ##D library(doParallel)
+> ##D registerDoParallel(cores = detectCores() - 1L)
+> ##D 
+> ##D # seriate rows of the iris data set
+> ##D o <- seriate_best(d_iris, criterion = "LS")
+> ##D o
+> ##D 
+> ##D pimage(d_iris, o)
+> ##D 
+> ##D # improve the order to minimize RGAR instead of LS
+> ##D o_improved <- seriate_improve(d_iris, o, criterion = "RGAR")
+> ##D pimage(d_iris, o_improved)
+> ##D 
+> ##D # available control parameters for seriate_improve()
+> ##D get_seriation_method(name = "GSA")
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("uniscale")
+> ### * uniscale
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: uniscale
+> ### Title: Fit an Unidimensional Scaling for a Seriation Order
+> ### Aliases: uniscale MDS_stress get_config plot_config
+> ### Keywords: optimize
+> 
+> ### ** Examples
+> 
+> data(SupremeCourt)
+> d <- as.dist(SupremeCourt)
+> d
+           Breyer Ginsburg Kennedy OConnor Rehnquist  Scalia  Souter Stevens
+Ginsburg  0.11966                                                           
+Kennedy   0.25000  0.26709                                                  
+OConnor   0.20940  0.25214 0.15598                                          
+Rehnquist 0.29915  0.30769 0.12179 0.16239                                  
+Scalia    0.35256  0.36966 0.18803 0.20726   0.14316                        
+Souter    0.11752  0.09615 0.24790 0.22009   0.29274 0.33761                
+Stevens   0.16239  0.14530 0.32692 0.32906   0.40171 0.43803 0.16880        
+Thomas    0.35897  0.36752 0.17735 0.20513   0.13675 0.06624 0.33120 0.43590
+> 
+> # embedding-based methods return "configuration" attribute
+> # plot_config visualizes the configuration
+> o <- seriate(d, method = "sammon")
+> get_order(o)
+  Stevens  Ginsburg    Breyer    Souter   OConnor   Kennedy Rehnquist    Thomas 
+        8         2         1         7         4         3         5         9 
+   Scalia 
+        6 
+> plot_config(o)
+> 
+> # the configuration (Note: objects are in the original order in d)
+> get_config(o)
+     Breyer    Ginsburg     Kennedy     OConnor   Rehnquist      Scalia 
+-0.14684960 -0.19296338  0.08295734  0.02409031  0.14664466  0.25573113 
+     Souter     Stevens      Thomas 
+-0.10664165 -0.28273566  0.21976686 
+> 
+> # angle methods return a 2D configuration
+> o <- seriate(d, method = "MDS_angle")
+> get_order(o)
+  Stevens    Souter  Ginsburg    Breyer   OConnor Rehnquist   Kennedy    Scalia 
+        8         7         2         1         4         5         3         6 
+   Thomas 
+        9 
+> get_config(o)
+                 [,1]          [,2]
+Breyer    -0.14049676  5.127010e-02
+Ginsburg  -0.15882157 -9.597189e-05
+Kennedy    0.07540714 -1.955142e-03
+OConnor    0.05058155  8.506621e-02
+Rehnquist  0.14235840  3.586661e-02
+Scalia     0.19613081 -4.444093e-02
+Souter    -0.12683772 -6.267484e-03
+Stevens   -0.23446211 -6.798782e-02
+Thomas     0.19614026 -5.145556e-02
+> plot_config(o, )
+> 
+> 
+> # calculate a configuration for a seriation method that does not
+> # create a configuration
+> o <- seriate(d, method = "ARSA")
+> get_order(o)
+  Stevens  Ginsburg    Breyer    Souter   OConnor   Kennedy Rehnquist    Thomas 
+        8         2         1         7         4         3         5         9 
+   Scalia 
+        6 
+> get_config(o)
+NULL
+> 
+> # find the minimum-stress configuration for the ARSA order
+> sc <- uniscale(d, o)
+> sc
+    Breyer   Ginsburg    Kennedy    OConnor  Rehnquist     Scalia     Souter 
+-0.5502170 -0.6888976  0.3206014  0.1179750  0.5502213  0.8861084 -0.4412820 
+   Stevens     Thomas 
+-1.0148850  0.8203757 
+> 
+> plot_config(sc)
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  38.322 3.079 38.109 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

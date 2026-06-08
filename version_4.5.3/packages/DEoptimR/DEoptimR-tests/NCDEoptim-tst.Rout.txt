@@ -1,0 +1,81 @@
+
+R version 4.5.3 (2026-03-11) -- "Reassured Reassurer"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> require(DEoptimR)
+Loading required package: DEoptimR
+> 
+> c.time <- function(...) cat('Time elapsed: ', ..., '\n')
+> S.time <- function(expr) c.time(system.time(expr))
+> (doExtras <- DEoptimR:::doExtras())
+[1] FALSE
+> 
+> set.seed(2345)
+> # Bound-constrained test problems ----------------------------------------------
+> 
+> bl <- function(x) {
++ #   Becker and Lago problem
++ #
++ #   -10 <= x1, x2 <= 10
++ #   The function has four minima located at (+-5, +-5), all with f(x*) = 0.
++ #
++ #   Source:
++ #     Ali, M. Montaz, Khompatraporn, Charoenchai, and Zabinsky, Zelda B. (2005).
++ #     A numerical evaluation of several stochastic algorithms on selected
++ #     continuous global optimization test problems.
++ #     Journal of Global Optimization 31, 635-672.
++ 
++     sum((abs(x) - 5)^2)
++ }
+> 
+> S.time(bl_ <- NCDEoptim(-c(10, 10), c(10, 10),
++                         bl,
++                         niche_radius = 5,
++                         maxiter = 100))
+Time elapsed:  1.046 0.021 1.067 0 0 
+> # Only inequality constraints --------------------------------------------------
+> 
+> #   Function F1
+> #
+> #   f(x) = x^2
+> #   subject to:
+> #   g(x) = 1 - x^2 <= 0
+> #
+> #   -2 <= x <= 2
+> #   The two global optima are (x1*, x2*; f*) = (1, -1; 1).
+> #
+> #   Source:
+> #     Poole, Daniel J. and Allen, Christian B. (2019).
+> #     Constrained niching using differential evolution.
+> #     Swarm and Evolutionary Computation 44, 74-100.
+> 
+> S.time(F1_ <- NCDEoptim(-2, 2,
++                         function(x) x^2,
++                         function(x) 1 - x^2,
++                         niche_radius = 1,
++                         maxiter = 200))
+Time elapsed:  2.105 0.017 2.121 0 0 
+> 
+> # Expected optimal values ------------------------------------------------------
+> 
+> stopifnot(
++   all.equal( as.vector(abs(bl_$solution_arch)), rep(5, 8), tolerance = 1e-3 ),
++   all.equal( as.vector(abs(F1_$solution_arch)), c(1, 1), tolerance = 1e-2 )
++ )
+> 
+> c.time(proc.time())
+Time elapsed:  3.366 0.346 3.378 0.001 0.005 
+> 

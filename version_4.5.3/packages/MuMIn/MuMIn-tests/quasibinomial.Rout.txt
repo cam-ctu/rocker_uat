@@ -1,0 +1,258 @@
+
+R version 4.5.3 (2026-03-11) -- "Reassured Reassurer"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library("MuMIn")
+> options(na.action = na.fail)
+> 
+> budworm <- data.frame(ldose = rep(0:5, 2), numdead = c(1, 4, 9, 13, 18, 20, 0,
++ 	2, 6, 10, 12, 16), sex = factor(rep(c("M", "F"), c(6, 6))))
+> budworm$SF = cbind(numdead = budworm$numdead, numalive = 20 - budworm$numdead)
+> 
+> qbinomial <- function(...) {
++ 	res <- quasibinomial(...)
++ 	res$aic <- binomial(...)$aic
++ 	res
++ }
+> 
+> budworm.qqlg <- glm(SF ~ sex*ldose + sex*I(ldose^2), data = budworm, family = qbinomial)
+> budworm.lg <- glm(SF ~ sex*ldose + sex*I(ldose^2), data = budworm, family = binomial)
+> 
+> r.squaredLR(budworm.lg)
+[1] 0.9999606
+attr(,"adj.r.squared")
+[1] 0.9999631
+> r.squaredGLMM(budworm.lg)
+                  R2m       R2c
+theoretical 0.9675480 0.9675480
+delta       0.9606046 0.9606046
+Warning message:
+the null model is only correct if all the variables it uses are identical 
+to those used in fitting the original model. 
+> 
+> dd <- dredge(budworm.lg, rank = "QAIC", chat = summary(budworm.lg)$dispersion)
+Fixed term is "(Intercept)"
+> #dd <- dredge(budworm.lg) # should be the same
+> mod <- get.models(dd, subset = NA)
+> mod
+$`6`
+
+Call:  glm(formula = SF ~ ldose + sex + 1, family = binomial, data = budworm)
+
+Coefficients:
+(Intercept)        ldose         sexM  
+     -3.473        1.064        1.101  
+
+Degrees of Freedom: 11 Total (i.e. Null);  9 Residual
+Null Deviance:	    124.9 
+Residual Deviance: 6.757 	AIC: 42.87
+
+$`14`
+
+Call:  glm(formula = SF ~ ldose + sex + ldose:sex + 1, family = binomial, 
+    data = budworm)
+
+Coefficients:
+(Intercept)        ldose         sexM   ldose:sexM  
+    -2.9935       0.9060       0.1750       0.3529  
+
+Degrees of Freedom: 11 Total (i.e. Null);  8 Residual
+Null Deviance:	    124.9 
+Residual Deviance: 4.994 	AIC: 43.1
+
+$`8`
+
+Call:  glm(formula = SF ~ ldose + I(ldose^2) + sex + 1, family = binomial, 
+    data = budworm)
+
+Coefficients:
+(Intercept)        ldose   I(ldose^2)         sexM  
+    -3.8943       1.4882      -0.0794       1.1007  
+
+Degrees of Freedom: 11 Total (i.e. Null);  8 Residual
+Null Deviance:	    124.9 
+Residual Deviance: 5.851 	AIC: 43.96
+
+$`24`
+
+Call:  glm(formula = SF ~ ldose + I(ldose^2) + sex + I(ldose^2):sex + 
+    1, family = binomial, data = budworm)
+
+Coefficients:
+    (Intercept)            ldose       I(ldose^2)             sexM  
+       -3.38713          1.31397         -0.07619          0.46528  
+I(ldose^2):sexM  
+        0.07283  
+
+Degrees of Freedom: 11 Total (i.e. Null);  7 Residual
+Null Deviance:	    124.9 
+Residual Deviance: 3.871 	AIC: 43.98
+
+$`16`
+
+Call:  glm(formula = SF ~ ldose + I(ldose^2) + sex + ldose:sex + 1, 
+    family = binomial, data = budworm)
+
+Coefficients:
+(Intercept)        ldose   I(ldose^2)         sexM   ldose:sexM  
+   -3.31770      1.20866     -0.05367      0.26718      0.30891  
+
+Degrees of Freedom: 11 Total (i.e. Null);  7 Residual
+Null Deviance:	    124.9 
+Residual Deviance: 4.611 	AIC: 44.72
+
+$`32`
+
+Call:  glm(formula = SF ~ ldose + I(ldose^2) + sex + ldose:sex + I(ldose^2):sex + 
+    1, family = binomial, data = budworm)
+
+Coefficients:
+    (Intercept)            ldose       I(ldose^2)             sexM  
+        -3.9473           1.7487          -0.1455           1.4145  
+     ldose:sexM  I(ldose^2):sexM  
+        -0.8364           0.2214  
+
+Degrees of Freedom: 11 Total (i.e. Null);  6 Residual
+Null Deviance:	    124.9 
+Residual Deviance: 3.172 	AIC: 45.28
+
+$`23`
+
+Call:  glm(formula = SF ~ I(ldose^2) + sex + I(ldose^2):sex + 1, family = binomial, 
+    data = budworm)
+
+Coefficients:
+    (Intercept)       I(ldose^2)             sexM  I(ldose^2):sexM  
+        -1.9416           0.1496           0.1586           0.1247  
+
+Degrees of Freedom: 11 Total (i.e. Null);  8 Residual
+Null Deviance:	    124.9 
+Residual Deviance: 12.47 	AIC: 50.58
+
+$`2`
+
+Call:  glm(formula = SF ~ ldose + 1, family = binomial, data = budworm)
+
+Coefficients:
+(Intercept)        ldose  
+     -2.766        1.007  
+
+Degrees of Freedom: 11 Total (i.e. Null);  10 Residual
+Null Deviance:	    124.9 
+Residual Deviance: 16.98 	AIC: 51.09
+
+$`4`
+
+Call:  glm(formula = SF ~ ldose + I(ldose^2) + 1, family = binomial, 
+    data = budworm)
+
+Coefficients:
+(Intercept)        ldose   I(ldose^2)  
+   -3.17949      1.42087     -0.07754  
+
+Degrees of Freedom: 11 Total (i.e. Null);  9 Residual
+Null Deviance:	    124.9 
+Residual Deviance: 16.08 	AIC: 52.19
+
+$`7`
+
+Call:  glm(formula = SF ~ I(ldose^2) + sex + 1, family = binomial, data = budworm)
+
+Coefficients:
+(Intercept)   I(ldose^2)         sexM  
+    -2.3477       0.1913       1.0387  
+
+Degrees of Freedom: 11 Total (i.e. Null);  9 Residual
+Null Deviance:	    124.9 
+Residual Deviance: 17.76 	AIC: 53.87
+
+$`3`
+
+Call:  glm(formula = SF ~ I(ldose^2) + 1, family = binomial, data = budworm)
+
+Coefficients:
+(Intercept)   I(ldose^2)  
+    -1.7337       0.1817  
+
+Degrees of Freedom: 11 Total (i.e. Null);  10 Residual
+Null Deviance:	    124.9 
+Residual Deviance: 27.43 	AIC: 61.54
+
+$`5`
+
+Call:  glm(formula = SF ~ sex + 1, family = binomial, data = budworm)
+
+Coefficients:
+(Intercept)         sexM  
+    -0.4754       0.6425  
+
+Degrees of Freedom: 11 Total (i.e. Null);  10 Residual
+Null Deviance:	    124.9 
+Residual Deviance: 118.8 	AIC: 152.9
+
+$`1`
+
+Call:  glm(formula = SF ~ 1, family = binomial, data = budworm)
+
+Coefficients:
+(Intercept)  
+    -0.1503  
+
+Degrees of Freedom: 11 Total (i.e. Null);  11 Residual
+Null Deviance:	    124.9 
+Residual Deviance: 124.9 	AIC: 157
+
+attr(,"rank")
+function (x) 
+rank(x, chat = 1)
+<environment: 0x555f8f0cbbf0>
+attr(,"beta")
+[1] "none"
+> 
+> # Note: this works:
+> # ma <- model.avg(mod)
+> # but this will not: ('rank' attribute passed from 'dredge' is lost)
+> # ma <- model.avg(mod)
+> # so, need to supply them
+> 
+> model.avg(mod[1:5], rank = "QAICc", rank.args = list(chat = 0.403111))
+
+Call:
+model.avg(object = mod[1:5], rank = "QAICc", rank.args = list(chat = 0.403111))
+
+Component models: 
+‘23’   ‘235’  ‘123’  ‘1234’ ‘1235’
+
+Coefficients: 
+       (Intercept)  ldose      sexM ldose:sexM   I(ldose^2) I(ldose^2):sexM
+full     -3.437418 1.0877 0.9353745 0.05998441 -0.009801539    0.0008955918
+subset   -3.437418 1.0877 0.9353745 0.35072750 -0.077366047    0.0728311378
+Warning messages:
+1: In .aic(list(object, ...), chat, k, REML, function(ll, chat, k,  :
+  'chat' given is < 1, increased to 1
+2: In .aic(list(object, ...), chat, k, REML, function(ll, chat, k,  :
+  'chat' given is < 1, increased to 1
+3: In .aic(list(object, ...), chat, k, REML, function(ll, chat, k,  :
+  'chat' given is < 1, increased to 1
+4: In .aic(list(object, ...), chat, k, REML, function(ll, chat, k,  :
+  'chat' given is < 1, increased to 1
+5: In .aic(list(object, ...), chat, k, REML, function(ll, chat, k,  :
+  'chat' given is < 1, increased to 1
+6: In .aic(list(object, ...), chat, k, REML, function(ll, chat, k,  :
+  'chat' given is < 1, increased to 1
+> 
+> 
+> 

@@ -1,0 +1,48 @@
+
+R version 4.5.3 (2026-03-11) -- "Reassured Reassurer"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> ## test whether profiling works when custom optimizer is defined
+> ##  inside a function (GH #7)
+> 
+> library(bbmle)
+Loading required package: stats4
+> test <- function(t, X) {
++   likfun <- function(p) {
++     mu <- with(as.list(p), {
++       exp(a+b*t)
++     })
++     -sum(dpois(X, mu, log=TRUE))
++   }
++   parnames(likfun) <- c("a", "b")
++   
++   optimfun <- function(par, fn, gr = NULL, ...,
++                        method = NULL, lower = -Inf, upper = Inf,
++                        control = NULL, hessian = FALSE) {
++     ## cat("using custom optimfun!\n")
++     optim(par, fn=fn, gr=gr, ...,
++           method="BFGS", control=control, hessian=TRUE)
++   }
++   
++   mle2(likfun, start=c(a=1,b=1), optimizer="user", optimfun=optimfun)
++ }
+> 
+> f <- test(0:5, round(exp(1:6)))
+> pp <- profile(f,skiperrs=FALSE)
+> stopifnot(inherits(pp,"profile.mle2"))
+> 
+> 
+> 

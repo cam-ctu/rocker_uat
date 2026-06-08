@@ -1,0 +1,214 @@
+
+R version 4.5.3 (2026-03-11) -- "Reassured Reassurer"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(registry)
+> demo("registry")
+
+
+	demo(registry)
+	---- ~~~~~~~~
+
+> ##########################
+> ### registry test instances
+> 
+> library(registry)
+
+> .my_check_fun <- function(x) if (x$Z == 999 && x$New2 == 999) stop("No evil allowed!")
+
+> ## create registry
+> R <- registry(entry_class = "simple.list",
++               validity_FUN = .my_check_fun)
+
+> R
+An object of class 'registry' with no entry.
+
+> ## set fields
+> R$set_field("names", type = "character", is_key = TRUE)
+
+> R$set_field("X", type = TRUE, is_mandatory = TRUE)
+
+> R$set_field("Y", type = "character")
+
+> R$set_field("Z", default = 123)
+
+> R$get_fields()
+$names
+          type character
+  alternatives NA
+       default NA
+  is_mandatory TRUE
+ is_modifiable TRUE
+        is_key TRUE
+     index_FUN function (lookup, entry, ...)  tolower(lookup) %in%
+               tolower(entry)
+index_FUN_args list()
+
+$X
+          type logical
+  alternatives NA
+       default NA
+  is_mandatory TRUE
+ is_modifiable TRUE
+        is_key FALSE
+     index_FUN function (lookup, entry, ...)  tolower(lookup) %in%
+               tolower(entry)
+index_FUN_args list()
+
+$Y
+          type character
+  alternatives NA
+       default NA
+  is_mandatory FALSE
+ is_modifiable TRUE
+        is_key FALSE
+     index_FUN function (lookup, entry, ...)  tolower(lookup) %in%
+               tolower(entry)
+index_FUN_args list()
+
+$Z
+          type NA
+  alternatives NA
+       default 123
+  is_mandatory FALSE
+ is_modifiable TRUE
+        is_key FALSE
+     index_FUN function (lookup, entry, ...)  tolower(lookup) %in%
+               tolower(entry)
+index_FUN_args list()
+
+
+> ## add entries
+> R$set_entry(names = c("test", "bar"), X = TRUE, Y = "bla")
+
+> R$set_entry(names = "test2", X = FALSE, Y = "foo", Z = 99)
+
+> R$set_entry(names = "test3", X = FALSE, Y = "bar", Z = "chars")
+
+> R$get_entry("test")
+       _   
+names1 test
+names2 bar 
+X      TRUE
+Y      bla 
+Z      123 
+
+> R[["test2"]]
+      _    
+names test2
+X     FALSE
+Y     foo  
+Z     99   
+
+> R[["test3"]]
+      _    
+names test3
+X     FALSE
+Y     bar  
+Z     chars
+
+> R[["bar"]]
+       _   
+names1 test
+names2 bar 
+X      TRUE
+Y      bla 
+Z      123 
+
+> ## add new field
+> R$set_field("New")
+
+> R$get_field("New")
+          type NA
+  alternatives NA
+       default NA
+  is_mandatory FALSE
+ is_modifiable TRUE
+        is_key FALSE
+     index_FUN function (lookup, entry, ...)  tolower(lookup) %in%
+               tolower(entry)
+index_FUN_args list()
+
+> ## change entries
+> R$modify_entry(names = "test", New = 123)
+
+> R$modify_entry(names = "test2", New = "test")
+
+> ## field check function (checks for strict positive values)
+> R$set_field("New2", type = "numeric", validity_FUN = function(x) stopifnot(x > 0))
+
+> R$set_entry(names = "test5", X = TRUE, New2 = 2)
+
+> ## add field with fixed alternatives
+> R$set_field("New3", type = "character", alternatives = c("A", "B"))
+
+> R$get_field("New")
+          type NA
+  alternatives NA
+       default NA
+  is_mandatory FALSE
+ is_modifiable TRUE
+        is_key FALSE
+     index_FUN function (lookup, entry, ...)  tolower(lookup) %in%
+               tolower(entry)
+index_FUN_args list()
+
+> R$set_entry(names = "test6", X = TRUE, New3 = "A")
+
+> ## print/summary = as.data.frame
+> R
+An object of class 'registry' with 5 entries.
+
+> summary(R)
+  names     X    Y     Z  New New2 New3
+1  test  TRUE  bla   123  123   NA <NA>
+2 test2 FALSE  foo    99 test   NA <NA>
+3 test3 FALSE  bar chars <NA>   NA <NA>
+4 test5  TRUE <NA>   123 <NA>    2 <NA>
+5 test6  TRUE <NA>   123 <NA>   NA    A
+
+> ## seal entries
+> R$seal_entries()
+
+> R$set_field("New4")
+
+> R$set_entry(names = "test7", X = TRUE, Y = "bla")
+
+> R$delete_entry("test7")
+
+> R$modify_entry(names = "test", New4 = "test")
+
+> ## error cases:
+> TRY <- function(...) stopifnot(inherits(try(..., silent = TRUE), "try-error"))
+
+> TRY(R$set_field("bla", type = "character", default = 123))
+
+> TRY(R$set_entry("err1", Y = "bla"))
+
+> TRY(R$set_entry("err2", X = "bla"))
+
+> TRY(R$set_entry("err3", X = TRUE, New2 = -2))
+
+> TRY(R$set_entry("err4", X = TRUE, Z = 999, New2 = 999))
+
+> TRY(R$set_entry("err5", X = TRUE, New3 = "C"))
+
+> TRY(R$modify_entry("Bla", "New", 123))
+
+> TRY(R$modify_entry("X", "Bla", 123))
+
+> TRY(R$modify_entry("test","X",TRUE))
+> 

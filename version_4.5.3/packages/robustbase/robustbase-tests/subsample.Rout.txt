@@ -1,0 +1,1356 @@
+
+R version 4.5.3 (2026-03-11) -- "Reassured Reassurer"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> ### test subsample
+> ### LU decomposition and singular subsamples handling
+> require(robustbase)
+Loading required package: robustbase
+> source(system.file("xtraR/subsample-fns.R", package = "robustbase", mustWork=TRUE))
+> ## instead of relying on  system.file("test-tools-1.R", package="Matrix"):
+> source(system.file("xtraR/test-tools.R", package = "robustbase")) # assert.EQ(), showProc.time() ..
+> options(nwarnings = 4e4, warnPartialMatchArgs = FALSE)
+> 
+> cat("doExtras:", doExtras <- robustbase:::doExtras(),"\n")
+doExtras: FALSE 
+> showProc.time()
+Time (user system elapsed): 0.004 0 0.004 
+> 
+> A <- rbind(c(0.001, 1),
++            c(1,     2))
+> set.seed(11)
+> ## IGNORE_RDIFF_BEGIN
+> sa <- tstSubsample(A) # (now typically also shows Matrix version ..)
+Loading required package: Matrix
+        _                                               
+Version 1.7-4                                           
+Date    2025-08-27                                      
+file    /usr/local/lib/R/library/Matrix/Meta/package.rds
+> ## IGNORE_RDIFF_END
+> str(sa)
+List of 21
+ $ x        : num [1:2, 1:2] 0.001 1 1 2
+ $ y        : num [1:2] -0.591 0.0266
+ $ n        : int 2
+ $ m        : int 2
+ $ beta     : num [1:2] 1.211 -0.592
+ $ ind_space: int [1:2] 0 1
+ $ idc      : int [1:2] 0 1
+ $ idr      : int [1:2] 1 0
+ $ lu       : num [1:2, 1:2] 1 0.001 2 0.998
+ $ v        : num [1:2] 1 0.998
+ $ pivot    : int 1
+ $ Dr       : num [1:2] 1 0.5
+ $ Dc       : num [1:2] 2 1
+ $ rowequ   : int 0
+ $ colequ   : int 0
+ $ status   : int 0
+ $ sample   : logi FALSE
+ $ mts      : int 0
+ $ ss       : int 1
+ $ tolinv   : num 1e-07
+ $ solve    : logi TRUE
+> 
+> A <- rbind(c(3, 17, 10),
++            c(2,  4, -2),
++            c(6, 18, 12))
+> tstSubsample(A)
+> 
+> ## test some random matrix
+> set.seed(1002)
+> A <- matrix(rnorm(100), 10)
+> tstSubsample(A)
+> 
+> ## test singular matrix handling
+> A <- rbind(c(1, 0, 0),
++            c(0, 1, 0),
++            c(0, 1, 0),
++            c(0, 0, 1))
+> tstSubsample(A)
+> 
+> 
+> ## test subsample with mts > 0
+> data <- data.frame(y = rnorm(9), expand.grid(A = letters[1:3], B = letters[1:3]))
+> x <- model.matrix(y ~ ., data)
+> y <- data$y
+> ## this should produce a warning and return status == 2
+> showSys.time(z <- Rsubsample(x, y, mts=2))
+Time    user  system elapsed 
+Time       0       0       0 
+Warning message:
+In Rsubsample(x, y, mts = 2) :
+  Too many singular resamples. Aborting subsample().
+ See parameter 'subsampling; in help of lmrob.config().
+> stopifnot(identical(2L, z$status)) # (z$status may be NULL; stopifnot(NULL) does not trigger)
+> 
+> 
+> ## test equilibration
+> ## columns only
+> X <- rbind(c(1e-7, 1e-10),
++            c(2   , 0.2))
+> y <- 1:2
+> tstSubsample(t(X), y)
+kappa before equilibration = 2.0404e+08, after = 21.2097
+> 
+> ## rows only
+> X <- rbind(c(1e-7, 1e+10),
++            c(2   , 0.2))
+> y <- 1:2
+> tstSubsample(X, y)
+kappa before equilibration = 5e+09, after = 1.15762
+> 
+> ## both
+> X <- rbind(c(1e-7,  2  ),
++            c(1e10, 2e12))
+> y <- 1:2
+> tstSubsample(X, y)
+kappa before equilibration = 2.01e+14, after = 3.33338
+> showProc.time()
+Time (user system elapsed): 0.816 0.055 0.871 
+> 
+> 
+> ## test real data example
+> data(possumDiv)## 151 * 9; the last two variables are factors
+> with(possumDiv, table(eucalyptus, aspect))
+              aspect
+eucalyptus     NW-NE NW-SE SE-SW SW-NW
+  regnans         27    34    32    17
+  delegatensis     6     8     9     6
+  nitens           2     5     3     2
+> 
+> mf <- model.frame(Diversity ~ .^2, possumDiv)
+> X <- model.matrix(mf, possumDiv)
+> ncol(X) # 63
+[1] 63
+> y <- model.response(mf)
+> stopifnot(identical(qr(X)$rank, ncol(X)))
+> 
+> ## this used to fail: different pivots in step 37
+> str(s1 <- tstSubsample(X, y))
+kappa before equilibration = 16194.6, after = 736.342
+List of 21
+ $ x        : num [1:151, 1:63] 1 1 1 1 1 1 1 1 1 1 ...
+  ..- attr(*, "dimnames")=List of 2
+  .. ..$ : chr [1:151] "1" "2" "3" "4" ...
+  .. ..$ : chr [1:63] "(Intercept)" "Shrubs" "Stumps" "Stags" ...
+  ..- attr(*, "assign")= int [1:63] 0 1 2 3 4 5 6 7 7 8 ...
+  ..- attr(*, "contrasts")=List of 2
+  .. ..$ eucalyptus: chr "contr.treatment"
+  .. ..$ aspect    : chr "contr.treatment"
+ $ y        : num [1:151] 3 2 1 2 3 2 3 2 0 0 ...
+ $ n        : int 151
+ $ m        : int 63
+ $ beta     : num [1:63] 6732.1 -463.6 1799.4 -205.2 -65.2 ...
+ $ ind_space: int [1:151] 0 1 2 3 4 5 6 7 8 9 ...
+ $ idc      : int [1:151] 0 1 2 3 4 5 6 7 8 9 ...
+ $ idr      : int [1:151] 40 31 14 33 37 54 56 52 45 13 ...
+ $ lu       : num [1:63, 1:63] 1 0.387 0.194 0.414 0 ...
+ $ v        : num [1:63] 1 0.897 0.567 0.353 0.584 ...
+ $ pivot    : int [1:62] 40 31 14 33 37 54 56 52 45 13 ...
+ $ Dr       : num [1:151] 0.00111 0.00556 0.00481 0.00391 0.00313 ...
+ $ Dc       : num [1:63] 6 2 10 2 2 3 3 6 16 20 ...
+ $ rowequ   : int 1
+ $ colequ   : int 1
+ $ status   : int 0
+ $ sample   : logi FALSE
+ $ mts      : int 0
+ $ ss       : int 1
+ $ tolinv   : num 1e-07
+ $ solve    : logi TRUE
+> s2 <- tstSubsample(X / max(abs(X)), y / max(abs(X)))
+kappa before equilibration = 16194.6, after = 736.342
+> s3 <- tstSubsample(X * 2^-50, y * 2^-50)
+kappa before equilibration = 16194.6, after = 736.342
+> ## all components *BUT*  x, y, lu, Dr, Dc, rowequ, colequ :
+> nm <- names(s1); nm <- nm[is.na(match(nm, c("x","y","lu", "Dr", "Dc", "rowequ", "colequ")))]
+> stopifnot(all.equal(s1[nm], s2[nm], tolerance=1e-10),
++ 	  all.equal(s1[nm], s3[nm], tolerance=1e-10))
+> showProc.time()
+Time (user system elapsed): 0.071 0.12 0.058 
+> 
+> set.seed(10)
+> nsing <- sum(replicate(if(doExtras) 200 else 20, tstSubsampleSing(X, y)))
+> stopifnot(nsing == 0)
+> showProc.time()
+Time (user system elapsed): 0.153 0.266 0.126 
+> 
+> ## test example with many categorical predictors - 2 different random seeds:
+> set.seed(10) ; r1 <- lmrob(Diversity ~ .^2 , data = possumDiv, cov="none")
+> set.seed(108); r2 <- lmrob(Diversity ~ .^2 , data = possumDiv, cov="none")# lmrob.S() failed
+> (i1 <- r1$init) # print(<lmrob.S>)
+S-estimator lmrob.S():
+Coefficients:
+                       (Intercept)                              Shrubs  
+                          0.722871                           -0.041500  
+                            Stumps                               Stags  
+                         -2.504527                           -0.223348  
+                              Bark                             Habitat  
+                          0.056598                            0.112795  
+                           BAcacia              eucalyptusdelegatensis  
+                         -0.065380                           -2.018232  
+                  eucalyptusnitens                         aspectNW-SE  
+                          1.517607                            1.350060  
+                       aspectSE-SW                         aspectSW-NW  
+                          0.920044                            1.429090  
+                     Shrubs:Stumps                        Shrubs:Stags  
+                          0.119261                            0.012629  
+                       Shrubs:Bark                      Shrubs:Habitat  
+                         -0.017849                           -0.035020  
+                    Shrubs:BAcacia       Shrubs:eucalyptusdelegatensis  
+                          0.011194                           -0.172258  
+           Shrubs:eucalyptusnitens                  Shrubs:aspectNW-SE  
+                         -0.209467                            0.127213  
+                Shrubs:aspectSE-SW                  Shrubs:aspectSW-NW  
+                         -0.068075                            0.302488  
+                      Stumps:Stags                         Stumps:Bark  
+                         -1.195520                            0.037637  
+                    Stumps:Habitat                      Stumps:BAcacia  
+                          1.854153                           -0.125780  
+     Stumps:eucalyptusdelegatensis             Stumps:eucalyptusnitens  
+                        -11.212340                          -10.851453  
+                Stumps:aspectNW-SE                  Stumps:aspectSE-SW  
+                         -0.292179                            6.426255  
+                Stumps:aspectSW-NW                          Stags:Bark  
+                         -2.615428                           -0.005088  
+                     Stags:Habitat                       Stags:BAcacia  
+                          0.028734                           -0.001261  
+      Stags:eucalyptusdelegatensis              Stags:eucalyptusnitens  
+                          0.546997                            0.259457  
+                 Stags:aspectNW-SE                   Stags:aspectSE-SW  
+                          0.163733                            0.174822  
+                 Stags:aspectSW-NW                        Bark:Habitat  
+                          0.118977                            0.041449  
+                      Bark:BAcacia         Bark:eucalyptusdelegatensis  
+                          0.007768                            0.014562  
+             Bark:eucalyptusnitens                    Bark:aspectNW-SE  
+                         -0.191179                           -0.261191  
+                  Bark:aspectSE-SW                    Bark:aspectSW-NW  
+                          0.094818                           -0.149431  
+                   Habitat:BAcacia      Habitat:eucalyptusdelegatensis  
+                         -0.004190                           -0.101211  
+          Habitat:eucalyptusnitens                 Habitat:aspectNW-SE  
+                          0.176561                           -0.299827  
+               Habitat:aspectSE-SW                 Habitat:aspectSW-NW  
+                         -0.343471                           -0.770122  
+    BAcacia:eucalyptusdelegatensis            BAcacia:eucalyptusnitens  
+                          0.081777                           -0.039539  
+               BAcacia:aspectNW-SE                 BAcacia:aspectSE-SW  
+                          0.042317                           -0.063962  
+               BAcacia:aspectSW-NW  eucalyptusdelegatensis:aspectNW-SE  
+                          0.015849                           -0.646063  
+      eucalyptusnitens:aspectNW-SE  eucalyptusdelegatensis:aspectSE-SW  
+                         -0.200390                            0.891429  
+      eucalyptusnitens:aspectSE-SW  eucalyptusdelegatensis:aspectSW-NW  
+                         -0.732987                            0.177784  
+      eucalyptusnitens:aspectSW-NW  
+                         -0.676201  
+scale =  0.7557 ;  converged  in  73  refinement steps
+Algorithmic parameters: 
+tuning.chi         bb tuning.psi refine.tol    rel.tol  scale.tol  solve.tol 
+ 1.548e+00  5.000e-01  4.685e+00  1.000e-07  1.000e-07  1.000e-10  1.000e-07 
+  zero.tol 
+ 1.000e-10 
+     nResample         max.it       best.r.s       k.fast.s          k.max 
+           500             50              2              1            200 
+   maxit.scale      trace.lev            mts     compute.rd fast.s.large.n 
+           200              0           1000              0           2000 
+          psi   subsampling           cov 
+   "bisquare" "nonsingular"        "none" 
+seed : int(0) 
+> (i2 <- r1$init) # ... and they are "somewhat" close:
+S-estimator lmrob.S():
+Coefficients:
+                       (Intercept)                              Shrubs  
+                          0.722871                           -0.041500  
+                            Stumps                               Stags  
+                         -2.504527                           -0.223348  
+                              Bark                             Habitat  
+                          0.056598                            0.112795  
+                           BAcacia              eucalyptusdelegatensis  
+                         -0.065380                           -2.018232  
+                  eucalyptusnitens                         aspectNW-SE  
+                          1.517607                            1.350060  
+                       aspectSE-SW                         aspectSW-NW  
+                          0.920044                            1.429090  
+                     Shrubs:Stumps                        Shrubs:Stags  
+                          0.119261                            0.012629  
+                       Shrubs:Bark                      Shrubs:Habitat  
+                         -0.017849                           -0.035020  
+                    Shrubs:BAcacia       Shrubs:eucalyptusdelegatensis  
+                          0.011194                           -0.172258  
+           Shrubs:eucalyptusnitens                  Shrubs:aspectNW-SE  
+                         -0.209467                            0.127213  
+                Shrubs:aspectSE-SW                  Shrubs:aspectSW-NW  
+                         -0.068075                            0.302488  
+                      Stumps:Stags                         Stumps:Bark  
+                         -1.195520                            0.037637  
+                    Stumps:Habitat                      Stumps:BAcacia  
+                          1.854153                           -0.125780  
+     Stumps:eucalyptusdelegatensis             Stumps:eucalyptusnitens  
+                        -11.212340                          -10.851453  
+                Stumps:aspectNW-SE                  Stumps:aspectSE-SW  
+                         -0.292179                            6.426255  
+                Stumps:aspectSW-NW                          Stags:Bark  
+                         -2.615428                           -0.005088  
+                     Stags:Habitat                       Stags:BAcacia  
+                          0.028734                           -0.001261  
+      Stags:eucalyptusdelegatensis              Stags:eucalyptusnitens  
+                          0.546997                            0.259457  
+                 Stags:aspectNW-SE                   Stags:aspectSE-SW  
+                          0.163733                            0.174822  
+                 Stags:aspectSW-NW                        Bark:Habitat  
+                          0.118977                            0.041449  
+                      Bark:BAcacia         Bark:eucalyptusdelegatensis  
+                          0.007768                            0.014562  
+             Bark:eucalyptusnitens                    Bark:aspectNW-SE  
+                         -0.191179                           -0.261191  
+                  Bark:aspectSE-SW                    Bark:aspectSW-NW  
+                          0.094818                           -0.149431  
+                   Habitat:BAcacia      Habitat:eucalyptusdelegatensis  
+                         -0.004190                           -0.101211  
+          Habitat:eucalyptusnitens                 Habitat:aspectNW-SE  
+                          0.176561                           -0.299827  
+               Habitat:aspectSE-SW                 Habitat:aspectSW-NW  
+                         -0.343471                           -0.770122  
+    BAcacia:eucalyptusdelegatensis            BAcacia:eucalyptusnitens  
+                          0.081777                           -0.039539  
+               BAcacia:aspectNW-SE                 BAcacia:aspectSE-SW  
+                          0.042317                           -0.063962  
+               BAcacia:aspectSW-NW  eucalyptusdelegatensis:aspectNW-SE  
+                          0.015849                           -0.646063  
+      eucalyptusnitens:aspectNW-SE  eucalyptusdelegatensis:aspectSE-SW  
+                         -0.200390                            0.891429  
+      eucalyptusnitens:aspectSE-SW  eucalyptusdelegatensis:aspectSW-NW  
+                         -0.732987                            0.177784  
+      eucalyptusnitens:aspectSW-NW  
+                         -0.676201  
+scale =  0.7557 ;  converged  in  73  refinement steps
+Algorithmic parameters: 
+tuning.chi         bb tuning.psi refine.tol    rel.tol  scale.tol  solve.tol 
+ 1.548e+00  5.000e-01  4.685e+00  1.000e-07  1.000e-07  1.000e-10  1.000e-07 
+  zero.tol 
+ 1.000e-10 
+     nResample         max.it       best.r.s       k.fast.s          k.max 
+           500             50              2              1            200 
+   maxit.scale      trace.lev            mts     compute.rd fast.s.large.n 
+           200              0           1000              0           2000 
+          psi   subsampling           cov 
+   "bisquare" "nonsingular"        "none" 
+seed : int(0) 
+> stopifnot(all.equal(r1[names(r1) != "init.S"],
++                     r2[names(r2) != "init.S"], tol = 0.40))
+> c1 <- coef(r1)
+> c2 <- coef(r2)
+> relD <- (c1-c2)*2/(c1+c2)
+> xCf <- which(abs(relD) >= 10)
+> stopifnot(exprs = {
++     identical(xCf, c(`Bark:aspectSW-NW` = 46L))
++     all.equal(c1[-xCf], c2[-xCf], tol = 0.35) # 0.3418
++     sign(c1[-xCf]) == sign(c2[-xCf])
++ })
+> showProc.time()
+Time (user system elapsed): 0.801 1.371 0.548 
+> 
+> ## investigate problematic subsample:
+> idc <- 1 + c(140, 60, 12, 13, 89, 90, 118, 80, 17, 134, 59, 94, 36,
++          43, 46, 93, 107, 62, 57, 116, 11, 45, 35, 38, 120, 34, 29,
++          33, 147, 105, 115, 92, 61, 91, 104, 141, 138, 129, 130, 84,
++          119, 132, 6, 135, 112, 16, 67, 41, 102, 76, 111, 82, 148, 24,
++          131, 10, 96, 0, 87, 21, 127, 56, 124)
+> rc <- lm(Diversity ~ .^2 , data = possumDiv, subset = idc)
+> 
+> X <- model.matrix(rc)
+> y <- possumDiv$Diversity[idc]
+> tstSubsample(X, y)## have different pivots ... could not find non-singular
+kappa before equilibration = 2.18999e+20, after = 1.59206e+19
+LU.gaxpy() and Rsubsample() have different pivots:
+ [1] 34  9 41 15 14 18 38 46 17 62 11 55 47 60 56 37 18 20 24 54 22 50 33 39 32
+[26] 54 37 40 38 30 45 60 56 35 62 57 50 44 51 45 62 55 52 48 53 46 55 48 59 61
+[51] 58 54 54 63 62 57 57 58 61 61 61 63
+ [1] 34  9 41 15 14 18 38 46 17 62 11 55 47 60 56 37 18 20 24 54 22 50 33 39 32
+[26] 54 37 40 38 30 45 60 56 48 62 57 50 44 51 45 48 55 52 55 53 46 62 55 59 61
+[51] 58 54 54 63 55 57 57 58 61 61 61 63
+  ... are different at indices:
+ [1] 34 41 44 47 48 55
+Warning message:
+In Rsubsample(x, y, tolInverse = tolInverse) :
+  subsample(): could not find non-singular subsample.
+> 
+> lu <- LU.gaxpy(t(X))
+> stopifnot(length(lusi <- lu$sing) >= 1, lusi)
+> zc <- Rsubsample(X, y)
+Warning message:
+In Rsubsample(X, y) : subsample(): could not find non-singular subsample.
+> stopifnot(length(st <- zc$status) > 0, st > 0)
+> ## column 52 is linearly dependent and should have been discarded
+> ## qr(t(X))$pivot
+> 
+> image(as(round(zc$lu -      (lu$L + lu$U - diag(nrow(lu$U))), 10), "Matrix"))
+> image(as( sign(zc$lu) - sign(lu$L + lu$U - diag(nrow(lu$U))),      "Matrix"))
+> showProc.time()
+Time (user system elapsed): 0.224 0.259 0.194 
+> 
+> ## test equilibration
+> ## colequ only
+> X <- matrix(c(1e-7, 2, 1e-10, 0.2), 2)
+> y <- 1:2
+> tstSubsample(t(X), y)
+kappa before equilibration = 2.0404e+08, after = 21.2097
+> 
+> ## rowequ only
+> X <- matrix(c(1e-7, 2, 1e10, 0.2), 2)
+> y <- 1:2
+> tstSubsample(X, y)
+kappa before equilibration = 5e+09, after = 1.15762
+> 
+> ## both
+> X <- matrix(c(1e-7, 1e10, 2, 2e12), 2)
+> y <- 1:2
+> tstSubsample(X, y)
+kappa before equilibration = 2.01e+14, after = 3.33338
+> showProc.time()
+Time (user system elapsed): 0.002 0 0.002 
+> 
+> ### real data, see MM's ~/R/MM/Pkg-ex/robustbase/hedlmrob.R
+> ##  close to singular cov():
+> attach(system.file("external", "d1k27.rda", package="robustbase", mustWork=TRUE))
+> 
+> fm1 <- lmrob(y ~ a + I(a^2) + tf + I(tf^2) + A + I(A^2) + . , data = d1k27)
+Warning message:
+In lf.cov(init, x = x) :
+  X'WX is almost singular. Consider using cov = ".vcov.w"
+> ##     ^^^^^ gave error, earlier, now with a warning -- use ".vcov.w"
+> ## --> cov = ".vcov.w"
+> fm2 <- lmrob(y ~ a + I(a^2) + tf + I(tf^2) + A + I(A^2) + . , data = d1k27,
++              cov = ".vcov.w", trace = TRUE)
+lmrob_S(n = 1000, nRes = 500): fast_s() [non-large n]:
+ Subsampling 500 times to find candidate betas:
+ Now refine() to convergence for 2 very best ones:
+  Best[0]: convergence (83 iter.): -> improved scale to 0.166554423946168
+  Best[1]: convergence (88 iter.): -> improved scale to 0.166554423946079
+lmrob.S(): scale = 0.166554; coeff.=
+ [1]  1.075654e+01 -1.154462e-02  1.106946e-04  3.571354e-04 -1.297327e-08
+ [6]  7.327823e-01 -3.256861e-01  5.432153e-02  4.521211e-01  5.756158e-01
+[11]  1.061669e-01  1.177202e-01  1.971591e-01  2.407896e-01  2.967994e-01
+[16]  2.680718e-01 -1.326749e-02 -2.731234e-02  9.408317e-03  4.924811e-02
+[21]  2.233523e-02  1.953303e-02  1.153432e-02  4.541287e-02  9.998871e-02
+[26]  1.201414e-01  1.358071e-01  9.037262e-02  1.268346e-01  1.497639e-01
+init converged (remaining method = "M") -> coef=
+  (Intercept)             a        I(a^2)            tf       I(tf^2) 
+ 1.075654e+01 -1.154462e-02  1.106946e-04  3.571354e-04 -1.297327e-08 
+            A        I(A^2)            tb           r21           r31 
+ 7.327823e-01 -3.256861e-01  5.432153e-02  4.521211e-01  5.756158e-01 
+          r41           r51           r61           r71           r81 
+ 1.061669e-01  1.177202e-01  1.971591e-01  2.407896e-01  2.967994e-01 
+          r91          t011          t021          t031          t041 
+ 2.680718e-01 -1.326749e-02 -2.731234e-02  9.408317e-03  4.924811e-02 
+         t051          t061          t071          t081          t091 
+ 2.233523e-02  1.953303e-02  1.153432e-02  4.541287e-02  9.998871e-02 
+         t101          t111          t121          t131          t141 
+ 1.201414e-01  1.358071e-01  9.037262e-02  1.268346e-01  1.497639e-01 
+lmrob_MM(): rwls():
+ rwls() used 22 it.; last ||b0 - b1||_1 = 9.29659e-07, L(b1) = 0.152580120415; convergence
+lmrob..MM..fit(*, obj) --> updating ..  qr(x * rweights) -> rank= 30, outlierStats() 
+step "M" -> new coef=
+  (Intercept)             a        I(a^2)            tf       I(tf^2) 
+ 1.052071e+01 -1.016172e-02  8.111234e-05  4.551547e-04 -2.761075e-08 
+            A        I(A^2)            tb           r21           r31 
+ 5.829592e-01 -1.886155e-01  6.396563e-02  5.126003e-01  6.765112e-01 
+          r41           r51           r61           r71           r81 
+ 2.036129e-01  2.390444e-01  2.682150e-01  3.467074e-01  3.959954e-01 
+          r91          t011          t021          t031          t041 
+ 3.581571e-01 -8.591738e-04 -2.056299e-02  2.945871e-02  6.693598e-02 
+         t051          t061          t071          t081          t091 
+ 2.995238e-02  4.368286e-02  2.705788e-02  6.034512e-02  7.243219e-02 
+         t101          t111          t121          t131          t141 
+ 9.472191e-02  1.561789e-01  1.211456e-01  1.768558e-01  1.772017e-01 
+> showProc.time()# 2.77
+Time (user system elapsed): 1.165 1.695 0.723 
+> 
+> if(doExtras) withAutoprint({##---------------------------------------------------------
++ 
++ ## Q: does it change to use numeric instead of binary factors ?
++ ## A: not really ..
++ d1k.n <- d1k27
++ d1k.n[-(1:5)] <- lapply(d1k27[,-(1:5)], as.numeric)
++ 
++ fm1.n <- lmrob(y ~ a + I(a^2) + tf + I(tf^2) + A + I(A^2) + . , data = d1k.n)
++ fm2.n <- lmrob(y ~ a + I(a^2) + tf + I(tf^2) + A + I(A^2) + . , data = d1k.n,
++              cov = ".vcov.w", trace = 2)
++ 
++ summary(weights(fm1, type="robustness"))
++    hist(weights(fm1, type="robustness"), main="robustness weights of fm1")
++ rug(weights(fm1, type="robustness"))
++ showProc.time()## 2.88
++ 
++ ##
++ fmc <- lm   (y ~ poly(a,2)-a + poly(tf, 2)-tf + poly(A, 2)-A + . , data = d1k27)
++ summary(fmc)
++ ## -> has NA's for  'a, tf, A'  --- bad that it did *not* work to remove them
++ 
++ nform <- update(formula(fm1), ~ .
++                 +poly(A,2)  -A  -I(A^2)
++                 +poly(a,2)  -a  -I(a^2)
++                 +poly(tf,2) -tf -I(tf^2))
++ 
++ fm1. <- lmrob(nform, data = d1k27)# now w/o warning !? !!
++ fm2. <- lmrob(nform, data = d1k27, cov = ".vcov.w", trace = TRUE)
++ 
++ ## now lmrob takes care of NA coefficients automatically
++ lmrob(y ~ poly(a,2)-a + poly(tf, 2)-tf + poly(A, 2)-A + . , data = d1k27)
++ showProc.time() ## 4.24
++ }) ## only if(doExtras) -----------------------------------------------------
+> 
+> ## test exact fit property
+> set.seed(20)
+> data <- data.frame(y=c(rep.int(0, 20), round(100*rnorm(5))),
++                    group=rep(letters[1:5], each=5))
+> x <- model.matrix(y ~ group, data)
+> (ini <- lmrob.S(x, data$y, lmrob.control()))
+S-estimator lmrob.S():
+Exact fit detected
+
+Coefficients:
+(Intercept)       groupb       groupc       groupd       groupe  
+          0            0            0            0          116  
+scale =  0 ;  did NOT converge  in  200  refinement steps
+Algorithmic parameters: 
+tuning.chi         bb tuning.psi refine.tol    rel.tol  scale.tol  solve.tol 
+ 1.548e+00  5.000e-01  4.685e+00  1.000e-07  1.000e-07  1.000e-10  1.000e-07 
+  zero.tol 
+ 1.000e-10 
+     nResample         max.it       best.r.s       k.fast.s          k.max 
+           500             50              2              1            200 
+   maxit.scale      trace.lev            mts     compute.rd fast.s.large.n 
+           200              0           1000              0           2000 
+          psi   subsampling           cov 
+   "bisquare" "nonsingular" ".vcov.avar1" 
+seed : int(0) 
+Warning message:
+In lmrob.S(x, data$y, lmrob.control()) :
+  S-estimated scale == 0:  Probably exact fit; check your data
+> (ret <- lmrob(y ~ group, data))
+
+Call:
+lmrob(formula = y ~ group, data = data)
+ \--> method = "S"
+Exact fit detected
+
+Coefficients:
+(Intercept)       groupb       groupc       groupd       groupe  
+          0            0            0            0          -45  
+
+Warning messages:
+1: In lmrob.S(x, y, control = control) :
+  S-estimated scale == 0:  Probably exact fit; check your data
+2: In lmrob.fit(x, y, control, init = init) :
+  initial estim. 'init' not converged -- will be return()ed basically unchanged
+> summary(ret)
+
+Call:
+lmrob(formula = y ~ group, data = data)
+ \--> method = "S"
+Residuals:
+   Min     1Q Median     3Q    Max 
+   -88      0      0      0    224 
+
+Exact fit detected
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)
+(Intercept)        0          0      NA       NA
+groupb             0          0      NA       NA
+groupc             0          0      NA       NA
+groupd             0          0      NA       NA
+groupe           -45          0      NA       NA
+
+Robustness weights: 
+ 4 observations c(21,22,23,24) are outliers with |weight| = 0 ( < 0.004); 
+ 21 weights are ~= 1.
+Algorithmic parameters: 
+       tuning.chi                bb        tuning.psi        refine.tol 
+        1.548e+00         5.000e-01         4.685e+00         1.000e-07 
+          rel.tol         scale.tol         solve.tol          zero.tol 
+        1.000e-07         1.000e-10         1.000e-07         1.000e-10 
+      eps.outlier             eps.x warn.limit.reject warn.limit.meanrw 
+        4.000e-03         1.819e-12         5.000e-01         5.000e-01 
+     nResample         max.it       best.r.s       k.fast.s          k.max 
+           500             50              2              1            200 
+   maxit.scale      trace.lev            mts     compute.rd fast.s.large.n 
+           200              0           1000              0           2000 
+                  psi           subsampling                   cov 
+           "bisquare"         "nonsingular"         ".vcov.avar1" 
+compute.outlier.stats 
+                 "SM" 
+seed : int(0) 
+> showProc.time() ## 4.24
+Time (user system elapsed): 0.014 0.034 0.012 
+> 
+> ##--- continuous x -- exact fit -- inspired by Thomas Mang's real data example
+> mkD9 <- function(iN, dN = 1:m) {
++     stopifnot((length(iN) -> m) == length(dN), 1 <= m, m <= 5,
++               iN == as.integer(iN), is.numeric(dN), !is.na(dN))
++     x <- c(-3:0,0:1,1:3) # {n=9; sorted; x= 0, 1  are "doubled"}
++     y <- x+5
++     y[iN] <- y[iN] + dN
++     data.frame(x,y)
++ }
+> 
+> mkRS <- function(...) { set.seed(...); .Random.seed }
+> 
+> d <- mkD9(c(1L,3:4, 7L))
+> rs2 <- mkRS(2)
+> Se <- tryCatch(error = identity,
++                with(d, lmrob.S(cbind(1,x), y, lmrob.control("KS2014", seed=rs2))))
+Warning message:
+In lmrob.S(cbind(1, x), y, lmrob.control("KS2014", seed = rs2)) :
+  S-estimated scale == 0:  Probably exact fit; check your data
+> ## gave DGELS rank error {for lmrob.c+wg..}
+> 
+> if(inherits(Se, "error")) {
++     cat("Caught ")
++     print(Se)
++ } else withAutoprint({ ## no error
++     coef(Se)
++     stopifnot(coef(Se) == c(5, 1)) # was (0 0)
++     residuals(Se) # was == y  ---- FIXME
++ })
+> coef(Se)
+  x 
+5 1 
+> stopifnot(coef(Se) == c(5, 1))
+> residuals(Se)
+[1] 1 0 2 3 0 0 4 0 0
+> 
+> ## try 100 different seeds
+> repS <- lapply(1:100, function(ii) tryCatch(error = identity,
++                 with(d, lmrob.S(cbind(1,x), y, lmrob.control("KS2014", seed = mkRS(ii))))))
+There were 100 warnings (use warnings() to see them)
+> if(FALSE)
++  ## was
++  str(unique(repS))## ==> 100 times the same error
+> ## now completely different: *all* returned properly
+> str(cfS <- t(sapply(repS, coef))) # all numeric -- not *one* error --
+ num [1:100, 1:2] 5 5 5 5 5 5 5 5 5 5 ...
+ - attr(*, "dimnames")=List of 2
+  ..$ : NULL
+  ..$ : chr [1:2] "" "x"
+> ## even all the *same* (5 1) solution:
+> (ucfS <- unique(cfS))
+       x
+[1,] 5 1
+> stopifnot(identical(ucfS, array(c(5, 1), dim = 1:2, dimnames = list(NULL, c("", "x")))))
+> 
+> ## *Not* "KS2014" but the defaults works *all the time* (!)
+> repS0 <- lapply(1:100, function(ii) tryCatch(error = identity,
++                with(d, lmrob.S(cbind(1,x), y, lmrob.control(seed = mkRS(ii))))))
+There were 100 warnings (use warnings() to see them)
+> summary(warnings())
+100 identical warnings:
+In lmrob.S(cbind(1, x), y, lmrob.control(seed = mkRS(ii))) :
+  S-estimated scale == 0:  Probably exact fit; check your data
+> ## 100 identical warnings:
+> ## In lmrob.S(cbind(1, x), y, lmrob.control(seed = mkRS(ii))) :
+> ##   S-estimated scale == 0:  Probably exact fit; check your data
+> 
+> str(cfS0 <- t(sapply(repS0, coef))) # all numeric -- not *one* error
+ num [1:100, 1:2] 5 5 5 5 5 5 5 5 5 5 ...
+ - attr(*, "dimnames")=List of 2
+  ..$ : NULL
+  ..$ : chr [1:2] "" "x"
+> ## even all the same *and* the same as "KS2014"
+> (ucfS0 <- unique(cfS0))
+       x
+[1,] 5 1
+> stopifnot(nrow(ucfS0) == 1L,
++           ucfS0 == c(5,1))
+> 
+> 
+> 
+> d9L <- list(
++     mkD9(c(1L,3L, 5L, 7L))
++   , mkD9(c(1L,3L, 8:9))
++   , mkD9(2L*(1:4))
++ )
+> 
+> if(doExtras) {
++ sfsmisc::mult.fig(length(d9L)); invisible(lapply(d9L, function(d) plot(y ~ x, data=d)))
++ }
+> 
+> dorob <- function(dat, control=lmrob.control(...), meth = c("S", "MM"),
++                   doPl=interactive(), cex=1, ...) {
++     meth <- match.arg(meth)
++     stopifnot(is.data.frame(dat), c("x","y") %in% names(dat), is.list(control))
++     if(doPl) plot(y ~ x, data=dat) ## with(dat, n.plot(x, y, cex=cex))
++     ans <- tryCatch(error = identity,
++                   switch(meth
++                        , "S" = with(dat, lmrob.S(cbind(1,x), y, control))
++                        , "MM"= lmrob(y ~ x, data = dat, control=control)
++                        , stop("invalid 'meth'")))
++     if(!doPl)
++         return(ans)
++     ## else
++     if(!inherits(ans, "error")) {
++         abline(coef(ans))
++     } else { # error
++         mtext(paste(paste0("lmrob.", meth), "Error:", conditionMessage(ans)))
++     }
++     invisible(ans)
++ }
+> 
+> ## a bad case -- much better new robustbase >= 0.99-0
+> Se <- dorob(d9L[[1]], lmrob.control("KS2014", mkRS(2), trace.lev=4))
+Assigning .Random.seed to .GlobalEnv:  int [1:626] 10403 624 -1619336578 -714750745 -765106180 158863565 -1093870294 242367651 -1691232888 -1538791959 ...
+lmrob_S(n = 9, nRes = 1000): fast_s() [non-large n]:
+fast_s(*, s_y=6.22222, n=9, p=2, ipsi=6, ..) before INIT_WLS():
+ Optimal block size for DGELS: 66
+ Subsampling 1000 times to find candidate betas:
+  Sample[  0]: idc = 1 5 
+   b^[] = 5 1 
+   refine_fast_s(s0=-1, convChk=FALSE): beta_cand= 5 1 
+   |{i; |R_i| <= 6.222e-10 ~= 0}| = 5 zeroes (zero_tol=1e-10, s_y=6.22222);
+   too many zeroes -> scale=0 & quit refinement
+   after refine_(*, conv=F):
+   beta_ref : 5 1 
+   with ||beta_ref - beta_cand|| = 0, --> sc = 0
+ |s|=0: Have 5 (too many) exact zeroes -> leaving refinement!
+lmrob.S(): scale = 0; coeff.=
+[1] 5 1
+Warning message:
+In lmrob.S(cbind(1, x), y, control) :
+  S-estimated scale == 0:  Probably exact fit; check your data
+> ## was really bad -- ended returning  coef = (0 0); fitted == 0, residuals == 0 !!
+> 
+> if(doExtras) sfsmisc::mult.fig(length(d9L))
+> r0 <- lapply(d9L, dorob, seed=rs2, doPl=doExtras) # 3 x ".. exact fit" warning
+Warning messages:
+1: In lmrob.S(cbind(1, x), y, control) :
+  S-estimated scale == 0:  Probably exact fit; check your data
+2: In lmrob.S(cbind(1, x), y, control) :
+  S-estimated scale == 0:  Probably exact fit; check your data
+3: In lmrob.S(cbind(1, x), y, control) :
+  S-estimated scale == 0:  Probably exact fit; check your data
+> if(doExtras) print(r0)
+> ## back to 3 identical fits: (5 1)
+> (cf0 <- sapply(r0, coef))
+  [,1] [,2] [,3]
+     5    5    5
+x    1    1    1
+> stopifnot(cf0 == c(5,1))
+> 
+> if(doExtras) sfsmisc::mult.fig(length(d9L))
+> ### Here, all 3 were "0-models"
+> r14 <- lapply(d9L, dorob, control=lmrob.control("KS2014", seed=rs2), doPl=doExtras)
+Warning messages:
+1: In lmrob.S(cbind(1, x), y, control) :
+  S-estimated scale == 0:  Probably exact fit; check your data
+2: In lmrob.S(cbind(1, x), y, control) :
+  S-estimated scale == 0:  Probably exact fit; check your data
+3: In lmrob.S(cbind(1, x), y, control) :
+  S-estimated scale == 0:  Probably exact fit; check your data
+> ## --> 3 (identical) warnings:   In lmrob.S(cbind(1, x), y, control) :#
+> ##                        S-estimated scale == 0:  Probably exact fit; check your data
+> ## now *does* plot
+> if(doExtras) print(r14)
+> ## all 3 are "identical"
+> (cf14 <- sapply(r14, coef))
+  [,1] [,2] [,3]
+     5    5    5
+x    1    1    1
+> identical(cf0, cf14) # see TRUE; test a bit less:
+[1] TRUE
+> stopifnot(all.equal(cf0, cf14, tol=1e-15))
+> 
+> ## use "large n"
+> ctrl.LRG.n <- lmrob.control("KS2014", seed=rs2, trace.lev = if(doExtras) 2 else 1, # 3: too much (for now),
++                             nResample = 60,
++                             fast.s.large.n = 7, n.group = 3, groups = 2)
+> rLrg.n <- lapply(d9L, \(d) lmrob.S(cbind(1,d$x), d$y, ctrl.LRG.n))
+Assigning .Random.seed to .GlobalEnv:  int [1:626] 10403 624 -1619336578 -714750745 -765106180 158863565 -1093870294 242367651 -1691232888 -1538791959 ...
+lmrob_S(n = 9, nRes = 60): fast_s_large_n():
+ Subsampling to find candidate betas in group 0:
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ Subsampling to find candidate betas in group 1:
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ Now refine() to convergence for 20 very best ones:
+  Final best[0]: convergence (Exact fit! 5 zeroes; scale=0, sc=0 <?< best_sc=6.22222e+20): -> improved scale to 0 = 0  ==> finish
+lmrob.S(): scale = 0; coeff.=
+[1] 5 1
+Assigning .Random.seed to .GlobalEnv:  int [1:626] 10403 624 -1619336578 -714750745 -765106180 158863565 -1093870294 242367651 -1691232888 -1538791959 ...
+lmrob_S(n = 9, nRes = 60): fast_s_large_n():
+ Subsampling to find candidate betas in group 0:
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ * exact fit! 3 zero residuals; scale = 0
+ Subsampling to find candidate betas in group 1:
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ Now refine() to convergence for 20 very best ones:
+  Final best[0]: convergence (Exact fit! 5 zeroes; scale=0, sc=0 <?< best_sc=6.22222e+20): -> improved scale to 0 = 0  ==> finish
+lmrob.S(): scale = 0; coeff.=
+[1] 5 1
+Assigning .Random.seed to .GlobalEnv:  int [1:626] 10403 624 -1619336578 -714750745 -765106180 158863565 -1093870294 242367651 -1691232888 -1538791959 ...
+lmrob_S(n = 9, nRes = 60): fast_s_large_n():
+ Subsampling to find candidate betas in group 0:
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ Subsampling to find candidate betas in group 1:
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ * exact fit! 2 zero residuals; scale = 0
+ Now refine() to convergence for 20 very best ones:
+  Final best[0]: convergence (Exact fit! 2 zeroes; scale=0, sc=0 <?< best_sc=6.22222e+20): -> improved scale to 0 = 0  ==> finish
+lmrob.S(): scale = 0; coeff.=
+[1] 7.333333 1.666667
+There were 186 warnings (use warnings() to see them)
+> summary(warnings())
+Summary of (a total of 186) warning messages:
+  3x : In lmrob.S(cbind(1, d$x), d$y, ctrl.LRG.n) :
+  'control$n.group' is not much larger than 'p', probably too small
+180x : In lmrob.S(cbind(1, d$x), d$y, ctrl.LRG.n) :
+  find_scale(*, initial_scale = 0 <= 0) -> final scale = 0
+  3x : In lmrob.S(cbind(1, d$x), d$y, ctrl.LRG.n) :
+  S-estimated scale == 0:  Probably exact fit; check your data
+> sapply(rLrg.n, coef)
+     [,1] [,2]     [,3]
+[1,]    5    5 7.333333
+[2,]    1    1 1.666667
+> ## currently ... ....  really would want always (5 1)
+> ##      [,1] [,2]     [,3]
+> ## [1,]    5    5 7.333333
+> ## [2,]    1    1 1.666667
+> 
+> 
+> ## ==> use  lmrob() instead of  lmrob.S():
+> 
+> mm0 <- lapply(d9L, dorob, meth = "MM", seed=rs2, doPl=doExtras) # looks all fine -- no longer: error in [[3]]
+Warning messages:
+1: In lmrob.S(x, y, control = control) :
+  S-estimated scale == 0:  Probably exact fit; check your data
+2: In lmrob.fit(x, y, control, init = init) :
+  initial estim. 'init' not converged -- will be return()ed basically unchanged
+3: In lmrob.S(x, y, control = control) :
+  S-estimated scale == 0:  Probably exact fit; check your data
+4: In lmrob.fit(x, y, control, init = init) :
+  initial estim. 'init' not converged -- will be return()ed basically unchanged
+5: In lmrob.S(x, y, control = control) :
+  S-estimated scale == 0:  Probably exact fit; check your data
+6: In lmrob.fit(x, y, control, init = init) :
+  initial estim. 'init' not converged -- will be return()ed basically unchanged
+> if(doExtras) print(mm0)
+> ## now, the 3rd one errors (on Linux, not on M1 mac!)
+> (cm0 <- sapply(mm0, function(.) if(inherits(.,"error")) noquote(paste("Caught", as.character(.))) else coef(.)))
+            [,1] [,2] [,3]
+(Intercept)    5    5    5
+x              1    1    1
+> 
+> ## no longer needed
+> c0.12 <- rbind(`(Intercept)` = c(5.7640215, 6.0267156),
++                x             = c(0.85175883, 1.3823841))
+> if(is.list(cm0)) { ## after error {was on Linux+Win, not on M1 mac}:
++     ## NB: This does *not* happen on Macbuilder -- there the result it cf = (5 1)  !!
++     stopifnot(all.equal(tol = 1e-8, # seen 4.4376e-9
++                         c0.12, simplify2array(cm0[1:2])))
++     print(cm0[[3]])
++     ## FIXME?:   Caught Error in eigen(ret, symmetric = TRUE): infinite or missing values in 'x'\n
++ } else if(is.matrix(cm0)) { # when no error happened
++     k <- ncol(cm0)
++     stopifnot(all.equal(tol = 1e-8, rbind(`(Intercept)` = rep(5,k), "x" = rep(1,k)), cm0))
++ } else warning("not yet encountered this case {and it should not happen}")
+> 
+> 
+> se3 <- lmrob(y ~ x, data=d9L[[3]], init = r0[[3]], seed=rs2, trace.lev=6)
+init *NOT* converged; init$scale = 0, init$coef:
+    x 
+5 1 
+Warning message:
+In lmrob.fit(x, y, control, init = init) :
+  initial estim. 'init' not converged -- will be return()ed basically unchanged
+> 
+> 
+> if(doExtras) sfsmisc::mult.fig(length(d9L))
+> ### Here, all 3 were "0-models"
+> ##  now, have 3 *different* cases {with this seed}
+> ## [1] : init fails (-> r14[[1]] above)
+> ## [2] : init s=0, b=(5,1) .. but  residuals(),fitted() wrong
+> ## [3] : init s=0, b=(5,1) ..*and* residuals(),fitted() are good
+> 
+> cm14 <- lapply(d9L, dorob, meth = "MM", control=lmrob.control("KS2014", seed=rs2), doPl=doExtras)
+Warning messages:
+1: In lmrob.S(x, y, control = control) :
+  S-estimated scale == 0:  Probably exact fit; check your data
+2: In lmrob.fit(x, y, control, init = init) :
+  initial estim. 'init' not converged -- will be return()ed basically unchanged
+3: In lmrob.S(x, y, control = control) :
+  S-estimated scale == 0:  Probably exact fit; check your data
+4: In lmrob.fit(x, y, control, init = init) :
+  initial estim. 'init' not converged -- will be return()ed basically unchanged
+5: In lmrob.S(x, y, control = control) :
+  S-estimated scale == 0:  Probably exact fit; check your data
+6: In lmrob.fit(x, y, control, init = init) :
+  initial estim. 'init' not converged -- will be return()ed basically unchanged
+> ## now, first is error; for others, coef = (5, 1) are correct:
+> stopifnot(exprs = {
++     sapply(cm14[-1], coef)  == c(5,1)
++     sapply(cm14[-1], sigma) == 0
++ })
+> 
+> m2 <- cm14[[2]]
+> summary(m2) # prints quite nicely; and this is perfect (for scale=0), too:
+
+Call:
+lmrob(formula = y ~ x, data = dat, control = control)
+ \--> method = "S"
+Residuals:
+   Min     1Q Median     3Q    Max 
+     0      0      0      2      4 
+
+Exact fit detected
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)
+(Intercept)        5          0      NA       NA
+x                  1          0      NA       NA
+
+Robustness weights: 
+[1] 0 1 0 1 1 1 1 0 0
+Algorithmic parameters: 
+      tuning.chi1       tuning.chi2       tuning.chi3       tuning.chi4 
+       -5.000e-01         1.500e+00                NA         5.000e-01 
+               bb       tuning.psi1       tuning.psi2       tuning.psi3 
+        5.000e-01        -5.000e-01         1.500e+00         9.500e-01 
+      tuning.psi4        refine.tol           rel.tol         scale.tol 
+               NA         1.000e-07         1.000e-07         1.000e-10 
+        solve.tol          zero.tol       eps.outlier             eps.x 
+        1.000e-07         1.000e-10         1.111e-02         5.457e-12 
+warn.limit.reject warn.limit.meanrw 
+        5.000e-01         5.000e-01 
+     nResample         max.it       best.r.s       k.fast.s          k.max 
+          1000            500             20              2           2000 
+   maxit.scale      trace.lev            mts     compute.rd fast.s.large.n 
+           200              0           1000              0           2000 
+              setting                   psi           subsampling 
+             "KS2014"                 "lqq"         "nonsingular" 
+                  cov compute.outlier.stats 
+            ".vcov.w"                "SMDM" 
+seed : int [1:626] 10403 624 -1619336578 -714750745 -765106180 ...
+> ## {residual != 0 <==> weights = 0}:
+> cbind(rwgt = weights(m2, "rob"), res = residuals(m2), fit = fitted(m2), y = d9L[[2]][,"y"])
+  rwgt res fit  y
+1    0   1   2  3
+2    1   0   3  3
+3    0   2   4  6
+4    1   0   5  5
+5    1   0   5  5
+6    1   0   6  6
+7    1   0   6  6
+8    0   3   7 10
+9    0   4   8 12
+> 
+> sapply(cm14, residuals) ## now, [2] is good; [3] still wrong - FIXME
+  [,1] [,2] [,3]
+1    1    1    0
+2    0    0    1
+3    2    2    0
+4    0    0    2
+5    3    0    0
+6    0    0    3
+7    4    0    0
+8    0    3    4
+9    0    4    0
+> sapply(cm14, fitted)
+  [,1] [,2] [,3]
+1    2    2    2
+2    3    3    3
+3    4    4    4
+4    5    5    5
+5    5    5    5
+6    6    6    6
+7    6    6    6
+8    7    7    7
+9    8    8    8
+> sapply(cm14, weights, "robust")## [2]: 0 1 0 1 1 1 1 0 0;  [3]: all 0
+      [,1] [,2] [,3]
+ [1,]    0    0    1
+ [2,]    1    1    0
+ [3,]    0    0    1
+ [4,]    1    1    0
+ [5,]    0    1    1
+ [6,]    1    1    0
+ [7,]    0    1    1
+ [8,]    1    0    0
+ [9,]    1    0    1
+> 
+> ## (unfinished ... do *test* once we've checked platform consistency)
+> 
+> summary(warnings())
+Summary of (a total of 6) warning messages:
+3x : In lmrob.S(x, y, control = control) :
+  S-estimated scale == 0:  Probably exact fit; check your data
+3x : In lmrob.fit(x, y, control, init = init) :
+  initial estim. 'init' not converged -- will be return()ed basically unchanged
+> showProc.time()
+Time (user system elapsed): 0.181 0.239 0.14 
+> 
+> 
