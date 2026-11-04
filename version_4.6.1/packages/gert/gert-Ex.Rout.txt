@@ -1,0 +1,678 @@
+
+R version 4.6.1 (2026-06-24) -- "Happy Hop"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "gert"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('gert')
+Linking to libgit2 v1.7.2, ssh support: YES
+No global .gitconfig found in: /github/home
+System config: /etc/gitconfig
+No default user configured
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("git_branch")
+> ### * git_branch
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: git_branch
+> ### Title: Git Branch
+> ### Aliases: git_branch git_branch_list git_branch_checkout
+> ###   git_branch_switch git_branch_create git_branch_delete git_branch_move
+> ###   git_branch_fast_forward git_branch_set_upstream git_branch_exists
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (interactive()) withAutoprint({ # examplesIf
++ ## End(Don't show)
++ # Creating a branch
++ repo <- file.path(tempdir(), "myrepo")
++ git_init(repo)
++ writeLines("hello", file.path(repo, "hello.txt"))
++ git_add("hello.txt", repo = repo)
++ first_commit <- git_commit("First commit", repo = repo)
++ 
++ git_branch_create("new-feat", repo = repo)
++ writeLines("world", file.path(repo, "hello.txt"))
++ git_add("hello.txt", repo = repo)
++ second_commit <- git_commit("Second commit", repo = repo)
++ 
++ # Changing branches
++ git_branch(repo = repo)
++ git_branch_switch("main", repo = repo)
++ git_branch(repo = repo)
++ 
++ git_branch_exists("new-feat", repo = repo)
++ 
++ # Listing branches
++ git_branch_list(repo = repo)
++ 
++ # Renaming a branch
++ git_branch_move("new-feat", "better-name", repo = repo)
++ git_branch_exists("new-feat", repo = repo)
++ git_branch_list(repo = repo)
++ 
++ # Deleting a branch
++ git_branch_delete("better-name", repo = repo)
++ git_branch_exists("better-name", repo = repo)
++ 
++ # clean up
++ unlink(repo, recursive = TRUE)
++ # ------------------------
++ # Creating an orphan branch
++ repo <- file.path(tempdir(), "myrepo")
++ git_init(repo)
++ 
++ # Set a user if no default
++ if (!user_is_configured()) {
++   git_config_set("user.name", "Jerry")
++   git_config_set("user.email", "jerry@gmail.com")
++ }
++ writeLines("hello", file.path(repo, "hello.txt"))
++ git_add("hello.txt", repo = repo)
++ first_commit <- git_commit("First commit", repo = repo)
++ 
++ writeLines("world", file.path(repo, "hello.txt"))
++ git_add("hello.txt", repo = repo)
++ second_commit <- git_commit("Second commit", repo = repo)
++ 
++ # Check out first commit
++ git_branch_checkout(first_commit, orphan = TRUE, repo = repo)
++ git_status(repo)
++ # clean up
++ unlink(repo, recursive = TRUE)
++ ## Don't show: 
++ }) # examplesIf
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("git_commit")
+> ### * git_commit
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: git_commit
+> ### Title: Stage and commit changes
+> ### Aliases: git_commit git_add git_rm git_commit_all git_status git_ls
+> 
+> ### ** Examples
+> 
+> oldwd <- getwd()
+> repo <- file.path(tempdir(), "myrepo")
+> git_init(repo)
+> setwd(repo)
+> 
+> # Set a user if no default
+> if(!user_is_configured()){
++   git_config_set("user.name", "Jerry")
++   git_config_set("user.email", "jerry@gmail.com")
++ }
+> 
+> writeLines(letters[1:6], "alphabet.txt")
+> git_status()
+          file status staged
+1 alphabet.txt    new  FALSE
+> 
+> git_add("alphabet.txt")
+          file status staged
+1 alphabet.txt    new   TRUE
+> git_status()
+          file status staged
+1 alphabet.txt    new   TRUE
+> 
+> git_commit("Start alphabet file")
+[1] "5cb516b2228b6d5eb4e45d67fa451a6f9491500d"
+> git_status()
+[1] file   status staged
+<0 rows> (or 0-length row.names)
+> 
+> git_ls()
+          path filesize            modified             created
+1 alphabet.txt       12 2026-11-04 16:59:17 2026-11-04 16:59:17
+> 
+> git_log()
+                                    commit                  author
+1 5cb516b2228b6d5eb4e45d67fa451a6f9491500d Jerry <jerry@gmail.com>
+                 time files merge               message
+1 2026-11-04 16:59:17     1 FALSE Start alphabet file\n
+> 
+> cat(letters[7:9], file = "alphabet.txt", sep = "\n", append = TRUE)
+> git_status()
+          file   status staged
+1 alphabet.txt modified  FALSE
+> 
+> git_commit_all("Add more letters")
+[1] "f73056003f687518d4f2357704b947fb63bac84f"
+> 
+> # cleanup
+> setwd(oldwd)
+> unlink(repo, recursive = TRUE)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("git_config")
+> ### * git_config
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: git_config
+> ### Title: Get or set Git configuration
+> ### Aliases: git_config git_config_global git_config_get
+> ###   git_config_local_get git_config_global_get git_config_set
+> ###   git_config_global_set git_config_unset git_config_global_unset
+> 
+> ### ** Examples
+> 
+> # Set and inspect a local, custom Git option
+> r <- file.path(tempdir(), "gert-demo")
+> git_init(r)
+> 
+> previous <- git_config_set("aaa.bbb", "ccc", repo = r)
+> previous
+NULL
+> git_config_local_get("aaa.bbb", repo = r)
+[1] "ccc"
+> 
+> previous <- git_config_set("aaa.bbb", NULL, repo = r)
+> previous
+[1] "ccc"
+> git_config_local_get("aaa.bbb", repo = r)
+NULL
+> 
+> # Get a single named option (returns NULL if unset)
+> git_config_get("aaa.bbb", repo = r)
+NULL
+> git_config_set("aaa.bbb", "ccc", repo = r)
+> git_config_get("aaa.bbb", repo = r)
+[1] "ccc"
+> 
+> unlink(r, recursive = TRUE)
+> 
+> ## Not run: 
+> ##D # Set global Git options
+> ##D git_config_global_set("user.name", "Your Name")
+> ##D git_config_global_set("user.email", "your@email.com")
+> ##D git_config_global()
+> ##D 
+> ##D # Get a single global option (returns NULL if unset)
+> ##D git_config_global_get("user.name")
+> ##D git_config_global_get("gert.nonexistent")
+> ## End(Not run)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("git_fetch")
+> ### * git_fetch
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: git_fetch
+> ### Title: Push and pull
+> ### Aliases: git_fetch git_remote_ls git_push git_clone git_pull
+> 
+> ### ** Examples
+> 
+> {# Clone a small repository
++ git_dir <- file.path(tempdir(), 'antiword')
++ git_clone('https://github.com/ropensci/antiword', git_dir)
++ 
++ # Change into the repo directory
++ olddir <- getwd()
++ setwd(git_dir)
++ 
++ # Show some stuff
++ git_log()
++ git_branch_list()
++ git_remote_list()
++ 
++ # Add a file
++ write.csv(iris, 'iris.csv')
++ git_add('iris.csv')
++ 
++ # Commit the change
++ jerry <- git_signature("Jerry", "jerry@hotmail.com")
++ git_commit('added the iris file', author = jerry)
++ 
++ # Now in the log:
++ git_log()
++ 
++ # Cleanup
++ setwd(olddir)
++ unlink(git_dir, recursive = TRUE)
++ }
+> 
+> 
+> 
+> cleanEx()
+> nameEx("git_open")
+> ### * git_open
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: git_open
+> ### Title: Open local repository
+> ### Aliases: git_open
+> 
+> ### ** Examples
+> 
+> r <- tempfile(pattern = "gert")
+> git_init(r)
+> r_ptr <- git_open(r)
+> r_ptr
+<git repository>: /tmp/RtmpEIUnXu/gert194e71d0f384a[@NA]
+> git_open(r_ptr)
+<git repository>: /tmp/RtmpEIUnXu/gert194e71d0f384a[@NA]
+> git_info(r)
+$path
+[1] "/tmp/RtmpEIUnXu/gert194e71d0f384a/"
+
+$bare
+[1] FALSE
+
+$head
+[1] NA
+
+$shorthand
+[1] NA
+
+$commit
+[1] NA
+
+$remote
+[1] NA
+
+$upstream
+[1] NA
+
+$reflist
+character(0)
+
+> 
+> # cleanup
+> unlink(r, recursive = TRUE)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("git_repo")
+> ### * git_repo
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: git_repo
+> ### Title: Create or discover a local Git repository
+> ### Aliases: git_repo git_init git_find git_info
+> 
+> ### ** Examples
+> 
+> # directory does not yet exist
+> r <- tempfile(pattern = "gert")
+> git_init(r)
+> git_find(r)
+[1] "/tmp/RtmpEIUnXu/gert194e7579d66c0"
+> git_info(r)
+$path
+[1] "/tmp/RtmpEIUnXu/gert194e7579d66c0/"
+
+$bare
+[1] FALSE
+
+$head
+[1] NA
+
+$shorthand
+[1] NA
+
+$commit
+[1] NA
+
+$remote
+[1] NA
+
+$upstream
+[1] NA
+
+$reflist
+character(0)
+
+> 
+> # create a child directory, then a grandchild, then search
+> r_grandchild_dir <- file.path(r, "aaa", "bbb")
+> dir.create(r_grandchild_dir, recursive = TRUE)
+> git_find(r_grandchild_dir)
+[1] "/tmp/RtmpEIUnXu/gert194e7579d66c0"
+> 
+> # cleanup
+> unlink(r, recursive = TRUE)
+> 
+> # directory exists but is empty
+> r <- tempfile(pattern = "gert")
+> dir.create(r)
+> git_init(r)
+> git_find(r)
+[1] "/tmp/RtmpEIUnXu/gert194e7663924ee"
+> 
+> # cleanup
+> unlink(r, recursive = TRUE)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("git_restore")
+> ### * git_restore
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: git_restore
+> ### Title: Restore working tree files
+> ### Aliases: git_restore
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (interactive()) withAutoprint({ # examplesIf
++ ## End(Don't show)
++ repo <- file.path(tempdir(), "myrepo")
++ git_init(repo)
++ 
++ # Set a user if no default
++ if (!user_is_configured()) {
++   git_config_set("user.name", "Jerry")
++   git_config_set("user.email", "jerry@gmail.com")
++ }
++ 
++ writeLines("hello", file.path(repo, "hello.txt"))
++ git_add("hello.txt", repo = repo)
++ git_commit("First commit", repo = repo)
++ 
++ # Modify the file, then restore it from HEAD
++ writeLines("oops", file.path(repo, "hello.txt"))
++ git_restore("hello.txt", repo = repo)
++ readLines(file.path(repo, "hello.txt"))  # "hello"
++ 
++ unlink(repo, recursive = TRUE)
++ ## Don't show: 
++ }) # examplesIf
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("git_revert")
+> ### * git_revert
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: git_revert
+> ### Title: Revert a commit
+> ### Aliases: git_revert
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (interactive()) withAutoprint({ # examplesIf
++ ## End(Don't show)
++ repo <- file.path(tempdir(), "myrepo")
++ git_init(repo)
++ 
++ # Set a user if no default
++ if (!user_is_configured()) {
++   git_config_set("user.name", "Jerry")
++   git_config_set("user.email", "jerry@gmail.com")
++ }
++ 
++ writeLines("hello", file.path(repo, "hello.txt"))
++ git_add("hello.txt", repo = repo)
++ git_commit("First commit", repo = repo)
++ 
++ writeLines("world", file.path(repo, "hello.txt"))
++ git_add("hello.txt", repo = repo)
++ bad_commit <- git_commit("Second commit", repo = repo)
++ 
++ # Default: revert and commit with an auto-generated message
++ git_revert(bad_commit, repo = repo)
++ git_log(repo = repo)
++ 
++ # Revert with a custom message
++ writeLines("oops", file.path(repo, "hello.txt"))
++ git_add("hello.txt", repo = repo)
++ bad_commit2 <- git_commit("Third commit", repo = repo)
++ git_revert(bad_commit2, message = "Undo third commit\n", repo = repo)
++ git_log(repo = repo)
++ 
++ # Stage the revert without committing
++ writeLines("again", file.path(repo, "hello.txt"))
++ git_add("hello.txt", repo = repo)
++ bad_commit3 <- git_commit("Fourth commit", repo = repo)
++ git_revert(bad_commit3, commit = FALSE, repo = repo)
++ git_status(repo = repo)
++ 
++ unlink(repo, recursive = TRUE)
++ ## Don't show: 
++ }) # examplesIf
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("git_signature")
+> ### * git_signature
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: git_signature
+> ### Title: Author Signature
+> ### Aliases: git_signature git_signature_default git_signature_parse
+> 
+> ### ** Examples
+> 
+> # Your default user
+> try(git_signature_default())
+Error in libgit2::git_signature_default : 
+  config value 'user.name' was not found
+> 
+> # Specify explicit name and email
+> git_signature("Some committer", "sarah@gmail.com")
+[git signature]
+Author: Some committer <sarah@gmail.com>
+Date: Wed Nov 04 16:59:18 2026 +0000
+> 
+> # Create signature for an hour ago
+> (sig <- git_signature("Han", "han@company.com", Sys.time() - 3600))
+[git signature]
+Author: Han <han@company.com>
+Date: Wed Nov 04 15:59:18 2026 +0000
+> 
+> # Parse a signature
+> git_signature_parse(sig)
+$name
+[1] "Han"
+
+$email
+[1] "han@company.com"
+
+$time
+[1] "2026-11-04 15:59:18 UTC"
+
+$offset
+[1] 0
+
+> git_signature_parse("Emma <emma@mu.edu>")
+$name
+[1] "Emma"
+
+$email
+[1] "emma@mu.edu"
+
+$time
+[1] "2026-11-04 16:59:18 UTC"
+
+$offset
+[1] 0
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("git_worktree")
+> ### * git_worktree
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: git_worktree
+> ### Title: Git Worktrees
+> ### Aliases: git_worktree git_worktree_list git_worktree_exists
+> ###   git_worktree_path git_worktree_add git_worktree_remove
+> ###   git_worktree_prune git_worktree_is_prunable git_worktree_lock
+> ###   git_worktree_unlock git_worktree_is_locked git_worktree_is_valid
+> 
+> ### ** Examples
+> 
+> repo <- git_init(tempfile("gert-examples-repo"))
+> 
+> writeLines("hello", file.path(repo, 'hello.txt'))
+> git_add('hello.txt', repo = repo)
+       file status staged
+1 hello.txt    new   TRUE
+> git_commit("First commit", author = "jeroen <jeroen@blabla.nl>", repo = repo)
+[1] "7aa089d5e95260ba3470a0058c1f18c1c6e8e51b"
+> 
+> # Create a branch that is going to be used for the worktree,
+> # but don't check it out!
+> git_branch_create(branch = "branch", checkout = FALSE, repo = repo)
+> 
+> path <- tempfile("gert-examples-worktree")
+> 
+> # Add a worktree for this branch
+> git_worktree_add(
++   name = "worktree",
++   path = path,
++   branch = "branch",
++   repo = repo
++ )
+> 
+> # Worktree info
+> git_worktree_list(repo = repo)
+      name                                                path valid locked
+1 worktree /tmp/RtmpEIUnXu/gert-examples-worktree194e74a693c7c  TRUE  FALSE
+> 
+> # Note how the files are checked out here
+> dir(path, all.files = TRUE)
+[1] "."         ".."        ".git"      "hello.txt"
+> 
+> # And the branch that we are on at `path` is `"branch"`
+> git_branch(repo = path)
+[1] "branch"
+> 
+> # Cleanup worktree, and the folder at `path`
+> git_worktree_remove("worktree", repo = repo)
+> 
+> # Cleanup repo
+> unlink(repo, recursive = TRUE)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("libgit2_config")
+> ### * libgit2_config
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: libgit2_config
+> ### Title: Show libgit2 version and capabilities
+> ### Aliases: libgit2_config
+> 
+> ### ** Examples
+> 
+> libgit2_config()
+$version
+[1] ‘1.7.2’
+
+$ssh
+[1] TRUE
+
+$https
+[1] TRUE
+
+$threads
+[1] TRUE
+
+$https.backend
+[1] NA
+
+$ssh.backend
+[1] NA
+
+$config.global
+[1] ""
+
+$config.system
+[1] "/etc/gitconfig"
+
+$config.home
+[1] "/github/home"
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("user_is_configured")
+> ### * user_is_configured
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: user_is_configured
+> ### Title: Test if a Git user is configured
+> ### Aliases: user_is_configured
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (interactive()) withAutoprint({ # examplesIf
++ ## End(Don't show)
++ user_is_configured()
++ ## Don't show: 
++ }) # examplesIf
+> ## End(Don't show)
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  0.121 0.074 0.543 0.003 0.003 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

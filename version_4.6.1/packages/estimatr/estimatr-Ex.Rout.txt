@@ -1,0 +1,819 @@
+
+R version 4.6.1 (2026-06-24) -- "Happy Hop"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "estimatr"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('estimatr')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("augment.lm_robust")
+> ### * augment.lm_robust
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: augment.lm_robust
+> ### Title: Augment a Model Object with Fitted Values and Residuals
+> ### Aliases: augment.lm_robust augment.iv_robust
+> 
+> ### ** Examples
+> 
+> set.seed(55)
+> dat <- data.frame(x = rnorm(50), z = rep(0:1, 25))
+> dat$y <- dat$x + 0.4 * dat$z + rnorm(50)
+> fit <- lm_robust(y ~ x + z, data = dat)
+> 
+> head(augment(fit))
+# A tibble: 6 × 5
+       y        x     z .fitted  .resid
+   <dbl>    <dbl> <int>   <dbl>   <dbl>
+1 -1.04   0.120       0 -0.0837 -0.960 
+2 -1.09  -1.81        1 -1.06   -0.0211
+3 -0.877  0.152       0 -0.0587 -0.819 
+4 -1.40  -1.12        1 -0.514  -0.888 
+5 -0.158  0.00191     0 -0.178   0.0194
+6  1.81   1.19        1  1.32    0.492 
+> 
+> # Supplying newdata returns predictions on it, with .fitted only
+> head(augment(fit, newdata = dat[1:5, ]))
+# A tibble: 5 × 4
+         x     z      y .fitted
+     <dbl> <int>  <dbl>   <dbl>
+1  0.120       0 -1.04  -0.0837
+2 -1.81        1 -1.09  -1.06  
+3  0.152       0 -0.877 -0.0587
+4 -1.12        1 -1.40  -0.514 
+5  0.00191     0 -0.158 -0.178 
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("difference_in_means")
+> ### * difference_in_means
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: difference_in_means
+> ### Title: Design-Based Difference-in-Means Estimator
+> ### Aliases: difference_in_means
+> 
+> ### ** Examples
+> 
+> set.seed(30)
+> dat <- data.frame(y = rnorm(100), z = rep(0:1, 50))
+> 
+> # Unblocked, unclustered: the Welch-corrected two-sample difference
+> fit <- difference_in_means(y ~ z, data = dat)
+> fit
+Design:  Standard 
+    Estimate Std. Error    t value  Pr(>|t|)   CI Lower  CI Upper       DF
+z -0.1864076  0.2119164 -0.8796279 0.3812186 -0.6069631 0.2341479 97.73532
+> fit$design
+[1] "Standard"
+> 
+> # Blocked designs use the Neyman variance within each block
+> dat_bl <- data.frame(
++   bl = rep(1:10, each = 10),
++   z  = rep(rep(0:1, each = 5), times = 10)
++ )
+> dat_bl$y <- rnorm(100) + 0.3 * dat_bl$z
+> difference_in_means(y ~ z, data = dat_bl, blocks = bl)
+Design:  Blocked 
+    Estimate Std. Error   t value  Pr(>|t|)   CI Lower  CI Upper DF
+z 0.03347738  0.2101101 0.1593326 0.8738084 -0.3846551 0.4516098 80
+> 
+> # Matched pairs are recognised as such
+> dat_pr <- data.frame(pr = rep(1:50, each = 2), z = rep(c(0, 1), 50))
+> dat_pr$y <- rnorm(100) + 0.3 * dat_pr$z
+> difference_in_means(y ~ z, data = dat_pr, blocks = pr)$design
+[1] "Matched-pair"
+> 
+> # Blocks of unequal shape, which earlier versions refused, use the
+> # Pashley and Miratrix (2021) estimators. `design` reports which case
+> # applied rather than leaving it to be inferred from the block sizes.
+> dat_hy <- rbind(dat_bl[c("bl", "z", "y")],
++                 transform(dat_pr[c("pr", "z", "y")], bl = pr + 100)[c("bl", "z", "y")])
+> difference_in_means(y ~ z, data = dat_hy, blocks = bl)$design
+[1] "Hybrid blocked"
+> 
+> # Clustered assignment
+> dat_cl <- data.frame(cl = rep(1:20, each = 5))
+> dat_cl$z <- rep(rep(0:1, each = 5), times = 10)
+> dat_cl$y <- rnorm(100) + 0.3 * dat_cl$z
+> difference_in_means(y ~ z, data = dat_cl, clusters = cl)
+Design:  Clustered 
+   Estimate Std. Error  t value   Pr(>|t|)  CI Lower CI Upper DF
+z 0.6286243  0.2326784 2.701688 0.01459924 0.1397852 1.117463 18
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("estimatr-defunct")
+> ### * estimatr-defunct
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: estimatr-defunct
+> ### Title: Functions removed in 2.0
+> ### Aliases: estimatr-defunct commarobust starprep
+> 
+> ### ** Examples
+> 
+> # Both of these error. The replacements:
+> set.seed(1)
+> dat <- data.frame(y = rnorm(20), z = rep(0:1, 10))
+> 
+> # was: commarobust(lm(y ~ z, data = dat))
+> lm_robust(y ~ z, data = dat)
+              Estimate Std. Error    t value  Pr(>|t|)   CI Lower  CI Upper DF
+(Intercept)  0.2751138  0.2499575  1.1006423 0.2855541 -0.2500274 0.8002551 18
+z           -0.1691799  0.4177121 -0.4050155 0.6902390 -1.0467604 0.7084007 18
+> 
+> # was: starprep(fit1, fit2) |> stargazer::stargazer()
+> # now: modelsummary::modelsummary(list(fit1, fit2))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("estimatr_tidiers")
+> ### * estimatr_tidiers
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: estimatr_tidiers
+> ### Title: Tidy an estimatr object
+> ### Aliases: estimatr_tidiers tidy.lm_robust tidy.iv_robust
+> ###   tidy.difference_in_means tidy.horvitz_thompson tidy.lh_robust tidy.lh
+> 
+> ### ** Examples
+> 
+> set.seed(50)
+> dat <- data.frame(x = rnorm(50), z = rep(0:1, 25))
+> dat$y <- dat$x + 0.4 * dat$z + rnorm(50)
+> fit <- lm_robust(y ~ x + z, data = dat)
+> 
+> # One row per term, with the interval the fit was built with
+> tidy(fit)
+# A tibble: 3 × 9
+  term     estimate std.error statistic p.value conf.low conf.high    df outcome
+  <chr>       <dbl>     <dbl>     <dbl>   <dbl>    <dbl>     <dbl> <dbl> <chr>  
+1 (Interc…   -0.354     0.187     -1.89 6.43e-2   -0.731    0.0219    47 y      
+2 x           0.753     0.135      5.60 1.09e-6    0.483    1.02      47 y      
+3 z           0.851     0.279      3.05 3.74e-3    0.290    1.41      47 y      
+> tidy(fit, conf.int = FALSE)
+# A tibble: 3 × 7
+  term        estimate std.error statistic    p.value    df outcome
+  <chr>          <dbl>     <dbl>     <dbl>      <dbl> <dbl> <chr>  
+1 (Intercept)   -0.354     0.187     -1.89 0.0643        47 y      
+2 x              0.753     0.135      5.60 0.00000109    47 y      
+3 z              0.851     0.279      3.05 0.00374       47 y      
+> tidy(fit, conf.level = 0.9)
+# A tibble: 3 × 9
+  term     estimate std.error statistic p.value conf.low conf.high    df outcome
+  <chr>       <dbl>     <dbl>     <dbl>   <dbl>    <dbl>     <dbl> <dbl> <chr>  
+1 (Interc…   -0.354     0.187     -1.89 6.43e-2   -0.668   -0.0405    47 y      
+2 x           0.753     0.135      5.60 1.09e-6    0.528    0.979     47 y      
+3 z           0.851     0.279      3.05 3.74e-3    0.383    1.32      47 y      
+> 
+> # The same shape for every estimator in the package
+> tidy(difference_in_means(y ~ z, data = dat))
+# A tibble: 1 × 9
+  term  estimate std.error statistic p.value conf.low conf.high    df outcome
+  <chr>    <dbl>     <dbl>     <dbl>   <dbl>    <dbl>     <dbl> <dbl> <chr>  
+1 z        0.875     0.347      2.52  0.0151    0.177      1.57  46.8 y      
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("extract.lm_robust")
+> ### * extract.lm_robust
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: extract.lm_robust
+> ### Title: Extract model data for the 'texreg' package
+> ### Aliases: extract.lm_robust extract.iv_robust
+> 
+> ### ** Examples
+> 
+> set.seed(60)
+> dat <- data.frame(x = rnorm(50), z = rep(0:1, 25))
+> dat$y <- dat$x + 0.4 * dat$z + rnorm(50)
+> fit <- lm_robust(y ~ x + z, data = dat)
+> 
+> if (requireNamespace("texreg", quietly = TRUE)) {
++   texreg::screenreg(fit)
++ }
+
+==========================
+             Model 1      
+--------------------------
+(Intercept)    0.32       
+             [-0.03; 0.67]
+x              0.98 *     
+             [ 0.68; 1.28]
+z              0.04       
+             [-0.49; 0.56]
+--------------------------
+R^2            0.55       
+Adj. R^2       0.53       
+Num. obs.     50          
+RMSE           0.92       
+==========================
+* 0 outside the confidence interval.
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("horvitz_thompson")
+> ### * horvitz_thompson
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: horvitz_thompson
+> ### Title: Horvitz-Thompson Estimator with Inverse Probability Weighting
+> ### Aliases: horvitz_thompson
+> 
+> ### ** Examples
+> 
+> set.seed(40)
+> dat <- data.frame(y = rnorm(100), z = rep(0:1, 50))
+> 
+> # A named vector of condition probabilities gives the conservative
+> # simple-randomization bound, valid for any design
+> horvitz_thompson(y ~ z, data = dat, condition_prs = c("0" = 0.5, "1" = 0.5))
+Horvitz-Thompson estimator
+    Estimate Std. Error     t value  Pr(>|t|)   CI Lower  CI Upper DF
+1 -0.0179913  0.2011512 -0.08944168 0.9287309 -0.4122405 0.3762578 NA
+> 
+> # Passing the randomization declaration instead is what buys the
+> # design-aware variance, and it is the recommended form
+> if (requireNamespace("randomizr", quietly = TRUE)) {
++   decl <- randomizr::declare_ra(N = 100, m = 50)
++   dat$z2 <- randomizr::conduct_ra(decl)
++   print(horvitz_thompson(y ~ z2, data = dat, condition_prs = decl))
++ 
++   # Blocked and clustered designs need no extra arguments: the declaration
++   # already carries the structure
++   bl <- rep(1:4, each = 25)
++   decl_bl <- randomizr::declare_ra(blocks = bl, prob = 0.4)
++   dat$z3 <- randomizr::conduct_ra(decl_bl)
++   print(horvitz_thompson(y ~ z3, data = dat, condition_prs = decl_bl))
++ 
++   # Any two arms of a multi-arm design can be contrasted, with the estimand
++   # still defined over all N units
++   decl3 <- randomizr::declare_ra(N = 100, conditions = c("a", "b", "c"))
++   dat$z4 <- randomizr::conduct_ra(decl3)
++   print(horvitz_thompson(y ~ z4, data = dat, condition_prs = decl3,
++                          condition1 = "a", condition2 = "c"))
++ }
+Horvitz-Thompson estimator
+    Estimate Std. Error   t value     Pr(>|t|) CI Lower   CI Upper DF
+1 -0.7391882  0.2015963 -3.666676 0.0002457241 -1.13431 -0.3440667 NA
+Horvitz-Thompson estimator
+     Estimate Std. Error   t value  Pr(>|t|)   CI Lower  CI Upper DF
+1 -0.05154834  0.2070688 -0.248943 0.8034049 -0.4573957 0.3542991 NA
+Horvitz-Thompson estimator
+    Estimate Std. Error    t value  Pr(>|t|)  CI Lower  CI Upper DF
+c -0.1516154  0.2629791 -0.5765304 0.5642568 -0.667045 0.3638141 NA
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("iv_robust")
+> ### * iv_robust
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: iv_robust
+> ### Title: Two-Stage Least Squares Instrumental Variables Regression
+> ### Aliases: iv_robust
+> 
+> ### ** Examples
+> 
+> set.seed(25)
+> n <- 200
+> dat <- data.frame(z = rbinom(n, 1, 0.5), cl = rep(1:20, each = 10))
+> dat$x <- dat$z * rbinom(n, 1, 0.7)
+> dat$y <- dat$x + rnorm(n)
+> 
+> # Endogenous regressor on the left of the bar, instrument on the right
+> fit <- iv_robust(y ~ x | z, data = dat)
+> tidy(fit)
+# A tibble: 2 × 9
+  term     estimate std.error statistic p.value conf.low conf.high    df outcome
+  <chr>       <dbl>     <dbl>     <dbl>   <dbl>    <dbl>     <dbl> <dbl> <chr>  
+1 (Interc…    0.137    0.0957      1.43 0.153    -0.0514     0.326   198 y      
+2 x           0.625    0.210       2.97 0.00334   0.210      1.04    198 y      
+> 
+> # The same variance menu as lm_robust()
+> iv_robust(y ~ x | z, data = dat, se_type = "classical")
+             Estimate Std. Error  t value    Pr(>|t|)    CI Lower  CI Upper  DF
+(Intercept) 0.1373582 0.09435025 1.455833 0.147022480 -0.04870211 0.3234186 198
+x           0.6251925 0.21094522 2.963767 0.003411742  0.20920489 1.0411802 198
+> iv_robust(y ~ x | z, data = dat, clusters = cl)
+             Estimate Std. Error  t value   Pr(>|t|)     CI Lower  CI Upper
+(Intercept) 0.1373582 0.06811342 2.016610 0.05907724 -0.005856096 0.2805725
+x           0.6251925 0.17196811 3.635514 0.00176444  0.265215125 0.9851700
+                  DF
+(Intercept) 17.80343
+x           18.96572
+> 
+> # Weak-instrument, endogeneity, and overidentification tests
+> summary(iv_robust(y ~ x | z, data = dat, diagnostics = TRUE))
+
+Call:
+iv_robust(formula = y ~ x | z, data = dat, diagnostics = TRUE)
+
+Standard error type:  HC2 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|) CI Lower CI Upper  DF
+(Intercept)   0.1374    0.09573   1.435 0.152908 -0.05142   0.3261 198
+x             0.6252    0.21047   2.970 0.003342  0.21013   1.0403 198
+
+Multiple R-squared:  0.124 ,	Adjusted R-squared:  0.1195 
+F-statistic: 8.823 on 1 and 198 DF,  p-value: 0.003342
+
+Diagnostics:
+                   value     Df1 Df2 p.value    
+Weak instruments 175.375   1.000 198  <2e-16 ***
+Wu-Hausman         2.178   1.000 197   0.142    
+Score (robust)        NA   0.000  NA      NA    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("lh_robust")
+> ### * lh_robust
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: lh_robust
+> ### Title: Linear Hypothesis Test for OLS with Robust Standard Errors
+> ### Aliases: lh_robust
+> 
+> ### ** Examples
+> 
+> set.seed(35)
+> dat <- data.frame(x = rnorm(100), z = rbinom(100, 1, 0.5),
++                   cl = rep(1:10, each = 10))
+> dat$y <- dat$x + 0.5 * dat$z + rnorm(100)
+> 
+> # One linear combination of coefficients
+> fit <- lh_robust(y ~ x + z, data = dat, linear_hypothesis = "z + 2*x = 0")
+Loading required namespace: car
+> fit
+$lm_robust
+             Estimate Std. Error    t value     Pr(>|t|)    CI Lower  CI Upper
+(Intercept) 0.2722647  0.1637490  1.6626952 9.960162e-02 -0.05273177 0.5972612
+x           1.0700945  0.0869757 12.3033728 1.614593e-21  0.89747180 1.2427172
+z           0.1388867  0.1977131  0.7024662 4.840708e-01 -0.25351895 0.5312924
+            DF
+(Intercept) 97
+x           97
+z           97
+
+$lh
+            Estimate Std. Error t value  Pr(>|t|) CI Lower CI Upper DF
+z + 2*x = 0    2.279     0.2573   8.857 3.934e-14    1.768     2.79 97
+
+$joint_hypothesis
+       value        numdf        dendf      p.value 
+7.844270e+01 1.000000e+00 9.700000e+01 3.933918e-14 
+
+> tidy(fit)
+# A tibble: 4 × 9
+  term    estimate std.error statistic  p.value conf.low conf.high    df outcome
+  <chr>      <dbl>     <dbl>     <dbl>    <dbl>    <dbl>     <dbl> <dbl> <chr>  
+1 (Inter…    0.272    0.164      1.66  9.96e- 2  -0.0527     0.597    97 y      
+2 x          1.07     0.0870    12.3   1.61e-21   0.897      1.24     97 y      
+3 z          0.139    0.198      0.702 4.84e- 1  -0.254      0.531    97 y      
+4 z + 2*…    2.28     0.257      8.86  3.93e-14   1.77       2.79     97 y      
+> 
+> # Degrees of freedom follow the fit, so a clustered model tests against the
+> # cluster-adjusted df rather than the residual df
+> lh_robust(y ~ x + z, data = dat, clusters = cl,
++           linear_hypothesis = "z + 2*x = 0")
+$lm_robust
+             Estimate Std. Error  t value     Pr(>|t|)   CI Lower  CI Upper
+(Intercept) 0.2722647  0.1085927 2.507210 3.412609e-02  0.0255870 0.5189425
+x           1.0700945  0.1127933 9.487217 1.503296e-05  0.8087622 1.3314268
+z           0.1388867  0.1107408 1.254161 2.414684e-01 -0.1117398 0.3895132
+                  DF
+(Intercept) 8.761312
+x           7.789178
+z           8.973340
+
+$lh
+            Estimate Std. Error t value  Pr(>|t|) CI Lower CI Upper    DF
+z + 2*x = 0    2.279     0.2497   9.128 1.347e-05    1.707    2.852 8.267
+
+$joint_hypothesis
+       value        numdf        dendf      p.value 
+8.332170e+01 1.000000e+00 8.266568e+00 1.346860e-05 
+
+> 
+> # Several restrictions at once give one joint Wald test as well
+> joint <- lh_robust(y ~ x + z, data = dat, linear_hypothesis = c("x = 0", "z = 0"))
+> joint$joint_hypothesis
+       value        numdf        dendf      p.value 
+7.648561e+01 2.000000e+00 9.700000e+01 1.150176e-20 
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("lm_lin")
+> ### * lm_lin
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: lm_lin
+> ### Title: Linear Regression with Lin (2013) Covariate Adjustment
+> ### Aliases: lm_lin
+> 
+> ### ** Examples
+> 
+> set.seed(20)
+> dat <- data.frame(
++   x  = rnorm(40, mean = 2.3),
++   x2 = rpois(40, lambda = 2),
++   x3 = runif(40),
++   z  = rep(0:1, 20),
++   cl = rep(1:20, each = 2)
++ )
+> dat$y <- rnorm(40) + dat$x + 0.35 * dat$z
+> 
+> # lm_robust's interface plus one argument
+> fit <- lm_lin(y ~ z, covariates = ~ x, data = dat)
+> tidy(fit)
+# A tibble: 4 × 9
+  term    estimate std.error statistic  p.value conf.low conf.high    df outcome
+  <chr>      <dbl>     <dbl>     <dbl>    <dbl>    <dbl>     <dbl> <dbl> <chr>  
+1 (Inter…    2.40      0.200    12.0   4.01e-14    1.99      2.80     36 y      
+2 z          0.139     0.319     0.435 6.66e- 1   -0.509     0.787    36 y      
+3 x_c        1.06      0.138     7.67  4.43e- 9    0.778     1.34     36 y      
+4 z:x_c      0.171     0.292     0.585 5.62e- 1   -0.422     0.764    36 y      
+> 
+> # Several covariates
+> lm_lin(y ~ z, covariates = ~ x + x2, data = dat)
+               Estimate Std. Error    t value     Pr(>|t|)   CI Lower  CI Upper
+(Intercept)  2.42989472  0.2180992 11.1412356 6.829095e-13  1.9866638 2.8731257
+z            0.16196478  0.3363458  0.4815425 6.332160e-01 -0.5215721 0.8455016
+x_c          1.05791142  0.1484872  7.1245976 3.108087e-08  0.7561492 1.3596737
+x2_c         0.08313873  0.1720040  0.4833533 6.319432e-01 -0.2664156 0.4326930
+z:x_c        0.16420883  0.2656980  0.6180281 5.406749e-01 -0.3757545 0.7041722
+z:x2_c      -0.22663250  0.2247718 -1.0082781 3.204432e-01 -0.6834238 0.2301588
+            DF
+(Intercept) 34
+z           34
+x_c         34
+x2_c        34
+z:x_c       34
+z:x2_c      34
+> 
+> # Covariates are centered after any function in the formula is evaluated
+> fit2 <- lm_lin(y ~ z, covariates = ~ x + log(x3), data = dat)
+> fit2$scaled_center["log(x3)"]
+  log(x3) 
+-1.210077 
+> mean(log(dat$x3))
+[1] -1.210077
+> 
+> # Clusters, and multi-valued treatments whether or not they are factors
+> lm_lin(y ~ z, covariates = ~ x, data = dat, clusters = cl)
+             Estimate Std. Error    t value     Pr(>|t|)   CI Lower  CI Upper
+(Intercept) 2.3986657  0.2001761 11.9827783 6.303561e-10  1.9776121 2.8197193
+z           0.1389292  0.3285313  0.4228797 6.773020e-01 -0.5503936 0.8282521
+x_c         1.0572066  0.1378425  7.6696733 3.379419e-04  0.7150297 1.3993835
+z:x_c       0.1710721  0.2030999  0.8423052 4.177404e-01 -0.2765258 0.6186699
+                   DF
+(Intercept) 17.707096
+z           18.332361
+x_c          5.665371
+z:x_c       10.884767
+> dat$z3 <- rep(1:3, length.out = 40)
+> lm_lin(y ~ z3, covariates = ~ x, data = dat)
+              Estimate Std. Error    t value     Pr(>|t|)    CI Lower  CI Upper
+(Intercept)  2.2025788  0.2346917  9.3849900 5.776318e-11  1.72562800 2.6795296
+z32          0.8783179  0.3394842  2.5872131 1.412568e-02  0.18840303 1.5682327
+z33         -0.1284882  0.3507253 -0.3663500 7.163738e-01 -0.84124770 0.5842713
+x_c          0.8553097  0.2091691  4.0890816 2.506626e-04  0.43022683 1.2803925
+z32:x_c      0.4795874  0.2749677  1.7441587 9.016727e-02 -0.07921429 1.0383891
+z33:x_c      0.1998578  0.2784735  0.7176904 4.778507e-01 -0.36606852 0.7657841
+            DF
+(Intercept) 34
+z32         34
+z33         34
+x_c         34
+z32:x_c     34
+z33:x_c     34
+> lm_lin(y ~ factor(z3), covariates = ~ x, data = dat)
+                  Estimate Std. Error    t value     Pr(>|t|)    CI Lower
+(Intercept)      2.2025788  0.2346917  9.3849900 5.776318e-11  1.72562800
+factor(z3)2      0.8783179  0.3394842  2.5872131 1.412568e-02  0.18840303
+factor(z3)3     -0.1284882  0.3507253 -0.3663500 7.163738e-01 -0.84124770
+x_c              0.8553097  0.2091691  4.0890816 2.506626e-04  0.43022683
+factor(z3)2:x_c  0.4795874  0.2749677  1.7441587 9.016727e-02 -0.07921429
+factor(z3)3:x_c  0.1998578  0.2784735  0.7176904 4.778507e-01 -0.36606852
+                 CI Upper DF
+(Intercept)     2.6795296 34
+factor(z3)2     1.5682327 34
+factor(z3)3     0.5842713 34
+x_c             1.2803925 34
+factor(z3)2:x_c 1.0383891 34
+factor(z3)3:x_c 0.7657841 34
+> 
+> # Dropping the intercept gives the mean outcome under each condition
+> lm_lin(y ~ z3 - 1, covariates = ~ x, data = dat)
+         Estimate Std. Error   t value     Pr(>|t|)  CI Lower CI Upper DF
+z31     2.2025788  0.2346917  9.384990 5.776318e-11 1.7256280 2.679530 34
+z32     3.0808967  0.2452944 12.559998 2.519584e-14 2.5823986 3.579395 34
+z33     2.0740906  0.2606301  7.957986 2.851310e-09 1.5444266 2.603755 34
+z31:x_c 0.8553097  0.2091691  4.089082 2.506626e-04 0.4302268 1.280392 34
+z32:x_c 1.3348970  0.1784812  7.479203 1.114629e-08 0.9721796 1.697614 34
+z33:x_c 1.0551674  0.1838363  5.739712 1.876206e-06 0.6815671 1.428768 34
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("lm_robust")
+> ### * lm_robust
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: lm_robust
+> ### Title: Ordinary Least Squares with Robust Standard Errors
+> ### Aliases: lm_robust
+> 
+> ### ** Examples
+> 
+> set.seed(15)
+> dat <- data.frame(
++   y = rpois(40, lambda = 4),
++   x = rnorm(40),
++   z = rbinom(40, 1, prob = 0.4),
++   cl = rep(1:10, each = 4),
++   bl = rep(c("A", "B", "C", "D"), each = 10),
++   w = runif(40)
++ )
+> 
+> # HC2 is the default
+> fit <- lm_robust(y ~ x + z, data = dat)
+> fit
+              Estimate Std. Error    t value     Pr(>|t|)   CI Lower  CI Upper
+(Intercept)  4.5970879  0.4386909 10.4791036 1.261673e-12  3.7082156 5.4859602
+x            0.1735281  0.3813973  0.4549799 6.517822e-01 -0.5992562 0.9463125
+z           -0.9016607  0.5423749 -1.6624308 1.048766e-01 -2.0006166 0.1972952
+            DF
+(Intercept) 37
+x           37
+z           37
+> tidy(fit)
+# A tibble: 3 × 9
+  term    estimate std.error statistic  p.value conf.low conf.high    df outcome
+  <chr>      <dbl>     <dbl>     <dbl>    <dbl>    <dbl>     <dbl> <dbl> <chr>  
+1 (Inter…    4.60      0.439    10.5   1.26e-12    3.71      5.49     37 y      
+2 x          0.174     0.381     0.455 6.52e- 1   -0.599     0.946    37 y      
+3 z         -0.902     0.542    -1.66  1.05e- 1   -2.00      0.197    37 y      
+> summary(fit)
+
+Call:
+lm_robust(formula = y ~ x + z, data = dat)
+
+Standard error type:  HC2 
+
+Coefficients:
+            Estimate Std. Error t value  Pr(>|t|) CI Lower CI Upper DF
+(Intercept)   4.5971     0.4387  10.479 1.262e-12   3.7082   5.4860 37
+x             0.1735     0.3814   0.455 6.518e-01  -0.5993   0.9463 37
+z            -0.9017     0.5424  -1.662 1.049e-01  -2.0006   0.1973 37
+
+Multiple R-squared:  0.05748 ,	Adjusted R-squared:  0.00653 
+F-statistic: 1.453 on 2 and 37 DF,  p-value: 0.2468
+> confint(fit, level = 0.8)
+                  10 %       90 %
+(Intercept)  4.0246601  5.1695157
+x           -0.3241398  0.6711961
+z           -1.6093809 -0.1939405
+> 
+> # Other variance estimators, including Stata's
+> lm_robust(y ~ x + z, data = dat, se_type = "classical")
+              Estimate Std. Error    t value     Pr(>|t|)   CI Lower  CI Upper
+(Intercept)  4.5970879  0.3802497 12.0896557 2.044110e-14  3.8266288 5.3675470
+x            0.1735281  0.3380391  0.5133374 6.107671e-01 -0.5114042 0.8584604
+z           -0.9016607  0.6184263 -1.4579922 1.532792e-01 -2.1547114 0.3513900
+            DF
+(Intercept) 37
+x           37
+z           37
+> lm_robust(y ~ x + z, data = dat, se_type = "stata")
+              Estimate Std. Error    t value     Pr(>|t|)   CI Lower  CI Upper
+(Intercept)  4.5970879  0.4398377 10.4517829 1.356971e-12  3.7058921 5.4882837
+x            0.1735281  0.3731076  0.4650887 6.445936e-01 -0.5824596 0.9295159
+z           -0.9016607  0.5377414 -1.6767553 1.020208e-01 -1.9912282 0.1879068
+            DF
+(Intercept) 37
+x           37
+z           37
+> 
+> # Clustered inference defaults to CR2
+> lm_robust(y ~ x + z, data = dat, clusters = cl)
+              Estimate Std. Error    t value     Pr(>|t|)   CI Lower   CI Upper
+(Intercept)  4.5970879  0.2881143 15.9557767 6.225249e-07  3.9211723  5.2730035
+x            0.1735281  0.3062021  0.5667111 5.912145e-01 -0.5734551  0.9205113
+z           -0.9016607  0.3382580 -2.6656009 3.142761e-02 -1.6972729 -0.1060485
+                  DF
+(Intercept) 7.285030
+x           6.076014
+z           7.188890
+> lm_robust(y ~ x + z, data = dat, clusters = cl, se_type = "stata")
+              Estimate Std. Error    t value     Pr(>|t|)   CI Lower   CI Upper
+(Intercept)  4.5970879  0.2912685 15.7829901 7.245925e-08  3.9381928  5.2559830
+x            0.1735281  0.3118984  0.5563611 5.915262e-01 -0.5320351  0.8790913
+z           -0.9016607  0.3376476 -2.6704193 2.560486e-02 -1.6654727 -0.1378487
+            DF
+(Intercept)  9
+x            9
+z            9
+> 
+> # Weights and subsets behave as they do in lm()
+> lm_robust(y ~ x + z, data = dat, weights = w, clusters = cl)
+              Estimate Std. Error    t value     Pr(>|t|)  CI Lower    CI Upper
+(Intercept)  4.9189683  0.3379954 14.5533567 1.472987e-05  4.070464  5.76747278
+x            0.3033278  0.5700630  0.5320952 6.165681e-01 -1.144574  1.75122918
+z           -0.9879729  0.3890518 -2.5394380 4.117960e-02 -1.922489 -0.05345721
+                  DF
+(Intercept) 5.431130
+x           5.208788
+z           6.499607
+> lm_robust(y ~ x, data = dat, subset = z == 1)
+             Estimate Std. Error   t value     Pr(>|t|)  CI Lower  CI Upper DF
+(Intercept)  4.026354  0.3785824 10.635346 1.833544e-07  3.201494 4.8512143 12
+x           -0.462500  0.3599288 -1.284976 2.230493e-01 -1.246718 0.3217174 12
+> 
+> # Fixed effects are absorbed rather than expanded into dummies. With a
+> # single factor the HC2 default is exact and costs nothing extra.
+> lm_robust(y ~ z, data = dat, fixed_effects = ~ bl)
+    Estimate Std. Error  t value  Pr(>|t|)  CI Lower  CI Upper DF
+z -0.5857143  0.5623705 -1.04151 0.3047803 -1.727387 0.5559586 35
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("lm_robust_fit")
+> ### * lm_robust_fit
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: lm_robust_fit
+> ### Title: Internal method that creates linear fits
+> ### Aliases: lm_robust_fit
+> 
+> ### ** Examples
+> 
+> # The fitter behind lm_robust(), exported for packages that have already
+> # built their own design matrix. Most users want lm_robust().
+> set.seed(45)
+> X <- cbind(`(Intercept)` = 1, x = rnorm(50))
+> y <- X[, "x"] + rnorm(50)
+> 
+> lm_robust_fit(
++   y = y, X = X,
++   weights = NULL, cluster = NULL,
++   se_type = "HC2", has_int = TRUE
++ )
+              Estimate Std. Error   t value     Pr(>|t|)   CI Lower CI Upper DF
+(Intercept) 0.02772598  0.1691670 0.1638971 8.705003e-01 -0.3124071 0.367859 48
+x           1.14688528  0.1601907 7.1595005 4.189198e-09  0.8248003 1.468970 48
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("predict.lm_robust")
+> ### * predict.lm_robust
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: predict.lm_robust
+> ### Title: Predict method for 'lm_robust' object
+> ### Aliases: predict.lm_robust
+> 
+> ### ** Examples
+> 
+> 
+> # Set seed
+> set.seed(42)
+> 
+> # Simulate data
+> n <- 10
+> dat <- data.frame(y = rnorm(n), x = rnorm(n))
+> 
+> # Fit lm
+> lm_out <- lm_robust(y ~ x, data = dat)
+> # In-sample fitted values
+> predict(lm_out)
+         1          2          3          4          5          6          7 
+0.26523246 0.07663413 0.78269588 0.56945196 0.54150778 0.39373130 0.57050162 
+         8          9         10 
+1.02619980 0.98470859 0.26230416 
+> # Get predicted fits
+> fits <- predict(lm_out, newdata = dat)
+> # With standard errors and confidence intervals
+> fits <- predict(lm_out, newdata = dat, se.fit = TRUE, interval = "confidence")
+> 
+> # Use new data as well
+> new_dat <- data.frame(x = runif(n, 5, 8))
+> predict(lm_out, newdata = new_dat)
+         1          2          3          4          5          6          7 
+-0.6633382 -0.6957332 -0.4661705 -1.0056478 -0.6934163 -0.9964482 -0.9562101 
+         8          9         10 
+-0.8134173 -1.0041648 -0.8012341 
+> 
+> # You can also supply custom variance weights for prediction intervals
+> new_dat$w <- runif(n)
+> predict(lm_out, newdata = new_dat, weights = w, interval = "prediction")
+$fit
+             fit        lwr      upr
+ [1,] -0.6633382  -5.162176 3.835499
+ [2,] -0.6957332  -5.207346 3.815879
+ [3,] -0.4661705  -4.414089 3.481748
+ [4,] -1.0056478  -5.520872 3.509577
+ [5,] -0.6934163 -10.799452 9.412619
+ [6,] -0.9964482  -5.514685 3.521789
+ [7,] -0.9562101  -5.438922 3.526502
+ [8,] -0.8134173  -6.558348 4.931514
+ [9,] -1.0041648  -6.438104 4.429774
+[10,] -0.8012341  -5.137823 3.535355
+
+> 
+> # Works for 'lm_lin' models as well
+> dat$z <- sample(1:3, size = nrow(dat), replace = TRUE)
+> lmlin_out1 <- lm_lin(y ~ z, covariates = ~ x, data = dat)
+The standard error is NA for (Intercept), z3, x_c: every observation that identifies those coefficients is fitted exactly, so the variance is built from residuals that are all numerically zero. Reported as a number it would be zero or rounding error, and its t statistic would put p at 0.
+Warning in lm_robust_fit(y = outcome, X = X, weights = weights, cluster = cluster,  :
+  3 observations have a computed leverage at or near 1, which happens when the design is close to saturated and the observation is fitted exactly or nearly so. `se_type = "HC2"` divides by (1 - leverage), so they are dropped from the variance. The standard error is NA for (Intercept), z2, z3, x_c, z2:x_c, whose coefficient those observations alone identify: dropping them leaves nothing to estimate that variance from. Every other standard error in this fit is the one the design without them gives. Use `se_type = "HC1"` or `"classical"`, or drop covariates, to use every observation.
+Some coefficients are collinear with other regressors and were dropped, and are returned as NA: z3:x_c. A dropped treatment interaction is not a dropped covariate: with x_c no longer interacted with the treatment, z3 is no longer the effect at the covariate means, since its slope is now constrained equal across treatment arms. Where the dependency runs through the treatment column itself, the reported value also depends on which column was dropped, and the effect at the covariate means is not identified.
+> predict(lmlin_out1, newdata = dat, interval = "prediction")
+$fit
+               fit        lwr      upr
+ [1,]  1.370958447  0.3615444 2.380372
+ [2,] -0.186937884 -1.4647357 1.090860
+ [3,]  0.239186411 -1.0086955 1.487068
+ [4,]  0.110488863 -0.9949579 1.215936
+ [5,]  0.093623919 -1.0022995 1.189547
+ [6,]  0.004437459 -1.0812175 1.090092
+ [7,]  1.511521997  0.5021080 2.520936
+ [8,]  0.386146556 -1.1366369 1.908930
+ [9,]  2.018423714  1.0090097 3.027838
+[10,] -0.074881809 -1.2079017 1.058138
+
+> 
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  1.246 0.396 1.292 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

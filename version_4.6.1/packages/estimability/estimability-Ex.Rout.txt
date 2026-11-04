@@ -1,0 +1,292 @@
+
+R version 4.6.1 (2026-06-24) -- "Happy Hop"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "estimability"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('estimability')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("epredict")
+> ### * epredict
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: epredict
+> ### Title: Estimability Enhancements for 'lm' and Relatives
+> ### Aliases: epredict epredict.lm epredict.glm epredict.mlm eupdate
+> ###   eupdate.lm
+> 
+> ### ** Examples
+> 
+> require("estimability")
+> 
+> # Fake data where x3 and x4 depend on x1, x2, and intercept
+> x1 <- -4:4
+> x2 <- c(-2,1,-1,2,0,2,-1,1,-2)
+> x3 <- 3*x1 - 2*x2
+> x4 <- x2 - x1 + 4
+> y <- 1 + x1 + x2 + x3 + x4 + c(-.5,.5,.5,-.5,0,.5,-.5,-.5,.5)
+> 
+> # Different orderings of predictors produce different solutions
+> mod1234 <- lm(y ~ x1 + x2 + x3 + x4)
+> mod4321 <- eupdate(lm(y ~ x4 + x3 + x2 + x1))
+> # (Estimability checking with mod4321 will be more efficient because
+> #  it will not need to recreate the basis)
+> mod4321$nonest
+           [,1]        [,2]
+[1,]  0.4369706  0.85937026
+[2,] -0.1092427 -0.21484256
+[3,] -0.2772476  0.04440638
+[4,] -0.4452526  0.30365533
+[5,]  0.7225002 -0.34806171
+> 
+>  
+> # test data:
+> testset <- data.frame( 
++               x1 = c(3,  6,  6,  0,  0,  1), 
++               x2 = c(1,  2,  2,  0,  0,  2), 
++               x3 = c(7, 14, 14,  0,  0,  3), 
++               x4 = c(2,  4,  0,  4,  0,  4))
+> 
+> # Look at predictions when we don't check estimability
+> suppressWarnings( # Disable the warning from stats::predict.lm
++     rbind(p1234 = predict(mod1234, newdata = testset),
++           p4321 = predict(mod4321, newdata = testset)))
+       1  2  3 4   5  6
+p1234 14 23 23 5   5  8
+p4321 14 47 23 5 -19 14
+> 
+> # Compare with results when we do check:
+> rbind(p1234 = epredict(mod1234, newdata = testset),
++       p4321 = epredict(mod4321, newdata = testset))
+       1  2  3 4  5  6
+p1234 14 NA 23 5 NA NA
+p4321 14 NA 23 5 NA NA
+> 
+> # stats::predict has same capability for lm objects starting in version 4.3.0:
+> if((R.Version()$major >= 4) && (R.Version()$minor >= 3))
++   stats::predict(mod1234, newdata = testset, rankdeficient = "NA")
+ 1  2  3  4  5  6 
+14 NA 23  5 NA NA 
+> 
+> # Note that estimable cases have the same predictions
+> 
+> # change mod1234 and include nonest basis 
+> mod134 <- eupdate(mod1234, . ~ . - x2, subset = -c(3, 7))
+> mod134$nonest
+           [,1]
+[1,]  0.9561829
+[2,]  0.1195229
+[3,] -0.1195229
+[4,] -0.2390457
+> 
+> # When row spaces are the same, bases are interchangeable
+> # so long as you account for the ordering of parameters:
+> epredict(mod4321, newdata = testset, type = "estimability",
++     nbasis = nonest.basis(mod1234)[c(1,5:2), ])
+    1     2     3     4     5     6 
+ TRUE FALSE  TRUE  TRUE FALSE FALSE 
+>     
+> # Comparison with predict.lm in R >= 4.3.0
+> if((R.Version()$major >= 4) && (R.Version()$minor >= 3))
++   stats::predict(mod4321, newdata = testset, rankdeficient = "NA")
+ 1  2  3  4  5  6 
+14 NA 23  5 NA NA 
+> 
+> ## Not run: 
+> ##D ### Additional illustration
+> ##D example(nonest.basis)  ## creates model objects warp.lm1 and warp.lm2
+> ##D 
+> ##D # The two models have different contrast specs. But the empty cell
+> ##D # is correctly identified in both:
+> ##D fac.cmb <- expand.grid(wool = c("A", "B"), tension = c("L", "M", "H"))
+> ##D cbind(fac.cmb, 
+> ##D       pred1 = epredict(warp.lm1, newdata = fac.cmb), 
+> ##D       pred2 = epredict(warp.lm2, newdata = fac.cmb))
+> ## End(Not run)
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("estble.subspace")
+> ### * estble.subspace
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: estble.subspace
+> ### Title: Find an estimable subspace
+> ### Aliases: estble.subspace
+> 
+> ### ** Examples
+> 
+> ### Find a set of estimable interaction contrasts for a 3 x 4 design 
+> ### with two empty cells.
+> des <- expand.grid(A = factor(1:3), B = factor(1:4))
+> des <- des[-c(5, 12), ]  # cells (2,2) and (3,4) are empty
+> 
+> X <- model.matrix(~ A * B, data = des)
+> N <- nonest.basis(X)
+> 
+> L <- cbind(matrix(0, nrow = 6, ncol = 6), diag(6))
+> # i.e., give nonzero weight only to interaction effects
+> 
+> estble.subspace(L, N)
+     [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10] [,11] [,12]
+[1,]    0    0    0    0    0    0    0    0    1     0     0     0
+[2,]    0    0    0    0    0    0    0    0    0     1     0     0
+[3,]    0    0    0    0    0    0    0    0    0     0     1     0
+[4,]    0    0    0    0    0    0    0   -1    0     0     0     0
+attr(,"B")
+     [,1] [,2] [,3] [,4] [,5] [,6]
+[1,]    0    0    1    0    0    0
+[2,]    0    0    0    1    0    0
+[3,]    0    0    0    0    1    0
+[4,]    0   -1    0    0    0    0
+> 
+> # Tougher demo: create a variation where all rows of L are non-estimable
+> set.seed(1921.0923)  # Franklin Graybill's birthday
+> LL <- matrix(rnorm(36), ncol = 6) %*% L
+> estble.subspace(LL, N)
+     [,1] [,2] [,3] [,4] [,5] [,6]          [,7]       [,8]       [,9]
+[1,]    0    0    0    0    0    0 -7.617292e-17  1.0316251  0.2402223
+[2,]    0    0    0    0    0    0  1.397595e-16  0.9679828  0.3871052
+[3,]    0    0    0    0    0    0  2.721233e-16 -0.8807992 -0.4495615
+[4,]    0    0    0    0    0    0 -3.293725e-16  0.1534469 -1.8498715
+           [,10]       [,11]         [,12]
+[1,]  1.12000141 -0.67713307 -2.675180e-17
+[2,] -0.04158445 -1.04336175  4.025230e-17
+[3,] -1.22043728  0.89366353 -2.249799e-16
+[4,]  0.63353316  0.01685268 -1.089416e-16
+attr(,"B")
+           [,1]        [,2]        [,3]       [,4]       [,5]        [,6]
+[1,]  0.2368168  0.44441284  0.81010361  0.2315774  0.1846316 -0.04929783
+[2,] -0.7367046 -0.04759893  0.17253661  0.5347192 -0.3145821  0.20086111
+[3,] -0.4882847 -0.14729815  0.15061904 -0.3305079  0.7689707  0.12901096
+[4,]  0.3357518 -0.18734622 -0.01314464  0.1720998  0.1026899  0.90101930
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("nonest.basis")
+> ### * nonest.basis
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: nonest.basis
+> ### Title: Estimability Tools
+> ### Aliases: nonest.basis nonest.basis.default nonest.basis.qr
+> ###   nonest.basis.matrix nonest.basis.lm nonest.basis.svd
+> ###   legacy.nonest.basis is.estble all.estble
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> require(estimability)
+> 
+> X <- cbind(rep(1,5), 1:5, 5:1, 2:6)
+> ( nb <- nonest.basis(X) )
+           [,1]        [,2]
+[1,]  0.3922061  0.90136925
+[2,] -0.7149481  0.24876288
+[3,] -0.1581649 -0.09322948
+[4,]  0.5567832 -0.34199236
+> 
+> # via the singular-value decomposition
+> SVD <- svd(X, nu = 0)    # we don't need the U part of UDV'
+> nonest.basis.svd(SVD)    # same result as above
+           [,1]        [,2]
+[1,]  0.3922061  0.90136925
+[2,] -0.7149481  0.24876288
+[3,] -0.1581649 -0.09322948
+[4,]  0.5567832 -0.34199236
+> 
+> # Via the Cholesky decomposition of X'X
+> ch <- chol(t(X) %*% X, pivot = TRUE) |> suppressWarnings()
+> ( nb.chol <- nonest.basis(ch) )
+           [,1]        [,2]
+[1,]  0.9733285 -0.13756349
+[2,] -0.1622214 -0.73940376
+[3,] -0.1622214 -0.08597718
+[4,]  0.0000000  0.65342658
+> 
+> # Test estimability of some linear functions for this X matrix
+> lfs <- rbind(c(1,4,2,5), c(2,3,9,5), c(1,2,2,1), c(0,1,-1,1))
+> is.estble(lfs, nb)
+[1]  TRUE  TRUE FALSE  TRUE
+> is.estble(lfs, nb.chol) # same results even though nb.chol is not identical to nb
+[1]  TRUE  TRUE FALSE  TRUE
+> 
+> # Illustration on 'lm' objects:
+> warp.lm1 <- lm(breaks ~ wool * tension, data = warpbreaks,
++     subset = -(26:38),
++     contrasts = list(wool = "contr.treatment", tension = "contr.treatment"))
+> zapsmall(warp.nb1 <- nonest.basis(warp.lm1))
+           [,1]
+[1,]  0.0000000
+[2,] -0.5773503
+[3,]  0.0000000
+[4,]  0.0000000
+[5,]  0.5773503
+[6,]  0.5773503
+> 
+> # different parameterization of the same model:
+> warp.lm2 <- update(warp.lm1,
++     contrasts = list(wool = "contr.sum", tension = "contr.helmert"))
+> zapsmall(warp.nb2 <- nonest.basis(warp.lm2))
+           [,1]
+[1,] -0.3779645
+[2,]  0.3779645
+[3,]  0.5669467
+[4,]  0.1889822
+[5,] -0.5669467
+[6,] -0.1889822
+> 
+> # These bases depend of the parameterizations, but they both 
+> # correctly identify the empty cell
+> wcells = with(warpbreaks, expand.grid(wool = levels(wool), tension = levels(tension)))
+> epredict(warp.lm1, newdata = wcells, nbasis = warp.nb1)
+       1        2        3        4        5        6 
+44.55556       NA 24.00000 27.28571 25.71429 18.77778 
+> epredict(warp.lm2, newdata = wcells, nbasis = warp.nb2)
+       1        2        3        4        5        6 
+44.55556       NA 24.00000 27.28571 25.71429 18.77778 
+> 
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  0.062 0.01 0.071 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

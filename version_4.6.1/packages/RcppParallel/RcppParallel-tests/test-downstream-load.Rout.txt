@@ -1,0 +1,71 @@
+
+R version 4.6.1 (2026-06-24) -- "Happy Hop"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> 
+> # Check that a package linking against RcppParallel's TBB can be loaded on its
+> # own, in a process that has not already loaded RcppParallel.
+> #
+> # The TBB libraries we ship on macOS record an '@rpath'-relative install name,
+> # so LdFlags() must emit an '-rpath' alongside its '-L'. With only the '-L' the
+> # link still succeeds -- so the package builds, and loads fine via its
+> # NAMESPACE, whose importFrom(RcppParallel, ...) pulls TBB into the process
+> # first -- but the shared object itself carries no runtime search path, and
+> # dyld fails with "Library not loaded: @rpath/libtbb.dylib" for anything that
+> # loads it directly. Hence the load below runs in a fresh R process which never
+> # touches RcppParallel; loading it from here would prove nothing.
+> #
+> # See also tests/test-ld-flags.R, the cheap flag-level check that still runs
+> # where no toolchain is available.
+> #
+> # https://github.com/RcppCore/RcppParallel/issues/209
+> 
+> RcppParallel:::test_init()
+Using backend: tinythread
+> 
+> # building the test package requires a toolchain, so keep this test
+> # off of CRAN's machines
+> ci <- nzchar(Sys.getenv("CI")) || identical(Sys.getenv("NOT_CRAN"), "true")
+> if (!ci) {
++    writeLines("Not running on CI; skipping downstream load test.")
++    quit(save = "no")
++ }
+> 
+> if (!TBB_ENABLED) {
++    writeLines("TBB is not enabled; skipping downstream load test.")
++    quit(save = "no")
++ }
+> 
+> # Windows has no rpath: the loader resolves DLLs through the process search
+> # path, and downstream packages link '-lRcppParallel' rather than TBB itself
+> if (is_windows()) {
++    writeLines("Windows resolves DLLs via the search path; skipping.")
++    quit(save = "no")
++ }
+> 
+> # A standalone load can only work where TBB is linked into the client
+> # explicitly: macOS (#206), and any platform configured against a system TBB.
+> # Elsewhere the TBB symbols are deliberately left undefined at link time and
+> # resolved from the libraries RcppParallel loads, so a standalone load is
+> # expected to fail. Note this mirrors the branches in tbbLdFlags() rather than
+> # inspecting its output: gating on the '-rpath' we are checking for would skip
+> # precisely the configuration that regressed.
+> tbbLib <- Sys.getenv("TBB_LINK_LIB", Sys.getenv("TBB_LIB", unset = TBB_LIB))
+> if (!is_mac() && !nzchar(tbbLib)) {
++    writeLines("TBB is not linked into downstream packages here; skipping.")
++    quit(save = "no")
++ }
+TBB is not linked into downstream packages here; skipping.

@@ -1,0 +1,3525 @@
+
+R version 4.6.1 (2026-06-24) -- "Happy Hop"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "ggdist"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('ggdist')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("Pr_")
+> ### * Pr_
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Pr_
+> ### Title: Probability expressions in ggdist aesthetics
+> ### Aliases: Pr_ p_
+> 
+> ### ** Examples
+> 
+> library(ggplot2)
+> library(distributional)
+> 
+> df = data.frame(
++   d = c(dist_normal(2.7, 1), dist_lognormal(1, 1/3)),
++   name = c("normal", "lognormal")
++ )
+> 
+> # map density onto alpha of the fill
+> ggplot(df, aes(y = name, xdist = d)) +
++   stat_slabinterval(aes(alpha = !!p_(x)))
+> 
+> # map CCDF onto thickness (like stat_ccdfinterval())
+> ggplot(df, aes(y = name, xdist = d)) +
++   stat_slabinterval(aes(thickness = !!Pr_(xdist > x)))
+> 
+> # map containing interval onto fill
+> ggplot(df, aes(y = name, xdist = d)) +
++   stat_slabinterval(aes(fill = !!Pr_(x %in% interval)))
+> 
+> # the color scale in the previous example is not great, so turn the
+> # probability into an ordered factor and adjust the fill scale.
+> # Though, see also the `level` computed variable in `stat_slabinterval()`,
+> # which is probably easier to use to create this style of chart.
+> ggplot(df, aes(y = name, xdist = d)) +
++   stat_slabinterval(aes(fill = ordered(!!Pr_(x %in% interval)))) +
++   scale_fill_brewer(direction = -1)
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:distributional’, ‘package:ggplot2’
+
+> nameEx("align")
+> ### * align
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: align
+> ### Title: Break (bin) alignment methods
+> ### Aliases: align align_none align_boundary align_center
+> 
+> ### ** Examples
+> 
+> library(ggplot2)
+> 
+> set.seed(1234)
+> x = rnorm(200, 1, 2)
+> 
+> # If we manually specify a bin width using breaks_fixed(), the default
+> # alignment (align_none()) will not align bin edges to any "pretty" numbers.
+> # Here is a comparison of the three alignment methods on such a histogram:
+> ggplot(data.frame(x), aes(x)) +
++   stat_slab(
++     aes(y = "align_none()\nor 'none'"),
++     density = "histogram",
++     breaks = breaks_fixed(width = 1),
++     outline_bars = TRUE,
++     # no need to specify align; align_none() is the default
++     color = "black",
++   ) +
++   stat_slab(
++     aes(y = "align_center(at = 0)\nor 'center'"),
++     density = "histogram",
++     breaks = breaks_fixed(width = 1),
++     align = align_center(at = 0),   # or align = "center"
++     outline_bars = TRUE,
++     color = "black",
++   ) +
++   stat_slab(
++     aes(y = "align_boundary(at = 0)\nor 'boundary'"),
++     density = "histogram",
++     breaks = breaks_fixed(width = 1),
++     align = align_boundary(at = 0), # or align = "boundary"
++     outline_bars = TRUE,
++     color = "black",
++   ) +
++   geom_point(aes(y = 0.7), alpha = 0.5) +
++   labs(
++     subtitle = "ggdist::stat_slab(density = 'histogram', ...)",
++     y = "align =",
++     x = NULL
++   ) +
++   geom_vline(xintercept = 0, linetype = "22", color = "red")
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’
+
+> nameEx("auto_partial")
+> ### * auto_partial
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: auto_partial
+> ### Title: Automatic partial function application in ggdist
+> ### Aliases: auto_partial automatic-partial-functions
+> 
+> ### ** Examples
+> 
+> set.seed(1234)
+> x = rnorm(100)
+> 
+> # the first required argument, `x`, of the density_ family is the vector
+> # to calculate a kernel density estimate from. If it is not provided, the
+> # function is partially applied and returned as-is
+> density_unbounded()
+<partial_function>: 
+  density_unbounded()
+> 
+> # we could create a new function that uses half the default bandwidth
+> density_half_bw = density_unbounded(adjust = 0.5)
+> density_half_bw
+<partial_function>: 
+  density_unbounded(adjust = 0.5)
+> 
+> # we can overwrite partially-applied arguments
+> density_quarter_bw_trimmed = density_half_bw(adjust = 0.25, trim = TRUE)
+> density_quarter_bw_trimmed
+<partial_function>: 
+  density_unbounded(adjust = 0.25, trim = TRUE)
+> 
+> # when we eventually call the function and provide the required argument
+> # `x`, it is applied using the arguments we have "saved up" so far
+> density_quarter_bw_trimmed(x)
+
+Call:
+	density_unbounded(x = x, adjust = 0.25, trim = TRUE)
+
+Data: x (100 obs.);	Bandwidth 'bw' = 0.08864
+
+       x                 y           
+ Min.   :-2.3457   Min.   :0.009878  
+ 1st Qu.:-1.1220   1st Qu.:0.063054  
+ Median : 0.1016   Median :0.149655  
+ Mean   : 0.1016   Mean   :0.201767  
+ 3rd Qu.: 1.3253   3rd Qu.:0.334736  
+ Max.   : 2.5490   Max.   :0.672888  
+> 
+> # create a custom automatically partially applied function
+> f = auto_partial(function(x, y, z = 3) (x + y) * z)
+> f()
+<partial_function>: 
+  f()
+> f(1)
+<partial_function>: 
+  f(x = 1)
+> g = f(y = 2)(z = 4)
+> g
+<partial_function>: 
+  f(y = 2, z = 4)
+> g(1)
+[1] 12
+> 
+> # pass waiver() to optional arguments to use existing values
+> f(z = waiver())(1, 2)  # uses default z = 3
+[1] 9
+> f(z = 4)(z = waiver())(1, 2)  # uses z = 4
+[1] 12
+> 
+> 
+> 
+> cleanEx()
+> nameEx("bin_dots")
+> ### * bin_dots
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: bin_dots
+> ### Title: Bin data values using a dotplot algorithm
+> ### Aliases: bin_dots
+> 
+> ### ** Examples
+> 
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> 
+> x = qnorm(ppoints(20))
+> bin_df = bin_dots(x = x, y = 0, binwidth = 0.5, heightratio = 1)
+> bin_df
+            x    y bin
+1  -1.9599640 0.25   1
+2  -1.2949404 0.25   2
+3  -1.2949404 0.75   2
+4  -0.7661747 0.25   3
+5  -0.7661747 0.75   3
+6  -0.7661747 1.25   3
+7  -0.2582345 0.25   4
+8  -0.2582345 0.75   4
+9  -0.2582345 1.25   4
+10 -0.2582345 1.75   4
+11  0.2582345 0.25   5
+12  0.2582345 0.75   5
+13  0.2582345 1.25   5
+14  0.2582345 1.75   5
+15  0.7661747 0.25   6
+16  0.7661747 0.75   6
+17  0.7661747 1.25   6
+18  1.2949404 0.25   7
+19  1.2949404 0.75   7
+20  1.9599640 0.25   8
+> 
+> # we can manually plot the binning above, though this is only recommended
+> # if you are using find_dotplot_binwidth() and bin_dots() to build your own
+> # grob. For practical use it is much easier to use geom_dots(), which will
+> # automatically select good bin widths for you (and which uses
+> # find_dotplot_binwidth() and bin_dots() internally)
+> bin_df %>%
++   ggplot(aes(x = x, y = y)) +
++   geom_point(size = 4) +
++   coord_fixed()
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("blur")
+> ### * blur
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: blur
+> ### Title: Blur functions for blurry dot plots
+> ### Aliases: blur blur_gaussian blur_interval
+> 
+> ### ** Examples
+> 
+> # see examples in geom_blur_dots()
+> 
+> 
+> 
+> cleanEx()
+> nameEx("breaks")
+> ### * breaks
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: breaks
+> ### Title: Break (bin) selection algorithms for histograms
+> ### Aliases: breaks breaks_fixed breaks_Sturges breaks_Scott breaks_FD
+> ###   breaks_quantiles
+> 
+> ### ** Examples
+> 
+> library(ggplot2)
+> 
+> set.seed(1234)
+> x = rnorm(2000, 1, 2)
+> 
+> # Let's compare the different break-selection algorithms on this data:
+> ggplot(data.frame(x), aes(x)) +
++   stat_slab(
++     aes(y = "breaks_fixed(width = 0.5)"),
++     density = "histogram",
++     breaks = breaks_fixed(width = 0.5),
++     outline_bars = TRUE,
++     color = "black",
++   ) +
++   stat_slab(
++     aes(y = "breaks_Sturges()\nor 'Sturges'"),
++     density = "histogram",
++     breaks = "Sturges",
++     outline_bars = TRUE,
++     color = "black",
++   ) +
++   stat_slab(
++     aes(y = "breaks_Scott()\nor 'Scott'"),
++     density = "histogram",
++     breaks = "Scott",
++     outline_bars = TRUE,
++     color = "black",
++   ) +
++   stat_slab(
++     aes(y = "breaks_FD()\nor 'FD'"),
++     density = "histogram",
++     breaks = "FD",
++     outline_bars = TRUE,
++     color = "black",
++   ) +
++   stat_slab(
++     aes(y = "breaks_quantiles()\nor 'quantiles'"),
++     density = "histogram",
++     breaks = "quantiles",
++     outline_bars = TRUE,
++     color = "black",
++   ) +
++   geom_point(aes(y = 0.7), alpha = 0.5) +
++   labs(
++     subtitle = "ggdist::stat_slab(density = 'histogram', ...)",
++     y = "breaks =",
++     x = NULL
++   )
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’
+
+> nameEx("curve_interval")
+> ### * curve_interval
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: curve_interval
+> ### Title: Curvewise point and interval summaries for tidy data frames of
+> ###   draws from distributions
+> ### Aliases: curve_interval curve_interval.matrix curve_interval.rvar
+> ###   curve_interval.data.frame
+> 
+> ### ** Examples
+> 
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> 
+> # generate a set of curves
+> k = 11 # number of curves
+> n = 201
+> df = tibble(
++     .draw = rep(1:k, n),
++     mean = rep(seq(-5,5, length.out = k), n),
++     x = rep(seq(-15,15,length.out = n), each = k),
++     y = dnorm(x, mean, 3)
++   )
+> 
+> # see pointwise intervals...
+> df %>%
++   group_by(x) %>%
++   median_qi(y, .width = c(.5)) %>%
++   ggplot(aes(x = x, y = y)) +
++   geom_lineribbon(aes(ymin = .lower, ymax = .upper)) +
++   geom_line(aes(group = .draw), alpha=0.15, data = df) +
++   scale_fill_brewer() +
++   ggtitle("50% pointwise intervals with point_interval()") +
++   theme_ggdist()
+> 
+> ## Don't show: 
+> if (requireNamespace("posterior", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ # ... compare them to curvewise intervals
++ df %>%
++   group_by(x) %>%
++   curve_interval(y, .width = c(.5)) %>%
++   ggplot(aes(x = x, y = y)) +
++   geom_lineribbon(aes(ymin = .lower, ymax = .upper)) +
++   geom_line(aes(group = .draw), alpha=0.15, data = df) +
++   scale_fill_brewer() +
++   ggtitle("50% curvewise intervals with curve_interval()") +
++   theme_ggdist()
++ ## Don't show: 
++ }) # examplesIf
+> df %>% group_by(x) %>% curve_interval(y, .width = c(0.5)) %>% ggplot(aes(x = x, 
++     y = y)) + geom_lineribbon(aes(ymin = .lower, ymax = .upper)) + geom_line(aes(group = .draw), 
++     alpha = 0.15, data = df) + scale_fill_brewer() + ggtitle("50% curvewise intervals with curve_interval()") + 
++     theme_ggdist()
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("cut_cdf_qi")
+> ### * cut_cdf_qi
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: cut_cdf_qi
+> ### Title: Categorize values from a CDF into quantile intervals
+> ### Aliases: cut_cdf_qi
+> 
+> ### ** Examples
+> 
+> 
+> library(ggplot2)
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(scales)
+> library(distributional)
+> 
+> theme_set(theme_ggdist())
+> 
+> # NOTE: cut_cdf_qi() used to be the recommended way to do intervals overlaid
+> # on densities, like this...
+> tibble(x = dist_normal(0, 1)) %>%
++   ggplot(aes(xdist = x)) +
++   stat_slab(
++     aes(fill = after_stat(cut_cdf_qi(cdf)))
++   ) +
++   scale_fill_brewer(direction = -1)
+> 
+> # ... however this is now more easily and flexibly accomplished by directly
+> # mapping .width or level onto fill:
+> tibble(x = dist_normal(0, 1)) %>%
++   ggplot(aes(xdist = x)) +
++   stat_slab(
++     aes(fill = after_stat(level)),
++     .width = c(.66, .95, 1)
++   ) +
++   scale_fill_brewer()
+> 
+> # See vignette("slabinterval") for more examples. The remaining examples
+> # below using cut_cdf_qi() are kept for posterity.
+> 
+> # With a halfeye (or other geom with slab and interval), NA values will
+> # show up in the fill scale from the CDF function applied to the internal
+> # interval geometry data and can be ignored, hence na.translate = FALSE
+> tibble(x = dist_normal(0, 1)) %>%
++   ggplot(aes(xdist = x)) +
++   stat_halfeye(aes(
++     fill = after_stat(cut_cdf_qi(cdf, .width = c(.5, .8, .95, 1)))
++   )) +
++   scale_fill_brewer(direction = -1, na.translate = FALSE)
+> 
+> # we could also use the labels parameter to apply nicer formatting
+> # and provide a better name for the legend, and omit the 100% interval
+> # if desired
+> tibble(x = dist_normal(0, 1)) %>%
++   ggplot(aes(xdist = x)) +
++   stat_halfeye(aes(
++     fill = after_stat(cut_cdf_qi(
++       cdf,
++       .width = c(.5, .8, .95),
++       labels = percent_format(accuracy = 1)
++     ))
++   )) +
++   labs(fill = "Interval") +
++   scale_fill_brewer(direction = -1, na.translate = FALSE)
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:distributional’, ‘package:scales’, ‘package:dplyr’,
+  ‘package:ggplot2’
+
+> nameEx("density_bounded")
+> ### * density_bounded
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: density_bounded
+> ### Title: Bounded density estimator using the reflection method
+> ### Aliases: density_bounded
+> 
+> ### ** Examples
+> 
+> library(distributional)
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> 
+> # For compatibility with existing code, the return type of density_bounded()
+> # is the same as stats::density(), ...
+> set.seed(123)
+> x = rbeta(5000, 1, 3)
+> d = density_bounded(x)
+> d
+
+Call:
+	density_bounded(x = x)
+
+Data: x (5000 obs.);	Bandwidth 'bw' = 0.01647
+
+       x                   y          
+ Min.   :3.377e-05   Min.   :0.01634  
+ 1st Qu.:2.368e-01   1st Qu.:0.26379  
+ Median :4.736e-01   Median :0.91029  
+ Mean   :4.736e-01   Mean   :1.05591  
+ 3rd Qu.:7.104e-01   3rd Qu.:1.66224  
+ Max.   :9.471e-01   Max.   :2.90384  
+> 
+> # ... thus, while designed for use with the `density` argument of
+> # stat_slabinterval(), output from density_bounded() can also be used with
+> # base::plot():
+> plot(d)
+> 
+> # here we'll use the same data as above, but pick either density_bounded()
+> # or density_unbounded() (which is equivalent to stats::density()). Notice
+> # how the bounded density (green) is biased near the boundary of the support,
+> # while the unbounded density is not.
+> data.frame(x) %>%
++   ggplot() +
++   stat_slab(
++     aes(xdist = dist), data = data.frame(dist = dist_beta(1, 3)),
++     alpha = 0.25
++   ) +
++   stat_slab(aes(x), density = "bounded", fill = NA, color = "#d95f02", alpha = 0.5) +
++   stat_slab(aes(x), density = "unbounded", fill = NA, color = "#1b9e77", alpha = 0.5) +
++   scale_thickness_shared() +
++   theme_ggdist()
+> 
+> # We can also supply arguments to the density estimators by using their
+> # full function names instead of the string suffix; e.g. we can supply
+> # the exact bounds of c(0,1) rather than using the bounds of the data.
+> data.frame(x) %>%
++   ggplot() +
++   stat_slab(
++     aes(xdist = dist), data = data.frame(dist = dist_beta(1, 3)),
++     alpha = 0.25
++   ) +
++   stat_slab(
++     aes(x), fill = NA, color = "#d95f02", alpha = 0.5,
++     density = density_bounded(bounds = c(0,1))
++   ) +
++   scale_thickness_shared() +
++   theme_ggdist()
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’, ‘package:dplyr’, ‘package:distributional’
+
+> nameEx("density_histogram")
+> ### * density_histogram
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: density_histogram
+> ### Title: Histogram density estimator
+> ### Aliases: density_histogram
+> 
+> ### ** Examples
+> 
+> library(distributional)
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> 
+> # For compatibility with existing code, the return type of density_unbounded()
+> # is the same as stats::density(), ...
+> set.seed(123)
+> x = rbeta(5000, 1, 3)
+> d = density_histogram(x)
+> d
+
+Call:
+	density_histogram(x = x)
+
+Data: x (5000 obs.);	Bandwidth 'bw' = 0.03788
+
+       x                   y          
+ Min.   :3.377e-05   Min.   :0.02112  
+ 1st Qu.:2.321e-01   1st Qu.:0.30620  
+ Median :4.736e-01   Median :0.90804  
+ Mean   :4.736e-01   Mean   :1.05586  
+ 3rd Qu.:7.151e-01   3rd Qu.:1.63131  
+ Max.   :9.471e-01   Max.   :2.88251  
+> 
+> # ... thus, while designed for use with the `density` argument of
+> # stat_slabinterval(), output from density_histogram() can also be used with
+> # base::plot():
+> plot(d)
+> 
+> # here we'll use the same data as above with stat_slab():
+> data.frame(x) %>%
++   ggplot() +
++   stat_slab(
++     aes(xdist = dist), data = data.frame(dist = dist_beta(1, 3)),
++     alpha = 0.25
++   ) +
++   stat_slab(aes(x), density = "histogram", fill = NA, color = "#d95f02", alpha = 0.5) +
++   scale_thickness_shared() +
++   theme_ggdist()
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’, ‘package:dplyr’, ‘package:distributional’
+
+> nameEx("density_unbounded")
+> ### * density_unbounded
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: density_unbounded
+> ### Title: Unbounded density estimator
+> ### Aliases: density_unbounded
+> 
+> ### ** Examples
+> 
+> library(distributional)
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> 
+> # For compatibility with existing code, the return type of density_unbounded()
+> # is the same as stats::density(), ...
+> set.seed(123)
+> x = rbeta(5000, 1, 3)
+> d = density_unbounded(x)
+> d
+
+Call:
+	density_unbounded(x = x)
+
+Data: x (5000 obs.);	Bandwidth 'bw' = 0.01647
+
+       x                   y          
+ Min.   :3.377e-05   Min.   :0.01634  
+ 1st Qu.:2.368e-01   1st Qu.:0.26382  
+ Median :4.736e-01   Median :0.91021  
+ Mean   :4.736e-01   Mean   :1.03440  
+ 3rd Qu.:7.104e-01   3rd Qu.:1.64200  
+ Max.   :9.471e-01   Max.   :2.77205  
+> 
+> # ... thus, while designed for use with the `density` argument of
+> # stat_slabinterval(), output from density_unbounded() can also be used with
+> # base::plot():
+> plot(d)
+> 
+> # here we'll use the same data as above, but pick either density_bounded()
+> # or density_unbounded() (which is equivalent to stats::density()). Notice
+> # how the bounded density (green) is biased near the boundary of the support,
+> # while the unbounded density is not.
+> data.frame(x) %>%
++   ggplot() +
++   stat_slab(
++     aes(xdist = dist), data = data.frame(dist = dist_beta(1, 3)),
++     alpha = 0.25
++   ) +
++   stat_slab(aes(x), density = "bounded", fill = NA, color = "#d95f02", alpha = 0.5) +
++   stat_slab(aes(x), density = "unbounded", fill = NA, color = "#1b9e77", alpha = 0.5) +
++   scale_thickness_shared() +
++   theme_ggdist()
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’, ‘package:dplyr’, ‘package:distributional’
+
+> nameEx("find_dotplot_binwidth")
+> ### * find_dotplot_binwidth
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: find_dotplot_binwidth
+> ### Title: Dynamically select a good bin width for a dotplot
+> ### Aliases: find_dotplot_binwidth
+> 
+> ### ** Examples
+> 
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> 
+> x = qnorm(ppoints(20))
+> binwidth = find_dotplot_binwidth(x, maxheight = 4, heightratio = 1)
+> binwidth
+[1] 0.755415
+> 
+> bin_df = bin_dots(x = x, y = 0, binwidth = binwidth, heightratio = 1)
+> bin_df
+            x         y bin
+1  -1.9599640 0.3777075   1
+2  -1.1331225 0.3777075   2
+3  -1.1331225 1.1331225   2
+4  -1.1331225 1.8885375   2
+5  -1.1331225 2.6439526   2
+6  -0.3777075 0.3777075   3
+7  -0.3777075 1.1331225   3
+8  -0.3777075 1.8885375   3
+9  -0.3777075 2.6439526   3
+10 -0.3777075 3.3993676   3
+11  0.3777075 0.3777075   4
+12  0.3777075 1.1331225   4
+13  0.3777075 1.8885375   4
+14  0.3777075 2.6439526   4
+15  0.3777075 3.3993676   4
+16  1.1331225 0.3777075   5
+17  1.1331225 1.1331225   5
+18  1.1331225 1.8885375   5
+19  1.1331225 2.6439526   5
+20  1.9599640 0.3777075   6
+> 
+> # we can manually plot the binning above, though this is only recommended
+> # if you are using find_dotplot_binwidth() and bin_dots() to build your own
+> # grob. For practical use it is much easier to use geom_dots(), which will
+> # automatically select good bin widths for you (and which uses
+> # find_dotplot_binwidth() and bin_dots() internally)
+> bin_df %>%
++   ggplot(aes(x = x, y = y)) +
++   geom_point(size = 4) +
++   coord_fixed()
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("geom_blur_dots")
+> ### * geom_blur_dots
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: geom_blur_dots
+> ### Title: Blurry dot plot (geom)
+> ### Aliases: geom_blur_dots
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (getRversion() >= "4.1" && requireNamespace("posterior", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ library(dplyr)
++ library(ggplot2)
++ 
++ theme_set(theme_ggdist())
++ 
++ set.seed(1234)
++ x = rnorm(1000)
++ 
++ # manually calculate quantiles and their MCSE
++ # this could also be done more succinctly with stat_mcse_dots()
++ p = ppoints(100)
++ df = data.frame(
++   q = quantile(x, p),
++   se = posterior::mcse_quantile(x, p)
++ )
++ 
++ df %>%
++   ggplot(aes(x = q, sd = se)) +
++   geom_blur_dots()
++ 
++ df %>%
++   ggplot(aes(x = q, sd = se)) +
++   # or blur = blur_interval(.width = .95) to set the interval width
++   geom_blur_dots(blur = "interval")
++ ## Don't show: 
++ }) # examplesIf
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> theme_set(theme_ggdist())
+> set.seed(1234)
+> x = rnorm(1000)
+> p = ppoints(100)
+> df = data.frame(q = quantile(x, p), se = posterior::mcse_quantile(x, p))
+> df %>% ggplot(aes(x = q, sd = se)) + geom_blur_dots()
+> df %>% ggplot(aes(x = q, sd = se)) + geom_blur_dots(blur = "interval")
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("geom_dots")
+> ### * geom_dots
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: geom_dots
+> ### Title: Dot plot (shortcut geom)
+> ### Aliases: geom_dots
+> 
+> ### ** Examples
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> 
+> theme_set(theme_ggdist())
+> 
+> set.seed(12345)
+> df = tibble(
++   g = rep(c("a", "b"), 200),
++   value = rnorm(400, c(0, 3), c(0.75, 1))
++ )
+> 
+> # orientation is detected automatically based on
+> # which axis is discrete
+> 
+> df %>%
++   ggplot(aes(x = value, y = g)) +
++   geom_dots()
+> 
+> df %>%
++   ggplot(aes(y = value, x = g)) +
++   geom_dots()
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("geom_dotsinterval")
+> ### * geom_dotsinterval
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: geom_dotsinterval
+> ### Title: Automatic dotplot + point + interval meta-geom
+> ### Aliases: geom_dotsinterval
+> 
+> ### ** Examples
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> 
+> theme_set(theme_ggdist())
+> 
+> set.seed(12345)
+> df = tibble(
++   g = rep(c("a", "b"), 200),
++   value = rnorm(400, c(0, 3), c(0.75, 1))
++ )
+> 
+> 
+> # orientation is detected automatically based on
+> # which axis is discrete
+> 
+> df %>%
++   ggplot(aes(x = value, y = g)) +
++   geom_dotsinterval()
+> 
+> df %>%
++   ggplot(aes(y = value, x = g)) +
++   geom_dotsinterval()
+> 
+> 
+> # stat_dots can summarize quantiles, creating quantile dotplots
+> 
+> data(RankCorr_u_tau, package = "ggdist")
+> 
+> RankCorr_u_tau %>%
++   ggplot(aes(x = u_tau, y = factor(i))) +
++   stat_dots(quantiles = 100)
+> 
+> # color and fill aesthetics can be mapped within the geom
+> # dotsinterval adds an interval
+> 
+> RankCorr_u_tau %>%
++   ggplot(aes(x = u_tau, y = factor(i), fill = after_stat(x > 6))) +
++   stat_dotsinterval(quantiles = 100)
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("geom_interval")
+> ### * geom_interval
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: geom_interval
+> ### Title: Multiple-interval plot (shortcut geom)
+> ### Aliases: geom_interval
+> 
+> ### ** Examples
+> 
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> 
+> theme_set(theme_ggdist())
+> 
+> data(RankCorr_u_tau, package = "ggdist")
+> 
+> # orientation is detected automatically based on
+> # use of xmin/xmax or ymin/ymax
+> 
+> RankCorr_u_tau %>%
++   group_by(i) %>%
++   median_qi(.width = c(.5, .8, .95, .99)) %>%
++   ggplot(aes(y = i, x = u_tau, xmin = .lower, xmax = .upper)) +
++   geom_interval() +
++   scale_color_brewer()
+> 
+> RankCorr_u_tau %>%
++   group_by(i) %>%
++   median_qi(.width = c(.5, .8, .95, .99)) %>%
++   ggplot(aes(x = i, y = u_tau, ymin = .lower, ymax = .upper)) +
++   geom_interval() +
++   scale_color_brewer()
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("geom_lineribbon")
+> ### * geom_lineribbon
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: geom_lineribbon
+> ### Title: Line + multiple-ribbon plots (ggplot geom)
+> ### Aliases: geom_lineribbon
+> 
+> ### ** Examples
+> 
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> 
+> theme_set(theme_ggdist())
+> 
+> set.seed(12345)
+> tibble(
++   x = rep(1:10, 100),
++   y = rnorm(1000, x)
++ ) %>%
++   group_by(x) %>%
++   median_qi(.width = c(.5, .8, .95)) %>%
++   ggplot(aes(x = x, y = y, ymin = .lower, ymax = .upper)) +
++   # automatically uses aes(fill = forcats::fct_rev(ordered(.width)))
++   geom_lineribbon() +
++   scale_fill_brewer()
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("geom_pointinterval")
+> ### * geom_pointinterval
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: geom_pointinterval
+> ### Title: Point + multiple-interval plot (shortcut geom)
+> ### Aliases: geom_pointinterval
+> 
+> ### ** Examples
+> 
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> 
+> data(RankCorr_u_tau, package = "ggdist")
+> 
+> # orientation is detected automatically based on
+> # use of xmin/xmax or ymin/ymax
+> 
+> RankCorr_u_tau %>%
++   group_by(i) %>%
++   median_qi(.width = c(.8, .95)) %>%
++   ggplot(aes(y = i, x = u_tau, xmin = .lower, xmax = .upper)) +
++   geom_pointinterval()
+> 
+> RankCorr_u_tau %>%
++   group_by(i) %>%
++   median_qi(.width = c(.8, .95)) %>%
++   ggplot(aes(x = i, y = u_tau, ymin = .lower, ymax = .upper)) +
++   geom_pointinterval()
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("geom_slab")
+> ### * geom_slab
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: geom_slab
+> ### Title: Slab (ridge) plot (shortcut geom)
+> ### Aliases: geom_slab
+> 
+> ### ** Examples
+> 
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> 
+> theme_set(theme_ggdist())
+> 
+> # we will manually demonstrate plotting a density with geom_slab(),
+> # though generally speaking this is easier to do using stat_slab(), which
+> # will determine sensible limits automatically and correctly adjust
+> # densities when using scale transformations
+> df = expand.grid(
++     mean = 1:3,
++     input = seq(-2, 6, length.out = 100)
++   ) %>%
++   mutate(
++     group = letters[4 - mean],
++     density = dnorm(input, mean, 1)
++   )
+> 
+> # orientation is detected automatically based on
+> # use of x or y
+> df %>%
++   ggplot(aes(y = group, x = input, thickness = density)) +
++   geom_slab()
+> 
+> df %>%
++   ggplot(aes(x = group, y = input, thickness = density)) +
++   geom_slab()
+> 
+> # RIDGE PLOTS
+> # "ridge" plots can be created by increasing the slab height and
+> # setting the slab color
+> df %>%
++   ggplot(aes(y = group, x = input, thickness = density)) +
++   geom_slab(height = 2, color = "black")
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("geom_slabinterval")
+> ### * geom_slabinterval
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: geom_slabinterval
+> ### Title: Slab + point + interval meta-geom
+> ### Aliases: geom_slabinterval
+> 
+> ### ** Examples
+> 
+> 
+> # geom_slabinterval() is typically not that useful on its own.
+> # See vignette("slabinterval") for a variety of examples of the use of its
+> # shortcut geoms and stats, which are more useful than using
+> # geom_slabinterval() directly.
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("geom_spike")
+> ### * geom_spike
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: geom_spike
+> ### Title: Spike plot (ggplot2 geom)
+> ### Aliases: geom_spike
+> 
+> ### ** Examples
+> 
+> library(ggplot2)
+> library(distributional)
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> 
+> # geom_spike is easiest to use with distributional or
+> # posterior::rvar objects
+> df = tibble(
++   d = dist_normal(1:2, 1:2), g = c("a", "b")
++ )
+> 
+> # annotate the density at the mean of a distribution
+> df %>% mutate(
++   mean = mean(d),
++   density(d, list(density_at_mean = mean))
++ ) %>%
++   ggplot(aes(y = g)) +
++   stat_slab(aes(xdist = d)) +
++   geom_spike(aes(x = mean, thickness = density_at_mean)) +
++   # need shared thickness scale so that stat_slab and geom_spike line up
++   scale_thickness_shared()
+> 
+> # annotate the endpoints of intervals of a distribution
+> # here we'll use an arrow instead of a point by setting size = 0
+> arrow_spec = arrow(angle = 45, type = "closed", length = unit(4, "pt"))
+> df %>% mutate(
++   median_qi(d, .width = 0.9),
++   density(d, list(density_lower = .lower, density_upper = .upper))
++ ) %>%
++   ggplot(aes(y = g)) +
++   stat_halfeye(aes(xdist = d), .width = 0.9, color = "gray35") +
++   geom_spike(
++     aes(x = .lower, thickness = density_lower),
++     size = 0, arrow = arrow_spec, color = "blue", linewidth = 0.75
++   ) +
++   geom_spike(
++     aes(x = .upper, thickness = density_upper),
++     size = 0, arrow = arrow_spec, color = "red", linewidth = 0.75
++   ) +
++   scale_thickness_shared()
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:dplyr’, ‘package:distributional’, ‘package:ggplot2’
+
+> nameEx("geom_swarm")
+> ### * geom_swarm
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: geom_swarm
+> ### Title: Beeswarm plot (shortcut geom)
+> ### Aliases: geom_swarm
+> 
+> ### ** Examples
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> 
+> theme_set(theme_ggdist())
+> 
+> set.seed(12345)
+> df = tibble(
++   g = rep(c("a", "b"), 200),
++   value = rnorm(400, c(0, 3), c(0.75, 1))
++ )
+> 
+> # orientation is detected automatically based on
+> # which axis is discrete
+> 
+> df %>%
++   ggplot(aes(x = value, y = g)) +
++   geom_swarm()
+> 
+> df %>%
++   ggplot(aes(y = value, x = g)) +
++   geom_swarm()
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("geom_weave")
+> ### * geom_weave
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: geom_weave
+> ### Title: Dot-weave plot (shortcut geom)
+> ### Aliases: geom_weave
+> 
+> ### ** Examples
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> 
+> theme_set(theme_ggdist())
+> 
+> set.seed(12345)
+> df = tibble(
++   g = rep(c("a", "b"), 200),
++   value = rnorm(400, c(0, 3), c(0.75, 1))
++ )
+> 
+> # orientation is detected automatically based on
+> # which axis is discrete
+> 
+> df %>%
++   ggplot(aes(x = value, y = g)) +
++   geom_weave()
+> 
+> df %>%
++   ggplot(aes(y = value, x = g)) +
++   geom_weave()
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("guide_rampbar")
+> ### * guide_rampbar
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: guide_rampbar
+> ### Title: Continuous guide for colour ramp scales (ggplot2 guide)
+> ### Aliases: guide_rampbar
+> 
+> ### ** Examples
+> 
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> library(distributional)
+> 
+> # The default guide for ramp scales is guide_legend(), which creates a
+> # discrete style scale:
+> tibble(d = dist_uniform(0, 1)) %>%
++   ggplot(aes(y = 0, xdist = d)) +
++   stat_slab(aes(fill_ramp = after_stat(x)), fill = "blue") +
++   scale_fill_ramp_continuous(from = "red")
+> 
+> # We can use guide_rampbar() to instead create a continuous guide, but
+> # it does not know what color to ramp to (defaults to "gray65"):
+> tibble(d = dist_uniform(0, 1)) %>%
++   ggplot(aes(y = 0, xdist = d)) +
++   stat_slab(aes(fill_ramp = after_stat(x)), fill = "blue") +
++   scale_fill_ramp_continuous(from = "red", guide = guide_rampbar())
+> 
+> # We can tell the guide what color to ramp to using the `to` argument:
+> tibble(d = dist_uniform(0, 1)) %>%
++   ggplot(aes(y = 0, xdist = d)) +
++   stat_slab(aes(fill_ramp = after_stat(x)), fill = "blue") +
++   scale_fill_ramp_continuous(from = "red", guide = guide_rampbar(to = "blue"))
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:distributional’, ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("interval_widths")
+> ### * interval_widths
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: interval_widths
+> ### Title: Nicely-spaced sets of interval widths
+> ### Aliases: interval_widths pretty_widths
+> 
+> ### ** Examples
+> 
+> library(ggplot2)
+> library(distributional)
+> 
+> interval_widths(1)   # 0.9
+[1] 0.9
+> # this is roughly +/- 1 SD and +/- 2 SD
+> interval_widths(2)   # 0.672..., 0.95
+[1] 0.672905 0.950000
+> interval_widths(3)   # 0.521..., 0.844..., 0.966...
+[1] 0.5218917 0.8440126 0.9666667
+> 
+> # "pretty" widths may be useful for legends with a small number of widths
+> pretty_widths(1)     # 0.95
+[1] 0.95
+> pretty_widths(2)     # 0.65, 0.95
+[1] 0.65 0.95
+> pretty_widths(3)     # 0.50, 0.80, 0.95
+[1] 0.50 0.80 0.95
+> 
+> # larger numbers of intervals can be useful for plots
+> ggplot(data.frame(x = 1:20/20)) +
++   aes(x, ydist = dist_normal((x * 5)^2, 1 + x * 5)) +
++   stat_lineribbon(.width = pretty_widths(10))
+> 
+> # large numbers of intervals can be used to create gradients -- particularly
+> # useful if you shade ribbons according to density (not interval width)
+> # (this is currently experimental)
+> withr::with_options(list(ggdist.experimental.slab_data_in_intervals = TRUE), print(
++   ggplot(data.frame(x = 1:20/20)) +
++     aes(x, ydist = dist_normal((x * 5)^2, 1 + x * 5)) +
++     stat_lineribbon(
++       aes(fill_ramp = after_stat(ave(pdf_min, level))),
++       .width = interval_widths(40),
++       fill = "gray50"
++     ) +
++     theme_ggdist()
++ ))
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:distributional’, ‘package:ggplot2’
+
+> nameEx("lkjcorr_marginal")
+> ### * lkjcorr_marginal
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: lkjcorr_marginal
+> ### Title: Marginal distribution of a single correlation from an LKJ
+> ###   distribution
+> ### Aliases: lkjcorr_marginal dlkjcorr_marginal plkjcorr_marginal
+> ###   qlkjcorr_marginal rlkjcorr_marginal
+> 
+> ### ** Examples
+> 
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> 
+> theme_set(theme_ggdist())
+> 
+> expand.grid(
++   eta = 1:6,
++   K = 2:6
++ ) %>%
++   ggplot(aes(y = ordered(eta), dist = "lkjcorr_marginal", arg1 = K, arg2 = eta)) +
++   stat_slab() +
++   facet_grid(~ paste0(K, "x", K)) +
++   scale_y_discrete(limits = rev) +
++   labs(
++     title = paste0(
++       "Marginal correlation for LKJ(eta) prior on different matrix sizes:\n",
++       "dlkjcorr_marginal(K, eta)"
++     ),
++     subtitle = "Correlation matrix size (KxK)",
++     y = "eta",
++     x = "Marginal correlation"
++   ) +
++   theme(axis.title = element_text(hjust = 0))
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("marginalize_lkjcorr")
+> ### * marginalize_lkjcorr
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: marginalize_lkjcorr
+> ### Title: Turn spec for LKJ distribution into spec for marginal LKJ
+> ###   distribution
+> ### Aliases: marginalize_lkjcorr
+> 
+> ### ** Examples
+> 
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> 
+> # Say we have an LKJ(3) prior on a 2x2 correlation matrix. We can visualize
+> # its marginal distribution as follows...
+> data.frame(prior = "lkjcorr(3)") %>%
++   parse_dist(prior) %>%
++   marginalize_lkjcorr(K = 2) %>%
++   ggplot(aes(y = prior, xdist = .dist_obj)) +
++   stat_halfeye() +
++   xlim(-1, 1) +
++   xlab("Marginal correlation for LKJ(3) prior on 2x2 correlation matrix")
+> 
+> # Say our prior list has multiple LKJ priors on correlation matrices
+> # of different sizes, we can supply a predicate expression to select
+> # only those rows we want to modify
+> data.frame(coef = c("a", "b"), prior = "lkjcorr(3)") %>%
++   parse_dist(prior) %>%
++   marginalize_lkjcorr(K = 2, coef == "a") %>%
++   marginalize_lkjcorr(K = 4, coef == "b")
+  coef      prior            .dist .args              .dist_obj
+1    a lkjcorr(3) lkjcorr_marginal  2, 3 lkjcorr_marginal(2, 3)
+2    b lkjcorr(3) lkjcorr_marginal  4, 3 lkjcorr_marginal(4, 3)
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("parse_dist")
+> ### * parse_dist
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: parse_dist
+> ### Title: Parse distribution specifications into columns of a data frame
+> ### Aliases: parse_dist parse_dist.default parse_dist.data.frame
+> ###   parse_dist.character parse_dist.factor parse_dist.brmsprior
+> ###   r_dist_name
+> 
+> ### ** Examples
+> 
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> 
+> # parse dist can operate on strings directly...
+> parse_dist(c("normal(0,1)", "student_t(3,0,1)"))
+# A tibble: 2 × 3
+  .dist     .args               .dist_obj
+  <chr>     <list>                 <dist>
+1 norm      <list [2]>         norm(0, 1)
+2 student_t <list [3]> student_t(3, 0, 1)
+> 
+> # ... or on columns of a data frame, where it adds the
+> # parsed specs back on as columns
+> data.frame(prior = c("normal(0,1)", "student_t(3,0,1)")) %>%
++   parse_dist(prior)
+             prior     .dist   .args          .dist_obj
+1      normal(0,1)      norm    0, 1         norm(0, 1)
+2 student_t(3,0,1) student_t 3, 0, 1 student_t(3, 0, 1)
+> 
+> # parse_dist is particularly useful with the output of brms::prior(),
+> # which follows the same format as above
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:dplyr’
+
+> nameEx("partial_colour_ramp")
+> ### * partial_colour_ramp
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: partial_colour_ramp
+> ### Title: Partial colour ramp (datatype)
+> ### Aliases: partial_colour_ramp
+> 
+> ### ** Examples
+> 
+> pcr = partial_colour_ramp(c(0, 0.25, 0.75, 1), "red")
+> pcr
+<partial_colour_ramp[4]>
+[1] [0 from red]    [0.25 from red] [0.75 from red] [1 from red]   
+> 
+> ramp_colours("blue", pcr)
+[1] "#FF0000" "#E80050" "#9A00C3" "#0000FF"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("point_interval")
+> ### * point_interval
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: point_interval
+> ### Title: Point and interval summaries for tidy data frames of draws from
+> ###   distributions
+> ### Aliases: point_interval point_interval.default point_interval.tbl_df
+> ###   point_interval.numeric point_interval.rvar
+> ###   point_interval.distribution qi ll ul hdi Mode Mode.default Mode.rvar
+> ###   Mode.distribution hdci mean_qi median_qi mode_qi mean_ll median_ll
+> ###   mode_ll mean_ul median_ul mode_ul mean_hdi median_hdi mode_hdi
+> ###   mean_hdci median_hdci mode_hdci
+> 
+> ### ** Examples
+> 
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> 
+> set.seed(123)
+> 
+> rnorm(1000) %>%
++   median_qi()
+            y      ymin     ymax .width .point .interval
+1 0.009209639 -1.941554 2.037887   0.95 median        qi
+> 
+> data.frame(x = rnorm(1000)) %>%
++   median_qi(x, .width = c(.50, .80, .95))
+# A tibble: 3 × 6
+       x .lower .upper .width .point .interval
+   <dbl>  <dbl>  <dbl>  <dbl> <chr>  <chr>    
+1 0.0549 -0.653  0.753   0.5  median qi       
+2 0.0549 -1.24   1.34    0.8  median qi       
+3 0.0549 -1.99   1.91    0.95 median qi       
+> 
+> data.frame(
++     x = rnorm(1000),
++     y = rnorm(1000, mean = 2, sd = 2)
++   ) %>%
++   median_qi(x, y)
+            x   x.lower  x.upper        y   y.lower  y.upper .width .point
+1 -0.05057431 -2.012529 1.934141 1.983618 -1.946229 5.947635   0.95 median
+  .interval
+1        qi
+> 
+> data.frame(
++     x = rnorm(1000),
++     group = "a"
++   ) %>%
++   rbind(data.frame(
++     x = rnorm(1000, mean = 2, sd = 2),
++     group = "b")
++   ) %>%
++   group_by(group) %>%
++   median_qi(.width = c(.50, .80, .95))
+# A tibble: 6 × 7
+  group       x .lower .upper .width .point .interval
+  <chr>   <dbl>  <dbl>  <dbl>  <dbl> <chr>  <chr>    
+1 a     -0.0328 -0.707  0.636   0.5  median qi       
+2 b      2.06    0.759  3.44    0.5  median qi       
+3 a     -0.0328 -1.27   1.23    0.8  median qi       
+4 b      2.06   -0.559  4.48    0.8  median qi       
+5 a     -0.0328 -2.00   1.84    0.95 median qi       
+6 b      2.06   -1.75   5.91    0.95 median qi       
+> 
+> multimodal_draws = data.frame(
++     x = c(rnorm(5000, 0, 1), rnorm(2500, 4, 1))
++   )
+> 
+> multimodal_draws %>%
++   mode_hdi(.width = c(.66, .95))
+# A tibble: 3 × 6
+        x .lower .upper .width .point .interval
+    <dbl>  <dbl>  <dbl>  <dbl> <chr>  <chr>    
+1 -0.0938  -1.30   1.30   0.66 mode   hdi      
+2 -0.0938   3.50   4.44   0.66 mode   hdi      
+3 -0.0938  -1.72   5.50   0.95 mode   hdi      
+> 
+> multimodal_draws %>%
++   ggplot(aes(x = x, y = 0)) +
++   stat_halfeye(point_interval = mode_hdi, .width = c(.66, .95))
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("position_dodgejust")
+> ### * position_dodgejust
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: position_dodgejust
+> ### Title: Dodge overlapping objects side-to-side, preserving justification
+> ### Aliases: position_dodgejust
+> 
+> ### ** Examples
+> 
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> library(distributional)
+> 
+> dist_df = tribble(
++   ~group, ~subgroup, ~mean, ~sd,
++   1,          "h",     5,   1,
++   2,          "h",     7,   1.5,
++   3,          "h",     8,   1,
++   3,          "i",     9,   1,
++   3,          "j",     7,   1
++ )
+> 
+> # An example with normal "dodge" positioning
+> # Notice how dodge points are placed in the center of their bounding boxes,
+> # which can cause slabs to be positioned outside their bounds.
+> dist_df %>%
++   ggplot(aes(
++     x = factor(group), ydist = dist_normal(mean, sd),
++     fill = subgroup
++   )) +
++   stat_halfeye(
++     position = "dodge"
++   ) +
++   geom_rect(
++     aes(xmin = group, xmax = group + 1, ymin = 2, ymax = 13, color = subgroup),
++     position = "dodge",
++     data = . %>% filter(group == 3),
++     alpha = 0.1
++   ) +
++   geom_point(
++     aes(x = group, y = 7.5, color = subgroup),
++     position = position_dodge(width = 1),
++     data = . %>% filter(group == 3),
++     shape = 1,
++     size = 4,
++     stroke = 1.5
++   ) +
++   scale_fill_brewer(palette = "Set2") +
++   scale_color_brewer(palette = "Dark2")
+> 
+> # This same example with "dodgejust" positioning. For the points we
+> # supply a justification parameter to position_dodgejust which mimics the
+> # justification parameter of stat_halfeye, ensuring that they are
+> # placed appropriately. On slabinterval family geoms, position_dodgejust()
+> # will automatically detect the appropriate justification.
+> dist_df %>%
++   ggplot(aes(
++     x = factor(group), ydist = dist_normal(mean, sd),
++     fill = subgroup
++   )) +
++   stat_halfeye(
++     position = "dodgejust"
++   ) +
++   geom_rect(
++     aes(xmin = group, xmax = group + 1, ymin = 2, ymax = 13, color = subgroup),
++     position = "dodgejust",
++     data = . %>% filter(group == 3),
++     alpha = 0.1
++   ) +
++   geom_point(
++     aes(x = group, y = 7.5, color = subgroup),
++     position = position_dodgejust(width = 1, justification = 0),
++     data = . %>% filter(group == 3),
++     shape = 1,
++     size = 4,
++     stroke = 1.5
++   ) +
++   scale_fill_brewer(palette = "Set2") +
++   scale_color_brewer(palette = "Dark2")
+> 
+> 
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:distributional’, ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("ramp_colours")
+> ### * ramp_colours
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: ramp_colours
+> ### Title: Apply partial colour ramps
+> ### Aliases: ramp_colours
+> 
+> ### ** Examples
+> 
+> pcr = partial_colour_ramp(c(0, 0.25, 0.75, 1), "red")
+> pcr
+<partial_colour_ramp[4]>
+[1] [0 from red]    [0.25 from red] [0.75 from red] [1 from red]   
+> 
+> ramp_colours("blue", pcr)
+[1] "#FF0000" "#E80050" "#9A00C3" "#0000FF"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("scale_colour_ramp")
+> ### * scale_colour_ramp
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: scale_colour_ramp
+> ### Title: Secondary color scale that ramps from another color (ggplot2
+> ###   scale)
+> ### Aliases: scale_colour_ramp scale_colour_ramp_continuous
+> ###   scale_color_ramp scale_fill_ramp scale_color_ramp_continuous
+> ###   scale_colour_ramp_discrete scale_color_ramp_discrete
+> ###   scale_fill_ramp_continuous scale_fill_ramp_discrete
+> 
+> ### ** Examples
+> 
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> library(distributional)
+> 
+> tibble(d = dist_uniform(0, 1)) %>%
++   ggplot(aes(y = 0, xdist = d)) +
++   stat_slab(aes(fill_ramp = after_stat(x)))
+> 
+> tibble(d = dist_uniform(0, 1)) %>%
++   ggplot(aes(y = 0, xdist = d)) +
++   stat_slab(aes(fill_ramp = after_stat(x)), fill = "blue") +
++   scale_fill_ramp_continuous(from = "red")
+> 
+> # you can invert the order of `range` to change the order of the blend
+> tibble(d = dist_normal(0, 1)) %>%
++   ggplot(aes(y = 0, xdist = d)) +
++   stat_slab(aes(fill_ramp = after_stat(cut_cdf_qi(cdf))), fill = "blue") +
++   scale_fill_ramp_discrete(from = "red", range = c(1, 0))
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:distributional’, ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("scale_side_mirrored")
+> ### * scale_side_mirrored
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: scale_side_mirrored
+> ### Title: Side scale for mirrored slabs (ggplot2 scale)
+> ### Aliases: scale_side_mirrored
+> 
+> ### ** Examples
+> 
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> 
+> set.seed(1234)
+> data.frame(
++   x = rnorm(400, c(1,4)),
++   g = c("a","b")
++ ) %>%
++   ggplot(aes(x, fill = g, side = g)) +
++   geom_weave(linewidth = 0, scale = 0.5) +
++   scale_side_mirrored()
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("scale_thickness")
+> ### * scale_thickness
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: scale_thickness
+> ### Title: Slab thickness scale (ggplot2 scale)
+> ### Aliases: scale_thickness scale_thickness_shared
+> ###   scale_thickness_identity
+> 
+> ### ** Examples
+> 
+> library(distributional)
+> library(ggplot2)
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> 
+> prior_post = data.frame(
++   prior = dist_normal(0, 1),
++   posterior = dist_normal(0.1, 0.5)
++ )
+> 
+> # By default, separate geoms have their own thickness scales, which means
+> # distributions plotted using two separate geoms will not have their slab
+> # functions drawn on the same scale (thus here, the two distributions have
+> # different areas under their density curves):
+> prior_post %>%
++   ggplot() +
++   stat_halfeye(aes(xdist = posterior)) +
++   stat_slab(aes(xdist = prior), fill = NA, color = "red")
+> 
+> # For this kind of prior/posterior chart, it makes more sense to have the
+> # densities on the same scale; thus, the areas under both would be the same.
+> # We can do that using scale_thickness_shared():
+> prior_post %>%
++   ggplot() +
++   stat_halfeye(aes(xdist = posterior)) +
++   stat_slab(aes(xdist = prior), fill = NA, color = "#e41a1c") +
++   scale_thickness_shared()
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:dplyr’, ‘package:ggplot2’, ‘package:distributional’
+
+> nameEx("smooth_density")
+> ### * smooth_density
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: smooth_density
+> ### Title: Smooth dot positions in a dotplot using a kernel density
+> ###   estimator ("density dotplots")
+> ### Aliases: smooth_density smooth_bounded smooth_unbounded
+> 
+> ### ** Examples
+> 
+> 
+> library(ggplot2)
+> 
+> set.seed(1234)
+> x = rnorm(1000)
+> 
+> # basic dotplot is noisy
+> ggplot(data.frame(x), aes(x)) +
++   geom_dots()
+> 
+> # density dotplot is smoother, but does move points (most noticeable
+> # in areas of low density)
+> ggplot(data.frame(x), aes(x)) +
++   geom_dots(smooth = "unbounded")
+> 
+> # you can adjust the kernel and bandwidth...
+> ggplot(data.frame(x), aes(x)) +
++   geom_dots(smooth = smooth_unbounded(kernel = "triangular", adjust = 0.5))
+> 
+> # for bounded data, you should use the bounded smoother
+> x_beta = rbeta(1000, 0.5, 0.5)
+> 
+> ggplot(data.frame(x_beta), aes(x_beta)) +
++   geom_dots(smooth = smooth_bounded(bounds = c(0, 1)))
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’
+
+> nameEx("smooth_discrete")
+> ### * smooth_discrete
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: smooth_discrete
+> ### Title: Smooth dot positions in a dotplot of discrete values ("bar
+> ###   dotplots")
+> ### Aliases: smooth_discrete smooth_bar
+> 
+> ### ** Examples
+> 
+> 
+> library(ggplot2)
+> 
+> set.seed(1234)
+> x = rpois(1000, 2)
+> 
+> # automatic binwidth in basic dotplot on large counts in discrete
+> # distributions is very small
+> ggplot(data.frame(x), aes(x)) +
++   geom_dots()
+> 
+> # NOTE: It is now recommended to use layout = "bar" instead of
+> # smooth = "discrete" or smooth = "bar"; the latter are retained because
+> # they can sometimes be useful in combination with other layouts for
+> # more specialized (but finicky) applications.
+> ggplot(data.frame(x), aes(x)) +
++   geom_dots(layout = "bar")
+> 
+> # smooth_discrete() constructs wider bins of dots
+> ggplot(data.frame(x), aes(x)) +
++   geom_dots(smooth = "discrete")
+> 
+> # smooth_bar() is an alternative approach to rectangular layouts
+> ggplot(data.frame(x), aes(x)) +
++   geom_dots(smooth = "bar")
+> 
+> # adjust the shape by changing the kernel or the width. epanechnikov
+> # works well with side = "both"
+> ggplot(data.frame(x), aes(x)) +
++   geom_dots(smooth = smooth_discrete(kernel = "epanechnikov", width = 0.8), side = "both")
+> 
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’
+
+> nameEx("stat_ccdfinterval")
+> ### * stat_ccdfinterval
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: stat_ccdfinterval
+> ### Title: CCDF bar plot (shortcut stat)
+> ### Aliases: stat_ccdfinterval
+> 
+> ### ** Examples
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> library(distributional)
+> 
+> theme_set(theme_ggdist())
+> 
+> # ON SAMPLE DATA
+> set.seed(1234)
+> df = data.frame(
++   group = c("a", "b", "c"),
++   value = rnorm(1500, mean = c(5, 7, 9), sd = c(1, 1.5, 1))
++ )
+> df %>%
++   ggplot(aes(x = value, y = group)) +
++   stat_ccdfinterval() +
++   expand_limits(x = 0)
+> 
+> # ON ANALYTICAL DISTRIBUTIONS
+> dist_df = data.frame(
++   group = c("a", "b", "c"),
++   mean =  c(  5,   7,   8),
++   sd =    c(  1, 1.5,   1)
++ )
+> # Vectorized distribution types, like distributional::dist_normal()
+> # and posterior::rvar(), can be used with the `xdist` / `ydist` aesthetics
+> dist_df %>%
++   ggplot(aes(y = group, xdist = dist_normal(mean, sd))) +
++   stat_ccdfinterval() +
++   expand_limits(x = 0)
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:distributional’, ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("stat_cdfinterval")
+> ### * stat_cdfinterval
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: stat_cdfinterval
+> ### Title: CDF bar plot (shortcut stat)
+> ### Aliases: stat_cdfinterval
+> 
+> ### ** Examples
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> library(distributional)
+> 
+> theme_set(theme_ggdist())
+> 
+> # ON SAMPLE DATA
+> set.seed(1234)
+> df = data.frame(
++   group = c("a", "b", "c"),
++   value = rnorm(1500, mean = c(5, 7, 9), sd = c(1, 1.5, 1))
++ )
+> df %>%
++   ggplot(aes(x = value, y = group)) +
++   stat_cdfinterval()
+> 
+> # ON ANALYTICAL DISTRIBUTIONS
+> dist_df = data.frame(
++   group = c("a", "b", "c"),
++   mean =  c(  5,   7,   8),
++   sd =    c(  1, 1.5,   1)
++ )
+> # Vectorized distribution types, like distributional::dist_normal()
+> # and posterior::rvar(), can be used with the `xdist` / `ydist` aesthetics
+> dist_df %>%
++   ggplot(aes(y = group, xdist = dist_normal(mean, sd))) +
++   stat_cdfinterval()
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:distributional’, ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("stat_dots")
+> ### * stat_dots
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: stat_dots
+> ### Title: Dot plot (shortcut stat)
+> ### Aliases: stat_dots
+> 
+> ### ** Examples
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> library(distributional)
+> 
+> theme_set(theme_ggdist())
+> 
+> # ON SAMPLE DATA
+> set.seed(12345)
+> tibble(
++   x = rep(1:10, 100),
++   y = rnorm(1000, x)
++ ) %>%
++   ggplot(aes(x = x, y = y)) +
++   stat_dots()
+> 
+> # ON ANALYTICAL DISTRIBUTIONS
+> # Vectorized distribution types, like distributional::dist_normal()
+> # and posterior::rvar(), can be used with the `xdist` / `ydist` aesthetics
+> tibble(
++   x = 1:10,
++   sd = seq(1, 3, length.out = 10)
++ ) %>%
++   ggplot(aes(x = x, ydist = dist_normal(x, sd))) +
++   stat_dots(quantiles = 50)
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:distributional’, ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("stat_dotsinterval")
+> ### * stat_dotsinterval
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: stat_dotsinterval
+> ### Title: Dots + point + interval plot (shortcut stat)
+> ### Aliases: stat_dotsinterval
+> 
+> ### ** Examples
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> library(distributional)
+> 
+> theme_set(theme_ggdist())
+> 
+> # ON SAMPLE DATA
+> set.seed(12345)
+> tibble(
++   x = rep(1:10, 100),
++   y = rnorm(1000, x)
++ ) %>%
++   ggplot(aes(x = x, y = y)) +
++   stat_dotsinterval()
+> 
+> # ON ANALYTICAL DISTRIBUTIONS
+> # Vectorized distribution types, like distributional::dist_normal()
+> # and posterior::rvar(), can be used with the `xdist` / `ydist` aesthetics
+> tibble(
++   x = 1:10,
++   sd = seq(1, 3, length.out = 10)
++ ) %>%
++   ggplot(aes(x = x, ydist = dist_normal(x, sd))) +
++   stat_dotsinterval(quantiles = 50)
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:distributional’, ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("stat_eye")
+> ### * stat_eye
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: stat_eye
+> ### Title: Eye (violin + interval) plot (shortcut stat)
+> ### Aliases: stat_eye
+> 
+> ### ** Examples
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> library(distributional)
+> 
+> theme_set(theme_ggdist())
+> 
+> # ON SAMPLE DATA
+> set.seed(1234)
+> df = data.frame(
++   group = c("a", "b", "c"),
++   value = rnorm(1500, mean = c(5, 7, 9), sd = c(1, 1.5, 1))
++ )
+> df %>%
++   ggplot(aes(x = value, y = group)) +
++   stat_eye()
+> 
+> # ON ANALYTICAL DISTRIBUTIONS
+> dist_df = data.frame(
++   group = c("a", "b", "c"),
++   mean =  c(  5,   7,   8),
++   sd =    c(  1, 1.5,   1)
++ )
+> # Vectorized distribution types, like distributional::dist_normal()
+> # and posterior::rvar(), can be used with the `xdist` / `ydist` aesthetics
+> dist_df %>%
++   ggplot(aes(y = group, xdist = dist_normal(mean, sd))) +
++   stat_eye()
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:distributional’, ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("stat_gradientinterval")
+> ### * stat_gradientinterval
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: stat_gradientinterval
+> ### Title: Gradient + interval plot (shortcut stat)
+> ### Aliases: stat_gradientinterval
+> 
+> ### ** Examples
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> library(distributional)
+> 
+> theme_set(theme_ggdist())
+> 
+> # ON SAMPLE DATA
+> set.seed(1234)
+> df = data.frame(
++   group = c("a", "b", "c"),
++   value = rnorm(1500, mean = c(5, 7, 9), sd = c(1, 1.5, 1))
++ )
+> df %>%
++   ggplot(aes(x = value, y = group)) +
++   stat_gradientinterval()
+> 
+> # ON ANALYTICAL DISTRIBUTIONS
+> dist_df = data.frame(
++   group = c("a", "b", "c"),
++   mean =  c(  5,   7,   8),
++   sd =    c(  1, 1.5,   1)
++ )
+> # Vectorized distribution types, like distributional::dist_normal()
+> # and posterior::rvar(), can be used with the `xdist` / `ydist` aesthetics
+> dist_df %>%
++   ggplot(aes(y = group, xdist = dist_normal(mean, sd))) +
++   stat_gradientinterval()
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:distributional’, ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("stat_halfeye")
+> ### * stat_halfeye
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: stat_halfeye
+> ### Title: Half-eye (density + interval) plot (shortcut stat)
+> ### Aliases: stat_halfeye
+> 
+> ### ** Examples
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> library(distributional)
+> 
+> theme_set(theme_ggdist())
+> 
+> # ON SAMPLE DATA
+> set.seed(1234)
+> df = data.frame(
++   group = c("a", "b", "c"),
++   value = rnorm(1500, mean = c(5, 7, 9), sd = c(1, 1.5, 1))
++ )
+> df %>%
++   ggplot(aes(x = value, y = group)) +
++   stat_halfeye()
+> 
+> # ON ANALYTICAL DISTRIBUTIONS
+> dist_df = data.frame(
++   group = c("a", "b", "c"),
++   mean =  c(  5,   7,   8),
++   sd =    c(  1, 1.5,   1)
++ )
+> # Vectorized distribution types, like distributional::dist_normal()
+> # and posterior::rvar(), can be used with the `xdist` / `ydist` aesthetics
+> dist_df %>%
++   ggplot(aes(y = group, xdist = dist_normal(mean, sd))) +
++   stat_halfeye()
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:distributional’, ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("stat_histinterval")
+> ### * stat_histinterval
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: stat_histinterval
+> ### Title: Histogram + interval plot (shortcut stat)
+> ### Aliases: stat_histinterval
+> 
+> ### ** Examples
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> library(distributional)
+> 
+> theme_set(theme_ggdist())
+> 
+> # ON SAMPLE DATA
+> set.seed(1234)
+> df = data.frame(
++   group = c("a", "b", "c"),
++   value = rnorm(1500, mean = c(5, 7, 9), sd = c(1, 1.5, 1))
++ )
+> df %>%
++   ggplot(aes(x = value, y = group)) +
++   stat_histinterval()
+> 
+> # ON ANALYTICAL DISTRIBUTIONS
+> dist_df = data.frame(
++   group = c("a", "b", "c"),
++   mean =  c(  5,   7,   8),
++   sd =    c(  1, 1.5,   1)
++ )
+> # Vectorized distribution types, like distributional::dist_normal()
+> # and posterior::rvar(), can be used with the `xdist` / `ydist` aesthetics
+> dist_df %>%
++   ggplot(aes(y = group, xdist = dist_normal(mean, sd))) +
++   stat_histinterval()
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:distributional’, ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("stat_interval")
+> ### * stat_interval
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: stat_interval
+> ### Title: Multiple-interval plot (shortcut stat)
+> ### Aliases: stat_interval
+> 
+> ### ** Examples
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> library(distributional)
+> 
+> theme_set(theme_ggdist())
+> 
+> # ON SAMPLE DATA
+> set.seed(1234)
+> df = data.frame(
++   group = c("a", "b", "c"),
++   value = rnorm(1500, mean = c(5, 7, 9), sd = c(1, 1.5, 1))
++ )
+> df %>%
++   ggplot(aes(x = value, y = group)) +
++   stat_interval() +
++   scale_color_brewer()
+> 
+> # ON ANALYTICAL DISTRIBUTIONS
+> dist_df = data.frame(
++   group = c("a", "b", "c"),
++   mean =  c(  5,   7,   8),
++   sd =    c(  1, 1.5,   1)
++ )
+> # Vectorized distribution types, like distributional::dist_normal()
+> # and posterior::rvar(), can be used with the `xdist` / `ydist` aesthetics
+> dist_df %>%
++   ggplot(aes(y = group, xdist = dist_normal(mean, sd))) +
++   stat_interval() +
++   scale_color_brewer()
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:distributional’, ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("stat_lineribbon")
+> ### * stat_lineribbon
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: stat_lineribbon
+> ### Title: Line + multiple-ribbon plot (shortcut stat)
+> ### Aliases: stat_lineribbon
+> 
+> ### ** Examples
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> library(distributional)
+> 
+> theme_set(theme_ggdist())
+> 
+> # ON SAMPLE DATA
+> set.seed(12345)
+> tibble(
++   x = rep(1:10, 100),
++   y = rnorm(1000, x)
++ ) %>%
++   ggplot(aes(x = x, y = y)) +
++   stat_lineribbon() +
++   scale_fill_brewer()
+> 
+> # ON ANALYTICAL DISTRIBUTIONS
+> # Vectorized distribution types, like distributional::dist_normal()
+> # and posterior::rvar(), can be used with the `xdist` / `ydist` aesthetics
+> tibble(
++   x = 1:10,
++   sd = seq(1, 3, length.out = 10)
++ ) %>%
++   ggplot(aes(x = x, ydist = dist_normal(x, sd))) +
++   stat_lineribbon() +
++   scale_fill_brewer()
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:distributional’, ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("stat_mcse_dots")
+> ### * stat_mcse_dots
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: stat_mcse_dots
+> ### Title: Blurry MCSE dot plot (stat)
+> ### Aliases: stat_mcse_dots
+> 
+> ### ** Examples
+> 
+> ## Don't show: 
+> if (getRversion() >= "4.1" && requireNamespace("posterior", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)({ # examplesIf
++ ## End(Don't show)
++ library(dplyr)
++ library(ggplot2)
++ 
++ theme_set(theme_ggdist())
++ 
++ set.seed(1234)
++ data.frame(x = rnorm(1000)) %>%
++   ggplot(aes(x = x)) +
++   stat_mcse_dots(quantiles = 100, layout = "weave")
++ ## Don't show: 
++ }) # examplesIf
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> theme_set(theme_ggdist())
+> set.seed(1234)
+> data.frame(x = rnorm(1000)) %>% ggplot(aes(x = x)) + stat_mcse_dots(quantiles = 100, 
++     layout = "weave")
+> ## End(Don't show)
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("stat_pointinterval")
+> ### * stat_pointinterval
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: stat_pointinterval
+> ### Title: Point + multiple-interval plot (shortcut stat)
+> ### Aliases: stat_pointinterval
+> 
+> ### ** Examples
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> library(distributional)
+> 
+> theme_set(theme_ggdist())
+> 
+> # ON SAMPLE DATA
+> set.seed(1234)
+> df = data.frame(
++   group = c("a", "b", "c"),
++   value = rnorm(1500, mean = c(5, 7, 9), sd = c(1, 1.5, 1))
++ )
+> df %>%
++   ggplot(aes(x = value, y = group)) +
++   stat_pointinterval()
+> 
+> # ON ANALYTICAL DISTRIBUTIONS
+> dist_df = data.frame(
++   group = c("a", "b", "c"),
++   mean =  c(  5,   7,   8),
++   sd =    c(  1, 1.5,   1)
++ )
+> # Vectorized distribution types, like distributional::dist_normal()
+> # and posterior::rvar(), can be used with the `xdist` / `ydist` aesthetics
+> dist_df %>%
++   ggplot(aes(y = group, xdist = dist_normal(mean, sd))) +
++   stat_pointinterval()
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:distributional’, ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("stat_ribbon")
+> ### * stat_ribbon
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: stat_ribbon
+> ### Title: Multiple-ribbon plot (shortcut stat)
+> ### Aliases: stat_ribbon
+> 
+> ### ** Examples
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> library(distributional)
+> 
+> theme_set(theme_ggdist())
+> 
+> # ON SAMPLE DATA
+> set.seed(12345)
+> tibble(
++   x = rep(1:10, 100),
++   y = rnorm(1000, x)
++ ) %>%
++   ggplot(aes(x = x, y = y)) +
++   stat_ribbon() +
++   scale_fill_brewer()
+> 
+> # ON ANALYTICAL DISTRIBUTIONS
+> # Vectorized distribution types, like distributional::dist_normal()
+> # and posterior::rvar(), can be used with the `xdist` / `ydist` aesthetics
+> tibble(
++   x = 1:10,
++   sd = seq(1, 3, length.out = 10)
++ ) %>%
++   ggplot(aes(x = x, ydist = dist_normal(x, sd))) +
++   stat_ribbon() +
++   scale_fill_brewer()
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:distributional’, ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("stat_slab")
+> ### * stat_slab
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: stat_slab
+> ### Title: Slab (ridge) plot (shortcut stat)
+> ### Aliases: stat_slab
+> 
+> ### ** Examples
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> library(distributional)
+> 
+> theme_set(theme_ggdist())
+> 
+> # ON SAMPLE DATA
+> set.seed(1234)
+> df = data.frame(
++   group = c("a", "b", "c"),
++   value = rnorm(1500, mean = c(5, 7, 9), sd = c(1, 1.5, 1))
++ )
+> df %>%
++   ggplot(aes(x = value, y = group)) +
++   stat_slab()
+> 
+> # ON ANALYTICAL DISTRIBUTIONS
+> dist_df = data.frame(
++   group = c("a", "b", "c"),
++   mean =  c(  5,   7,   8),
++   sd =    c(  1, 1.5,   1)
++ )
+> # Vectorized distribution types, like distributional::dist_normal()
+> # and posterior::rvar(), can be used with the `xdist` / `ydist` aesthetics
+> dist_df %>%
++   ggplot(aes(y = group, xdist = dist_normal(mean, sd))) +
++   stat_slab()
+> 
+> # RIDGE PLOTS
+> # "ridge" plots can be created by expanding the slabs to the limits of the plot
+> # (expand = TRUE), allowing the density estimator to be nonzero outside the
+> # limits of the data (trim = FALSE), and increasing the height of the slabs.
+> data.frame(
++   group = letters[1:3],
++   value = rnorm(3000, 3:1)
++ ) %>%
++   ggplot(aes(y = group, x = value)) +
++   stat_slab(color = "black", expand = TRUE, trim = FALSE, height = 2)
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:distributional’, ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("stat_slabinterval")
+> ### * stat_slabinterval
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: stat_slabinterval
+> ### Title: Slab + interval plots for sample data and analytical
+> ###   distributions (ggplot stat)
+> ### Aliases: stat_slabinterval
+> 
+> ### ** Examples
+> 
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> library(distributional)
+> 
+> theme_set(theme_ggdist())
+> 
+> 
+> # EXAMPLES ON SAMPLE DATA
+> set.seed(1234)
+> df = data.frame(
++   group = c("a", "b", "c", "c", "c"),
++   value = rnorm(2500, mean = c(5, 7, 9, 9, 9), sd = c(1, 1.5, 1, 1, 1))
++ )
+> 
+> # here are vertical eyes:
+> df %>%
++   ggplot(aes(x = group, y = value)) +
++   stat_eye()
+> 
+> # note the sample size is not automatically incorporated into the
+> # area of the densities in case one wishes to plot densities against
+> # a reference (e.g. a prior distribution).
+> # But you may wish to account for sample size if using these geoms
+> # for something other than visualizing posteriors; in which case
+> # you can use after_stat(f*n):
+> df %>%
++   ggplot(aes(x = group, y = value)) +
++   stat_eye(aes(thickness = after_stat(pdf*n)))
+> 
+> 
+> # EXAMPLES ON ANALYTICAL DISTRIBUTIONS
+> 
+> dist_df = tribble(
++   ~group, ~subgroup, ~mean, ~sd,
++   "a",          "h",     5,   1,
++   "b",          "h",     7,   1.5,
++   "c",          "h",     8,   1,
++   "c",          "i",     9,   1,
++   "c",          "j",     7,   1
++ )
+> 
+> # Using functions from the distributional package (like dist_normal()) with the
+> # dist aesthetic can lead to more compact/expressive specifications
+> 
+> dist_df %>%
++   ggplot(aes(x = group, ydist = dist_normal(mean, sd), fill = subgroup)) +
++   stat_eye(position = "dodge")
+> 
+> # using the old character vector + args approach
+> dist_df %>%
++   ggplot(aes(x = group, dist = "norm", arg1 = mean, arg2 = sd, fill = subgroup)) +
++   stat_eye(position = "dodge")
+> 
+> # the stat_slabinterval family applies a Jacobian adjustment to densities
+> # when plotting on transformed scales in order to plot them correctly.
+> # It determines the Jacobian using symbolic differentiation if possible,
+> # using stats::D(). If symbolic differentation fails, it falls back
+> # to numericDeriv(), which is less reliable; therefore, it is
+> # advisable to use scale transformation functions that are defined in
+> # terms of basic math functions so that their derivatives can be
+> # determined analytically (most of the transformation functions in the
+> # scales package currently have this property).
+> # For example, here is a log-Normal distribution plotted on the log
+> # scale, where it will appear Normal:
+> data.frame(dist = "lnorm", logmean = log(10), logsd = 2*log(10)) %>%
++   ggplot(aes(y = 1, dist = dist, arg1 = logmean, arg2 = logsd)) +
++   stat_halfeye() +
++   scale_x_log10(breaks = 10^seq(-5,7, by = 2))
+> 
+> # see vignette("slabinterval") for many more examples.
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:distributional’, ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("stat_spike")
+> ### * stat_spike
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: stat_spike
+> ### Title: Spike plot (ggplot2 stat)
+> ### Aliases: stat_spike
+> 
+> ### ** Examples
+> 
+> library(ggplot2)
+> library(distributional)
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> 
+> df = tibble(
++   d = c(dist_normal(1), dist_gamma(2,2)), g = c("a", "b")
++ )
+> 
+> # annotate the density at the mode of a distribution
+> df %>%
++   ggplot(aes(y = g, xdist = d)) +
++   stat_slab(aes(xdist = d)) +
++   stat_spike(at = "Mode") +
++   # need shared thickness scale so that stat_slab and geom_spike line up
++   scale_thickness_shared()
+> 
+> # annotate the endpoints of intervals of a distribution
+> # here we'll use an arrow instead of a point by setting size = 0
+> arrow_spec = arrow(angle = 45, type = "closed", length = unit(4, "pt"))
+> df %>%
++   ggplot(aes(y = g, xdist = d)) +
++   stat_halfeye(point_interval = mode_hdci) +
++   stat_spike(
++     at = function(x) hdci(x, .width = .66),
++     size = 0, arrow = arrow_spec, color = "blue", linewidth = 0.75
++   ) +
++   scale_thickness_shared()
+> 
+> # annotate quantiles of a sample
+> set.seed(1234)
+> data.frame(x = rnorm(1000, 1:2), g = c("a","b")) %>%
++   ggplot(aes(x, g)) +
++   stat_slab() +
++   stat_spike(at = function(x) quantile(x, ppoints(10))) +
++   scale_thickness_shared()
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:dplyr’, ‘package:distributional’, ‘package:ggplot2’
+
+> nameEx("student_t")
+> ### * student_t
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: student_t
+> ### Title: Scaled and shifted Student's t distribution
+> ### Aliases: student_t dstudent_t pstudent_t qstudent_t rstudent_t
+> 
+> ### ** Examples
+> 
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> 
+> expand.grid(
++   df = c(3,5,10,30),
++   scale = c(1,1.5)
++ ) %>%
++   ggplot(aes(y = 0, dist = "student_t", arg1 = df, arg2 = 0, arg3 = scale, color = ordered(df))) +
++   stat_slab(p_limits = c(.01, .99), fill = NA) +
++   scale_y_continuous(breaks = NULL) +
++   facet_grid( ~ scale) +
++   labs(
++     title = "dstudent_t(x, df, 0, sigma)",
++     subtitle = "Scale (sigma)",
++     y = NULL,
++     x = NULL
++   ) +
++   theme_ggdist() +
++   theme(axis.title = element_text(hjust = 0))
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("sub-geometry-scales")
+> ### * sub-geometry-scales
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: sub-geometry-scales
+> ### Title: Sub-geometry scales for geom_slabinterval (ggplot2 scales)
+> ### Aliases: sub-geometry-scales scale_point_colour_discrete scales
+> ###   scale_point_color_discrete scale_point_colour_continuous
+> ###   scale_point_color_continuous scale_point_fill_discrete
+> ###   scale_point_fill_continuous scale_point_alpha_continuous
+> ###   scale_point_alpha_discrete scale_point_size_continuous
+> ###   scale_point_size_discrete scale_interval_colour_discrete
+> ###   scale_interval_color_discrete scale_interval_colour_continuous
+> ###   scale_interval_color_continuous scale_interval_alpha_continuous
+> ###   scale_interval_alpha_discrete scale_interval_size_continuous
+> ###   scale_interval_size_discrete scale_interval_linetype_discrete
+> ###   scale_interval_linetype_continuous scale_slab_colour_discrete
+> ###   scale_slab_color_discrete scale_slab_colour_continuous
+> ###   scale_slab_color_continuous scale_slab_fill_discrete
+> ###   scale_slab_fill_continuous scale_slab_alpha_continuous
+> ###   scale_slab_alpha_discrete scale_slab_size_continuous
+> ###   scale_slab_size_discrete scale_slab_linewidth_continuous
+> ###   scale_slab_linewidth_discrete scale_slab_linetype_discrete
+> ###   scale_slab_linetype_continuous scale_slab_shape_discrete
+> ###   scale_slab_shape_continuous guide_colourbar2 guide_colorbar2
+> 
+> ### ** Examples
+> 
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(ggplot2)
+> 
+> # This plot shows how to set multiple specific aesthetics
+> # NB it is very ugly and is only for demo purposes.
+> data.frame(distribution = "Normal(1,2)") %>%
++   parse_dist(distribution) %>%
++   ggplot(aes(y = distribution, xdist = .dist, args = .args)) +
++   stat_halfeye(
++     shape = 21,  # this point shape has a fill and outline
++     point_color = "red",
++     point_fill = "black",
++     point_alpha = .1,
++     point_size = 6,
++     stroke = 2,
++     interval_color = "blue",
++     # interval line widths are scaled from [1, 6] onto [0.6, 1.4] by default
++     # see the interval_size_range parameter in help("geom_slabinterval")
++     linewidth = 8,
++     interval_linetype = "dashed",
++     interval_alpha = .25,
++     # fill sets the fill color of the slab (here the density)
++     slab_color = "green",
++     slab_fill = "purple",
++     slab_linewidth = 3,
++     slab_linetype = "dotted",
++     slab_alpha = .5
++   )
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’, ‘package:dplyr’
+
+> nameEx("subguide_axis")
+> ### * subguide_axis
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: subguide_axis
+> ### Title: Axis sub-guide for thickness scales
+> ### Aliases: subguide_axis subguide_inside subguide_outside
+> ###   subguide_integer subguide_count subguide_slab subguide_dots
+> ###   subguide_spike
+> 
+> ### ** Examples
+> 
+> library(ggplot2)
+> library(distributional)
+> 
+> df = data.frame(d = dist_normal(2:3, 2:3), g = c("a", "b"))
+> 
+> # subguides allow you to label thickness axes
+> ggplot(df, aes(xdist = d, y = g)) +
++   stat_slabinterval(subguide = "inside")
+> 
+> # they respect normalization and use of scale_thickness_shared()
+> ggplot(df, aes(xdist = d, y = g)) +
++   stat_slabinterval(subguide = "inside", normalize = "groups")
+> 
+> # they can also be positioned outside the plot area, though
+> # this typically requires manually adjusting plot margins
+> ggplot(df, aes(xdist = d, y = g)) +
++   stat_slabinterval(subguide = subguide_outside(title = "density", position = "right")) +
++   theme(plot.margin = margin(5.5, 50, 5.5, 5.5))
+> 
+> # any of the subguide types will also work to indicate bin counts in
+> # geom_dots(); subguide_integer() and subguide_count() can be useful for
+> # dotplots as they only label integers / whole numbers:
+> df = data.frame(d = dist_gamma(2:3, 2:3), g = c("a", "b"))
+> ggplot(df, aes(xdist = d, y = g)) +
++   stat_dots(subguide = subguide_count(label_side = "left", title = "count")) +
++   scale_y_discrete(expand = expansion(add = 0.1)) +
++   scale_x_continuous(expand = expansion(add = 0.5))
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:distributional’, ‘package:ggplot2’
+
+> nameEx("subscale_thickness")
+> ### * subscale_thickness
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: subscale_thickness
+> ### Title: Sub-scale for thickness aesthetic
+> ### Aliases: subscale_thickness
+> 
+> ### ** Examples
+> 
+> library(ggplot2)
+> library(distributional)
+> 
+> df = data.frame(d = dist_normal(2:3, 1), g = c("a", "b"))
+> 
+> # breaks on thickness subguides are always limited to the bounds of the
+> # subscale, which may leave labels off near the edge of the subscale
+> # (e.g. here `0.4` is omitted because the max value is approx `0.39`)
+> ggplot(df, aes(xdist = d, y = g)) +
++   stat_slabinterval(
++     subguide = "inside"
++   )
+> 
+> # We can use the subscale to expand the upper limit of the thickness scale
+> # by 5% (similar to the default for positional scales), allowing bounds near
+> # (but just less than) the limit, like `0.4`, to be shown.
+> ggplot(df, aes(xdist = d, y = g)) +
++   stat_slabinterval(
++     subguide = "inside",
++     subscale = subscale_thickness(expand = expansion(c(0, 0.5)))
++   )
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:distributional’, ‘package:ggplot2’
+
+> nameEx("theme_ggdist")
+> ### * theme_ggdist
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: theme_ggdist
+> ### Title: Simple, light ggplot2 theme for ggdist and tidybayes
+> ### Aliases: theme_ggdist theme_tidybayes facet_title_horizontal
+> ###   axis_titles_bottom_left facet_title_left_horizontal
+> ###   facet_title_right_horizontal
+> 
+> ### ** Examples
+> 
+> 
+> library(ggplot2)
+> 
+> theme_set(theme_ggdist())
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:ggplot2’
+
+> nameEx("thickness")
+> ### * thickness
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: thickness
+> ### Title: Thickness (datatype)
+> ### Aliases: thickness
+> 
+> ### ** Examples
+> 
+> thickness(0:1)
+<thickness[2]>
+[1] 0thk [NA,NA] 1thk [NA,NA]
+> thickness(0:1, 0, 10)
+<thickness[2]>
+[1] 0thk [0,10] 1thk [0,10]
+> 
+> 
+> 
+> cleanEx()
+> nameEx("tidy-format-translators")
+> ### * tidy-format-translators
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: tidy-format-translators
+> ### Title: Translate between different tidy data frame formats for draws
+> ###   from distributions
+> ### Aliases: tidy-format-translators to_broom_names from_broom_names
+> ###   to_ggmcmc_names from_ggmcmc_names
+> ### Keywords: manip
+> 
+> ### ** Examples
+> 
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> 
+> data(RankCorr_u_tau, package = "ggdist")
+> 
+> df = RankCorr_u_tau %>%
++   dplyr::rename(.variable = i, .value = u_tau) %>%
++   group_by(.variable) %>%
++   median_qi(.value)
+> 
+> df
+# A tibble: 3 × 7
+  .variable .value .lower .upper .width .point .interval
+      <int>  <dbl>  <dbl>  <dbl>  <dbl> <chr>  <chr>    
+1         1   5.62   3.86   8.03   0.95 median qi       
+2         2   5.48   3.46   9.07   0.95 median qi       
+3         3   4.96   3.10   7.86   0.95 median qi       
+> 
+> df %>%
++   to_broom_names()
+# A tibble: 3 × 7
+   term estimate conf.low conf.high .width .point .interval
+  <int>    <dbl>    <dbl>     <dbl>  <dbl> <chr>  <chr>    
+1     1     5.62     3.86      8.03   0.95 median qi       
+2     2     5.48     3.46      9.07   0.95 median qi       
+3     3     4.96     3.10      7.86   0.95 median qi       
+> 
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:dplyr’
+
+> nameEx("waiver")
+> ### * waiver
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: waiver
+> ### Title: A waived argument
+> ### Aliases: waiver
+> 
+> ### ** Examples
+> 
+> f = auto_partial(function(x, y = "b") {
++   c(x = x, y = y)
++ })
+> 
+> f("a")
+  x   y 
+"a" "b" 
+> 
+> # uses the default value of `y` ("b")
+> f("a", y = waiver())
+  x   y 
+"a" "b" 
+> 
+> # partially apply `f`
+> g = f(y = "c")
+> g
+<partial_function>: 
+  f(y = "c")
+> 
+> # uses the last partially-applied value of `y` ("c")
+> g("a", y = waiver())
+  x   y 
+"a" "c" 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("weighted_ecdf")
+> ### * weighted_ecdf
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: weighted_ecdf
+> ### Title: Weighted empirical cumulative distribution function
+> ### Aliases: weighted_ecdf
+> 
+> ### ** Examples
+> 
+> weighted_ecdf(1:3, weights = 1:3)
+Step function
+Call: weighted_ecdf(1:3, weights = 1:3)
+ x[1:3] =      1,      2,      3
+4 plateau levels =      0, 0.16667,    0.5,      1
+> plot(weighted_ecdf(1:3, weights = 1:3))
+> quantile(weighted_ecdf(1:3, weights = 1:3), 0.4)
+40% 
+2.2 
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  21.968 0.153 22.123 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

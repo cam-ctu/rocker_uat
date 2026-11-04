@@ -1,0 +1,57 @@
+
+R version 4.6.1 (2026-06-24) -- "Happy Hop"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> # Unit tests for tbbLdFlags(), the linker flags handed to downstream packages
+> # via RcppParallel::LdFlags().
+> #
+> # On macOS, the TBB libraries RcppParallel ships record an '@rpath'-relative
+> # install name (e.g. '@rpath/libtbb.dylib'), so a '-L' search path alone only
+> # satisfies the linker: the resulting binary carries no runtime search path for
+> # TBB, and dyld can resolve it only when RcppParallel has already pulled TBB
+> # into the process. Every '-L' we emit must therefore be paired with a matching
+> # '-rpath'. (#209)
+> #
+> # This is only a check on the shape of the flags, so that something still runs
+> # where no toolchain is available (e.g. CRAN). tests/test-downstream-load.R
+> # covers the behaviour itself: it builds a package against these flags and
+> # loads it in a process that never loads RcppParallel.
+> 
+> RcppParallel:::test_init()
+Using backend: tinythread
+> 
+> flags <- tbbLdFlags()
+> 
+> assert(is.character(flags))
+> assert(length(flags) == 1L)
+> assert(!is.na(flags))
+> 
+> if (is_mac()) {
++ 
++    parts <- strsplit(flags, "\\s+")[[1L]]
++ 
++    libPaths <- sub("^-L", "", grep("^-L", parts, value = TRUE))
++    rpaths <- sub("^-Wl,-rpath,", "", grep("^-Wl,-rpath,", parts, value = TRUE))
++ 
++    # we always link TBB explicitly on macOS, so there is a search path to check
++    assert(length(libPaths) > 0L)
++    assert(all(nzchar(libPaths)))
++ 
++    # and each one must also be searched at load time
++    assert(all(libPaths %in% rpaths))
++ 
++ }
+> 
