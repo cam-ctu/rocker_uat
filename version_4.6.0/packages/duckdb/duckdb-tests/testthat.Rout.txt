@@ -27,31 +27,77 @@ Type 'q()' to quit R.
 > library(duckdb)
 Loading required package: DBI
 > 
-> test_check("duckdb")
-[ FAIL 0 | WARN 0 | SKIP 77 | PASS 858 ]
+> # CRAN guard
+> #
+> # The duckdb test suite exercises DuckDB's bundled C++ engine, which is too heavy
+> # for CRAN's check farm, and checks were very fragile in the past. We therefore
+> # keep it off on CRAN but run it automatically on GitHub Actions (GITHUB_ACTIONS)
+> # and on r-universe (MY_UNIVERSE). An explicit DUCKDB_R_RUN_TESTS opts in
+> # (true-ish) or out (false-ish) and always wins; otherwise we fall back to those.
+> # This check is intentionally inlined here (rather than calling into the package)
+> # so the guard is obvious and self-contained.
+> run_tests <- tolower(trimws(Sys.getenv("DUCKDB_R_RUN_TESTS", "")))
+> 
+> if (run_tests %in% c("true", "1", "yes", "on")) {
++   run <- TRUE
++ } else if (run_tests %in% c("false", "0", "no", "off")) {
++   run <- FALSE
++ } else {
++   run <- tolower(trimws(Sys.getenv("GITHUB_ACTIONS", ""))) == "true" ||
++     nzchar(trimws(Sys.getenv("MY_UNIVERSE", "")))
++ }
+> 
+> if (run) {
++   test_check("duckdb")
++ } else {
++   message(
++     "\n",
++     strrep("=", 78),
++     "\n",
++     "Skipping the duckdb test suite.\n",
++     "\n",
++     "The duckdb tests exercise DuckDB's bundled C++ engine and are deliberately\n",
++     "NOT run on CRAN. They run automatically on GitHub Actions (including\n",
++     "r-universe). This keeps check time and resource usage on CRAN within\n",
++     "acceptable limits and helps release duckdb in a predictable and controlled\n",
++     "manner.\n",
++     "\n",
++     "This is intentional, not an oversight. duckdb has an extensive test suite\n",
++     "that runs continuously in our own CI; see <https://github.com/duckdb/duckdb-r>.\n",
++     "\n",
++     "To run the test suite locally, set the environment variable before checking:\n",
++     "  Sys.setenv(DUCKDB_R_RUN_TESTS = \"true\")    # from within R, or\n",
++     "  DUCKDB_R_RUN_TESTS=true R CMD check ...      # from the shell\n",
++     strrep("=", 78),
++     "\n"
++   )
++ }
+[ FAIL 0 | WARN 0 | SKIP 80 | PASS 1062 ]
 
-══ Skipped tests (77) ══════════════════════════════════════════════════════════
+══ Skipped tests (80) ══════════════════════════════════════════════════════════
 • empty test (1): 'test-factor.R:78:1'
 • interactive() is not TRUE (2): 'test-connect.R:5:3', 'test-connect.R:15:3'
-• On CRAN (39): 'test-array.R:174:1', 'test-array.R:187:1',
+• On CRAN (42): 'test-array.R:174:1', 'test-array.R:187:1',
   'test-array.R:202:1', 'test-array.R:359:1', 'test-arrow_stream.R:1:1',
-  'test-arrow.R:18:1', 'test-backend-dbplyr__duckdb_connection.R:405:3',
-  'test-backend-dbplyr__duckdb_connection.R:436:3',
-  'test-backend-dbplyr__duckdb_connection.R:478:3',
-  'test-backend-dbplyr__duckdb_connection.R:502:3',
-  'test-backend-dbplyr__duckdb_connection.R:547:3',
-  'test-backend-dbplyr__duckdb_connection.R:576:3',
-  'test-backend-dbplyr__duckdb_connection.R:600:3',
-  'test-backend-dbplyr__duckdb_connection.R:615:3', 'test-DBItest.R:1:1',
+  'test-arrow.R:18:1', 'test-backend-dbplyr__duckdb_connection.R:463:3',
+  'test-backend-dbplyr__duckdb_connection.R:494:3',
+  'test-backend-dbplyr__duckdb_connection.R:536:3',
+  'test-backend-dbplyr__duckdb_connection.R:560:3',
+  'test-backend-dbplyr__duckdb_connection.R:605:3',
+  'test-backend-dbplyr__duckdb_connection.R:634:3',
+  'test-backend-dbplyr__duckdb_connection.R:658:3',
+  'test-backend-dbplyr__duckdb_connection.R:673:3', 'test-DBItest.R:1:1',
   'test-duckdb-extensions.R:3:3', 'test-error-handling.R:1:1',
   'test-explain.R:1:1', 'test-extension_path.R:1:1', 'test-fetch_arrow.R:1:1',
-  'test-map.R:42:3', 'test-multi_statement.R:1:1', 'test-register_arrow.R:1:1',
+  'test-map.R:167:3', 'test-map.R:405:1', 'test-map.R:757:1',
+  'test-multi_statement.R:1:1', 'test-register_arrow.R:1:1',
   'test-relational.R:51:1', 'test-relational.R:82:1',
   'test-relational.R:106:1', 'test-relational.R:121:1',
-  'test-relational.R:222:1', 'test-relational.R:904:1',
-  'test-relational.R:922:1', 'test-relational.R:1042:1',
-  'test-relational.R:1050:1', 'test-signal.R:6:3', 'test-sql.R:38:1',
-  'test-sql.R:133:1', 'test-sql.R:211:1', 'test-struct.R:51:3',
+  'test-relational.R:222:1', 'test-relational.R:981:1',
+  'test-relational.R:999:1', 'test-relational.R:1119:1',
+  'test-relational.R:1127:1', 'test-secret_directory.R:1:1',
+  'test-signal.R:6:3', 'test-sql.R:38:1', 'test-sql.R:133:1',
+  'test-sql.R:211:1', 'test-struct.R:51:3',
   'test-tbl__duckdb_connection.R:1:1', 'test-types.R:1:1'
 • TEST_RE2 is not TRUE (35): 'test-connect.R:59:3', 'test-connect.R:79:3',
   'test-connect.R:99:3', 'test-connect.R:119:3', 'test-connect.R:144:3',
@@ -66,5 +112,5 @@ Loading required package: DBI
   'test-timestamp.R:2:3', 'test-viewer.R:2:3', 'test-viewer.R:16:3',
   'test-viewer.R:36:3', 'test-viewer.R:57:3', 'test-viewer.R:75:3'
 
-[ FAIL 0 | WARN 0 | SKIP 77 | PASS 858 ]
+[ FAIL 0 | WARN 0 | SKIP 80 | PASS 1062 ]
 > 

@@ -39,16 +39,16 @@ Type 'q()' to quit R.
 > library(dplyr, warn.conflicts = FALSE)
 > 
 > db <- memdb_frame(a = c(3, 4, 1, 2), b = c(5, 1, 2, NA))
-> db %>% arrange(a) %>% show_query()
+> db |> arrange(a) |> show_query()
 <SQL>
-SELECT `dbplyr_4dMaH8wQnr`.*
-FROM `dbplyr_4dMaH8wQnr`
+SELECT *
+FROM `dbplyr_tmp_4dMaH8wQnr`
 ORDER BY `a`
 > 
 > # Note that NAs are sorted first
-> db %>% arrange(b)
-# Source:     SQL [?? x 2]
-# Database:   sqlite 3.53.1 [:memory:]
+> db |> arrange(b)
+# A query:    ?? x 2
+# Database:   sqlite 3.53.2 [:memory:]
 # Ordered by: b
       a     b
   <dbl> <dbl>
@@ -57,9 +57,9 @@ ORDER BY `a`
 3     1     2
 4     3     5
 > # override by sorting on is.na() first
-> db %>% arrange(is.na(b), b)
-# Source:     SQL [?? x 2]
-# Database:   sqlite 3.53.1 [:memory:]
+> db |> arrange(is.na(b), b)
+# A query:    ?? x 2
+# Database:   sqlite 3.53.2 [:memory:]
 # Ordered by: is.na(b), b
       a     b
   <dbl> <dbl>
@@ -80,26 +80,112 @@ detaching ‘package:dplyr’, ‘dbplyr_cache’
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: backend-access
-> ### Title: Backend: MS Access
-> ### Aliases: simulate_access
+> ### Title: MS Access backend
+> ### Aliases: dialect_access simulate_access
 > 
 > ### ** Examples
 > 
 > library(dplyr, warn.conflicts = FALSE)
-> lf <- lazy_frame(x = 1, y = 2, z = "a", con = simulate_access())
+> lf <- lazy_frame(x = 1, y = 2, z = "a", con = dialect_access())
 > 
-> lf %>% head()
+> lf |> head()
 <SQL>
-SELECT TOP 6 `df`.*
-FROM `df`
-> lf %>% mutate(y = as.numeric(y), z = sqrt(x^2 + 10))
+SELECT TOP 6 *
+FROM "df"
+> lf |> mutate(y = as.numeric(y), z = sqrt(x^2 + 10))
 <SQL>
-SELECT `x`, CDBL(`y`) AS `y`, SQR((`x` ^ 2.0) + 10.0) AS `z`
-FROM `df`
-> lf %>% mutate(a = paste0(z, " times"))
+SELECT "x", CDBL("y") AS "y", SQR(("x" ^ 2.0) + 10.0) AS "z"
+FROM "df"
+> lf |> mutate(a = paste0(z, " times"))
 <SQL>
-SELECT `df`.*, `z` & ' times' AS `a`
-FROM `df`
+SELECT *, "z" & ' times' AS "a"
+FROM "df"
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:dplyr’
+
+> nameEx("backend-adbc")
+> ### * backend-adbc
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: backend-adbc
+> ### Title: ADBC backend
+> ### Aliases: backend-adbc
+> 
+> ### ** Examples
+> 
+> # ADBC connections require the adbi package and an ADBC driver.
+> # Once connected, dbplyr automatically detects the database type:
+> #
+> # library(adbi)
+> # library(dplyr, warn.conflicts = FALSE)
+> #
+> # con <- DBI::dbConnect(adbi::adbi("adbcsqlite"), uri = ":memory:")
+> # tbl(con, "my_table") |> filter(x > 1)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("backend-ansi")
+> ### * backend-ansi
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: backend-ansi
+> ### Title: ANSI SQL backend
+> ### Aliases: dialect_ansi simulate_dbi
+> 
+> ### ** Examples
+> 
+> library(dplyr, warn.conflicts = FALSE)
+> 
+> lf <- lazy_frame(a = TRUE, b = 1, c = 2, d = "z", con = dialect_ansi())
+> lf |> transmute(x = mean(b, na.rm = TRUE))
+<SQL>
+SELECT AVG("b") OVER () AS "x"
+FROM "df"
+> lf |> transmute(x = log(b), y = log(b, base = 2))
+<SQL>
+SELECT LN("b") AS "x", LOG(2.0, "b") AS "y"
+FROM "df"
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:dplyr’
+
+> nameEx("backend-db2")
+> ### * backend-db2
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: backend-db2
+> ### Title: DB2 backend
+> ### Aliases: dialect_db2
+> 
+> ### ** Examples
+> 
+> library(dplyr, warn.conflicts = FALSE)
+> 
+> lf <- lazy_frame(a = TRUE, b = 1, c = 2, d = "z", con = dialect_db2())
+> lf |> head()
+<SQL>
+SELECT *
+FROM "df"
+FETCH FIRST 6 ROWS ONLY
+> lf |> transmute(x = paste0(d, " times"))
+<SQL>
+SELECT "d" || ' times' AS "x"
+FROM "df"
+> lf |> summarise(x = sd(b, na.rm = TRUE))
+<SQL>
+SELECT STDDEV_SAMP("b") AS "x"
+FROM "df"
 > 
 > 
 > 
@@ -113,18 +199,18 @@ detaching ‘package:dplyr’
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: backend-hana
-> ### Title: Backend: SAP HANA
-> ### Aliases: simulate_hana
+> ### Title: SAP HANA backend
+> ### Aliases: dialect_hana simulate_hana
 > 
 > ### ** Examples
 > 
 > library(dplyr, warn.conflicts = FALSE)
 > 
-> lf <- lazy_frame(a = TRUE, b = 1, c = 2, d = "z", con = simulate_hana())
-> lf %>% transmute(x = paste0(d, " times"))
+> lf <- lazy_frame(a = TRUE, b = 1, c = 2, d = "z", con = dialect_hana())
+> lf |> transmute(x = paste0(d, " times"))
 <SQL>
-SELECT `d` || ' times' AS `x`
-FROM `df`
+SELECT "d" || ' times' AS "x"
+FROM "df"
 > 
 > 
 > 
@@ -138,35 +224,35 @@ detaching ‘package:dplyr’
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: backend-hive
-> ### Title: Backend: Hive
-> ### Aliases: simulate_hive
+> ### Title: Hive backend
+> ### Aliases: dialect_hive simulate_hive
 > 
 > ### ** Examples
 > 
 > library(dplyr, warn.conflicts = FALSE)
 > 
-> lf <- lazy_frame(a = TRUE, b = 1, d = 2, c = "z", con = simulate_hive())
-> lf %>% transmute(x = cot(b))
+> lf <- lazy_frame(a = TRUE, b = 1, d = 2, c = "z", con = dialect_hive())
+> lf |> transmute(x = cot(b))
 <SQL>
-SELECT 1.0 / TAN(`b`) AS `x`
-FROM `df`
-> lf %>% transmute(x = bitwShiftL(c, 1L))
+SELECT 1.0 / TAN("b") AS "x"
+FROM "df"
+> lf |> transmute(x = bitwShiftL(c, 1L))
 <SQL>
-SELECT SHIFTLEFT(`c`, 1) AS `x`
-FROM `df`
-> lf %>% transmute(x = str_replace_all(c, "a", "b"))
+SELECT SHIFTLEFT("c", 1) AS "x"
+FROM "df"
+> lf |> transmute(x = str_replace_all(c, "a", "b"))
 <SQL>
-SELECT REGEXP_REPLACE(`c`, 'a', 'b') AS `x`
-FROM `df`
+SELECT REGEXP_REPLACE("c", 'a', 'b') AS "x"
+FROM "df"
 > 
-> lf %>% summarise(x = median(d, na.rm = TRUE))
+> lf |> summarise(x = median(d, na.rm = TRUE))
 <SQL>
-SELECT PERCENTILE(`d`, 0.5) AS `x`
-FROM `df`
-> lf %>% summarise(x = var(c, na.rm = TRUE))
+SELECT PERCENTILE("d", 0.5) AS "x"
+FROM "df"
+> lf |> summarise(x = var(c, na.rm = TRUE))
 <SQL>
-SELECT VARIANCE(`c`) AS `x`
-FROM `df`
+SELECT VARIANCE("c") AS "x"
+FROM "df"
 > 
 > 
 > 
@@ -180,18 +266,18 @@ detaching ‘package:dplyr’
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: backend-impala
-> ### Title: Backend: Impala
-> ### Aliases: simulate_impala
+> ### Title: Impala backend
+> ### Aliases: dialect_impala simulate_impala
 > 
 > ### ** Examples
 > 
 > library(dplyr, warn.conflicts = FALSE)
 > 
-> lf <- lazy_frame(a = TRUE, b = 1, c = 2, d = "z", con = simulate_impala())
-> lf %>% transmute(X = bitwNot(bitwOr(b, c)))
+> lf <- lazy_frame(a = TRUE, b = 1, c = 2, d = "z", con = dialect_impala())
+> lf |> transmute(X = bitwNot(bitwOr(b, c)))
 <SQL>
-SELECT BITNOT(BITOR(`b`, `c`)) AS `X`
-FROM `df`
+SELECT BITNOT(BITOR("b", "c")) AS "X"
+FROM "df"
 > 
 > 
 > 
@@ -199,46 +285,70 @@ FROM `df`
 
 detaching ‘package:dplyr’
 
+> nameEx("backend-jdbc")
+> ### * backend-jdbc
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: backend-jdbc
+> ### Title: JDBC backend
+> ### Aliases: backend-jdbc
+> 
+> ### ** Examples
+> 
+> # JDBC connections require the RJDBC package and a JDBC driver JAR file.
+> # Once connected, dbplyr automatically detects the database type:
+> #
+> # library(RJDBC)
+> # library(dplyr, warn.conflicts = FALSE)
+> #
+> # drv <- JDBC("org.postgresql.Driver", "postgresql.jar")
+> # con <- dbConnect(drv, "jdbc:postgresql://localhost/mydb", "user", "password")
+> # tbl(con, "my_table") |> filter(x > 1)
+> 
+> 
+> 
+> cleanEx()
 > nameEx("backend-mssql")
 > ### * backend-mssql
 > 
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: backend-mssql
-> ### Title: Backend: SQL server
-> ### Aliases: simulate_mssql
+> ### Title: SQL Server backend
+> ### Aliases: dialect_mssql simulate_mssql
 > 
 > ### ** Examples
 > 
 > library(dplyr, warn.conflicts = FALSE)
 > 
-> lf <- lazy_frame(a = TRUE, b = 1, c = 2, d = "z", con = simulate_mssql())
-> lf %>% head()
+> lf <- lazy_frame(a = TRUE, b = 1, c = 2, d = "z", con = dialect_mssql())
+> lf |> head()
 <SQL>
-SELECT TOP 6 `df`.*
-FROM `df`
-> lf %>% transmute(x = paste(b, c, d))
+SELECT TOP 6 *
+FROM [df]
+> lf |> transmute(x = paste(b, c, d))
 <SQL>
-SELECT `b` + ' ' + `c` + ' ' + `d` AS `x`
-FROM `df`
+SELECT [b] + ' ' + [c] + ' ' + [d] AS [x]
+FROM [df]
 > 
 > # Can use boolean as is:
-> lf %>% filter(c > d)
+> lf |> filter(c > d)
 <SQL>
-SELECT `df`.*
-FROM `df`
-WHERE (`c` > `d`)
+SELECT *
+FROM [df]
+WHERE ([c] > [d])
 > # Need to convert from boolean to bit:
-> lf %>% transmute(x = c > d)
-<SQL>
-SELECT CAST(IIF(`c` > `d`, 1, 0) AS BIT) AS `x`
-FROM `df`
-> # Can use boolean as is:
-> lf %>% transmute(x = ifelse(c > d, "c", "d"))
+> lf |> transmute(x = c > d)
 Warning: call dbDisconnect() when finished working with a connection
 <SQL>
-SELECT IIF(`c` > `d`, 'c', 'd') AS `x`
-FROM `df`
+SELECT CAST(CASE WHEN [c] > [d] THEN 1 ELSE 0 END AS BIT) AS [x]
+FROM [df]
+> # Can use boolean as is:
+> lf |> transmute(x = ifelse(c > d, "c", "d"))
+<SQL>
+SELECT CASE WHEN ([c] > [d]) THEN 'c' WHEN NOT ([c] > [d]) THEN 'd' END AS [x]
+FROM [df]
 > 
 > 
 > 
@@ -252,15 +362,15 @@ detaching ‘package:dplyr’
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: backend-mysql
-> ### Title: Backend: MySQL/MariaDB
-> ### Aliases: simulate_mysql simulate_mariadb
+> ### Title: MySQL/MariaDB backend
+> ### Aliases: dialect_mariadb dialect_mysql simulate_mysql simulate_mariadb
 > 
 > ### ** Examples
 > 
 > library(dplyr, warn.conflicts = FALSE)
 > 
-> lf <- lazy_frame(a = TRUE, b = 1, c = 2, d = "z", con = simulate_mysql())
-> lf %>% transmute(x = paste0(d, " times"))
+> lf <- lazy_frame(a = TRUE, b = 1, c = 2, d = "z", con = dialect_mysql())
+> lf |> transmute(x = paste0(d, " times"))
 <SQL>
 SELECT CONCAT_WS('', `d`, ' times') AS `x`
 FROM `df`
@@ -277,26 +387,26 @@ detaching ‘package:dplyr’
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: backend-odbc
-> ### Title: Backend: ODBC
-> ### Aliases: simulate_odbc
+> ### Title: ODBC backend
+> ### Aliases: dialect_odbc simulate_odbc
 > 
 > ### ** Examples
 > 
 > library(dplyr, warn.conflicts = FALSE)
 > 
-> lf <- lazy_frame(a = TRUE, b = 1, d = 2, c = "z", con = simulate_odbc())
-> lf %>% transmute(x = as.numeric(b))
+> lf <- lazy_frame(a = TRUE, b = 1, d = 2, c = "z", con = dialect_odbc())
+> lf |> transmute(x = as.numeric(b))
 <SQL>
-SELECT CAST(`b` AS DOUBLE) AS `x`
-FROM `df`
-> lf %>% transmute(x = as.integer(b))
+SELECT CAST("b" AS DOUBLE) AS "x"
+FROM "df"
+> lf |> transmute(x = as.integer(b))
 <SQL>
-SELECT CAST(`b` AS INT) AS `x`
-FROM `df`
-> lf %>% transmute(x = as.character(b))
+SELECT CAST("b" AS INT) AS "x"
+FROM "df"
+> lf |> transmute(x = as.character(b))
 <SQL>
-SELECT CAST(`b` AS STRING) AS `x`
-FROM `df`
+SELECT CAST("b" AS STRING) AS "x"
+FROM "df"
 > 
 > 
 > 
@@ -310,28 +420,28 @@ detaching ‘package:dplyr’
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: backend-oracle
-> ### Title: Backend: Oracle
-> ### Aliases: simulate_oracle
+> ### Title: Oracle backend
+> ### Aliases: dialect_oracle simulate_oracle
 > 
 > ### ** Examples
 > 
 > library(dplyr, warn.conflicts = FALSE)
 > 
-> lf <- lazy_frame(a = TRUE, b = 1, c = 2, d = "z", con = simulate_oracle())
-> lf %>% transmute(x = paste0(c, " times"))
+> lf <- lazy_frame(a = TRUE, b = 1, c = 2, d = "z", con = dialect_oracle())
+> lf |> transmute(x = paste0(c, " times"))
 <SQL>
-SELECT `c` || ' times' AS `x`
-FROM `df`
-> lf %>% setdiff(lf)
+SELECT "c" || ' times' AS "x"
+FROM "df"
+> lf |> setdiff(lf)
 <SQL>
 (
   SELECT *
-  FROM `df`
+  FROM "df"
 )
 MINUS
 (
   SELECT *
-  FROM `df`
+  FROM "df"
 )
 > 
 > 
@@ -346,22 +456,22 @@ detaching ‘package:dplyr’
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: backend-postgres
-> ### Title: Backend: PostgreSQL
-> ### Aliases: simulate_postgres
+> ### Title: PostgreSQL backend
+> ### Aliases: dialect_postgres simulate_postgres
 > 
 > ### ** Examples
 > 
 > library(dplyr, warn.conflicts = FALSE)
 > 
-> lf <- lazy_frame(a = TRUE, b = 1, c = 2, d = "z", con = simulate_postgres())
-> lf %>% summarise(x = sd(b, na.rm = TRUE))
+> lf <- lazy_frame(a = TRUE, b = 1, c = 2, d = "z", con = dialect_postgres())
+> lf |> summarise(x = sd(b, na.rm = TRUE))
 <SQL>
-SELECT STDDEV_SAMP(`b`) AS `x`
-FROM `df`
-> lf %>% summarise(y = cor(b, c), z = cov(b, c))
+SELECT STDDEV_SAMP("b") AS "x"
+FROM "df"
+> lf |> summarise(y = cor(b, c), z = cov(b, c))
 <SQL>
-SELECT CORR(`b`, `c`) AS `y`, COVAR_SAMP(`b`, `c`) AS `z`
-FROM `df`
+SELECT CORR("b", "c") AS "y", COVAR_SAMP("b", "c") AS "z"
+FROM "df"
 > 
 > 
 > 
@@ -375,26 +485,26 @@ detaching ‘package:dplyr’
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: backend-redshift
-> ### Title: Backend: Redshift
-> ### Aliases: simulate_redshift
+> ### Title: Redshift backend
+> ### Aliases: dialect_redshift simulate_redshift
 > 
 > ### ** Examples
 > 
 > library(dplyr, warn.conflicts = FALSE)
 > 
-> lf <- lazy_frame(a = TRUE, b = 1, c = 2, d = "z", con = simulate_redshift())
-> lf %>% transmute(x = paste(c, " times"))
+> lf <- lazy_frame(a = TRUE, b = 1, c = 2, d = "z", con = dialect_redshift())
+> lf |> transmute(x = paste(c, " times"))
 <SQL>
-SELECT `c` || ' ' || ' times' AS `x`
-FROM `df`
-> lf %>% transmute(x = substr(c, 2, 3))
+SELECT "c" || ' ' || ' times' AS "x"
+FROM "df"
+> lf |> transmute(x = substr(c, 2, 3))
 <SQL>
-SELECT SUBSTRING(`c`, 2, 2) AS `x`
-FROM `df`
-> lf %>% transmute(x = str_replace_all(c, "a", "z"))
+SELECT SUBSTRING("c", 2, 2) AS "x"
+FROM "df"
+> lf |> transmute(x = str_replace_all(c, "a", "z"))
 <SQL>
-SELECT REGEXP_REPLACE(`c`, 'a', 'z') AS `x`
-FROM `df`
+SELECT REGEXP_REPLACE("c", 'a', 'z') AS "x"
+FROM "df"
 > 
 > 
 > 
@@ -408,18 +518,18 @@ detaching ‘package:dplyr’
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: backend-snowflake
-> ### Title: Backend: Snowflake
-> ### Aliases: simulate_snowflake
+> ### Title: Snowflake backend
+> ### Aliases: dialect_snowflake simulate_snowflake
 > 
 > ### ** Examples
 > 
 > library(dplyr, warn.conflicts = FALSE)
 > 
-> lf <- lazy_frame(a = TRUE, b = 1, c = 2, d = "z", con = simulate_snowflake())
-> lf %>% transmute(x = paste0(d, " times"))
+> lf <- lazy_frame(a = TRUE, b = 1, c = 2, d = "z", con = dialect_snowflake())
+> lf |> transmute(x = paste0(d, " times"))
 <SQL>
-SELECT ARRAY_TO_STRING(ARRAY_CONSTRUCT_COMPACT(`d`, ' times'), '') AS `x`
-FROM `df`
+SELECT ARRAY_TO_STRING(ARRAY_CONSTRUCT_COMPACT("d", ' times'), '') AS "x"
+FROM "df"
 > 
 > 
 > 
@@ -433,32 +543,32 @@ detaching ‘package:dplyr’
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: backend-spark-sql
-> ### Title: Backend: Databricks Spark SQL
-> ### Aliases: simulate_spark_sql
+> ### Title: Databricks Spark SQL backend
+> ### Aliases: dialect_spark_sql simulate_spark_sql
 > 
 > ### ** Examples
 > 
 > library(dplyr, warn.conflicts = FALSE)
 > 
-> lf <- lazy_frame(a = TRUE, b = 1, d = 2, c = "z", con = simulate_spark_sql())
+> lf <- lazy_frame(a = TRUE, b = 1, d = 2, c = "z", con = dialect_spark_sql())
 > 
-> lf %>% summarise(x = median(d, na.rm = TRUE))
+> lf |> summarise(x = median(d, na.rm = TRUE))
 <SQL>
 SELECT MEDIAN(`d`) AS `x`
 FROM `df`
-> lf %>% summarise(x = var(c, na.rm = TRUE), .by = d)
+> lf |> summarise(x = var(c, na.rm = TRUE), .by = d)
 <SQL>
 SELECT `d`, VARIANCE(`c`) AS `x`
 FROM `df`
 GROUP BY `d`
 > 
-> lf %>% mutate(x = first(c))
+> lf |> mutate(x = first(c))
 <SQL>
-SELECT `df`.*, FIRST_VALUE(`c`) OVER () AS `x`
+SELECT *, FIRST_VALUE(`c`) OVER () AS `x`
 FROM `df`
-> lf %>% mutate(x = first(c), .by = d)
+> lf |> mutate(x = first(c), .by = d)
 <SQL>
-SELECT `df`.*, FIRST_VALUE(`c`) OVER (PARTITION BY `d`) AS `x`
+SELECT *, FIRST_VALUE(`c`) OVER (PARTITION BY `d`) AS `x`
 FROM `df`
 > 
 > 
@@ -473,19 +583,19 @@ detaching ‘package:dplyr’
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: backend-sqlite
-> ### Title: Backend: SQLite
-> ### Aliases: simulate_sqlite
+> ### Title: SQLite backend
+> ### Aliases: dialect_sqlite simulate_sqlite
 > 
 > ### ** Examples
 > 
 > library(dplyr, warn.conflicts = FALSE)
 > 
-> lf <- lazy_frame(a = TRUE, b = 1, c = 2, d = "z", con = simulate_sqlite())
-> lf %>% transmute(x = paste(c, " times"))
+> lf <- lazy_frame(a = TRUE, b = 1, c = 2, d = "z", con = dialect_sqlite())
+> lf |> transmute(x = paste(c, " times"))
 <SQL>
 SELECT `c` || ' ' || ' times' AS `x`
 FROM `df`
-> lf %>% transmute(x = log(b), y = log(b, base = 2))
+> lf |> transmute(x = log(b), y = log(b, base = 2))
 <SQL>
 SELECT LOG(`b`) AS `x`, LOG(`b`) / LOG(2.0) AS `y`
 FROM `df`
@@ -502,18 +612,18 @@ detaching ‘package:dplyr’
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: backend-teradata
-> ### Title: Backend: Teradata
-> ### Aliases: simulate_teradata
+> ### Title: Teradata backend
+> ### Aliases: dialect_teradata simulate_teradata
 > 
 > ### ** Examples
 > 
 > library(dplyr, warn.conflicts = FALSE)
 > 
-> lf <- lazy_frame(a = TRUE, b = 1, c = 2, d = "z", con = simulate_teradata())
-> lf %>% head()
+> lf <- lazy_frame(a = TRUE, b = 1, c = 2, d = "z", con = dialect_teradata())
+> lf |> head()
 <SQL>
-SELECT TOP 6 `df`.*
-FROM `df`
+SELECT TOP 6 "df".*
+FROM "df"
 > 
 > 
 > 
@@ -521,6 +631,55 @@ FROM `df`
 
 detaching ‘package:dplyr’
 
+> nameEx("bind_queries")
+> ### * bind_queries
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: bind_queries
+> ### Title: Combine multiple lazy queries
+> ### Aliases: bind_queries
+> 
+> ### ** Examples
+> 
+> lf1 <- lazy_frame(x = 1, y = "a")
+> lf2 <- lazy_frame(x = 2, y = "b")
+> bind_queries(lf1, lf2)
+<SQL>
+SELECT *
+FROM "df"
+
+UNION ALL
+
+SELECT *
+FROM "df"
+> 
+> lf3 <- lazy_frame(y = "c", x = 3, z = 10)
+> bind_queries(lf2, lf3)
+<SQL>
+SELECT *, NULL AS "z"
+FROM "df"
+
+UNION ALL
+
+SELECT "x", "y", "z"
+FROM "df"
+> 
+> # If you already have a list, you can use splice operator
+> queries <- list(lf1, lf2)
+> bind_queries(!!!queries)
+<SQL>
+SELECT *
+FROM "df"
+
+UNION ALL
+
+SELECT *
+FROM "df"
+> 
+> 
+> 
+> cleanEx()
 > nameEx("build_sql")
 > ### * build_sql
 > 
@@ -533,21 +692,22 @@ detaching ‘package:dplyr’
 > 
 > ### ** Examples
 > 
-> con <- simulate_dbi()
-> build_sql("SELECT * FROM TABLE", con = con)
-<SQL> SELECT * FROM TABLE
-> x <- "TABLE"
-> build_sql("SELECT * FROM ", x, con = con)
-<SQL> SELECT * FROM 'TABLE'
-> build_sql("SELECT * FROM ", ident(x), con = con)
-<SQL> SELECT * FROM `TABLE`
-> build_sql("SELECT * FROM ", sql(x), con = con)
-<SQL> SELECT * FROM TABLE
+> con <- dialect_ansi()
 > 
-> # http://xkcd.com/327/
-> name <- "Robert'); DROP TABLE Students;--"
-> build_sql("INSERT INTO Students (Name) VALUES (", name, ")", con = con)
-<SQL> INSERT INTO Students (Name) VALUES ('Robert''); DROP TABLE Students;--')
+> # Old:
+> build_sql("SELECT * FROM ", ident("table"), con = con)
+<SQL> SELECT * FROM "table"
+> # New:
+> sql_glue2(con, "SELECT * FROM {.tbl 'table'}")
+<SQL> SELECT * FROM "table"
+> 
+> # Old:
+> name <- "Robert"
+> build_sql("INSERT INTO students (name) VALUES (", name, ")", con = con)
+<SQL> INSERT INTO students (name) VALUES ('Robert')
+> # New:
+> sql_glue2(con, "INSERT INTO students (name) VALUES ({name})")
+<SQL> INSERT INTO students (name) VALUES ('Robert')
 > 
 > 
 > 
@@ -558,15 +718,46 @@ detaching ‘package:dplyr’
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: collapse.tbl_sql
-> ### Title: Compute results of a query
-> ### Aliases: collapse.tbl_sql compute.tbl_sql collect.tbl_sql
+> ### Title: Collapse a query into a subquery
+> ### Aliases: collapse.tbl_sql
 > 
 > ### ** Examples
 > 
 > library(dplyr, warn.conflicts = FALSE)
 > 
 > db <- memdb_frame(a = c(3, 4, 1, 2), b = c(5, 1, 2, NA))
-> db %>% filter(a <= 2) %>% collect()
+> db |> filter(a <= 2) |> show_query()
+<SQL>
+SELECT *
+FROM `dbplyr_tmp_4dMaH8wQnr`
+WHERE (`a` <= 2.0)
+> db |> filter(a <= 2) |> collapse() |> show_query()
+<SQL>
+SELECT *
+FROM `dbplyr_tmp_4dMaH8wQnr`
+WHERE (`a` <= 2.0)
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:dplyr’, ‘dbplyr_cache’
+
+> nameEx("collect.tbl_sql")
+> ### * collect.tbl_sql
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: collect.tbl_sql
+> ### Title: Collect results into a local data frame
+> ### Aliases: collect.tbl_sql
+> 
+> ### ** Examples
+> 
+> library(dplyr, warn.conflicts = FALSE)
+> 
+> db <- memdb_frame(a = c(3, 4, 1, 2), b = c(5, 1, 2, NA))
+> db |> filter(a <= 2) |> collect()
 # A tibble: 2 × 2
       a     b
   <dbl> <dbl>
@@ -601,26 +792,26 @@ detaching ‘package:dplyr’, ‘dbplyr_cache’
 +   value2 = 4:6
 + )
 + 
-+ df %>% tidyr::complete(group, nesting(item_id, item_name))
++ df |> tidyr::complete(group, nesting(item_id, item_name))
 + 
 + # You can also choose to fill in missing values
-+ df %>% tidyr::complete(group, nesting(item_id, item_name), fill = list(value1 = 0))
++ df |> tidyr::complete(group, nesting(item_id, item_name), fill = list(value1 = 0))
 + ## Don't show: 
 + }) # examplesIf
 > df <- memdb_frame(group = c(1:2, 1), item_id = c(1:2, 2), item_name = c("a", 
 +     "b", "b"), value1 = 1:3, value2 = 4:6)
-> df %>% tidyr::complete(group, nesting(item_id, item_name))
-# Source:   SQL [?? x 5]
-# Database: sqlite 3.53.1 [:memory:]
+> tidyr::complete(df, group, nesting(item_id, item_name))
+# A query:  ?? x 5
+# Database: sqlite 3.53.2 [:memory:]
   group item_id item_name value1 value2
   <dbl>   <dbl> <chr>      <int>  <int>
 1     1       1 a              1      4
 2     1       2 b              3      6
 3     2       1 a             NA     NA
 4     2       2 b              2      5
-> df %>% tidyr::complete(group, nesting(item_id, item_name), fill = list(value1 = 0))
-# Source:   SQL [?? x 5]
-# Database: sqlite 3.53.1 [:memory:]
+> tidyr::complete(df, group, nesting(item_id, item_name), fill = list(value1 = 0))
+# A query:  ?? x 5
+# Database: sqlite 3.53.2 [:memory:]
   group item_id item_name value1 value2
   <dbl>   <dbl> <chr>      <dbl>  <int>
 1     1       1 a              1      4
@@ -634,6 +825,36 @@ detaching ‘package:dplyr’, ‘dbplyr_cache’
 > cleanEx()
 
 detaching ‘dbplyr_cache’
+
+> nameEx("compute.tbl_sql")
+> ### * compute.tbl_sql
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: compute.tbl_sql
+> ### Title: Save results into a new remote table
+> ### Aliases: compute.tbl_sql
+> 
+> ### ** Examples
+> 
+> library(dplyr, warn.conflicts = FALSE)
+> 
+> db <- memdb_frame(a = c(3, 4, 1, 2), b = c(5, 1, 2, NA))
+> db |> filter(a <= 2) |> show_query()
+<SQL>
+SELECT *
+FROM `dbplyr_tmp_4dMaH8wQnr`
+WHERE (`a` <= 2.0)
+> db |> filter(a <= 2) |> compute() |> show_query()
+<SQL>
+SELECT *
+FROM `dbplyr_tmp_9yRoGtIfjP`
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:dplyr’, ‘dbplyr_cache’
 
 > nameEx("copy_inline")
 > ### * copy_inline
@@ -650,15 +871,15 @@ detaching ‘dbplyr_cache’
 > con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
 > 
 > copy_inline(con, df)
-# Source:   SQL [?? x 2]
-# Database: sqlite 3.53.1 [:memory:]
+# A query:  ?? x 2
+# Database: sqlite 3.53.2 [:memory:]
       x y    
   <int> <chr>
 1     1 a    
 2     2 b    
 3     3 c    
 > 
-> copy_inline(con, df) %>% dplyr::show_query()
+> copy_inline(con, df) |> dplyr::show_query()
 <SQL>
 SELECT CAST(`x` AS INTEGER) AS `x`, CAST(`y` AS TEXT) AS `y`
 FROM (
@@ -687,10 +908,10 @@ FROM (
 > library(dplyr, warn.conflicts = FALSE)
 > 
 > df <- data.frame(x = 1:5, y = letters[5:1])
-> db <- copy_to(src_memdb(), df)
+> db <- copy_to(memdb(), df)
 > db
-# Source:   table<`df`> [?? x 2]
-# Database: sqlite 3.53.1 [:memory:]
+# A query:  ?? x 2
+# Database: sqlite 3.53.2 [:memory:]
       x y    
   <int> <chr>
 1     1 e    
@@ -702,10 +923,10 @@ FROM (
 > df2 <- data.frame(y = c("a", "d"), fruit = c("apple", "date"))
 > # copy_to() is called automatically if you set copy = TRUE
 > # in the join functions
-> db %>% left_join(df2, copy = TRUE)
+> db |> left_join(df2, copy = TRUE)
 Joining with `by = join_by(y)`
-# Source:   SQL [?? x 3]
-# Database: sqlite 3.53.1 [:memory:]
+# A query:  ?? x 3
+# Database: sqlite 3.53.2 [:memory:]
       x y     fruit
   <int> <chr> <chr>
 1     1 e     <NA> 
@@ -734,20 +955,20 @@ detaching ‘package:dplyr’, ‘dbplyr_cache’
 > library(dplyr, warn.conflicts = FALSE)
 > 
 > db <- memdb_frame(g = c(1, 1, 1, 2, 2), x = c(4, 3, 6, 9, 2))
-> db %>% count(g) %>% show_query()
+> db |> count(g) |> show_query()
 <SQL>
 SELECT `g`, COUNT(*) AS `n`
-FROM `dbplyr_4dMaH8wQnr`
+FROM `dbplyr_tmp_4dMaH8wQnr`
 GROUP BY `g`
-> db %>% count(g, wt = x) %>% show_query()
+> db |> count(g, wt = x) |> show_query()
 <SQL>
 SELECT `g`, SUM(`x`) AS `n`
-FROM `dbplyr_4dMaH8wQnr`
+FROM `dbplyr_tmp_4dMaH8wQnr`
 GROUP BY `g`
-> db %>% count(g, wt = x, sort = TRUE) %>% show_query()
+> db |> count(g, wt = x, sort = TRUE) |> show_query()
 <SQL>
 SELECT `g`, SUM(`x`) AS `n`
-FROM `dbplyr_4dMaH8wQnr`
+FROM `dbplyr_tmp_4dMaH8wQnr`
 GROUP BY `g`
 ORDER BY `n` DESC
 > 
@@ -757,32 +978,6 @@ ORDER BY `n` DESC
 
 detaching ‘package:dplyr’, ‘dbplyr_cache’
 
-> nameEx("db-quote")
-> ### * db-quote
-> 
-> flush(stderr()); flush(stdout())
-> 
-> ### Name: db-quote
-> ### Title: SQL escaping/quoting generics
-> ### Aliases: sql_escape_logical sql_escape_date sql_escape_datetime
-> ###   sql_escape_raw
-> ### Keywords: internal
-> 
-> ### ** Examples
-> 
-> con <- simulate_dbi()
-> sql_escape_logical(con, c(TRUE, FALSE, NA))
-[1] "TRUE"  "FALSE" "NULL" 
-> sql_escape_date(con, Sys.Date())
-[1] "'2026-06-08'"
-> sql_escape_date(con, Sys.time())
-[1] "'2026-06-08 08:47:40.571033'"
-> sql_escape_raw(con, charToRaw("hi"))
-[1] "X'6869'"
-> 
-> 
-> 
-> cleanEx()
 > nameEx("dbplyr-slice")
 > ### * dbplyr-slice
 > 
@@ -797,64 +992,79 @@ detaching ‘package:dplyr’, ‘dbplyr_cache’
 > library(dplyr, warn.conflicts = FALSE)
 > 
 > db <- memdb_frame(x = 1:3, y = c(1, 1, 2))
-> db %>% slice_min(x) %>% show_query()
-<SQL>
-SELECT `x`, `y`
-FROM (
-  SELECT `dbplyr_4dMaH8wQnr`.*, RANK() OVER (ORDER BY `x`) AS `col01`
-  FROM `dbplyr_4dMaH8wQnr`
-) AS `q01`
-WHERE (`col01` <= 1)
-> db %>% slice_max(x) %>% show_query()
-<SQL>
-SELECT `x`, `y`
-FROM (
-  SELECT `dbplyr_4dMaH8wQnr`.*, RANK() OVER (ORDER BY `x` DESC) AS `col01`
-  FROM `dbplyr_4dMaH8wQnr`
-) AS `q01`
-WHERE (`col01` <= 1)
-> db %>% slice_sample() %>% show_query()
+> db |> slice_min(x) |> show_query()
 <SQL>
 SELECT `x`, `y`
 FROM (
   SELECT
-    `dbplyr_4dMaH8wQnr`.*,
-    ROW_NUMBER() OVER (ORDER BY (0.5 + RANDOM() / 18446744073709551616.0)) AS `col01`
-  FROM `dbplyr_4dMaH8wQnr`
+    *,
+    CASE
+WHEN (NOT((`x` IS NULL))) THEN RANK() OVER (PARTITION BY (CASE WHEN ((`x` IS NULL)) THEN 1 ELSE 0 END) ORDER BY `x`)
+END AS `col01`
+  FROM `dbplyr_tmp_4dMaH8wQnr`
+) AS `q01`
+WHERE (`col01` <= 1)
+> db |> slice_max(x) |> show_query()
+<SQL>
+SELECT `x`, `y`
+FROM (
+  SELECT
+    *,
+    CASE
+WHEN (NOT((`x` IS NULL))) THEN RANK() OVER (PARTITION BY (CASE WHEN ((`x` IS NULL)) THEN 1 ELSE 0 END) ORDER BY `x` DESC)
+END AS `col01`
+  FROM `dbplyr_tmp_4dMaH8wQnr`
+) AS `q01`
+WHERE (`col01` <= 1)
+> db |> slice_sample() |> show_query()
+<SQL>
+SELECT `x`, `y`
+FROM (
+  SELECT
+    *,
+    CASE
+WHEN (NOT((((0.5 + RANDOM() / 18446744073709551616.0)) IS NULL))) THEN ROW_NUMBER() OVER (PARTITION BY (CASE
+WHEN ((((0.5 + RANDOM() / 18446744073709551616.0)) IS NULL)) THEN 1
+ELSE 0
+END) ORDER BY (0.5 + RANDOM() / 18446744073709551616.0))
+END AS `col01`
+  FROM `dbplyr_tmp_4dMaH8wQnr`
 ) AS `q01`
 WHERE (`col01` <= 1)
 > 
-> db %>% group_by(y) %>% slice_min(x) %>% show_query()
+> db |> group_by(y) |> slice_min(x) |> show_query()
 <SQL>
 SELECT `x`, `y`
 FROM (
   SELECT
-    `dbplyr_4dMaH8wQnr`.*,
-    RANK() OVER (PARTITION BY `y` ORDER BY `x`) AS `col01`
-  FROM `dbplyr_4dMaH8wQnr`
+    *,
+    CASE
+WHEN (NOT((`x` IS NULL))) THEN RANK() OVER (PARTITION BY `y`, (CASE WHEN ((`x` IS NULL)) THEN 1 ELSE 0 END) ORDER BY `x`)
+END AS `col01`
+  FROM `dbplyr_tmp_4dMaH8wQnr`
 ) AS `q01`
 WHERE (`col01` <= 1)
 > 
 > # By default, ties are includes so you may get more rows
 > # than you expect
-> db %>% slice_min(y, n = 1)
-# Source:   SQL [?? x 2]
-# Database: sqlite 3.53.1 [:memory:]
+> db |> slice_min(y, n = 1)
+# A query:  ?? x 2
+# Database: sqlite 3.53.2 [:memory:]
       x     y
   <int> <dbl>
 1     1     1
 2     2     1
-> db %>% slice_min(y, n = 1, with_ties = FALSE)
-# Source:   SQL [?? x 2]
-# Database: sqlite 3.53.1 [:memory:]
+> db |> slice_min(y, n = 1, with_ties = FALSE)
+# A query:  ?? x 2
+# Database: sqlite 3.53.2 [:memory:]
       x     y
   <int> <dbl>
 1     1     1
 > 
 > # Non-integer group sizes are rounded down
-> db %>% slice_min(x, prop = 0.5)
-# Source:   SQL [?? x 2]
-# Database: sqlite 3.53.1 [:memory:]
+> db |> slice_min(x, prop = 0.5)
+# A query:  ?? x 2
+# Database: sqlite 3.53.2 [:memory:]
       x     y
   <int> <dbl>
 1     1     1
@@ -878,16 +1088,16 @@ detaching ‘package:dplyr’, ‘dbplyr_cache’
 > 
 > df <- memdb_frame(x = c("a", "b"), n = c(1, 2))
 > dbplyr_uncount(df, n)
-# Source:   SQL [?? x 1]
-# Database: sqlite 3.53.1 [:memory:]
+# A query:  ?? x 1
+# Database: sqlite 3.53.2 [:memory:]
   x    
   <chr>
 1 a    
 2 b    
 3 b    
 > dbplyr_uncount(df, n, .id = "id")
-# Source:   SQL [?? x 2]
-# Database: sqlite 3.53.1 [:memory:]
+# A query:  ?? x 2
+# Database: sqlite 3.53.2 [:memory:]
   x        id
   <chr> <int>
 1 a         1
@@ -896,8 +1106,8 @@ detaching ‘package:dplyr’, ‘dbplyr_cache’
 > 
 > # You can also use constants
 > dbplyr_uncount(df, 2)
-# Source:   SQL [?? x 2]
-# Database: sqlite 3.53.1 [:memory:]
+# A query:  ?? x 2
+# Database: sqlite 3.53.2 [:memory:]
   x         n
   <chr> <dbl>
 1 a         1
@@ -907,8 +1117,8 @@ detaching ‘package:dplyr’, ‘dbplyr_cache’
 > 
 > # Or expressions
 > dbplyr_uncount(df, 2 / n)
-# Source:   SQL [?? x 2]
-# Database: sqlite 3.53.1 [:memory:]
+# A query:  ?? x 2
+# Database: sqlite 3.53.2 [:memory:]
   x         n
   <chr> <dbl>
 1 a         1
@@ -935,14 +1145,14 @@ detaching ‘dbplyr_cache’
 > library(dplyr, warn.conflicts = FALSE)
 > 
 > db <- memdb_frame(x = c(1, 1, 2, 2), y = c(1, 2, 1, 1))
-> db %>% distinct() %>% show_query()
+> db |> distinct() |> show_query()
 <SQL>
-SELECT DISTINCT `dbplyr_4dMaH8wQnr`.*
-FROM `dbplyr_4dMaH8wQnr`
-> db %>% distinct(x) %>% show_query()
+SELECT DISTINCT *
+FROM `dbplyr_tmp_4dMaH8wQnr`
+> db |> distinct(x) |> show_query()
 <SQL>
 SELECT DISTINCT `x`
-FROM `dbplyr_4dMaH8wQnr`
+FROM `dbplyr_tmp_4dMaH8wQnr`
 > 
 > 
 > 
@@ -950,38 +1160,77 @@ FROM `dbplyr_4dMaH8wQnr`
 
 detaching ‘package:dplyr’, ‘dbplyr_cache’
 
+> nameEx("dot-sql")
+> ### * dot-sql
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: .sql
+> ### Title: Flag SQL function usage
+> ### Aliases: .sql
+> 
+> ### ** Examples
+> 
+> library(dplyr, warn.conflicts = FALSE)
+> 
+> db <- lazy_frame(x = 1, y = 2)
+> db |> mutate(z = .sql$CUMULATIVE_SUM(x, 1))
+<SQL>
+SELECT *, CUMULATIVE_SUM("x", 1.0) AS "z"
+FROM "df"
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:dplyr’
+
 > nameEx("escape")
 > ### * escape
 > 
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: escape
-> ### Title: Escape/quote a string.
-> ### Aliases: escape escape_ansi sql_vector
+> ### Title: Escape/quote a value
+> ### Aliases: escape db-quote sql_escape_ident sql_escape_logical
+> ###   sql_escape_date sql_escape_datetime sql_escape_string sql_escape_raw
+> ###   sql_vector
 > 
 > ### ** Examples
 > 
+> con <- dialect_ansi()
+> 
 > # Doubles vs. integers
-> escape_ansi(1:5)
-<SQL> (12345)
-> escape_ansi(c(1, 5.4))
-<SQL> (1.05.4)
+> escape(1:5, con = con)
+<SQL> (1, 2, 3, 4, 5)
+> escape(c(1, 5.4), con = con)
+<SQL> (1.0, 5.4)
 > 
 > # String vs known sql vs. sql identifier
-> escape_ansi("X")
+> escape("X", con = con)
 <SQL> 'X'
-> escape_ansi(sql("X"))
+> escape(sql("X"), con = con)
 <SQL> X
-> escape_ansi(ident("X"))
-<SQL> `X`
+> escape(ident("X"), con = con)
+<SQL> "X"
 > 
 > # Escaping is idempotent
-> escape_ansi("X")
+> escape("X", con = con)
 <SQL> 'X'
-> escape_ansi(escape_ansi("X"))
+> escape(escape("X", con = con), con = con)
 <SQL> 'X'
-> escape_ansi(escape_ansi(escape_ansi("X")))
-<SQL> 'X'
+> 
+> # Database specific generics
+> sql_escape_logical(con, c(TRUE, FALSE, NA))
+<SQL> TRUE
+<SQL> FALSE
+<SQL> NULL
+> sql_escape_date(con, Sys.Date())
+<SQL> '2026-11-04'
+> sql_escape_date(con, Sys.time())
+<SQL> '2026-11-04 16:46:22.445535'
+> sql_escape_raw(con, charToRaw("hi"))
+<SQL> X'6869'
 > 
 > 
 > 
@@ -1008,26 +1257,26 @@ detaching ‘package:dplyr’, ‘dbplyr_cache’
 + )
 + 
 + # All possible combinations ---------------------------------------
-+ fruits %>% tidyr::expand(type)
-+ fruits %>% tidyr::expand(type, size)
++ fruits |> tidyr::expand(type)
++ fruits |> tidyr::expand(type, size)
 + 
 + # Only combinations that already appear in the data ---------------
-+ fruits %>% tidyr::expand(nesting(type, size))
++ fruits |> tidyr::expand(nesting(type, size))
 + ## Don't show: 
 + }) # examplesIf
 > fruits <- memdb_frame(type = c("apple", "orange", "apple", "orange", "orange", 
 +     "orange"), year = c(2010, 2010, 2012, 2010, 2010, 2012), size = c("XS", "S", 
 +     "M", "S", "S", "M"), weights = rnorm(6))
-> fruits %>% tidyr::expand(type)
-# Source:   SQL [?? x 1]
-# Database: sqlite 3.53.1 [:memory:]
+> tidyr::expand(fruits, type)
+# A query:  ?? x 1
+# Database: sqlite 3.53.2 [:memory:]
   type  
   <chr> 
 1 apple 
 2 orange
-> fruits %>% tidyr::expand(type, size)
-# Source:   SQL [?? x 2]
-# Database: sqlite 3.53.1 [:memory:]
+> tidyr::expand(fruits, type, size)
+# A query:  ?? x 2
+# Database: sqlite 3.53.2 [:memory:]
   type   size 
   <chr>  <chr>
 1 apple  XS   
@@ -1036,9 +1285,9 @@ detaching ‘package:dplyr’, ‘dbplyr_cache’
 4 orange XS   
 5 orange S    
 6 orange M    
-> fruits %>% tidyr::expand(nesting(type, size))
-# Source:   SQL [?? x 2]
-# Database: sqlite 3.53.1 [:memory:]
+> tidyr::expand(fruits, nesting(type, size))
+# A query:  ?? x 2
+# Database: sqlite 3.53.2 [:memory:]
   type   size 
   <chr>  <chr>
 1 apple  XS   
@@ -1067,6 +1316,8 @@ detaching ‘dbplyr_cache’
 > ## Don't show: 
 > if (rlang::is_installed("tidyr", version = "1.0.0")) withAutoprint({ # examplesIf
 + ## End(Don't show)
++ library(dplyr, warn.conflicts = FALSE)
++ 
 + squirrels <- tibble::tribble(
 +   ~group,    ~name,     ~role,     ~n_squirrels, ~ n_squirrels2,
 +   1,      "Sam",    "Observer",   NA,                 1,
@@ -1084,14 +1335,13 @@ detaching ‘dbplyr_cache’
 + )
 + squirrels$id <- 1:12
 + 
-+ tbl_memdb(squirrels) %>%
-+   window_order(id) %>%
-+   tidyr::fill(
-+     n_squirrels,
-+     n_squirrels2,
-+   )
++ squirrels_db <- copy_to(memdb(), squirrels)
++ squirrels_db |>
++   window_order(id) |>
++   tidyr::fill(n_squirrels, n_squirrels2)
 + ## Don't show: 
 + }) # examplesIf
+> library(dplyr, warn.conflicts = FALSE)
 > squirrels <- tibble::tribble(~group, ~name, ~role, ~n_squirrels, ~n_squirrels2, 
 +     1, "Sam", "Observer", NA, 1, 1, "Mara", "Scorekeeper", 8, NA, 1, "Jesse", "Observer", 
 +     NA, NA, 1, "Tom", "Observer", NA, 4, 2, "Mike", "Observer", NA, NA, 2, "Rachael", 
@@ -1099,10 +1349,10 @@ detaching ‘dbplyr_cache’
 +     NA, NA, 3, "Derrick", "Observer", NA, NA, 3, "Kara", "Scorekeeper", 9, 10, 3, 
 +     "Emily", "Observer", NA, NA, 3, "Danielle", "Observer", NA, NA)
 > squirrels$id <- 1:12
-> tbl_memdb(squirrels) %>% window_order(id) %>% tidyr::fill(n_squirrels, 
-+     n_squirrels2, )
-# Source:     SQL [?? x 6]
-# Database:   sqlite 3.53.1 [:memory:]
+> squirrels_db <- copy_to(memdb(), squirrels)
+> tidyr::fill(window_order(squirrels_db, id), n_squirrels, n_squirrels2)
+# A query:    ?? x 6
+# Database:   sqlite 3.53.2 [:memory:]
 # Ordered by: id
    group name     role        n_squirrels n_squirrels2    id
    <dbl> <chr>    <chr>             <dbl>        <dbl> <int>
@@ -1124,7 +1374,7 @@ detaching ‘dbplyr_cache’
 > 
 > cleanEx()
 
-detaching ‘dbplyr_cache’
+detaching ‘package:dplyr’, ‘dbplyr_cache’
 
 > nameEx("filter.tbl_lazy")
 > ### * filter.tbl_lazy
@@ -1132,23 +1382,28 @@ detaching ‘dbplyr_cache’
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: filter.tbl_lazy
-> ### Title: Subset rows using column values
-> ### Aliases: filter.tbl_lazy
+> ### Title: Keep or drop rows that match a condition
+> ### Aliases: filter.tbl_lazy filter_out.tbl_lazy
 > 
 > ### ** Examples
 > 
 > library(dplyr, warn.conflicts = FALSE)
 > 
 > db <- memdb_frame(x = c(2, NA, 5, NA, 10), y = 1:5)
-> db %>% filter(x < 5) %>% show_query()
+> db |> filter(x < 5) |> show_query()
 <SQL>
-SELECT `dbplyr_4dMaH8wQnr`.*
-FROM `dbplyr_4dMaH8wQnr`
+SELECT *
+FROM `dbplyr_tmp_4dMaH8wQnr`
 WHERE (`x` < 5.0)
-> db %>% filter(is.na(x)) %>% show_query()
+> db |> filter_out(x < 5) |> show_query()
 <SQL>
-SELECT `dbplyr_4dMaH8wQnr`.*
-FROM `dbplyr_4dMaH8wQnr`
+SELECT *
+FROM `dbplyr_tmp_4dMaH8wQnr`
+WHERE ((`x` < 5.0) IS NOT (1))
+> db |> filter(is.na(x)) |> show_query()
+<SQL>
+SELECT *
+FROM `dbplyr_tmp_4dMaH8wQnr`
 WHERE ((`x` IS NULL))
 > 
 > 
@@ -1174,7 +1429,7 @@ Attaching package: ‘dplyr’
 
 The following objects are masked from ‘package:dbplyr’:
 
-    ident, sql
+    ident, sql, sql_escape_ident, sql_escape_string
 
 The following objects are masked from ‘package:stats’:
 
@@ -1197,8 +1452,8 @@ The following objects are masked from ‘package:base’:
 > rows_insert(info, rows1, conflict = "ignore", in_place = TRUE)
 Matching, by = "number"
 > info
-# Source:   table<`Info`> [?? x 2]
-# Database: sqlite 3.53.1 [:memory:]
+# A query:  ?? x 2
+# Database: sqlite 3.53.2 [:memory:]
      id number
   <int>  <int>
 1     1      1
@@ -1216,8 +1471,8 @@ Matching, by = "number"
 + )
 Matching, by = "number"
 > info
-# Source:   table<`Info`> [?? x 2]
-# Database: sqlite 3.53.1 [:memory:]
+# A query:  ?? x 2
+# Database: sqlite 3.53.2 [:memory:]
      id number
   <int>  <int>
 1     1      1
@@ -1251,22 +1506,22 @@ detaching ‘package:dplyr’
 > library(dplyr, warn.conflicts = FALSE)
 > 
 > db <- memdb_frame(g = c(1, 1, 1, 2, 2), x = c(4, 3, 6, 9, 2))
-> db %>%
-+   group_by(g) %>%
-+   summarise(n()) %>%
+> db |>
++   group_by(g) |>
++   summarise(n()) |>
 +   show_query()
 <SQL>
 SELECT `g`, COUNT(*) AS `n()`
-FROM `dbplyr_4dMaH8wQnr`
+FROM `dbplyr_tmp_4dMaH8wQnr`
 GROUP BY `g`
 > 
-> db %>%
-+   group_by(g) %>%
-+   mutate(x2 = x / sum(x, na.rm = TRUE)) %>%
+> db |>
++   group_by(g) |>
++   mutate(x2 = x / sum(x, na.rm = TRUE)) |>
 +   show_query()
 <SQL>
-SELECT `dbplyr_4dMaH8wQnr`.*, `x` / SUM(`x`) OVER (PARTITION BY `g`) AS `x2`
-FROM `dbplyr_4dMaH8wQnr`
+SELECT *, `x` / SUM(`x`) OVER (PARTITION BY `g`) AS `x2`
+FROM `dbplyr_tmp_4dMaH8wQnr`
 > 
 > 
 > 
@@ -1288,18 +1543,18 @@ detaching ‘package:dplyr’, ‘dbplyr_cache’
 > library(dplyr, warn.conflicts = FALSE)
 > 
 > db <- memdb_frame(x = 1:100)
-> db %>% head() %>% show_query()
+> db |> head() |> show_query()
 <SQL>
-SELECT `dbplyr_4dMaH8wQnr`.*
-FROM `dbplyr_4dMaH8wQnr`
+SELECT *
+FROM `dbplyr_tmp_4dMaH8wQnr`
 LIMIT 6
 > 
 > # Pretend we have data in a SQL server database
-> db2 <- lazy_frame(x = 1:100, con = simulate_mssql())
-> db2 %>% head() %>% show_query()
+> db2 <- lazy_frame(x = 1:100, con = dialect_mssql())
+> db2 |> head() |> show_query()
 <SQL>
-SELECT TOP 6 `df`.*
-FROM `df`
+SELECT TOP 6 *
+FROM [df]
 > 
 > 
 > 
@@ -1319,23 +1574,15 @@ detaching ‘package:dplyr’, ‘dbplyr_cache’
 > 
 > ### ** Examples
 > 
+> con <- dialect_ansi()
+> 
 > # SQL92 quotes strings with '
-> escape_ansi("x")
+> escape("x", con = con)
 <SQL> 'x'
 > 
 > # And identifiers with "
-> ident("x")
-<IDENT> x
-> escape_ansi(ident("x"))
-<SQL> `x`
-> 
-> # You can supply multiple inputs
-> ident(a = "x", b = "y")
-<IDENT> x
-<IDENT> y
-> ident_q(a = "x", b = "y")
-<IDENT> x
-<IDENT> y
+> escape(ident("x"), con = con)
+<SQL> "x"
 > 
 > 
 > 
@@ -1354,9 +1601,9 @@ detaching ‘package:dplyr’, ‘dbplyr_cache’
 > 
 > # Previously:
 > in_schema("my_schema", "my_table")
-<SCHEMA> `my_schema`.`my_table`
+<SCHEMA> "my_schema"."my_table"
 > in_catalog("my_catalog", "my_schema", "my_table")
-<CATALOG> `my_catalog`.`my_schema`.`my_table`
+<CATALOG> "my_catalog"."my_schema"."my_table"
 > in_schema(sql("my_schema"), sql("my_table"))
 <SCHEMA> my_schema.my_table
 > 
@@ -1380,9 +1627,9 @@ detaching ‘package:dplyr’, ‘dbplyr_cache’
 > copy_to(con, iris, "df", temporary = FALSE)
 > copy_to(con, mtcars, I("aux.df"), temporary = FALSE)
 > 
-> con %>% tbl("df")
-# Source:   table<`df`> [?? x 5]
-# Database: sqlite 3.53.1 [:memory:]
+> con |> tbl("df")
+# A query:  ?? x 5
+# Database: sqlite 3.53.2 [:memory:]
    Sepal.Length Sepal.Width Petal.Length Petal.Width Species
           <dbl>       <dbl>        <dbl>       <dbl> <chr>  
  1          5.1         3.5          1.4         0.2 setosa 
@@ -1396,9 +1643,9 @@ detaching ‘package:dplyr’, ‘dbplyr_cache’
  9          4.4         2.9          1.4         0.2 setosa 
 10          4.9         3.1          1.5         0.1 setosa 
 # ℹ more rows
-> con %>% tbl(I("aux.df"))
-# Source:   table<aux.df> [?? x 11]
-# Database: sqlite 3.53.1 [:memory:]
+> con |> tbl(I("aux.df"))
+# A query:  ?? x 11
+# Database: sqlite 3.53.2 [:memory:]
      mpg   cyl  disp    hp  drat    wt  qsec    vs    am  gear  carb
    <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
  1  21       6  160    110  3.9   2.62  16.5     0     1     4     4
@@ -1434,9 +1681,9 @@ detaching ‘package:dplyr’
 > 
 > library(dplyr, warn.conflicts = FALSE)
 > 
-> band_db <- tbl_memdb(dplyr::band_members)
-> instrument_db <- tbl_memdb(dplyr::band_instruments)
-> band_db %>% left_join(instrument_db) %>% show_query()
+> band_db <- copy_to(memdb(), dplyr::band_members)
+> instrument_db <- copy_to(memdb(), dplyr::band_instruments)
+> band_db |> left_join(instrument_db) |> show_query()
 Joining with `by = join_by(name)`
 <SQL>
 SELECT `dplyr::band_members`.*, `plays`
@@ -1445,11 +1692,11 @@ LEFT JOIN `dplyr::band_instruments`
   ON (`dplyr::band_members`.`name` = `dplyr::band_instruments`.`name`)
 > 
 > # Can join with local data frames by setting copy = TRUE
-> band_db %>%
+> band_db |>
 +   left_join(dplyr::band_instruments, copy = TRUE)
 Joining with `by = join_by(name)`
-# Source:   SQL [?? x 3]
-# Database: sqlite 3.53.1 [:memory:]
+# A query:  ?? x 3
+# Database: sqlite 3.53.2 [:memory:]
   name  band    plays 
   <chr> <chr>   <chr> 
 1 Mick  Stones  <NA>  
@@ -1459,18 +1706,18 @@ Joining with `by = join_by(name)`
 > # Unlike R, joins in SQL don't usually match NAs (NULLs)
 > db <- memdb_frame(x = c(1, 2, NA))
 > label <- memdb_frame(x = c(1, NA), label = c("one", "missing"))
-> db %>% left_join(label, by = "x")
-# Source:   SQL [?? x 2]
-# Database: sqlite 3.53.1 [:memory:]
+> db |> left_join(label, by = "x")
+# A query:  ?? x 2
+# Database: sqlite 3.53.2 [:memory:]
       x label
   <dbl> <chr>
 1     1 one  
 2     2 <NA> 
 3    NA <NA> 
 > # But you can activate R's usual behaviour with the na_matches argument
-> db %>% left_join(label, by = "x", na_matches = "na")
-# Source:   SQL [?? x 2]
-# Database: sqlite 3.53.1 [:memory:]
+> db |> left_join(label, by = "x", na_matches = "na")
+# A query:  ?? x 2
+# Database: sqlite 3.53.2 [:memory:]
       x label  
   <dbl> <chr>  
 1     1 one    
@@ -1481,18 +1728,18 @@ Joining with `by = join_by(name)`
 > # express richer relationships
 > db1 <- memdb_frame(x = 1:5)
 > db2 <- memdb_frame(x = 1:3, y = letters[1:3])
-> db1 %>% left_join(db2) %>% show_query()
+> db1 |> left_join(db2) |> show_query()
 Joining with `by = join_by(x)`
 <SQL>
-SELECT `dbplyr_szIQaCnvfB`.`x` AS `x`, `y`
-FROM `dbplyr_szIQaCnvfB`
-LEFT JOIN `dbplyr_2UAgUt4xY0`
-  ON (`dbplyr_szIQaCnvfB`.`x` = `dbplyr_2UAgUt4xY0`.`x`)
-> db1 %>% left_join(db2, sql_on = "LHS.x < RHS.x") %>% show_query()
+SELECT `dbplyr_tmp_szIQaCnvfB`.`x` AS `x`, `y`
+FROM `dbplyr_tmp_szIQaCnvfB`
+LEFT JOIN `dbplyr_tmp_2UAgUt4xY0`
+  ON (`dbplyr_tmp_szIQaCnvfB`.`x` = `dbplyr_tmp_2UAgUt4xY0`.`x`)
+> db1 |> left_join(db2, sql_on = "LHS.x < RHS.x") |> show_query()
 <SQL>
 SELECT `LHS`.`x` AS `x.x`, `RHS`.`x` AS `x.y`, `y`
-FROM `dbplyr_szIQaCnvfB` AS `LHS`
-LEFT JOIN `dbplyr_2UAgUt4xY0` AS `RHS`
+FROM `dbplyr_tmp_szIQaCnvfB` AS `LHS`
+LEFT JOIN `dbplyr_tmp_2UAgUt4xY0` AS `RHS`
   ON (LHS.x < RHS.x)
 > 
 > 
@@ -1520,14 +1767,45 @@ detaching ‘package:dplyr’, ‘dbplyr_cache’
 > 
 > 
 > cleanEx()
-> nameEx("memdb_frame")
-> ### * memdb_frame
+> nameEx("last_sql")
+> ### * last_sql
 > 
 > flush(stderr()); flush(stdout())
 > 
-> ### Name: memdb_frame
-> ### Title: Create a database table in temporary in-memory database.
-> ### Aliases: memdb_frame tbl_memdb src_memdb
+> ### Name: last_sql
+> ### Title: Retrieve the last SQL query generated
+> ### Aliases: last_sql
+> 
+> ### ** Examples
+> 
+> library(dplyr, warn.conflicts = FALSE)
+> 
+> df <- lazy_frame(x = 1:3)
+> df |> filter(x > 1)
+<SQL>
+SELECT *
+FROM "df"
+WHERE ("x" > 1.0)
+> 
+> last_sql()
+<SQL> SELECT *
+FROM "df"
+WHERE ("x" > 1.0)
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:dplyr’
+
+> nameEx("memdb")
+> ### * memdb
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: memdb
+> ### Title: A temporary in-memory database
+> ### Aliases: memdb memdb_frame local_memdb_frame
 > 
 > ### ** Examples
 > 
@@ -1537,7 +1815,7 @@ Attaching package: ‘dplyr’
 
 The following objects are masked from ‘package:dbplyr’:
 
-    ident, sql
+    ident, sql, sql_escape_ident, sql_escape_string
 
 The following objects are masked from ‘package:stats’:
 
@@ -1547,36 +1825,50 @@ The following objects are masked from ‘package:base’:
 
     intersect, setdiff, setequal, union
 
+> 
+> # use memdb_frame() to create a new database table
 > df <- memdb_frame(x = runif(100), y = runif(100))
-> df %>% arrange(x)
-# Source:     SQL [?? x 2]
-# Database:   sqlite 3.53.1 [:memory:]
+> df |> arrange(x)
+# A query:    ?? x 2
+# Database:   sqlite 3.53.2 [:memory:]
 # Ordered by: x
         x     y
     <dbl> <dbl>
  1 0.0134 0.511
  2 0.0233 0.175
  3 0.0589 0.389
- 4 0.0618 0.599
- 5 0.0707 0.500
- 6 0.0842 0.724
- 7 0.0995 0.181
- 8 0.108  0.526
- 9 0.122  0.724
-10 0.126  0.173
+ 4 0.0707 0.500
+ 5 0.0842 0.724
+ 6 0.0995 0.181
+ 7 0.108  0.526
+ 8 0.122  0.724
+ 9 0.126  0.173
+10 0.129  0.563
 # ℹ more rows
-> df %>% arrange(x) %>% show_query()
+> df |> arrange(x) |> show_query()
 <SQL>
-SELECT `dbplyr_75mzHbsqHk`.*
-FROM `dbplyr_75mzHbsqHk`
+SELECT *
+FROM `dbplyr_tmp_4dMaH8wQnr`
 ORDER BY `x`
 > 
-> mtcars_db <- tbl_memdb(mtcars)
-> mtcars_db %>% group_by(cyl) %>% summarise(n = n()) %>% show_query()
-<SQL>
-SELECT `cyl`, COUNT(*) AS `n`
-FROM `mtcars`
-GROUP BY `cyl`
+> # Use memdb() + copy_to() to copy an existing data frame
+> iris_db <- copy_to(memdb(), iris)
+> iris_db
+# A query:  ?? x 5
+# Database: sqlite 3.53.2 [:memory:]
+   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+          <dbl>       <dbl>        <dbl>       <dbl> <chr>  
+ 1          5.1         3.5          1.4         0.2 setosa 
+ 2          4.9         3            1.4         0.2 setosa 
+ 3          4.7         3.2          1.3         0.2 setosa 
+ 4          4.6         3.1          1.5         0.2 setosa 
+ 5          5           3.6          1.4         0.2 setosa 
+ 6          5.4         3.9          1.7         0.4 setosa 
+ 7          4.6         3.4          1.4         0.3 setosa 
+ 8          5           3.4          1.5         0.2 setosa 
+ 9          4.4         2.9          1.4         0.2 setosa 
+10          4.9         3.1          1.5         0.1 setosa 
+# ℹ more rows
 > 
 > 
 > 
@@ -1598,26 +1890,37 @@ detaching ‘package:dplyr’, ‘dbplyr_cache’
 > library(dplyr, warn.conflicts = FALSE)
 > 
 > db <- memdb_frame(x = 1:5, y = 5:1)
-> db %>%
-+   mutate(a = (x + y) / 2, b = sqrt(x^2L + y^2L)) %>%
+> db |>
++   mutate(a = (x + y) / 2, b = sqrt(x^2L + y^2L)) |>
 +   show_query()
 <SQL>
-SELECT
-  `dbplyr_4dMaH8wQnr`.*,
-  (`x` + `y`) / 2.0 AS `a`,
-  SQRT((POWER(`x`, 2)) + POWER(`y`, 2)) AS `b`
-FROM `dbplyr_4dMaH8wQnr`
+SELECT *, (`x` + `y`) / 2.0 AS `a`, SQRT((POWER(`x`, 2)) + POWER(`y`, 2)) AS `b`
+FROM `dbplyr_tmp_4dMaH8wQnr`
 > 
 > # dbplyr automatically creates subqueries as needed
-> db %>%
-+   mutate(x1 = x + 1, x2 = x1 * 2) %>%
+> db |>
++   mutate(x1 = x + 1, x2 = x1 * 2) |>
 +   show_query()
 <SQL>
-SELECT `q01`.*, `x1` * 2.0 AS `x2`
+SELECT *, `x1` * 2.0 AS `x2`
 FROM (
-  SELECT `dbplyr_4dMaH8wQnr`.*, `x` + 1.0 AS `x1`
-  FROM `dbplyr_4dMaH8wQnr`
+  SELECT *, `x` + 1.0 AS `x1`
+  FROM `dbplyr_tmp_4dMaH8wQnr`
 ) AS `q01`
+> 
+> # `.order` and `.frame` control window functions
+> db <- memdb_frame(g = c(1, 1, 2, 2, 2), x = c(5, 3, 1, 4, 2))
+> db |>
++   mutate(rolling_sum = sum(x), .by = g, .order = x, .frame = c(-2, 2)) |>
++   show_query()
+Warning: Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours.
+<SQL>
+SELECT
+  *,
+  SUM(`x`) OVER (PARTITION BY `g` ORDER BY `x` ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING) AS `rolling_sum`
+FROM `dbplyr_tmp_9yRoGtIfjP`
 > 
 > 
 > 
@@ -1667,6 +1970,12 @@ year > f(1980)
 > partial_eval(quote(year > local(f(1980))), lf)
 year > 1981
 > 
+> # You can use `.sql` to make it clear that the function comes from SQL,
+> # and inside a package, reduce the number of globalVariables() directives
+> # needed
+> partial_eval(quote(.sql$EXTRACT_YEAR(year)), lf)
+EXTRACT_YEAR(year)
+> 
 > 
 > 
 > cleanEx()
@@ -1691,13 +2000,13 @@ year > 1981
 +   id = c("a", "b"),
 +   x = 1:2,
 +   y = 3:4
-+ ) %>%
++ ) |>
 +   tidyr::pivot_longer(-id)
 + ## Don't show: 
 + }) # examplesIf
-> memdb_frame(id = c("a", "b"), x = 1:2, y = 3:4) %>% tidyr::pivot_longer(-id)
-# Source:   SQL [?? x 3]
-# Database: sqlite 3.53.1 [:memory:]
+> tidyr::pivot_longer(memdb_frame(id = c("a", "b"), x = 1:2, y = 3:4), -id)
+# A query:  ?? x 3
+# Database: sqlite 3.53.2 [:memory:]
   id    name  value
   <chr> <chr> <int>
 1 a     x         1
@@ -1730,7 +2039,7 @@ detaching ‘dbplyr_cache’
 +   id = 1,
 +   key = c("x", "y"),
 +   value = 1:2
-+ ) %>%
++ ) |>
 +   tidyr::pivot_wider(
 +     id_cols = id,
 +     names_from = key,
@@ -1738,10 +2047,10 @@ detaching ‘dbplyr_cache’
 +   )
 + ## Don't show: 
 + }) # examplesIf
-> memdb_frame(id = 1, key = c("x", "y"), value = 1:2) %>% tidyr::pivot_wider(id_cols = id, 
-+     names_from = key, values_from = value)
-# Source:   SQL [?? x 3]
-# Database: sqlite 3.53.1 [:memory:]
+> tidyr::pivot_wider(memdb_frame(id = 1, key = c("x", "y"), value = 1:2), 
++     id_cols = id, names_from = key, values_from = value)
+# A query:  ?? x 3
+# Database: sqlite 3.53.2 [:memory:]
      id     x     y
   <dbl> <int> <int>
 1     1     1     2
@@ -1767,8 +2076,8 @@ detaching ‘dbplyr_cache’
 > library(dplyr, warn.conflicts = FALSE)
 > 
 > db <- memdb_frame(x = 1:5, y = 5:1)
-> db %>%
-+   mutate(z = x + y * 2) %>%
+> db |>
++   mutate(z = x + y * 2) |>
 +   pull()
 [1] 11 10  9  8  7
 > 
@@ -1794,7 +2103,7 @@ detaching ‘package:dplyr’, ‘dbplyr_cache’
 > remote_name(mf)
 [1] "blorp"
 > remote_src(mf)
-src:  sqlite 3.53.1 [:memory:]
+src:  sqlite 3.53.2 [:memory:]
 tbls: blorp, sqlite_stat1, sqlite_stat4
 > remote_con(mf)
 <SQLiteConnection>
@@ -1808,14 +2117,14 @@ FROM `blorp`
 > remote_name(mf2)
 NULL
 > remote_src(mf2)
-src:  sqlite 3.53.1 [:memory:]
+src:  sqlite 3.53.2 [:memory:]
 tbls: blorp, sqlite_stat1, sqlite_stat4
 > remote_con(mf2)
 <SQLiteConnection>
   Path: :memory:
   Extensions: TRUE
 > remote_query(mf2)
-<SQL> SELECT `blorp`.*
+<SQL> SELECT *
 FROM `blorp`
 WHERE (`x` > 3.0)
 > 
@@ -1840,13 +2149,13 @@ detaching ‘dbplyr_cache’
 > if (rlang::is_installed("tidyr", version = "1.0.0")) withAutoprint({ # examplesIf
 + ## End(Don't show)
 + df <- memdb_frame(x = c(1, 2, NA), y = c("a", NA, "b"))
-+ df %>% tidyr::replace_na(list(x = 0, y = "unknown"))
++ df |> tidyr::replace_na(list(x = 0, y = "unknown"))
 + ## Don't show: 
 + }) # examplesIf
 > df <- memdb_frame(x = c(1, 2, NA), y = c("a", NA, "b"))
-> df %>% tidyr::replace_na(list(x = 0, y = "unknown"))
-# Source:   SQL [?? x 2]
-# Database: sqlite 3.53.1 [:memory:]
+> tidyr::replace_na(df, list(x = 0, y = "unknown"))
+# A query:  ?? x 2
+# Database: sqlite 3.53.2 [:memory:]
       x y      
   <dbl> <chr>  
 1     1 a      
@@ -1878,7 +2187,7 @@ Attaching package: ‘dplyr’
 
 The following objects are masked from ‘package:dbplyr’:
 
-    ident, sql
+    ident, sql, sql_escape_ident, sql_escape_string
 
 The following objects are masked from ‘package:stats’:
 
@@ -1907,15 +2216,15 @@ The following objects are masked from ‘package:base’:
 > # The default behavior is to generate a SELECT query
 > rows_insert(ponies, applejack, conflict = "ignore")
 Matching, by = "name"
-# Source:   SQL [?? x 3]
-# Database: sqlite 3.53.1 [:memory:]
+# A query:  ?? x 3
+# Database: sqlite 3.53.2 [:memory:]
   id    name       cutie_mark  
   <lgl> <chr>      <chr>       
 1 NA    Apple Jack three apples
 > # And the original table is left unchanged:
 > ponies
-# Source:   table<`Ponies`> [?? x 3]
-# Database: sqlite 3.53.1 [:memory:]
+# A query:  ?? x 3
+# Database: sqlite 3.53.2 [:memory:]
 # ℹ 3 variables: id <int>, name <chr>, cutie_mark <chr>
 > 
 > # You can also choose to modify the table with in_place = TRUE:
@@ -1924,8 +2233,8 @@ Matching, by = "name"
 > # In this case `rows_insert()` returns nothing and the underlying
 > # data is modified
 > ponies
-# Source:   table<`Ponies`> [?? x 3]
-# Database: sqlite 3.53.1 [:memory:]
+# A query:  ?? x 3
+# Database: sqlite 3.53.2 [:memory:]
      id name       cutie_mark  
   <int> <chr>      <chr>       
 1     1 Apple Jack three apples
@@ -1951,18 +2260,18 @@ detaching ‘package:dplyr’
 > library(dplyr, warn.conflicts = FALSE)
 > 
 > db <- memdb_frame(x = 1, y = 2, z = 3)
-> db %>% select(-y) %>% show_query()
+> db |> select(-y) |> show_query()
 <SQL>
 SELECT `x`, `z`
-FROM `dbplyr_4dMaH8wQnr`
-> db %>% relocate(z) %>% show_query()
+FROM `dbplyr_tmp_4dMaH8wQnr`
+> db |> relocate(z) |> show_query()
 <SQL>
 SELECT `z`, `x`, `y`
-FROM `dbplyr_4dMaH8wQnr`
-> db %>% rename(first = x, last = z) %>% show_query()
+FROM `dbplyr_tmp_4dMaH8wQnr`
+> db |> rename(first = x, last = z) |> show_query()
 <SQL>
 SELECT `x` AS `first`, `y`, `z` AS `last`
-FROM `dbplyr_4dMaH8wQnr`
+FROM `dbplyr_tmp_4dMaH8wQnr`
 > 
 > 
 > 
@@ -1970,6 +2279,64 @@ FROM `dbplyr_4dMaH8wQnr`
 
 detaching ‘package:dplyr’, ‘dbplyr_cache’
 
+> nameEx("sql")
+> ### * sql
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: sql
+> ### Title: Literal SQL escaping
+> ### Aliases: sql is.sql
+> 
+> ### ** Examples
+> 
+> library(dplyr, warn.conflicts = FALSE)
+> # sql() just adds a class
+> sql("x + 1")
+<SQL> x + 1
+> is.sql(sql("x + 1"))
+[1] TRUE
+> 
+> # You can use it when you need to insert some literal SQL in a query
+> db <- memdb_frame(x = 1:3)
+> db |> mutate(y = sql("CAST(x as VARCHAR)"))
+# A query:  ?? x 2
+# Database: sqlite 3.53.2 [:memory:]
+      x y    
+  <int> <chr>
+1     1 1    
+2     2 2    
+3     3 3    
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:dplyr’, ‘dbplyr_cache’
+
+> nameEx("sql_dialect")
+> ### * sql_dialect
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: sql_dialect
+> ### Title: SQL dialects
+> ### Aliases: sql_dialect new_sql_dialect
+> 
+> ### ** Examples
+> 
+> # Create a custom dialect
+> my_dialect <- new_sql_dialect(
++   "custom",
++   quote_identifier = function(x) sql_quote(x, "`"),
++   has_window_clause = TRUE
++ )
+> class(my_dialect)
+[1] "sql_dialect_custom" "sql_dialect"       
+> 
+> 
+> 
+> cleanEx()
 > nameEx("sql_expr")
 > ### * sql_expr
 > 
@@ -1982,7 +2349,7 @@ detaching ‘package:dplyr’, ‘dbplyr_cache’
 > 
 > ### ** Examples
 > 
-> con <- simulate_dbi() # not necessary when writing translations
+> con <- dialect_ansi() # not necessary when writing translations
 > 
 > sql_expr(f(x + 1), con = con)
 <SQL> F(x + 1.0)
@@ -1993,7 +2360,7 @@ detaching ‘package:dplyr’, ‘dbplyr_cache’
 > 
 > x <- ident("x")
 > sql_expr(f(!!x, y), con = con)
-<SQL> F(`x`, y)
+<SQL> F("x", y)
 > 
 > sql_expr(cast("x" %as% DECIMAL), con = con)
 <SQL> CAST('x' AS DECIMAL)
@@ -2004,6 +2371,38 @@ detaching ‘package:dplyr’, ‘dbplyr_cache’
 <SQL> x + 1.0
 > sql_call2("+", "x", 1, con = con)
 <SQL> 'x' + 1.0
+> 
+> 
+> 
+> cleanEx()
+> nameEx("sql_glue")
+> ### * sql_glue
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: sql_glue
+> ### Title: Build SQL strings with glue syntax
+> ### Aliases: sql_glue sql_glue2
+> 
+> ### ** Examples
+> 
+> con <- dialect_ansi()
+> 
+> tbl <- "my_table"
+> sql_glue2(con, "SELECT * FROM {.tbl tbl}")
+<SQL> SELECT * FROM "my_table"
+> 
+> # Values are properly escaped
+> name <- "Robert'); DROP TABLE students;--"
+> sql_glue2(con, "INSERT INTO students (name) VALUES ({name})")
+<SQL> INSERT INTO students (name) VALUES ('Robert''); DROP TABLE students;--')
+> 
+> # Control wrapping with *
+> x <- c("name", "age", "grade")
+> sql_glue2(con, "SELECT {.id x} FROM students")
+<SQL> SELECT "name", "age", "grade" FROM students
+> sql_glue2(con, "SELECT * WHERE variable IN {x*}")
+<SQL> SELECT * WHERE variable IN ('name', 'age', 'grade')
 > 
 > 
 > 
@@ -2023,41 +2422,34 @@ detaching ‘package:dplyr’, ‘dbplyr_cache’
 > lf1 <- lazy_frame(key = 1, a = 1, b = 2)
 > lf2 <- lazy_frame(key = 1, a = 1, c = 3)
 > 
-> result <- left_join(lf1, lf2, by = "key") %>%
+> result <- left_join(lf1, lf2, by = "key") |>
 +   filter(c >= 3)
 > 
 > show_query(result)
 <SQL>
-SELECT `q01`.*
-FROM (
-  SELECT
-    `df_LHS`.`key` AS `key`,
-    `df_LHS`.`a` AS `a.x`,
-    `b`,
-    `df_RHS`.`a` AS `a.y`,
-    `c`
-  FROM `df` AS `df_LHS`
-  LEFT JOIN `df` AS `df_RHS`
-    ON (`df_LHS`.`key` = `df_RHS`.`key`)
-) AS `q01`
-WHERE (`c` >= 3.0)
+SELECT
+  "df_LHS"."key" AS "key",
+  "df_LHS"."a" AS "a.x",
+  "b",
+  "df_RHS"."a" AS "a.y",
+  "c"
+FROM "df" AS "df_LHS"
+LEFT JOIN "df" AS "df_RHS"
+  ON ("df_LHS"."key" = "df_RHS"."key")
+WHERE ("df_RHS"."c" >= 3.0)
 > sql_options <- sql_options(cte = TRUE, qualify_all_columns = TRUE)
 > show_query(result, sql_options = sql_options)
 <SQL>
-WITH `q01` AS (
-  SELECT
-    `df_LHS`.`key` AS `key`,
-    `df_LHS`.`a` AS `a.x`,
-    `df_LHS`.`b` AS `b`,
-    `df_RHS`.`a` AS `a.y`,
-    `df_RHS`.`c` AS `c`
-  FROM `df` AS `df_LHS`
-  LEFT JOIN `df` AS `df_RHS`
-    ON (`df_LHS`.`key` = `df_RHS`.`key`)
-)
-SELECT `q01`.*
-FROM `q01`
-WHERE (`c` >= 3.0)
+SELECT
+  "df_LHS"."key" AS "key",
+  "df_LHS"."a" AS "a.x",
+  "df_LHS"."b" AS "b",
+  "df_RHS"."a" AS "a.y",
+  "df_RHS"."c" AS "c"
+FROM "df" AS "df_LHS"
+LEFT JOIN "df" AS "df_RHS"
+  ON ("df_LHS"."key" = "df_RHS"."key")
+WHERE ("df_RHS"."c" >= 3.0)
 > 
 > 
 > 
@@ -2078,19 +2470,19 @@ detaching ‘package:dplyr’
 > ### ** Examples
 > 
 > sql_query_upsert(
-+   con = simulate_postgres(),
-+   table = ident("airlines"),
-+   from = ident("df"),
++   con = dialect_postgres(),
++   table = "airlines",
++   from = "df",
 +   by = "carrier",
 +   update_cols = "name"
 + )
-<SQL> INSERT INTO `airlines` (`carrier`, `name`)
-SELECT `carrier`, `name`
-FROM `df` AS `...y`
+<SQL> INSERT INTO "airlines" ("carrier", "name")
+SELECT "carrier", "name"
+FROM "df" AS "...y"
 WHERE true
-ON CONFLICT  (`carrier`)
+ON CONFLICT ("carrier")
 DO UPDATE
-SET `name` = `excluded`.`name`
+SET "name" = "excluded"."name"
 > 
 > 
 > 
@@ -2101,18 +2493,52 @@ SET `name` = `excluded`.`name`
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: sql_quote
-> ### Title: Helper function for quoting sql elements.
+> ### Title: Helper function for quoting sql elements
 > ### Aliases: sql_quote
 > ### Keywords: internal
 > 
 > ### ** Examples
 > 
 > sql_quote("abc", "'")
-[1] "'abc'"
+<SQL> 'abc'
 > sql_quote("I've had a good day", "'")
-[1] "'I''ve had a good day'"
+<SQL> 'I''ve had a good day'
 > sql_quote(c("abc", NA), "'")
-[1] "'abc'" "NULL" 
+<SQL> 'abc'
+<SQL> NULL
+> 
+> sql_quote(c("abc", NA), c("[", "]"))
+<SQL> [abc]
+<SQL> NULL
+> 
+> 
+> 
+> cleanEx()
+> nameEx("sql_translation_window")
+> ### * sql_translation_window
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: sql_translation_window
+> ### Title: SQL helpers for window functions
+> ### Aliases: sql_translation_window win_over win_rank win_aggregate
+> ###   win_aggregate_2 win_recycled win_cumulative win_absent
+> ###   win_current_group win_current_order win_current_frame
+> 
+> ### ** Examples
+> 
+> con <- dialect_ansi()
+> 
+> win_over(sql("avg(x)"), con = con)
+<SQL> avg(x) OVER ()
+> win_over(sql("avg(x)"), "y", con = con)
+<SQL> avg(x) OVER (PARTITION BY "y")
+> win_over(sql("avg(x)"), order = "y", con = con)
+<SQL> avg(x) OVER (ORDER BY "y")
+> win_over(sql("avg(x)"), order = c("x", "y"), con = con)
+<SQL> avg(x) OVER (ORDER BY "x", "y")
+> win_over(sql("avg(x)"), frame = c(-Inf, 0), order = "y", con = con)
+<SQL> avg(x) OVER (ORDER BY "y" ROWS UNBOUNDED PRECEDING)
 > 
 > 
 > 
@@ -2122,20 +2548,15 @@ SET `name` = `excluded`.`name`
 > 
 > flush(stderr()); flush(stdout())
 > 
-> ### Name: sql_substr
-> ### Title: Create an sql translator
-> ### Aliases: sql_substr sql_str_sub sql_paste sql_paste_infix sql_variant
-> ###   sql_translator sql_infix sql_prefix sql_aggregate sql_aggregate_2
-> ###   sql_aggregate_n sql_not_supported sql_cast sql_try_cast sql_log
-> ###   sql_cot sql_runif base_scalar base_agg base_win base_no_win
-> ###   base_odbc_scalar base_odbc_agg base_odbc_win
-> ### Keywords: datasets internal
+> ### Name: sql_variant
+> ### Title: Create an SQL translator
+> ### Aliases: sql_variant sql_translator base_scalar base_agg base_win
+> ###   base_no_win base_odbc_scalar base_odbc_agg base_odbc_win
 > 
 > ### ** Examples
 > 
 > # An example of adding some mappings for the statistical functions that
 > # postgresql provides: http://bit.ly/K5EdTn
-> 
 > postgres_agg <- sql_translator(.parent = base_agg,
 +   cor = sql_aggregate_2("CORR"),
 +   cov = sql_aggregate_2("COVAR_SAMP"),
@@ -2144,8 +2565,8 @@ SET `name` = `excluded`.`name`
 + )
 > 
 > # Next we have to simulate a connection that uses this variant
-> con <- simulate_dbi("TestCon")
-> sql_translation.TestCon <- function(x) {
+> con <- new_sql_dialect("test", quote = \(x) sql_quote(x, '"'))
+> sql_translation.sql_dialect_test <- function(x) {
 +   sql_variant(
 +     base_scalar,
 +     postgres_agg,
@@ -2154,17 +2575,9 @@ SET `name` = `excluded`.`name`
 + }
 > 
 > translate_sql(cor(x, y), con = con, window = FALSE)
-<SQL> CORR(`x`, `y`)
-> translate_sql(sd(income / years), con = con, window = FALSE)
-Warning: Missing values are always removed in SQL aggregation functions.
-Use `na.rm = TRUE` to silence this warning
-This warning is displayed once every 8 hours.
-<SQL> STDDEV_SAMP(`income` / `years`)
-> 
-> # Any functions not explicitly listed in the converter will be translated
-> # to sql as is, so you don't need to convert all functions.
-> translate_sql(regr_intercept(y, x), con = con)
-<SQL> regr_intercept(`y`, `x`)
+<SQL> CORR("x", "y")
+> translate_sql(sd(income / years, na.rm = TRUE), con = con, window = FALSE)
+<SQL> STDDEV_SAMP("income" / "years")
 > 
 > 
 > 
@@ -2183,20 +2596,20 @@ This warning is displayed once every 8 hours.
 > library(dplyr, warn.conflicts = FALSE)
 > 
 > db <- memdb_frame(g = c(1, 1, 1, 2, 2), x = c(4, 3, 6, 9, 2))
-> db %>%
-+   summarise(n()) %>%
+> db |>
++   summarise(n()) |>
 +   show_query()
 <SQL>
 SELECT COUNT(*) AS `n()`
-FROM `dbplyr_4dMaH8wQnr`
+FROM `dbplyr_tmp_4dMaH8wQnr`
 > 
-> db %>%
-+   group_by(g) %>%
-+   summarise(n()) %>%
+> db |>
++   group_by(g) |>
++   summarise(n()) |>
 +   show_query()
 <SQL>
 SELECT `g`, COUNT(*) AS `n()`
-FROM `dbplyr_4dMaH8wQnr`
+FROM `dbplyr_tmp_4dMaH8wQnr`
 GROUP BY `g`
 > 
 > 
@@ -2211,7 +2624,7 @@ detaching ‘package:dplyr’, ‘dbplyr_cache’
 > flush(stderr()); flush(stdout())
 > 
 > ### Name: tbl.src_dbi
-> ### Title: Use dplyr verbs with a remote database table
+> ### Title: Create a lazy query backed by a database
 > ### Aliases: tbl.src_dbi tbl_dbi
 > 
 > ### ** Examples
@@ -2222,7 +2635,7 @@ Attaching package: ‘dplyr’
 
 The following objects are masked from ‘package:dbplyr’:
 
-    ident, sql
+    ident, sql, sql_escape_ident, sql_escape_string
 
 The following objects are masked from ‘package:stats’:
 
@@ -2233,18 +2646,15 @@ The following objects are masked from ‘package:base’:
     intersect, setdiff, setequal, union
 
 > 
-> # Connect to a temporary in-memory SQLite database
+> # Connect to a temporary in-memory SQLite database and add some data
 > con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
-> 
-> # Add some data
 > copy_to(con, mtcars)
-> DBI::dbListTables(con)
-[1] "mtcars"       "sqlite_stat1" "sqlite_stat4"
 > 
 > # To retrieve a single table from a source, use `tbl()`
-> con %>% tbl("mtcars")
-# Source:   table<`mtcars`> [?? x 11]
-# Database: sqlite 3.53.1 [:memory:]
+> mtcars_db <- con |> tbl("mtcars")
+> mtcars_db
+# A query:  ?? x 11
+# Database: sqlite 3.53.2 [:memory:]
      mpg   cyl  disp    hp  drat    wt  qsec    vs    am  gear  carb
    <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
  1  21       6  160    110  3.9   2.62  16.5     0     1     4     4
@@ -2260,87 +2670,38 @@ The following objects are masked from ‘package:base’:
 # ℹ more rows
 > 
 > # Use `I()` for qualified table names
-> con %>% tbl(I("temp.mtcars")) %>% head(1)
-# Source:   SQL [?? x 11]
-# Database: sqlite 3.53.1 [:memory:]
+> con |> tbl(I("temp.mtcars")) |> head(1)
+# A query:  ?? x 11
+# Database: sqlite 3.53.2 [:memory:]
     mpg   cyl  disp    hp  drat    wt  qsec    vs    am  gear  carb
   <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
 1    21     6   160   110   3.9  2.62  16.5     0     1     4     4
 > 
-> # You can also use pass raw SQL if you want a more sophisticated query
-> con %>% tbl(sql("SELECT * FROM mtcars WHERE cyl = 8"))
-# Source:   SQL [?? x 11]
-# Database: sqlite 3.53.1 [:memory:]
-     mpg   cyl  disp    hp  drat    wt  qsec    vs    am  gear  carb
-   <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
- 1  18.7     8  360    175  3.15  3.44  17.0     0     0     3     2
- 2  14.3     8  360    245  3.21  3.57  15.8     0     0     3     4
- 3  16.4     8  276.   180  3.07  4.07  17.4     0     0     3     3
- 4  17.3     8  276.   180  3.07  3.73  17.6     0     0     3     3
- 5  15.2     8  276.   180  3.07  3.78  18       0     0     3     3
- 6  10.4     8  472    205  2.93  5.25  18.0     0     0     3     4
- 7  10.4     8  460    215  3     5.42  17.8     0     0     3     4
- 8  14.7     8  440    230  3.23  5.34  17.4     0     0     3     4
- 9  15.5     8  318    150  2.76  3.52  16.9     0     0     3     2
-10  15.2     8  304    150  3.15  3.44  17.3     0     0     3     2
-11  13.3     8  350    245  3.73  3.84  15.4     0     0     3     4
-12  19.2     8  400    175  3.08  3.84  17.0     0     0     3     2
-13  15.8     8  351    264  4.22  3.17  14.5     0     1     5     4
-14  15       8  301    335  3.54  3.57  14.6     0     1     5     8
+> # You can also pass raw SQL if you want a more sophisticated query
+> con |> tbl(sql("SELECT * FROM mtcars WHERE cyl = 8")) |> head(1)
+# A query:  ?? x 11
+# Database: sqlite 3.53.2 [:memory:]
+    mpg   cyl  disp    hp  drat    wt  qsec    vs    am  gear  carb
+  <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
+1  18.7     8   360   175  3.15  3.44  17.0     0     0     3     2
 > 
-> # If you just want a temporary in-memory database, use src_memdb()
-> src2 <- src_memdb()
-> 
-> # To show off the full features of dplyr's database integration,
-> # we'll use the Lahman database. lahman_sqlite() takes care of
-> # creating the database.
-> 
-> if (requireNamespace("Lahman", quietly = TRUE)) {
-+ batting <- copy_to(con, Lahman::Batting)
-+ batting
-+ 
-+ # Basic data manipulation verbs work in the same way as with a tibble
-+ batting %>% filter(yearID > 2005, G > 130)
-+ batting %>% select(playerID:lgID)
-+ batting %>% arrange(playerID, desc(yearID))
-+ batting %>% summarise(G = mean(G), n = n())
-+ 
-+ # There are a few exceptions. For example, databases give integer results
-+ # when dividing one integer by another. Multiply by 1 to fix the problem
-+ batting %>%
-+   select(playerID:lgID, AB, R, G) %>%
-+   mutate(
-+    R_per_game1 = R / G,
-+    R_per_game2 = R * 1.0 / G
-+  )
-+ 
-+ # All operations are lazy: they don't do anything until you request the
-+ # data, either by `print()`ing it (which shows the first ten rows),
-+ # or by `collect()`ing the results locally.
-+ system.time(recent <- filter(batting, yearID > 2010))
-+ system.time(collect(recent))
-+ 
-+ # You can see the query that dplyr creates with show_query()
-+ batting %>%
-+   filter(G > 0) %>%
-+   group_by(playerID) %>%
-+   summarise(n = n()) %>%
+> # But in most cases, you'll rely on dbplyr to construct the SQL:
+> mtcars_db |>
++   filter(vs == 1) |>
++   summarise(mpg = mean(mpg, na.rm = TRUE), .by = cyl) |>
 +   show_query()
-+ }
 <SQL>
-SELECT `playerID`, COUNT(*) AS `n`
-FROM (
-  SELECT `Lahman::Batting`.*
-  FROM `Lahman::Batting`
-  WHERE (`G` > 0.0)
-) AS `q01`
-GROUP BY `playerID`
+SELECT `cyl`, AVG(`mpg`) AS `mpg`
+FROM `mtcars`
+WHERE (`vs` = 1.0)
+GROUP BY `cyl`
+> 
 > 
 > 
 > 
 > cleanEx()
 
-detaching ‘package:dplyr’, ‘dbplyr_cache’
+detaching ‘package:dplyr’
 
 > nameEx("tbl_lazy")
 > ### * tbl_lazy
@@ -2360,7 +2721,7 @@ Attaching package: ‘dplyr’
 
 The following objects are masked from ‘package:dbplyr’:
 
-    ident, sql
+    ident, sql, sql_escape_ident, sql_escape_string
 
 The following objects are masked from ‘package:stats’:
 
@@ -2372,8 +2733,8 @@ The following objects are masked from ‘package:base’:
 
 > df <- data.frame(x = 1, y = 2)
 > 
-> df_sqlite <- tbl_lazy(df, con = simulate_sqlite())
-> df_sqlite %>% summarise(x = sd(x, na.rm = TRUE)) %>% show_query()
+> df_sqlite <- tbl_lazy(df, con = dialect_sqlite())
+> df_sqlite |> summarise(x = sd(x, na.rm = TRUE))
 <SQL>
 SELECT STDEV(`x`) AS `x`
 FROM `df`
@@ -2384,31 +2745,6 @@ FROM `df`
 
 detaching ‘package:dplyr’
 
-> nameEx("testing")
-> ### * testing
-> 
-> flush(stderr()); flush(stdout())
-> 
-> ### Name: testing
-> ### Title: Infrastructure for testing dplyr
-> ### Aliases: testing test_register_src test_register_con src_test test_load
-> ###   test_frame
-> ### Keywords: internal
-> 
-> ### ** Examples
-> 
-> ## Not run: 
-> ##D test_register_src("sqlite", {
-> ##D   DBI::dbConnect(RSQLite::SQLite(), ":memory:", create = TRUE)
-> ##D })
-> ##D 
-> ##D test_frame(x = 1:3, y = 3:1)
-> ##D test_load(mtcars)
-> ## End(Not run)
-> 
-> 
-> 
-> cleanEx()
 > nameEx("translate_sql")
 > ### * translate_sql
 > 
@@ -2420,99 +2756,69 @@ detaching ‘package:dplyr’
 > 
 > ### ** Examples
 > 
-> con <- simulate_dbi()
+> con <- dialect_ansi()
 > 
 > # Regular maths is translated in a very straightforward way
 > translate_sql(x + 1, con = con)
-<SQL> `x` + 1.0
+<SQL> "x" + 1.0
 > translate_sql(sin(x) + tan(y), con = con)
-<SQL> SIN(`x`) + TAN(`y`)
+<SQL> SIN("x") + TAN("y")
 > 
 > # Note that all variable names are escaped
 > translate_sql(like == "x", con = con)
-<SQL> `like` = 'x'
+<SQL> "like" = 'x'
 > # In ANSI SQL: "" quotes variable _names_, '' quotes strings
 > 
 > # Logical operators are converted to their sql equivalents
 > translate_sql(x < 5 & !(y >= 5), con = con)
-<SQL> `x` < 5.0 AND NOT((`y` >= 5.0))
+<SQL> "x" < 5.0 AND NOT(("y" >= 5.0))
 > # xor() doesn't have a direct SQL equivalent
 > translate_sql(xor(x, y), con = con)
-<SQL> `x` OR `y` AND NOT (`x` AND `y`)
+<SQL> "x" OR "y" AND NOT ("x" AND "y")
 > 
 > # If is translated into case when
 > translate_sql(if (x > 5) "big" else "small", con = con)
-<SQL> CASE WHEN (`x` > 5.0) THEN 'big' WHEN NOT (`x` > 5.0) THEN 'small' END
+<SQL> CASE WHEN ("x" > 5.0) THEN 'big' WHEN NOT ("x" > 5.0) THEN 'small' END
 > 
 > # Infix functions are passed onto SQL with % removed
 > translate_sql(first %like% "Had%", con = con)
-<SQL> `first` like 'Had%'
+<SQL> "first" like 'Had%'
 > translate_sql(first %is% NA, con = con)
-<SQL> `first` is NULL
+<SQL> "first" is NULL
 > translate_sql(first %in% c("John", "Roger", "Robert"), con = con)
-<SQL> `first` IN ('John', 'Roger', 'Robert')
+<SQL> "first" IN ('John', 'Roger', 'Robert')
 > 
 > # And be careful if you really want integers
 > translate_sql(x == 1, con = con)
-<SQL> `x` = 1.0
+<SQL> "x" = 1.0
 > translate_sql(x == 1L, con = con)
-<SQL> `x` = 1
+<SQL> "x" = 1
 > 
 > # If you have an already quoted object, use translate_sql_:
 > x <- quote(y + 1 / sin(t))
-> translate_sql_(list(x), con = simulate_dbi())
-<SQL> `y` + 1.0 / SIN(`t`)
+> translate_sql_(list(x), con = dialect_ansi())
+<SQL> "y" + 1.0 / SIN("t")
 > 
 > # Windowed translation --------------------------------------------
 > # Known window functions automatically get OVER()
 > translate_sql(mpg > mean(mpg), con = con)
-<SQL> `mpg` > AVG(`mpg`) OVER ()
+<SQL> "mpg" > AVG("mpg") OVER ()
 > 
 > # Suppress this with window = FALSE
 > translate_sql(mpg > mean(mpg), window = FALSE, con = con)
-<SQL> `mpg` > AVG(`mpg`)
+<SQL> "mpg" > AVG("mpg")
 > 
 > # vars_group controls partition:
 > translate_sql(mpg > mean(mpg), vars_group = "cyl", con = con)
-<SQL> `mpg` > AVG(`mpg`) OVER (PARTITION BY `cyl`)
+<SQL> "mpg" > AVG("mpg") OVER (PARTITION BY "cyl")
 > 
 > # and vars_order controls ordering for those functions that need it
 > translate_sql(cumsum(mpg), con = con)
-Warning: Windowed expression `SUM(`mpg`)` does not have explicit order.
-ℹ Please use `arrange()` or `window_order()` to make deterministic.
-<SQL> SUM(`mpg`) OVER (ROWS UNBOUNDED PRECEDING)
+Warning: Windowed expression `SUM("mpg")` does not have explicit order.
+ℹ Please use `arrange()`, `window_order()`, or `.order` to make deterministic.
+<SQL> SUM("mpg") OVER (ROWS UNBOUNDED PRECEDING)
 > translate_sql(cumsum(mpg), vars_order = "mpg", con = con)
-<SQL> SUM(`mpg`) OVER (ORDER BY `mpg` ROWS UNBOUNDED PRECEDING)
-> 
-> 
-> 
-> cleanEx()
-> nameEx("win_over")
-> ### * win_over
-> 
-> flush(stderr()); flush(stdout())
-> 
-> ### Name: win_over
-> ### Title: Generate SQL expression for window functions
-> ### Aliases: win_over win_rank win_aggregate win_aggregate_2 win_recycled
-> ###   win_cumulative win_absent win_current_group win_current_order
-> ###   win_current_frame win_rank_tdata
-> ### Keywords: internal
-> 
-> ### ** Examples
-> 
-> con <- simulate_dbi()
-> 
-> win_over(sql("avg(x)"), con = con)
-<SQL> avg(x) OVER ()
-> win_over(sql("avg(x)"), "y", con = con)
-<SQL> avg(x) OVER (PARTITION BY `y`)
-> win_over(sql("avg(x)"), order = "y", con = con)
-<SQL> avg(x) OVER (ORDER BY `y`)
-> win_over(sql("avg(x)"), order = c("x", "y"), con = con)
-<SQL> avg(x) OVER (ORDER BY `x`, `y`)
-> win_over(sql("avg(x)"), frame = c(-Inf, 0), order = "y", con = con)
-<SQL> avg(x) OVER (ORDER BY `y` ROWS UNBOUNDED PRECEDING)
+<SQL> SUM("mpg") OVER (ORDER BY "mpg" ROWS UNBOUNDED PRECEDING)
 > 
 > 
 > 
@@ -2531,38 +2837,65 @@ Warning: Windowed expression `SUM(`mpg`)` does not have explicit order.
 > library(dplyr, warn.conflicts = FALSE)
 > 
 > db <- memdb_frame(g = rep(1:2, each = 5), y = runif(10), z = 1:10)
-> db %>%
-+   window_order(y) %>%
-+   mutate(z = cumsum(y)) %>%
+> db |>
++   window_order(y) |>
++   mutate(z = cumsum(y)) |>
 +   show_query()
 <SQL>
 SELECT `g`, `y`, SUM(`y`) OVER (ORDER BY `y` ROWS UNBOUNDED PRECEDING) AS `z`
-FROM `dbplyr_6YGuuP1Tjg`
+FROM `dbplyr_tmp_4dMaH8wQnr`
 > 
-> db %>%
-+   group_by(g) %>%
-+   window_frame(-3, 0) %>%
-+   window_order(z) %>%
-+   mutate(z = sum(y)) %>%
+> db |>
++   group_by(g) |>
++   window_frame(-3, 0) |>
++   window_order(z) |>
++   mutate(z = sum(y)) |>
 +   show_query()
 <SQL>
 SELECT
   `g`,
   `y`,
   SUM(`y`) OVER (PARTITION BY `g` ORDER BY `z` ROWS 3 PRECEDING) AS `z`
-FROM `dbplyr_6YGuuP1Tjg`
+FROM `dbplyr_tmp_4dMaH8wQnr`
+> 
+> 
+> 
+> cleanEx()
+
+detaching ‘package:dplyr’, ‘dbplyr_cache’
+
+> nameEx("with_dialect")
+> ### * with_dialect
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: with_dialect
+> ### Title: Override the SQL dialect for a connection
+> ### Aliases: with_dialect
+> 
+> ### ** Examples
+> 
+> # Wrap an in-memory SQLite connection to use Postgres dialect
+> con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+> pg_con <- with_dialect(con, dialect_postgres())
+> 
+> # SQL generation uses Postgres syntax
+> lf <- lazy_frame(x = 1, con = pg_con)
+> lf |> dplyr::mutate(y = sd(x))
+<SQL>
+SELECT *, STDDEV_SAMP("x") OVER () AS "y"
+FROM "df"
+> 
+> DBI::dbDisconnect(con)
 > 
 > 
 > 
 > ### * <FOOTER>
 > ###
 > cleanEx()
-
-detaching ‘package:dplyr’, ‘dbplyr_cache’
-
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  4.747 0.101 4.864 0 0 
+Time elapsed:  4.415 0.097 4.516 0 0 
 > grDevices::dev.off()
 null device 
           1 
