@@ -1,0 +1,1018 @@
+
+R version 4.6.2 (2026-10-29) -- "Diversified Portfolio"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "RTMB"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('RTMB')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("AD")
+> ### * AD
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: AD
+> ### Title: Convert R object to AD
+> ### Aliases: AD
+> 
+> ### ** Examples
+> 
+> ## numeric object to AD
+> AD(numeric(4), force=TRUE)
+class='advector'
+[1] 0 0 0 0
+> ## complex object to AD
+> AD(complex(4), force=TRUE)
+class='adcomplex'
+[1] 0+0i 0+0i 0+0i 0+0i
+> ## Convert sparse matrices (Matrix package) to AD representation
+> F <- MakeTape(function(x) {
++   M <- AD(Matrix::Matrix(0,4,4))
++   M[1,] <- x
++   D <- AD(Matrix::Diagonal(4))
++   D@x[] <- x
++   M + D
++ }, 0)
+> F(2)
+4 x 4 sparse Matrix of class "dgCMatrix"
+            
+[1,] 4 2 2 2
+[2,] . 2 . .
+[3,] . . 2 .
+[4,] . . . 2
+> 
+> 
+> 
+> cleanEx()
+> nameEx("ADapply")
+> ### * ADapply
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: ADapply
+> ### Title: AD apply functions
+> ### Aliases: ADapply apply,advector-method sapply,ANY-method
+> ###   Vectorize,ANY-method
+> 
+> ### ** Examples
+> 
+> F <- MakeTape(function(x) apply(matrix(x,2,2), 2, sum), numeric(4))
+> F$jacobian(1:4)
+     [,1] [,2] [,3] [,4]
+[1,]    1    1    0    0
+[2,]    0    0    1    1
+> f <- Vectorize(function(x) integrate(dnorm, -Inf, x)$value)
+> F <- MakeTape(f, numeric(1e3))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("ADcomplex")
+> ### * ADcomplex
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: ADcomplex
+> ### Title: AD complex numbers
+> ### Aliases: ADcomplex adcomplex Re.adcomplex Im.adcomplex
+> ###   show,adcomplex-method dim.adcomplex dim<-.adcomplex [.adcomplex
+> ###   [<-.adcomplex t.adcomplex length.adcomplex Conj.adcomplex
+> ###   Mod.adcomplex Arg.adcomplex +.adcomplex -.adcomplex *.adcomplex
+> ###   /.adcomplex exp.adcomplex log.adcomplex sqrt.adcomplex
+> ###   fft,adcomplex-method fft,advector-method rep.adcomplex
+> ###   as.vector.adcomplex is.matrix.adcomplex as.matrix.adcomplex
+> ###   %*%,adcomplex,ANY-method solve,adcomplex,ANY-method
+> ###   colSums,adcomplex-method rowSums,adcomplex-method
+> ###   diag,adcomplex,ANY,ANY-method Ops,advector,adcomplex-method
+> ###   Ops,adcomplex,advector-method
+> 
+> ### ** Examples
+> 
+> ## Tape using complex operations
+> F <- MakeTape(function(x) {
++   x <- as.complex(x)
++   y <- exp( x * ( 1 + 2i ) )
++   c(Re(y), Im(y))
++ }, numeric(1))
+> F
+Object of class='Tape'
+ : R^1 -> R^2
+> F(1)
+[1] -1.131204  2.471727
+> ## Complex FFT on the tape
+> G <- MakeTape(function(x) sum(Re(fft(x))), numeric(3))
+> G$simplify()
+> G$print()
+OpName:  Node:       Value:       Deriv:       Index:    Inputs:
+  InvOp      0            0           NA            0
+  InvOp      1            0           NA            1
+  InvOp      2            0           NA            2
+ConstOp      3            0           NA            3
+    FFT      4            0           NA            4    0 3 1 3 2 3
+                          0           NA            5
+                          0           NA            6
+                          0           NA            7
+                          0           NA            8
+                          0           NA            9
+  AddOp      5            0           NA           10    4 6
+  AddOp      6            0           NA           11    10 8
+  DepOp      7            0           NA           12    11
+> 
+> 
+> 
+> cleanEx()
+> nameEx("ADconstruct")
+> ### * ADconstruct
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: ADconstruct
+> ### Title: AD aware numeric constructors
+> ### Aliases: ADconstruct diag,advector,ANY,ANY-method
+> ###   matrix,advector-method matrix,num.-method
+> 
+> ### ** Examples
+> 
+> func <- function(x) {
++   M <- matrix(x, 2, 2)
++   print(class(M))
++   D <- diag(x)
++   print(class(D))
++   0
++ }
+> invisible(func(1:4))            ## 'matrix' 'array'
+[1] "matrix" "array" 
+[1] "matrix" "array" 
+> invisible(MakeTape(func, 1:4))  ## 'advector'
+[1] "advector"
+[1] "advector"
+> 
+> 
+> 
+> cleanEx()
+> nameEx("ADintegrate")
+> ### * ADintegrate
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: ADintegrate
+> ### Title: AD adaptive numerical integration.
+> ### Aliases: ADintegrate integrate,ANY-method
+> 
+> ### ** Examples
+> 
+> ## Example with many sub-divisions
+> f <- function(x) sin(exp(x))
+> F <- MakeTape(function(x) integrate(f, 0, x)$value, 0)
+> F(7)
+[1] 0.6256039
+> integrate(f, 0, 7)
+0.6256039 with absolute error < 0.00012
+> ## Example with singularity
+> f <- function(x) dbeta(x, shape1=.1, shape2=.1)
+> F <- MakeTape(function(x) integrate(f, 0, x)$value, 0)
+> F(.1)
+[1] 0.4063849
+> integrate(f, 0, .1)
+0.4063851 with absolute error < 9.3e-06
+> ## Example using Vectorize (note the speed of G versus g)
+> f <- Vectorize(function(x) integrate(dnorm, -Inf, x)$value)
+> g <- Vectorize(function(x) integrate(f, -Inf, x)$value)
+> G <- MakeTape(g, numeric(1e3))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("ADjoint")
+> ### * ADjoint
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: ADjoint
+> ### Title: AD adjoint code from R
+> ### Aliases: ADjoint
+> 
+> ### ** Examples
+> 
+> ############################################################################
+> ## Lambert W-function defined by W(y*exp(y))=y
+> W <- function(x) {
++   logx <- log(x)
++   y <- pmax(logx, 0)
++   while (any(abs(logx - log(y) - y) > 1e-9, na.rm = TRUE)) {
++       y <- y - (y - exp(logx - y)) / (1 + y)
++   }
++   y
++ }
+> ## Derivatives
+> dW <- function(x, y, dy) {
++    dy / (exp(y) * (1. + y))
++ }
+> ## Define new derivative symbol
+> LamW <- ADjoint(W, dW)
+> ## Test derivatives
+> (F <- MakeTape(function(x)sum(LamW(x)), numeric(3)))
+Object of class='Tape'
+ : R^3 -> R^1
+> F(1:3)
+[1] 2.469658
+> F$print()                ## Note the 'name'
+OpName:  Node:       Value:       Deriv:       Index:    Inputs:
+  InvOp      0            1           NA            0
+  InvOp      1            2           NA            1
+  InvOp      2            3           NA            2
+      W      3     0.567143           NA            3    0 1 2
+                   0.852606           NA            4
+                    1.04991           NA            5
+  AddOp      4      1.41975           NA            6    3 4
+  AddOp      5      2.46966           NA            7    6 5
+  DepOp      6      2.46966           NA            8    7
+> F$jacobian(1:3)          ## gradient
+          [,1]      [,2]      [,3]
+[1,] 0.3618963 0.2301098 0.1707245
+> F$jacfun()$jacobian(1:3) ## hessian
+           [,1]       [,2]        [,3]
+[1,] -0.2145406  0.0000000  0.00000000
+[2,]  0.0000000 -0.0815322  0.00000000
+[3,]  0.0000000  0.0000000 -0.04336546
+> ############################################################################
+> ## Log determinant
+> logdet <- ADjoint(
++    function(x) determinant(x, log=TRUE)$modulus,
++    function(x, y, dy) t(solve(x)) * dy,
++    name = "logdet")
+> (F <- MakeTape(logdet, diag(2)))
+Object of class='Tape'
+ : R^4 -> R^1
+> ## Test derivatives
+> ## Compare with numDeriv::hessian(F, matrix(1:4,2))
+> F$jacfun()$jacobian(matrix(1:4,2)) ## Hessian
+     [,1]  [,2] [,3]  [,4]
+[1,] -4.0  3.00  2.0 -1.50
+[2,]  3.0 -2.25 -1.0  0.75
+[3,]  2.0 -1.00 -1.0  0.50
+[4,] -1.5  0.75  0.5 -0.25
+> ############################################################################
+> ## Holomorphic extension of 'solve'
+> matinv <- ADjoint(
++    solve,
++    function(x,y,dy) -t(y) %*% dy %*% t(y),
++    complex=TRUE)
+> (F <- MakeTape(function(x) Im(matinv(x+AD(1i))), diag(2)))
+Object of class='Tape'
+ : R^4 -> R^4
+> ## Test derivatives
+> ## Compare with numDeriv::jacobian(F, matrix(1:4,2))
+> F$jacobian(matrix(1:4,2))
+      [,1]  [,2]  [,3]  [,4]
+[1,] -2.00  1.75  1.50 -1.25
+[2,]  1.50 -1.25 -1.00  0.75
+[3,]  1.75 -1.50 -1.25  1.00
+[4,] -1.25  1.00  0.75 -0.50
+> 
+> 
+> 
+> cleanEx()
+> nameEx("ADmatrix")
+> ### * ADmatrix
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: ADmatrix
+> ### Title: AD matrix methods (sparse and dense)
+> ### Aliases: ADmatrix chol.advector determinant.advector
+> ###   eigen,adcomplex-method eigen,advector-method svd,advector-method
+> ###   t.adsparse [.adsparse [<-.adsparse as.matrix.adsparse
+> ###   diag,adsparse,missing,missing-method band,adsparse-method
+> ###   tril,adsparse-method triu,adsparse-method expm,advector-method
+> ###   expm,adsparse-method dim,adsparse-method %*%,anysparse,ad-method
+> ###   %*%,ad,anysparse-method %*%,adsparse,adsparse-method %*%,ad,ad-method
+> ###   tcrossprod,ad,ad.-method crossprod,ad,ad.-method
+> ###   cov2cor,advector-method solve,ad,ad.-method solve,num,num.-method
+> ###   solve,anysparse,ad.-method colSums,advector-method
+> ###   rowSums,advector-method colSums,adsparse-method
+> ###   rowSums,adsparse-method cbind.advector rbind.advector
+> ###   Math,adsparse-method
+> 
+> ### ** Examples
+> 
+> F <- MakeTape(function(x) matrix(1:9,3,3) %*% x, numeric(3))
+> F$jacobian(1:3)
+     [,1] [,2] [,3]
+[1,]    1    4    7
+[2,]    2    5    8
+[3,]    3    6    9
+> F <- MakeTape(function(x) Matrix::expm(matrix(x,2,2)), numeric(4))
+> F$jacobian(1:4)
+         [,1]     [,2]     [,3]      [,4]
+[1,] 26.27692 36.78340 24.52226  25.69204
+[2,] 24.52226 63.06032 17.12802  50.21430
+[3,] 36.78340 38.53805 63.06032  75.32145
+[4,] 25.69204 75.32145 50.21430 138.38177
+> F <- MakeTape(det, diag(2)) ## Indirectly available via 'determinant'
+> F$jacobian(matrix(1:4,2))
+     [,1] [,2] [,3] [,4]
+[1,]    4   -3   -2    1
+> 
+> 
+> 
+> cleanEx()
+> nameEx("ADoverload")
+> ### * ADoverload
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: ADoverload
+> ### Title: Enable extra RTMB convenience methods
+> ### Aliases: ADoverload
+> 
+> ### ** Examples
+> 
+> MakeTape(function(x) {print(search()); x}, numeric(0))
+ [1] ".GlobalEnv"        "package:RTMB"      "CheckExEnv"       
+ [4] "package:stats"     "package:graphics"  "package:grDevices"
+ [7] "package:utils"     "package:datasets"  "package:methods"  
+[10] "Autoloads"         "AD-overloads"      "package:base"     
+Object of class='Tape'
+ : R^0 -> R^0
+> MakeTape(function(x) c(1,x), 1:3)
+Object of class='Tape'
+ : R^3 -> R^4
+> MakeTape(function(x) {y <- 1:3; y[2] <- x; y}, 1)
+Object of class='Tape'
+ : R^1 -> R^3
+> MakeTape(function(x) {y <- matrix(0,3,3); diag(y) <- x; y}, 1:3)
+Object of class='Tape'
+ : R^3 -> R^9
+> MakeTape(function(x) {"if" <- ADoverload("if"); if (x<0) x else x*x}, 1)
+Object of class='Tape'
+ : R^1 -> R^1
+> ## Robust logspace_gamma(x) := lgamma(exp(x))
+> logspace_gamma <- Vectorize(function(x) {
++   "if" <- ADoverload("if")
++   if (x < -150) -x else lgamma(exp(x))
++ })
+> MakeTape(logspace_gamma, numeric(10))
+Object of class='Tape'
+ : R^10 -> R^10
+> 
+> 
+> 
+> cleanEx()
+> nameEx("ADvector")
+> ### * ADvector
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: ADvector
+> ### Title: The AD vector and its methods
+> ### Aliases: ADvector advector Ops.advector Math.advector
+> ###   as.vector.advector as.complex.advector aperm.advector c.advector
+> ###   [.advector [<-.advector [[.advector length<-.advector rep.advector
+> ###   is.nan.advector is.finite.advector is.infinite.advector
+> ###   is.na.advector sum.advector mean.advector prod.advector min.advector
+> ###   max.advector is.numeric.advector as.double.advector Complex.advector
+> ###   Summary.advector diff.advector print.advector ifelse,num,ad,ad-method
+> ###   ifelse,num,num,num-method sort,advector-method
+> ###   order,missing,missing,missing-method
+> ###   [,advector,advector,ANY,ANY-method
+> ###   findInterval,advector,advector-method
+> 
+> ### ** Examples
+> 
+> x <- advector(1:9)
+> a <- array(x, c(3,3))  ## as an array
+> outer(x, x, "+") ## Implicit via 'rep'
+class='advector'
+      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9]
+ [1,]    2    3    4    5    6    7    8    9   10
+ [2,]    3    4    5    6    7    8    9   10   11
+ [3,]    4    5    6    7    8    9   10   11   12
+ [4,]    5    6    7    8    9   10   11   12   13
+ [5,]    6    7    8    9   10   11   12   13   14
+ [6,]    7    8    9   10   11   12   13   14   15
+ [7,]    8    9   10   11   12   13   14   15   16
+ [8,]    9   10   11   12   13   14   15   16   17
+ [9,]   10   11   12   13   14   15   16   17   18
+> rev(x)           ## Implicit via '['
+class='advector'
+[1] 9 8 7 6 5 4 3 2 1
+> MakeTape(sort, numeric(3))
+Object of class='Tape'
+ : R^3 -> R^3
+> MakeTape(order, numeric(3))
+Object of class='Tape'
+ : R^3 -> R^3
+> MakeTape(function(x) AD(rivers)[x], 1:3)
+Object of class='Tape'
+ : R^3 -> R^3
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Distributions")
+> ### * Distributions
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Distributions
+> ### Title: Distributions and special functions for which AD is implemented
+> ### Aliases: Distributions besselK,ad,ad-method besselK,num,num-method
+> ###   besselI,ad,ad-method besselI,num,num-method besselJ,ad,ad-method
+> ###   besselJ,num,num-method besselY,ad,ad-method besselY,num,num-method
+> ###   dexp,ad,ad.,logical.-method dexp,num,num.,logical.-method
+> ###   dexp,osa,ANY,ANY-method dexp,simref,ANY,ANY-method
+> ###   dweibull,ad,ad,ad.,logical.-method
+> ###   dweibull,num,num,num.,logical.-method dweibull,osa,ANY,ANY,ANY-method
+> ###   dweibull,simref,ANY,ANY,ANY-method dbinom,ad,ad,ad,logical.-method
+> ###   dbinom,num,num,num,logical.-method dbinom,osa,ANY,ANY,ANY-method
+> ###   dbinom,simref,ANY,ANY,ANY-method
+> ###   dbeta,ad,ad,ad,missing,logical.-method
+> ###   dbeta,num,num,num,missing,logical.-method
+> ###   dbeta,osa,ANY,ANY,ANY,ANY-method dbeta,simref,ANY,ANY,ANY,ANY-method
+> ###   df,ad,ad,ad,missing,logical.-method
+> ###   df,num,num,num,missing,logical.-method df,osa,ANY,ANY,ANY,ANY-method
+> ###   df,simref,ANY,ANY,ANY,ANY-method dlogis,ad,ad.,ad.,logical.-method
+> ###   dlogis,num,num.,num.,logical.-method dlogis,osa,ANY,ANY,ANY-method
+> ###   dlogis,simref,ANY,ANY,ANY-method dt,ad,ad,missing,logical.-method
+> ###   dt,num,num,missing,logical.-method dt,osa,ANY,ANY,ANY-method
+> ###   dt,simref,ANY,ANY,ANY-method dnbinom,ad,ad,ad,missing,logical.-method
+> ###   dnbinom,num,num,num,missing,logical.-method
+> ###   dnbinom,osa,ANY,ANY,ANY,ANY-method
+> ###   dnbinom,simref,ANY,ANY,ANY,ANY-method dpois,ad,ad,logical.-method
+> ###   dpois,num,num,logical.-method dpois,osa,ANY,ANY-method
+> ###   dpois,simref,ANY,ANY-method dgamma,ad,ad,missing,ad.,logical.-method
+> ###   dgamma,num,num,missing,num.,logical.-method
+> ###   dgamma,osa,ANY,ANY,ANY,ANY-method
+> ###   dgamma,simref,ANY,ANY,ANY,ANY-method
+> ###   pgamma,ad,ad,missing,ad.,missing,missing-method
+> ###   pgamma,num,num,missing,num.,missing,missing-method
+> ###   ppois,ad,ad,missing,missing-method
+> ###   ppois,num,num,missing,missing-method
+> ###   pexp,ad,ad.,missing,missing-method
+> ###   pexp,num,num.,missing,missing-method
+> ###   pweibull,ad,ad,ad.,missing,missing-method
+> ###   pweibull,num,num,num.,missing,missing-method
+> ###   pbeta,ad,ad,ad,missing,missing,missing-method
+> ###   pbeta,num,num,num,missing,missing,missing-method
+> ###   qnorm,ad,ad.,ad.,missing,missing-method
+> ###   qnorm,num,num.,num.,missing,missing-method
+> ###   qgamma,ad,ad,missing,ad.,missing,missing-method
+> ###   qgamma,num,num,missing,num.,missing,missing-method
+> ###   qexp,ad,ad.,missing,missing-method
+> ###   qexp,num,num.,missing,missing-method
+> ###   qweibull,ad,ad,ad.,missing,missing-method
+> ###   qweibull,num,num,num.,missing,missing-method
+> ###   qbeta,ad,ad,ad,missing,missing,missing-method
+> ###   qbeta,num,num,num,missing,missing,missing-method lbeta,ad,ad-method
+> ###   lbeta,num,num-method dbinom_robust dsn dSHASHo dtweedie
+> ###   dnbinom_robust dnbinom2 dlgamma logspace_add logspace_sub
+> ###   dnorm,ad,ad.,ad.,logical.-method dnorm,num,num.,num.,logical.-method
+> ###   dnorm,osa,ANY,ANY,ANY-method dnorm,simref,ANY,ANY,ANY-method
+> ###   dlnorm,ANY,ANY,ANY,ANY-method dlnorm,osa,ANY,ANY,ANY-method
+> ###   dlnorm,num,num.,num.,logical.-method
+> ###   plogis,advector,missing,missing,missing,missing-method
+> ###   qlogis,advector,missing,missing,missing,missing-method dcompois
+> ###   dcompois2 pbinom,ad,ad,ad,missing,missing-method
+> ###   pbinom,num,num,num,missing,missing-method
+> ###   dmultinom,ad,ad.,ad,logical.-method
+> ###   dmultinom,num,num.,num,logical.-method
+> ###   dmultinom,osa,ANY,ANY,ANY-method dmultinom,simref,ANY,ANY,ANY-method
+> ###   dmultinom,ANY,ANY,ANY,ANY-method dcauchy,ad,ad.,ad.,logical.-method
+> ###   dcauchy,num,num.,num.,logical.-method dcauchy,osa,ANY,ANY,ANY-method
+> ###   dcauchy,simref,ANY,ANY,ANY-method
+> ###   dgamma,ad,ad,ad,missing,logical.-method
+> ###   pgamma,ad,ad,ad,missing,missing,missing-method
+> ###   qgamma,ad,ad,ad,missing,missing,missing-method
+> ###   pnbinom,ad,ad,ad,missing,missing,missing-method
+> ###   dchisq,ANY,ANY,missing-method dchisq,num,num,num.-method
+> ###   pchisq,ANY,ANY,missing,missing,missing-method
+> ###   pchisq,num,num,num.,missing,missing-method
+> ###   qchisq,ANY,ANY,missing,missing,missing-method
+> ###   qchisq,num,num,num.,missing,missing-method pnorm,ad,ad.,ad.-method
+> ###   pnorm,num,num.,num.-method atan2,advector,advector-method
+> ###   atan2,advector,num-method atan2,num,advector-method dflat
+> 
+> ### ** Examples
+> 
+> MakeTape( function(x) pnorm(x), x=numeric(5))$jacobian(1:5)
+          [,1]       [,2]        [,3]         [,4]        [,5]
+[1,] 0.2419707 0.00000000 0.000000000 0.0000000000 0.00000e+00
+[2,] 0.0000000 0.05399097 0.000000000 0.0000000000 0.00000e+00
+[3,] 0.0000000 0.00000000 0.004431848 0.0000000000 0.00000e+00
+[4,] 0.0000000 0.00000000 0.000000000 0.0001338302 0.00000e+00
+[5,] 0.0000000 0.00000000 0.000000000 0.0000000000 1.48672e-06
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Interpolation")
+> ### * Interpolation
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Interpolation
+> ### Title: Interpolation
+> ### Aliases: Interpolation interpol1Dfun interpol2Dfun
+> ###   splinefun,ad,ad,ANY,missing-method
+> ###   splinefun,ad,missing,ANY,missing-method
+> 
+> ### ** Examples
+> 
+> ## ======= interpol1D
+> ## R=1 => exact match of observations
+> f <- interpol1Dfun(sin(1:10), R=1)
+> layout(t(1:2))
+> plot(sin(1:10))
+> plot(f, 1, 10, add=TRUE)
+> title("R=1")
+> F <- MakeTape(f, 0)
+> F3 <- F$jacfun()$jacfun()$jacfun()
+> plot(Vectorize(F3), 1, 10)
+> title("3rd derivative")
+> ## ======= interpol2D
+> ## R=1 => exact match of observations
+> f <- interpol2Dfun(volcano, xlim=c(0,1), ylim=c(0,1), R=1)
+> f(0,0) == volcano[1,1]   ## Top-left corner
+[1] TRUE
+> f(1,1) == volcano[87,61] ## Bottom-right corner
+[1] TRUE
+> ## R=2 => trades accuracy for smoothness
+> f <- interpol2Dfun(volcano, xlim=c(0,1), ylim=c(0,1), R=2)
+> f(0,0) - volcano[1,1]    ## Error Top-left corner
+[1] 0.2832831
+> F <- MakeTape(function(x) f(x[1],x[2]), c(.5,.5))
+> ## ======= splinefun
+> T <- MakeTape(function(x){
++    S <- splinefun(sin(x))
++    S(4:6)
++ }, 1:10)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("MVgauss")
+> ### * MVgauss
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: MVgauss
+> ### Title: Multivariate Gaussian densities
+> ### Aliases: MVgauss dmvnorm dgmrf dautoreg dseparable unstructured
+> 
+> ### ** Examples
+> 
+> func <- function(x, sd, parm, phi) {
++    ## IID N(0, sd^2)
++    f1 <- function(x)sum(dnorm(x, sd=sd, log=TRUE))
++    Sigma <- diag(2) + parm
++    ## MVNORM(0, Sigma)
++    f2 <- function(x)dmvnorm(x, Sigma=Sigma, log=TRUE)
++    ## AR(2) process
++    f3 <- function(x)dautoreg(x, phi=phi, log=TRUE)
++    ## Separable extension (implicit log=TRUE)
++    -dseparable(f1, f2, f3)(x)
++ }
+> parameters <- list(x = array(0, c(10, 2, 10)), sd=2, parm=1, phi=c(.9, -.2))
+> obj <- MakeADFun(function(p)do.call(func, p), parameters, random="x")
+> ## Check that density integrates to 1
+> obj$fn()
+iter: 1  mgc: 0 
+[1] -1.136868e-13
+attr(,"logarithm")
+[1] TRUE
+> ## Check that integral is independent of the outer parameters
+> obj$gr()
+iter: 1  mgc: 0 
+Matching hessian patterns... Done
+outer mgc:  3.410605e-13 
+[1] -1.278977e-13 -1.421085e-14  3.410605e-13 -2.842171e-14
+> ## Check that we can simulate from this density
+> s <- obj$simulate()
+> 
+> 
+> 
+> cleanEx()
+> nameEx("OSA-residuals")
+> ### * OSA-residuals
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: OSA-residuals
+> ### Title: Recursive quantile residuals
+> ### Aliases: OSA-residuals oneStepPredict [.osa length.osa dim.osa
+> ###   is.array.osa is.matrix.osa
+> 
+> ### ** Examples
+> 
+> set.seed(1)
+> rw <- cumsum(.5*rnorm(20))
+> obs <- rpois(20, lambda=exp(rw))
+> func <- function(p) {
++   obs <- OBS(obs) ## Mark 'obs' for OSA calculation on request
++   ans <- 0
++   jump <- c(p$rw[1], diff(p$rw))
++   ans <- ans - sum(dnorm(jump, sd=p$sd, log=TRUE))
++   ans <- ans - sum(dpois(obs, lambda=exp(p$rw), log=TRUE))
++   ans
++ }
+> obj <- MakeADFun(func,
++                  parameters=list(rw=rep(0,20), sd=1),
++                  random="rw")
+> nlminb(obj$par, obj$fn, obj$gr)
+iter: 1  value: 65.43586 mgc: 6 ustep: 0.6827823 
+iter: 2  value: 48.05668 mgc: 17.87948 ustep: 0.8263238 
+iter: 3  value: 45.5847 mgc: 5.386339 ustep: 0.9090326 
+iter: 4  value: 45.47145 mgc: 1.100097 ustep: 0.9534367 
+iter: 5  value: 45.4709 mgc: 0.07953146 ustep: 0.9764432 
+iter: 6  value: 45.4709 mgc: 0.0007235751 ustep: 0.9881526 
+iter: 7  value: 45.4709 mgc: 1.36347e-06 ustep: 0.9940592 
+iter: 8  mgc: 2.751464e-09 
+iter: 1  mgc: 2.751464e-09 
+Matching hessian patterns... Done
+outer mgc:  4.998662 
+iter: 1  Error in iterate(par) : 
+  Newton dropout because inner gradient had non-finite components.
+Warning in nlminb(obj$par, obj$fn, obj$gr) : NA/NaN function evaluation
+iter: 1  value: 43.92211 mgc: 0.2801104 ustep: 1 
+iter: 2  value: 43.92207 mgc: 0.004981087 ustep: 1 
+iter: 3  value: 43.92207 mgc: 6.423872e-06 ustep: 1 
+iter: 4  mgc: 1.004619e-11 
+iter: 1  mgc: 1.004619e-11 
+outer mgc:  4.522299 
+iter: 1  value: 40.35913 mgc: 0.9123 ustep: 1 
+iter: 2  value: 40.35805 mgc: 0.0334144 ustep: 1 
+iter: 3  value: 40.35805 mgc: 0.0001977733 ustep: 1 
+iter: 4  mgc: 6.865641e-09 
+iter: 1  value: 29.1526 mgc: 8.487277 ustep: 1 
+iter: 2  value: 29.07227 mgc: 0.4066575 ustep: 1 
+iter: 3  value: 29.0722 mgc: 0.01006246 ustep: 1 
+iter: 4  value: 29.0722 mgc: 8.733702e-06 ustep: 1 
+iter: 5  mgc: 8.060441e-12 
+iter: 1  mgc: 6.865641e-09 
+outer mgc:  2.799331 
+iter: 1  value: 32.01836 mgc: 4.831218 ustep: 1 
+iter: 2  value: 31.9874 mgc: 0.2349218 ustep: 1 
+iter: 3  value: 31.98739 mgc: 0.004290002 ustep: 1 
+iter: 4  value: 31.98739 mgc: 1.788096e-06 ustep: 1 
+iter: 5  mgc: 3.546052e-13 
+iter: 1  value: 36.90965 mgc: 1.287007 ustep: 1 
+iter: 2  value: 36.90859 mgc: 0.03691142 ustep: 1 
+iter: 3  value: 36.90859 mgc: 0.0001706057 ustep: 1 
+iter: 4  mgc: 3.919945e-09 
+iter: 1  mgc: 3.919945e-09 
+outer mgc:  0.2915925 
+iter: 1  value: 36.45197 mgc: 0.180041 ustep: 1 
+iter: 2  value: 36.45197 mgc: 0.0007211173 ustep: 1 
+iter: 3  value: 36.45197 mgc: 4.758904e-08 ustep: 1 
+iter: 4  mgc: 1.554312e-15 
+iter: 1  mgc: 1.554312e-15 
+outer mgc:  0.09110783 
+iter: 1  value: 36.56198 mgc: 0.04292353 ustep: 1 
+iter: 2  value: 36.56198 mgc: 4.255206e-05 ustep: 1 
+iter: 3  mgc: 1.578607e-10 
+iter: 1  mgc: 1.578607e-10 
+outer mgc:  0.001937436 
+iter: 1  value: 36.5597 mgc: 0.0008910917 ustep: 1 
+iter: 2  value: 36.5597 mgc: 1.824897e-08 ustep: 1 
+iter: 3  mgc: 1.110223e-15 
+iter: 1  mgc: 1.110223e-15 
+outer mgc:  1.244118e-05 
+iter: 1  value: 36.55968 mgc: 5.759497e-06 ustep: 1 
+iter: 2  mgc: 7.626122e-13 
+iter: 1  mgc: 7.626122e-13 
+outer mgc:  1.715465e-09 
+iter: 1  mgc: 7.626122e-13 
+$par
+       sd 
+0.5290545 
+
+$objective
+[1] 38.10998
+
+$convergence
+[1] 0
+
+$iterations
+[1] 7
+
+$evaluations
+function gradient 
+      11        8 
+
+$message
+[1] "relative convergence (4)"
+
+> res <- oneStepPredict(obj,
++                       method="oneStepGeneric",
++                       discrete=TRUE,
++                       range=c(0,Inf))$residual
+[1] 1
+[1] 2
+[1] 3
+[1] 4
+[1] 5
+[1] 6
+[1] 7
+[1] 8
+[1] 9
+[1] 10
+[1] 11
+[1] 12
+[1] 13
+[1] 14
+[1] 15
+[1] 16
+[1] 17
+[1] 18
+[1] 19
+[1] 20
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Simulation")
+> ### * Simulation
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Simulation
+> ### Title: Simulation
+> ### Aliases: Simulation simref dim<-.simref length.simref dim.simref
+> ###   is.array.simref is.matrix.simref as.array.simref is.na.simref
+> ###   [.simref [<-.simref Ops.simref Math.simref t.simref diff.simref
+> ###   Summary.simref
+> 
+> ### ** Examples
+> 
+> ## Basic example simulating response marked by OBS()
+> func <- function(par) {
++   getAll(par, tmbdata)
++   y <- OBS(y)
++   ans <- -sum(dbinom(y, prob = plogis(a+b*x), size = 1, log = TRUE))
++ }
+> set.seed(101)
+> tmbdata <- list(x = seq(-3, 3, length = 25))
+> tmbdata$y <- rbinom(25, size = 1, prob = plogis(2 - 0.1*tmbdata$x))
+> obj <- MakeADFun(func, list(a = 0, b = 0), silent=TRUE)
+> with(obj, nlminb(par, fn, gr))
+$par
+        a         b 
+ 2.831049 -0.893927 
+
+$objective
+[1] 7.121298
+
+$convergence
+[1] 0
+
+$iterations
+[1] 11
+
+$evaluations
+function gradient 
+      12       12 
+
+$message
+[1] "relative convergence (4)"
+
+> obj$simulate()
+$y
+ [1] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 0 0 1
+
+> ## Basic example simulating random effects
+> func <- function(p) {
++   u <- p$u
++   ans <- -dnorm(u[1], log=TRUE) ## u[1] ~ N(0,1)
++   ans <- ans - sum(dnorm(diff(u), log=TRUE)) ## u[i]-u[i-1] ~ N(0,1)
++ }
+> obj <- MakeADFun(func, list(u=numeric(20)), random="u")
+> obj$simulate()
+$u
+ [1] -1.41039018 -0.94332257 -1.06264268 -0.59540372 -0.09726816  0.79766904
+ [7]  1.07682104  2.08468679  0.01158030  1.20143368  0.47705947  0.64504324
+[13]  1.56537840 -0.10622642  0.34224265  0.82470146  1.58291525 -0.73641212
+[19] -1.19591690 -2.30130057
+
+> ## Demonstrate how a 'simref' object works
+> s <- simref(4)
+> s2 <- 2 * s[1:2] + 1
+> s2[] <- 7
+> s ## 3 3 NA NA
+class='simref'
+[1]  3  3 NA NA
+> 
+> 
+> 
+> cleanEx()
+> nameEx("TMB-interface")
+> ### * TMB-interface
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: TMB-interface
+> ### Title: Interface to TMB
+> ### Aliases: TMB-interface MakeADFun sdreport ADREPORT REPORT getAll OBS
+> ###   checkConsistency
+> 
+> ### ** Examples
+> 
+> ## Objective with data from the user workspace
+> data(rivers)
+> f <- function(p) { -sum(dnorm(rivers, p$mu, p$sd, log=TRUE)) }
+> obj <- MakeADFun(f, list(mu=0, sd=1), silent=TRUE)
+> opt <- nlminb(obj$par, obj$fn, obj$gr)
+> sdreport(obj)
+sdreport(.) result
+   Estimate Std. Error
+mu 591.1844   41.44368
+sd 492.1164   29.30511
+Maximum gradient component: 3.471247e-09 
+> ## Same objective with an explicit data argument
+> f <- function(p, data) { -sum(dnorm(data, p$mu, p$sd, log=TRUE)) }
+> cmb <- function(f, d) function(p) f(p, d) ## Helper to make closure
+> obj <- MakeADFun(cmb(f, rivers), list(mu=0, sd=1), silent=TRUE)
+> ## 'REML trick'
+> obj2 <- MakeADFun(cmb(f, rivers), list(mu=0, sd=1), random="mu", silent=TRUE)
+> opt2 <- nlminb(obj2$par, obj2$fn, obj2$gr)
+> sdreport(obj2) ## Compare with sd(rivers)
+sdreport(.) result
+   Estimate Std. Error
+sd 493.8708   29.51443
+Maximum gradient component: 7.984039e-12 
+> ## Single argument vector function with numeric 'parameters'
+> fr <- function(x) {   ## Rosenbrock Banana function
++     x1 <- x[1]
++     x2 <- x[2]
++     100 * (x2 - x1 * x1)^2 + (1 - x1)^2
++ }
+> obj <- MakeADFun(fr, numeric(2), silent=TRUE)
+> nlminb(c(-1.2, 1), obj$fn, obj$gr, obj$he)
+$par
+[1] 1 1
+
+$objective
+[1] 0
+
+$convergence
+[1] 0
+
+$iterations
+[1] 25
+
+$evaluations
+function gradient 
+      33       26 
+
+$message
+[1] "X-convergence (3)"
+
+> 
+> 
+> 
+> cleanEx()
+> nameEx("Tape")
+> ### * Tape
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: Tape
+> ### Title: The AD tape
+> ### Aliases: Tape MakeTape $.Tape print.Tape TapeConfig DataEval GetTape
+> 
+> ### ** Examples
+> 
+> F <- MakeTape(prod, numeric(3))
+> show(F)
+Object of class='Tape'
+ : R^3 -> R^1
+> F$print()
+OpName:  Node:       Value:       Deriv:       Index:    Inputs:
+  InvOp      0            0           NA            0
+  InvOp      1            0           NA            1
+  InvOp      2            0           NA            2
+  MulOp      3            0           NA            3    0 1
+  MulOp      4            0           NA            4    3 2
+  DepOp      5            0           NA            5    4
+> H <- F$jacfun()$jacfun() ## Hessian tape
+> show(H)
+Object of class='Tape'
+ : R^3 -> R^9
+> #### Handy way to plot the graph of F
+> if (requireNamespace("igraph")) {
++    G <- igraph::graph_from_adjacency_matrix(F$graph())
++    plot(G, vertex.size=17, layout=igraph::layout_as_tree)
++ }
+Loading required namespace: igraph
+> ## Taped access of an element of 'rivers' dataset
+> F <- MakeTape(function(i) DataEval( function(i) rivers[i] , i), 1 )
+> F(1)
+[1] 735
+> F(2)
+[1] 320
+> ## DATA_UPDATE example
+> ## - Pay attention to lazy evaluation!
+> ## - Use 'force.update()'
+> mydat <- 1:4
+> fetch <- function() { print("Getting 'mydat'"); .GlobalEnv$mydat }
+> F <- MakeTape( function(x) x * sum(DataEval(fetch)), 1 )
+[1] "Getting 'mydat'"
+[1] "Getting 'mydat'"
+> F$reorder() ## Re-order tape for faster execution
+> F(1) ## No data update
+[1] 10
+> F(2) ## No data update
+[1] 20
+> mydat <- 5:8
+> F(1) ## Still no data update !
+[1] 10
+> F$force.update() ## Signal that data has changed
+> F(1) ## data update
+[1] "Getting 'mydat'"
+[1] 26
+> F(2) ## No data update
+[1] 52
+> 
+> 
+> 
+> cleanEx()
+> nameEx("expAv")
+> ### * expAv
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: expAv
+> ### Title: Matrix exponential of sparse matrix multiplied by a vector.
+> ### Aliases: expAv
+> 
+> ### ** Examples
+> 
+> set.seed(1); A <- Matrix::rsparsematrix(5, 5, .5)
+> expAv(A, 1:5) ## Matrix::expm(A) %*% 1:5
+[1] -0.8193034  8.5304133  2.7488576  7.2111992 12.1699728
+> F <- MakeTape(function(x) expAv(A*x, 1:5, trace=TRUE), 1)
+> F(1)
+[1] -0.8193034  8.5304133  2.7488576  7.2111992 12.1699728
+> F(2) ## More terms needed => trigger retaping
+Retaping: Nold=17 Nnew=24
+[1]  0.5501573 38.4072348  2.3545508 10.1713319 35.9399739
+> 
+> 
+> 
+> cleanEx()
+> nameEx("grapes-twiddle-grapes")
+> ### * grapes-twiddle-grapes
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: %~%
+> ### Title: Distributional assignment operator
+> ### Aliases: %~%
+> 
+> ### ** Examples
+> 
+> f <- function(parms) {
++   getAll(parms)
++   x %~% dnorm(mu, 1)
++   y %~% dpois(exp(x))
++ }
+> p <- list(mu=0, x=numeric(10))
+> y <- 1:10
+> obj <- MakeADFun(f, p, random="x")
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  2.804 0.093 2.329 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

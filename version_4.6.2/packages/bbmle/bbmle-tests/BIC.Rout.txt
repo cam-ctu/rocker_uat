@@ -1,0 +1,48 @@
+
+R version 4.6.2 (2026-10-29) -- "Diversified Portfolio"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> require(bbmle)
+Loading required package: bbmle
+Loading required package: stats4
+> x <- 0:10
+> y <- c(26, 17, 13, 12, 20, 5, 9, 8, 5, 4, 8)
+> d <- data.frame(x,y)
+> fit <- mle2(y~dpois(lambda=ymax/(1+x/xhalf)), start=list(ymax=25,xhalf=3),data=d)
+> fit2 <- mle2(y~dpois(lambda=(x+1)*slope), start=list(slope=1),data=d)
+> BIC(fit)
+[1] 62.0039
+> BIC(fit,fit2)
+     df      BIC
+fit   2  62.0039
+fit2  1 228.2046
+> 
+> ## GH #35: nobs() method was missing for mle2 objects, so BICtab()/ICtab()
+> ## failed outright (fell back to nobs.default -> "no 'nobs' method is
+> ## available"), and even when it worked, an explicit 'nobs' argument to
+> ## ICtab(type="BIC") was silently ignored (only AICc/qAICc used it).
+> stopifnot(identical(nobs(fit), 11L))
+> 
+> bictab1 <- BICtab(fit, fit2, mnames=c("fit","fit2"), base=TRUE)
+> stopifnot(isTRUE(all.equal(bictab1$BIC, c(BIC(fit), BIC(fit2)))))
+> 
+> ## explicit nobs override should change the BIC value (e.g. for binomial
+> ## data where the correct sample size is the number of trials, not rows)
+> bictab2 <- BICtab(fit, mnames="fit", base=TRUE, nobs=1000)
+> expected <- -2*c(logLik(fit)) + attr(logLik(fit),"df")*log(1000)
+> stopifnot(isTRUE(all.equal(bictab2$BIC, expected)))
+> stopifnot(!isTRUE(all.equal(bictab2$BIC, bictab1$BIC[1])))
+> 

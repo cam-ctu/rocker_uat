@@ -1,0 +1,89 @@
+
+R version 4.6.2 (2026-10-29) -- "Diversified Portfolio"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> # Unit tests for tbbRoot() and tbbLibraryPath(), which resolve the TBB library
+> # that the *installed* package uses.
+> #
+> # Regression tests for #270: on Windows these consulted TBB_LIB, the library
+> # directory recorded when configure ran. For a package built from source that
+> # happens to be a real path, but for a pre-built binary it names the Rtools
+> # tree of the build machine -- so tbbRoot() reported a directory that need not
+> # exist on the user's machine (a 'D:/rtools45/...' path, in the report), and
+> # tbbLibraryPath() then found nothing and returned NULL.
+> #
+> # The invariant these tests pin down is that both functions describe the
+> # installation actually in use: whatever they return must exist.
+> 
+> RcppParallel:::test_init()
+Using backend: tinythread
+> 
+> # tbbRoot() must never report a directory that isn't there. system.file()
+> # returns "" when it cannot resolve a path, so that sentinel is allowed; any
+> # non-empty answer has to be a real directory.
+> root <- tbbRoot()
+> assert(is.character(root))
+> assert(length(root) == 1L)
+> if (nzchar(root))
++    assert(dir.exists(root))
+> 
+> # with the bundled TBB the answer is the package's own library directory, on
+> # every platform. in particular it must not depend on the TBB_LIB environment
+> # variable, which tbbRoot() does not consult at all.
+> if (!nzchar(TBB_LIB)) {
++ 
++    assert(identical(root, archSystemFile("lib")))
++ 
++    saved <- Sys.getenv("TBB_LIB", unset = NA)
++    Sys.setenv(TBB_LIB = "Z:/nonexistent/rtools/lib")
++    assert(identical(tbbRoot(), archSystemFile("lib")))
++    if (is.na(saved)) Sys.unsetenv("TBB_LIB") else Sys.setenv(TBB_LIB = saved)
++ 
++ }
+> 
+> # tbbLibraryPath(NULL) reports the directory, and agrees with tbbRoot() when
+> # TBB_LIB is not set in the environment
+> if (is.na(Sys.getenv("TBB_LIB", unset = NA)))
++    assert(identical(tbbLibraryPath(), root))
+> 
+> # a named library either resolves to a file that exists, or isn't found at all.
+> # it must never name a file that isn't there -- that was the shape of #270.
+> for (name in c("tbb", "tbbmalloc", "tbbmalloc_proxy")) {
++ 
++    path <- tbbLibraryPath(name)
++    if (is.null(path))
++       next
++ 
++    assert(is.character(path))
++    assert(length(path) == 1L)
++    assert(file.exists(path))
++ 
++ }
+> 
+> # the user-visible symptom from #270: tbbLibraryPath("tbb") returned nothing
+> # from a perfectly good installation. assert this for the bundled build, where
+> # the installed layout is known exactly. a TBB supplied via TBB_LIB may
+> # legitimately be unresolvable, e.g. a distro package shipping no unversioned
+> # 'libtbb.so' development symlink.
+> if (TBB_ENABLED && !nzchar(TBB_LIB) && !is_sparc()) {
++    tbb <- tbbLibraryPath("tbb")
++    assert(!is.null(tbb))
++    assert(file.exists(tbb))
++ }
+> 
+> writeLines("all tbbLibraryPath() tests passed")
+all tbbLibraryPath() tests passed
+> 

@@ -1,0 +1,197 @@
+
+R version 4.6.2 (2026-10-29) -- "Diversified Portfolio"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "selectr"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('selectr')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("css_to_xpath")
+> ### * css_to_xpath
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: css_to_xpath
+> ### Title: Translate a CSS selector to an equivalent XPath expression.
+> ### Aliases: css_to_xpath
+> 
+> ### ** Examples
+> 
+>   css_to_xpath(".testclass")
+[1] "descendant-or-self::*[contains(concat(' ', normalize-space(@class), ' '), ' testclass ')]"
+>   css_to_xpath("#testid", prefix = "")
+[1] "*[@id = 'testid']"
+>   css_to_xpath("#testid .testclass")
+[1] "descendant-or-self::*[@id = 'testid']//*[contains(concat(' ', normalize-space(@class), ' '), ' testclass ')]"
+>   css_to_xpath(":scope > .testclass")
+[1] "self::*/*[contains(concat(' ', normalize-space(@class), ' '), ' testclass ')]"
+>   css_to_xpath(":checked", translator = "html")
+[1] "descendant-or-self::*[(@selected and local-name() = 'option') or (@checked and local-name() = 'input' and (translate(@type, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz') = 'checkbox' or translate(@type, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz') = 'radio'))]"
+> 
+>   # The selectr_parse_error, selectr_translation_error and
+>   # selectr_argument_error conditions (see 'Errors' below) all inherit
+>   # 'selectr_error', so callers can catch the family or a specific class.
+>   tryCatch(
++     css_to_xpath("div >"),
++     selectr_parse_error = function(e) {
++       cat(conditionMessage(e), "\n")
++       cat("Position:", e$pos, "\n")
++     }
++   )
+Expected selector, got <EOF at 6>
+  |
+  | div >
+  |      ^ 
+Position: 6 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("querySelectorAll")
+> ### * querySelectorAll
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: querySelectorAll
+> ### Title: Find nodes that match a group of CSS selectors in an XML tree.
+> ### Aliases: querySelector querySelectorAll querySelectorNS
+> ###   querySelectorAllNS
+> 
+> ### ** Examples
+> 
+>   # All three selectr_error classes (see 'Errors' below) propagate
+>   # from these functions; selectr_argument_error also covers a 'doc'
+>   # that is not an XML or xml2 document, node, or node set.
+>   tryCatch(
++     querySelectorAll("not a document", "a"),
++     selectr_argument_error = function(e) cat(conditionMessage(e), "\n")
++   )
+The object given to querySelectorAll() is not an 'XML' or 'xml2' document or node. 
+> 
+>   # The XML and xml2 packages are both optional (Suggests), so each demo
+>   # below is guarded with requireNamespace() and runs only when that
+>   # package is installed.
+> 
+>   # Demo for working with the XML package
+>   if (requireNamespace("XML", quietly = TRUE)) {
++     exdoc <- XML::xmlParse('<a><b class="aclass"/><c id="anid"/></a>')
++     querySelector(exdoc, "#anid")   # Returns the matching node
++     querySelector(exdoc, ".aclass") # Returns the matching node
++     querySelector(exdoc, "b, c")    # First match from grouped selection
++     querySelectorAll(exdoc, "b, c") # Grouped selection
++     querySelectorAll(exdoc, "b")    # A list of length one
++     querySelector(exdoc, "d")       # No match
++     querySelectorAll(exdoc, "d")    # No match
++ 
++     # Queries can be chained, the second search running from each node
++     # matched by the first
++     querySelectorAll(querySelectorAll(exdoc, "a"), "c")
++ 
++     # Read in a document where two namespaces are being set:
++     # SVG and MathML
++     svgdoc <- XML::xmlParse(system.file("demos/svg-mathml.svg",
++                                         package = "selectr"))
++     # Search for <script/> elements in the SVG namespace
++     querySelectorNS(svgdoc, "svg|script",
++                     c(svg = "http://www.w3.org/2000/svg"))
++     querySelectorAllNS(svgdoc, "svg|script",
++                        c(svg = "http://www.w3.org/2000/svg"))
++     # MathML content is *within* SVG content,
++     # search for <mtext> elements within the MathML namespace
++     querySelectorNS(svgdoc, "math|mtext",
++                     c(math = "http://www.w3.org/1998/Math/MathML"))
++     querySelectorAllNS(svgdoc, "math|mtext",
++                        c(math = "http://www.w3.org/1998/Math/MathML"))
++     # Search for *both* SVG and MathML content
++     querySelectorAllNS(svgdoc, "svg|script, math|mo",
++                        c(svg = "http://www.w3.org/2000/svg",
++                          math = "http://www.w3.org/1998/Math/MathML"))
++   }
+[[1]]
+<mo>+</mo> 
+
+[[2]]
+<script type="application/ecmascript" xlink:href="test2.svg.coords.js"/> 
+
+[[3]]
+<script type="application/ecmascript" xlink:href="test2.svg.convert.js"/> 
+
+attr(,"class")
+[1] "XMLNodeSet"
+> 
+>   # Demo for working with the xml2 package
+>   if (requireNamespace("xml2", quietly = TRUE)) {
++     exdoc <- xml2::read_xml('<a><b class="aclass"/><c id="anid"/></a>')
++     querySelector(exdoc, "#anid")   # Returns the matching node
++     querySelector(exdoc, ".aclass") # Returns the matching node
++     querySelector(exdoc, "b, c")    # First match from grouped selection
++     querySelectorAll(exdoc, "b, c") # Grouped selection
++     querySelectorAll(exdoc, "b")    # A nodeset of length one
++     querySelector(exdoc, "d")       # No match
++     querySelectorAll(exdoc, "d")    # No match
++ 
++     # Queries can be chained, the second search running from each node
++     # matched by the first
++     querySelectorAll(querySelectorAll(exdoc, "a"), "c")
++ 
++     # Read in a document where two namespaces are being set:
++     # SVG and MathML
++     svgdoc <- xml2::read_xml(system.file("demos/svg-mathml.svg",
++                                          package = "selectr"))
++     # Search for <script/> elements in the SVG namespace
++     querySelectorNS(svgdoc, "svg|script",
++                     c(svg = "http://www.w3.org/2000/svg"))
++     querySelectorAllNS(svgdoc, "svg|script",
++                        c(svg = "http://www.w3.org/2000/svg"))
++     # MathML content is *within* SVG content,
++     # search for <mtext> elements within the MathML namespace
++     querySelectorNS(svgdoc, "math|mtext",
++                     c(math = "http://www.w3.org/1998/Math/MathML"))
++     querySelectorAllNS(svgdoc, "math|mtext",
++                        c(math = "http://www.w3.org/1998/Math/MathML"))
++     # Search for *both* SVG and MathML content
++     querySelectorAllNS(svgdoc, "svg|script, math|mo",
++                        c(svg = "http://www.w3.org/2000/svg",
++                          math = "http://www.w3.org/1998/Math/MathML"))
++   }
+{xml_nodeset (3)}
+[1] <mo>+</mo>
+[2] <script type="application/ecmascript" xlink:href="test2.svg.coords.js"/>
+[3] <script type="application/ecmascript" xlink:href="test2.svg.convert.js"/>
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  0.305 0.023 0.37 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')
